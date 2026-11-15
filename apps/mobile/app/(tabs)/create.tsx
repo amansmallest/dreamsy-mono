@@ -1,13 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, AppState, FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, AppState, FlatList, RefreshControl, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { api, authHeader, isActiveGeneration, thumbnailUrlFor, type Game, type Generation } from '@/api';
 import { Thumbnail } from '@/components/Thumbnail';
 import { etaFromGeneration, etaLine, useEtaRemaining } from '@/generationProgress';
-import { errorMessage, ink, stroke } from '@/theme';
-import { Card, Header, InkButton, Loading, Sparkle, Txt } from '@/ui';
+import { errorMessage, font, ink, radius } from '@/theme';
+import { Badge, Button, Header, IconButton, Loading, PixelSky, Pressy, Txt } from '@/ui';
 
 /** Without `activeGeneration` on the Game view, ask per game for the most recent ones only. */
 const MAX_BUILD_LOOKUPS = 15;
@@ -89,12 +89,18 @@ export default function CreateScreen() {
     setRefreshing(false);
   };
 
+  const [idea, setIdea] = useState('');
+
+  /** New game; with an idea, Claude starts building it straight away. */
   const newGame = async () => {
     if (creating) return;
     setCreating(true);
     setError(null);
     try {
-      const { game } = await api.createGame({ name: 'Untitled game' });
+      const text = idea.trim();
+      const { game } = await api.createGame({ name: text ? text.slice(0, 60) : 'Untitled game' });
+      if (text) await api.generate(game.id, { prompt: text }).catch(() => {});
+      setIdea('');
       router.push({ pathname: '/game/[id]', params: { id: game.id } });
     } catch (e) {
       setError(errorMessage(e));
@@ -105,34 +111,46 @@ export default function CreateScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
-      <Header title="Make" subtitle="your games" />
+      <Header title="Create" right={<IconButton icon="qr-code-outline" label="Scan from dashboard" onPress={() => router.push('/scan')} />} />
       {sorted === null && !error ? (
         <Loading />
       ) : (
         <FlatList
           data={sorted ?? []}
           keyExtractor={(g) => g.id}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={ink.fg} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={ink.accent} />}
           contentContainerStyle={styles.list}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           ListHeaderComponent={
             <View style={styles.headerBlock}>
-              <Card style={styles.hero}>
-                <View style={styles.heroMarks}>
-                  <Sparkle size={26} />
-                  <Sparkle size={12} style={{ marginTop: 16 }} />
-                </View>
-                <Txt variant="title">What do you want to play?</Txt>
-                <Txt variant="body" muted>
-                  Describe it in a sentence, add a picture if you like. Dreamsy builds it while you wait.
+              <View style={styles.hero}>
+                <PixelSky style={StyleSheet.absoluteFill} dense />
+                <Txt variant="title" color={ink.navy}>
+                  What do you want to play?
                 </Txt>
-                <InkButton label="New game" sparkles busy={creating} onPress={newGame} style={styles.heroButton} />
-              </Card>
+                <TextInput
+                  value={idea}
+                  onChangeText={setIdea}
+                  placeholder="a cozy fishing game on a tiny island"
+                  placeholderTextColor={ink.faint}
+                  selectionColor={ink.accent}
+                  multiline
+                  maxLength={2000}
+                  style={styles.idea}
+                />
+                <Button label={idea.trim() ? 'Build it' : 'Start empty'} sparkles={!!idea.trim()} busy={creating} onPress={newGame} />
+              </View>
               {error && (
                 <Txt variant="meta" color={ink.danger} center>
                   {error}
                 </Txt>
               )}
-              {!!sorted?.length && <Txt variant="label" muted>Your games</Txt>}
+              {!!sorted?.length && (
+                <Txt variant="label" muted style={styles.section}>
+                  Your games
+                </Txt>
+              )}
             </View>
           }
           renderItem={({ item }) => <GameRow game={item} build={builds[item.id]} headers={headers} />}
@@ -146,11 +164,11 @@ function GameRow({ game, build, headers }: { game: Game; build?: Generation; hea
   // ETA snapshot taken when this record arrived; counts down locally until the next poll.
   const eta = useMemo(() => (build ? etaFromGeneration(build) : null), [build]);
   const remaining = useEtaRemaining(eta);
-  const line = build ? (etaLine(eta, remaining) ?? (build.status === 'queued' ? 'Queued…' : 'Building…')) : null;
+  const line = build ? (etaLine(eta, remaining) ?? (build.status === 'queued' ? 'Queued' : 'Building…')) : null;
   const live = game.status === 'published';
 
   return (
-    <Card onPress={() => router.push({ pathname: '/game/[id]', params: { id: game.id } })} style={styles.row}>
+    <Pressy onPress={() => router.push({ pathname: '/game/[id]', params: { id: game.id } })} haptic={false} style={styles.row}>
       <Thumbnail
         url={game.latestVersion > 0 ? (game.thumbnailUrl ?? thumbnailUrlFor(game.id, game.latestVersion)) : null}
         headers={headers}
@@ -163,41 +181,54 @@ function GameRow({ game, build, headers }: { game: Game; build?: Generation; hea
         </Txt>
         {line ? (
           <View style={styles.buildRow}>
-            <ActivityIndicator size="small" color={ink.fg} />
-            <Txt variant="meta" numberOfLines={1} style={styles.flex}>
+            <ActivityIndicator size="small" color={ink.accent} />
+            <Txt variant="meta" color={ink.accent} numberOfLines={1} style={styles.flex}>
               {line}
             </Txt>
           </View>
         ) : (
           <View style={styles.buildRow}>
-            {live && <View style={styles.liveDot} />}
-            <Txt variant="meta" muted numberOfLines={1}>
-              {live ? `Live · v${game.publishedVersion}` : game.latestVersion > 0 ? `Draft · v${game.latestVersion}` : 'Empty'}
-            </Txt>
+            <Badge label={live ? 'live' : game.latestVersion > 0 ? 'draft' : 'empty'} tone={live ? 'ok' : 'sky'} />
+            {game.latestVersion > 0 && (
+              <Txt variant="meta" muted>
+                v{game.latestVersion}
+              </Txt>
+            )}
+            {game.remixOf && (
+              <Txt variant="meta" muted numberOfLines={1} style={styles.flex}>
+                · spin-off
+              </Txt>
+            )}
           </View>
         )}
-        {game.remixOf && (
-          <Txt variant="meta" muted numberOfLines={1}>
-            Spin-off{game.remixOf.name ? ` of ${game.remixOf.name}` : ''}
-          </Txt>
-        )}
       </View>
-      <Ionicons name="chevron-forward" size={18} color={ink.fg} />
-    </Card>
+      <Ionicons name="chevron-forward" size={18} color={ink.faint} />
+    </Pressy>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: ink.bg },
-  list: { padding: 20, paddingTop: 6, gap: 12 },
-  headerBlock: { gap: 14, marginBottom: 2 },
-  hero: { padding: 20, gap: 8 },
-  heroMarks: { flexDirection: 'row', gap: 4, marginBottom: 4 },
-  heroButton: { marginTop: 10 },
-  row: { flexDirection: 'row', alignItems: 'center', padding: 10, gap: 12 },
-  thumb: { width: 76, aspectRatio: 1, borderRadius: 14, borderWidth: stroke.thin, borderColor: ink.fg },
-  rowMain: { flex: 1, gap: 4 },
+  list: { padding: 16, paddingTop: 4, gap: 8, paddingBottom: 32 },
+  headerBlock: { gap: 14, marginBottom: 4 },
+  hero: { borderRadius: radius.xl, overflow: 'hidden', padding: 18, paddingTop: 22, gap: 14 },
+  idea: {
+    minHeight: 88,
+    maxHeight: 160,
+    backgroundColor: ink.card,
+    borderRadius: radius.md,
+    paddingHorizontal: 14,
+    paddingTop: 12,
+    paddingBottom: 12,
+    fontFamily: font.medium,
+    fontSize: 16,
+    color: ink.fg,
+    textAlignVertical: 'top',
+  },
+  section: { marginTop: 6 },
+  row: { flexDirection: 'row', alignItems: 'center', padding: 10, gap: 12, backgroundColor: ink.card, borderRadius: radius.lg },
+  thumb: { width: 64, height: 64, borderRadius: radius.md },
+  rowMain: { flex: 1, gap: 6 },
   buildRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   flex: { flex: 1 },
-  liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: ink.ok },
 });

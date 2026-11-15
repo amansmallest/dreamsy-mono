@@ -1,49 +1,53 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import type { ComponentProps, ReactNode } from 'react';
+import { useEffect, useRef, type ComponentProps, type ReactNode } from 'react';
 import {
   ActivityIndicator,
+  Animated,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
+  type PressableProps,
   type StyleProp,
   type TextInputProps,
   type TextProps,
   type TextStyle,
   type ViewStyle,
 } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
-import { font, ink, radius, stroke } from '../theme';
+import { font, hairline, ink, radius } from '../theme';
+import { PixelSparkle } from './pixel';
 
-// The ink kit: every screen builds from these so the look stays consistent.
+export { PixelCloud, PixelSky, PixelSparkle } from './pixel';
+
+// The Sky kit (apps/DESIGN.md). Every screen builds from these.
 
 export type IconName = ComponentProps<typeof Ionicons>['name'];
 
-const tap = () => void Haptics.selectionAsync().catch(() => {});
+export const tap = () => void Haptics.selectionAsync().catch(() => {});
 
-/** Four-point sparkle, the brand mark. */
-export function Sparkle({ size = 16, color = ink.fg, style }: { size?: number; color?: string; style?: StyleProp<ViewStyle> }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" style={style as never}>
-      <Path d="M12 0 C13 8 16 11 24 12 C16 13 13 16 12 24 C11 16 8 13 0 12 C8 11 11 8 12 0 Z" fill={color} />
-    </Svg>
-  );
+/** Brand sparkle (pixel). Kept under its old name; `color` defaults to the accent. */
+export function Sparkle({ size = 16, color, style }: { size?: number; color?: string; style?: StyleProp<ViewStyle> }) {
+  return <PixelSparkle size={size} color={color} style={style} />;
 }
 
-const TEXT: Record<string, TextStyle> = {
-  display: { fontFamily: font.bold, fontSize: 32, letterSpacing: -0.8, lineHeight: 36 },
-  title: { fontFamily: font.bold, fontSize: 24, letterSpacing: -0.5, lineHeight: 28 },
-  heading: { fontFamily: font.semibold, fontSize: 17, lineHeight: 22 },
-  body: { fontFamily: font.body, fontSize: 16, lineHeight: 22 },
+const TEXT: Record<TxtVariant, TextStyle> = {
+  display: { fontFamily: font.display, fontSize: 34, letterSpacing: -1, lineHeight: 38 },
+  title: { fontFamily: font.display, fontSize: 24, letterSpacing: -0.6, lineHeight: 28 },
+  heading: { fontFamily: font.semibold, fontSize: 16, letterSpacing: -0.2, lineHeight: 21 },
+  body: { fontFamily: font.body, fontSize: 15, lineHeight: 21 },
   meta: { fontFamily: font.medium, fontSize: 13, lineHeight: 17 },
-  label: { fontFamily: font.pixel, fontSize: 11, letterSpacing: 0.6, textTransform: 'uppercase' },
-  pixel: { fontFamily: font.pixelBold, fontSize: 14, letterSpacing: 0.4, textTransform: 'uppercase' },
+  /** Small UI label (buttons in rows, section titles). */
+  label: { fontFamily: font.semibold, fontSize: 13, letterSpacing: -0.1 },
+  /** Strong UI text (header titles, button labels). */
+  pixel: { fontFamily: font.displayBold, fontSize: 16, letterSpacing: -0.3 },
+  /** Pixel-font badge: LIVE, NEW, v3. */
+  badge: { fontFamily: font.pixel, fontSize: 10, letterSpacing: 0.6, textTransform: 'uppercase' },
 };
 
-export type TxtVariant = 'display' | 'title' | 'heading' | 'body' | 'meta' | 'label' | 'pixel';
+export type TxtVariant = 'display' | 'title' | 'heading' | 'body' | 'meta' | 'label' | 'pixel' | 'badge';
 
 export function Txt({
   variant = 'body',
@@ -56,22 +60,34 @@ export function Txt({
   return (
     <Text
       {...rest}
-      style={[
-        TEXT[variant],
-        { color: color ?? (muted ? ink.muted : ink.fg) },
-        center && { textAlign: 'center' },
-        style,
-      ]}
+      style={[TEXT[variant], { color: color ?? (muted ? ink.muted : ink.fg) }, center && { textAlign: 'center' }, style]}
     />
+  );
+}
+
+/** Pressable that sinks a little when touched. */
+export function Pressy({ style, children, haptic = true, onPress, ...rest }: PressableProps & { style?: StyleProp<ViewStyle>; haptic?: boolean }) {
+  return (
+    <Pressable
+      {...rest}
+      onPress={(e) => {
+        if (haptic) tap();
+        onPress?.(e);
+      }}
+      style={({ pressed }) => [style, { transform: [{ scale: pressed ? 0.97 : 1 }], opacity: pressed ? 0.92 : 1 }]}
+    >
+      {children}
+    </Pressable>
   );
 }
 
 type ButtonProps = {
   label: string;
   onPress?: () => void;
-  variant?: 'solid' | 'outline';
+  /** solid = blue (primary), dark = navy, outline = white with hairline, ghost = text only. */
+  variant?: 'solid' | 'dark' | 'outline' | 'ghost';
   icon?: IconName;
-  /** Sparkles at both ends (the hero button). */
+  /** A pixel sparkle before the label (for the one hero action on a screen). */
   sparkles?: boolean;
   busy?: boolean;
   disabled?: boolean;
@@ -80,67 +96,55 @@ type ButtonProps = {
   accessibilityLabel?: string;
 };
 
-const HEIGHT = { lg: 58, md: 48, sm: 38 } as const;
+const HEIGHT = { lg: 52, md: 44, sm: 34 } as const;
 
-/** Pill button: solid ink (primary) or outlined paper. */
-export function InkButton({
-  label,
-  onPress,
-  variant = 'solid',
-  icon,
-  sparkles,
-  busy,
-  disabled,
-  size = 'lg',
-  style,
-  accessibilityLabel,
-}: ButtonProps) {
-  const solid = variant === 'solid';
-  const fg = solid ? ink.accentFg : ink.fg;
+export function Button({ label, onPress, variant = 'solid', icon, sparkles, busy, disabled, size = 'lg', style, accessibilityLabel }: ButtonProps) {
+  const bg = { solid: ink.accent, dark: ink.navy, outline: ink.card, ghost: 'transparent' }[variant];
+  const fg = variant === 'solid' || variant === 'dark' ? ink.accentFg : variant === 'ghost' ? ink.accent : ink.fg;
   const off = disabled || busy;
   return (
-    <Pressable
+    <Pressy
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityState={{ disabled: !!off, busy: !!busy }}
       disabled={off}
-      onPress={() => {
-        tap();
-        onPress?.();
-      }}
-      style={({ pressed }) => [
+      onPress={onPress}
+      style={[
         styles.button,
         {
           height: HEIGHT[size],
-          paddingHorizontal: size === 'sm' ? 14 : 22,
-          backgroundColor: solid ? (pressed ? '#333' : ink.fg) : pressed ? ink.wash : ink.card,
+          paddingHorizontal: size === 'sm' ? 14 : 20,
+          borderRadius: size === 'sm' ? radius.sm : radius.md,
+          backgroundColor: bg,
+          borderWidth: variant === 'outline' ? hairline : 0,
           opacity: disabled ? 0.4 : 1,
-          transform: [{ scale: pressed ? 0.98 : 1 }],
         },
         style,
       ]}
     >
-      {sparkles && <Sparkle size={14} color={fg} style={styles.sparkleLeft} />}
       {busy ? (
         <ActivityIndicator color={fg} />
       ) : (
         <View style={styles.buttonInner}>
+          {sparkles && <PixelSparkle size={12} color={fg} />}
           {icon && <Ionicons name={icon} size={size === 'sm' ? 15 : 18} color={fg} />}
-          <Txt variant="pixel" color={fg} style={size === 'sm' && { fontSize: 12 }} numberOfLines={1}>
+          <Txt variant="pixel" color={fg} style={size === 'sm' ? styles.buttonSm : size === 'md' ? styles.buttonMd : undefined} numberOfLines={1}>
             {label}
           </Txt>
         </View>
       )}
-      {sparkles && <Sparkle size={14} color={fg} style={styles.sparkleRight} />}
-    </Pressable>
+    </Pressy>
   );
 }
 
-/** Round outlined icon button (the reference's bottom row). */
+/** Old name for Button. */
+export const InkButton = Button;
+
+/** Round icon button. */
 export function RoundButton({
   icon,
   onPress,
-  size = 64,
+  size = 56,
   filled,
   label,
   disabled,
@@ -155,101 +159,65 @@ export function RoundButton({
   color?: string;
 }) {
   return (
-    <Pressable
+    <Pressy
       accessibilityRole="button"
       accessibilityLabel={label}
       disabled={disabled}
-      onPress={() => {
-        tap();
-        onPress?.();
-      }}
-      hitSlop={6}
-      style={({ pressed }) => [
-        styles.round,
-        {
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          backgroundColor: filled ? ink.fg : pressed ? ink.wash : ink.card,
-          opacity: disabled ? 0.4 : 1,
-          transform: [{ scale: pressed ? 0.95 : 1 }],
-        },
-      ]}
-    >
-      <Ionicons name={icon} size={Math.round(size * 0.4)} color={color ?? (filled ? ink.accentFg : ink.fg)} />
-    </Pressable>
-  );
-}
-
-/** Rounded-square outlined icon button (header corners). */
-export function SquareButton({
-  icon,
-  onPress,
-  label,
-  size = 42,
-  children,
-}: {
-  icon?: IconName;
-  onPress?: () => void;
-  label: string;
-  size?: number;
-  children?: ReactNode;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
       onPress={onPress}
       hitSlop={6}
-      style={({ pressed }) => [
-        styles.square,
-        { width: size, height: size, backgroundColor: pressed ? ink.wash : ink.card },
+      style={[
+        styles.round,
+        { width: size, height: size, borderRadius: size / 2, backgroundColor: filled ? ink.accent : ink.card, borderWidth: filled ? 0 : hairline, opacity: disabled ? 0.4 : 1 },
       ]}
     >
-      {children ?? (icon && <Ionicons name={icon} size={20} color={ink.fg} />)}
-    </Pressable>
+      <Ionicons name={icon} size={Math.round(size * 0.42)} color={color ?? (filled ? ink.accentFg : ink.fg)} />
+    </Pressy>
   );
 }
 
-/** Outlined paper card. */
-export function Card({
-  children,
-  style,
-  onPress,
-  accessibilityLabel,
-}: {
-  children: ReactNode;
-  style?: StyleProp<ViewStyle>;
-  onPress?: () => void;
-  accessibilityLabel?: string;
-}) {
+/** Plain icon button (header corners, toolbars). */
+export function SquareButton({ icon, onPress, label, size = 40, children }: { icon?: IconName; onPress?: () => void; label: string; size?: number; children?: ReactNode }) {
+  return (
+    <Pressy accessibilityRole="button" accessibilityLabel={label} onPress={onPress} hitSlop={8} style={[styles.square, { width: size, height: size }]}>
+      {children ?? (icon && <Ionicons name={icon} size={24} color={ink.fg} />)}
+    </Pressy>
+  );
+}
+
+export const IconButton = SquareButton;
+
+/** White card with a hairline. */
+export function Card({ children, style, onPress, accessibilityLabel }: { children: ReactNode; style?: StyleProp<ViewStyle>; onPress?: () => void; accessibilityLabel?: string }) {
   if (!onPress) return <View style={[styles.card, style]}>{children}</View>;
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel}
-      onPress={onPress}
-      style={({ pressed }) => [styles.card, { transform: [{ scale: pressed ? 0.985 : 1 }] }, style]}
-    >
+    <Pressy accessibilityRole="button" accessibilityLabel={accessibilityLabel} onPress={onPress} haptic={false} style={[styles.card, style]}>
       {children}
-    </Pressable>
+    </Pressy>
   );
 }
 
-/** Screen header: corner buttons + centered pixel title with a small line under it. */
-export function Header({
-  title,
-  subtitle,
-  left,
-  right,
-  style,
-}: {
-  title: string;
-  subtitle?: string;
-  left?: ReactNode;
-  right?: ReactNode;
-  style?: StyleProp<ViewStyle>;
-}) {
+/**
+ * Screen header. Without `left`: a big left-aligned title (Instagram tab style). With `left`: a
+ * compact centered title between the corners.
+ */
+export function Header({ title, subtitle, left, right, style }: { title: string; subtitle?: string; left?: ReactNode; right?: ReactNode; style?: StyleProp<ViewStyle> }) {
+  if (!left) {
+    return (
+      <View style={[styles.header, style]}>
+        <View style={styles.headerBig}>
+          <Txt variant="title" numberOfLines={1}>
+            {title}
+          </Txt>
+          {!!subtitle && (
+            <Txt variant="meta" muted numberOfLines={1}>
+              {subtitle}
+            </Txt>
+          )}
+        </View>
+        {right && <View style={styles.headerRight}>{right}</View>}
+      </View>
+    );
+  }
   return (
     <View style={[styles.header, style]}>
       <View style={styles.headerSide}>{left}</View>
@@ -263,23 +231,13 @@ export function Header({
           </Txt>
         )}
       </View>
-      <View style={[styles.headerSide, styles.headerRight]}>{right}</View>
+      <View style={[styles.headerSide, styles.headerSideRight]}>{right}</View>
     </View>
   );
 }
 
-/** Outlined pill tabs; the selected one is filled with ink. */
-export function Pills<T extends string>({
-  options,
-  value,
-  onChange,
-  style,
-}: {
-  options: { value: T; label: string }[];
-  value: T;
-  onChange: (v: T) => void;
-  style?: StyleProp<ViewStyle>;
-}) {
+/** Text tabs; the selected one is ink with a blue underline. */
+export function Pills<T extends string>({ options, value, onChange, style }: { options: { value: T; label: string }[]; value: T; onChange: (v: T) => void; style?: StyleProp<ViewStyle> }) {
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.pills, style]}>
       {options.map((o) => {
@@ -293,9 +251,10 @@ export function Pills<T extends string>({
               if (!on) tap();
               onChange(o.value);
             }}
-            style={[styles.pill, { backgroundColor: on ? ink.fg : ink.card }]}
+            hitSlop={6}
+            style={[styles.pill, on && styles.pillOn]}
           >
-            <Txt variant="label" color={on ? ink.accentFg : ink.fg}>
+            <Txt variant="label" color={on ? ink.accentFg : ink.muted}>
               {o.label}
             </Txt>
           </Pressable>
@@ -305,39 +264,45 @@ export function Pills<T extends string>({
   );
 }
 
-/** Outlined progress track with an ink fill (0..1). */
-export function ProgressBar({ value, height = 16, style }: { value: number; height?: number; style?: StyleProp<ViewStyle> }) {
+/** Blue progress on a mist track (0..1). */
+export function ProgressBar({ value, height = 8, style }: { value: number; height?: number; style?: StyleProp<ViewStyle> }) {
   const pct = Math.max(0, Math.min(1, value));
+  const w = useRef(new Animated.Value(pct)).current;
+  useEffect(() => {
+    Animated.timing(w, { toValue: pct, duration: 500, useNativeDriver: false }).start();
+  }, [pct, w]);
   return (
     <View style={[styles.track, { height, borderRadius: height / 2 }, style]}>
-      <View style={{ width: `${Math.max(pct > 0 ? 6 : 0, pct * 100)}%`, height: '100%', backgroundColor: ink.fg, borderRadius: height / 2 }} />
+      <Animated.View
+        style={{
+          width: w.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }),
+          height: '100%',
+          backgroundColor: ink.accent,
+          borderRadius: height / 2,
+        }}
+      />
     </View>
   );
 }
 
-/** Outlined text field. */
+/** Text field on a white surface. */
 export function Field({ style, prefix, ...props }: TextInputProps & { prefix?: string }) {
   return (
     <View style={[styles.field, props.multiline && styles.fieldMulti, style as StyleProp<ViewStyle>]}>
-      {!!prefix && (
-        <Txt variant="heading" muted>
-          {prefix}
-        </Txt>
-      )}
-      <TextInput placeholderTextColor={ink.muted} selectionColor={ink.fg} {...props} style={[styles.fieldInput, props.multiline && styles.fieldInputMulti]} />
+      {!!prefix && <Txt variant="heading" muted>{prefix}</Txt>}
+      <TextInput placeholderTextColor={ink.faint} selectionColor={ink.accent} {...props} style={[styles.fieldInput, props.multiline && styles.fieldInputMulti]} />
     </View>
   );
 }
 
-/** Centered sparkle + message for empty and error states. */
+/** Pixel clouds + message for empty and error states. */
 export function Empty({ title, body, action }: { title: string; body?: string; action?: ReactNode }) {
   return (
     <View style={styles.empty}>
-      <View style={styles.emptyMarks}>
-        <Sparkle size={22} />
-        <Sparkle size={12} style={{ marginTop: 18 }} />
+      <View style={styles.emptyArt}>
+        <PixelSparkle size={22} />
       </View>
-      <Txt variant="pixel" center>
+      <Txt variant="heading" center>
         {title}
       </Txt>
       {!!body && (
@@ -351,79 +316,85 @@ export function Empty({ title, body, action }: { title: string; body?: string; a
 }
 
 export function Loading({ style }: { style?: StyleProp<ViewStyle> }) {
-  return <ActivityIndicator color={ink.fg} style={[{ marginTop: 32 }, style]} />;
+  return <ActivityIndicator color={ink.accent} style={[{ marginTop: 32 }, style]} />;
 }
 
-/** Small outlined chip with an optional icon. */
+/** Shimmering placeholder block. */
+export function Skeleton({ style }: { style?: StyleProp<ViewStyle> }) {
+  const v = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(v, { toValue: 1, duration: 700, useNativeDriver: true }),
+        Animated.timing(v, { toValue: 0, duration: 700, useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [v]);
+  return <Animated.View style={[styles.skeleton, { opacity: v.interpolate({ inputRange: [0, 1], outputRange: [0.55, 1] }) }, style]} />;
+}
+
+/** Small pill with an optional icon. */
 export function Chip({ label, icon, onPress, filled }: { label: string; icon?: IconName; onPress?: () => void; filled?: boolean }) {
-  const fg = filled ? ink.accentFg : ink.fg;
+  const fg = filled ? ink.accentFg : ink.navy;
   return (
-    <Pressable
-      disabled={!onPress}
-      onPress={onPress}
-      hitSlop={4}
-      style={({ pressed }) => [styles.chip, { backgroundColor: filled ? ink.fg : pressed ? ink.wash : ink.card }]}
-    >
+    <Pressy disabled={!onPress} onPress={onPress} hitSlop={4} style={[styles.chip, filled && styles.chipOn]}>
       {icon && <Ionicons name={icon} size={13} color={fg} />}
       <Txt variant="meta" color={fg} numberOfLines={1} style={{ flexShrink: 1 }}>
         {label}
       </Txt>
-    </Pressable>
+    </Pressy>
   );
 }
 
+/** Pixel-font badge: LIVE, NEW, v3, BUILDING. */
+export function Badge({ label, tone = 'sky', style }: { label: string; tone?: 'sky' | 'blue' | 'navy' | 'ok' | 'white'; style?: StyleProp<ViewStyle> }) {
+  const bg = { sky: ink.wash, blue: ink.accent, navy: ink.navy, ok: ink.ok, white: ink.card }[tone];
+  const fg = tone === 'sky' || tone === 'white' ? ink.navy : ink.accentFg;
+  return (
+    <View style={[styles.badge, { backgroundColor: bg }, style]}>
+      <Txt variant="badge" color={fg}>
+        {label}
+      </Txt>
+    </View>
+  );
+}
+
+export function Divider({ style }: { style?: StyleProp<ViewStyle> }) {
+  return <View style={[{ height: hairline, backgroundColor: ink.border }, style]} />;
+}
+
 export const inkStyles = StyleSheet.create({
-  outline: { borderWidth: stroke.base, borderColor: ink.fg },
+  outline: { borderWidth: hairline, borderColor: ink.border },
 });
 
 const styles = StyleSheet.create({
-  button: {
-    borderRadius: radius.pill,
-    borderWidth: stroke.base,
-    borderColor: ink.fg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
+  button: { alignItems: 'center', justifyContent: 'center', flexDirection: 'row', borderColor: ink.border },
   buttonInner: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  sparkleLeft: { position: 'absolute', left: 22 },
-  sparkleRight: { position: 'absolute', right: 22 },
-  round: { borderWidth: stroke.bold, borderColor: ink.fg, alignItems: 'center', justifyContent: 'center' },
-  square: { borderWidth: stroke.base, borderColor: ink.fg, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  card: { backgroundColor: ink.card, borderWidth: stroke.base, borderColor: ink.fg, borderRadius: radius.lg, overflow: 'hidden' },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 8, minHeight: 58 },
+  buttonMd: { fontSize: 15 },
+  buttonSm: { fontSize: 13 },
+  round: { borderColor: ink.border, alignItems: 'center', justifyContent: 'center' },
+  square: { alignItems: 'center', justifyContent: 'center' },
+  card: { backgroundColor: ink.card, borderWidth: hairline, borderColor: ink.border, borderRadius: radius.lg, overflow: 'hidden' },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8, minHeight: 52, gap: 8 },
+  headerBig: { flex: 1, gap: 1 },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   headerSide: { width: 56, flexDirection: 'row' },
-  headerRight: { justifyContent: 'flex-end' },
+  headerSideRight: { justifyContent: 'flex-end' },
   headerMid: { flex: 1, alignItems: 'center', gap: 1 },
-  pills: { gap: 8, paddingVertical: 2 },
-  pill: { paddingHorizontal: 14, height: 34, borderRadius: radius.pill, justifyContent: 'center', borderWidth: stroke.base, borderColor: ink.fg },
-  track: { borderWidth: stroke.base, borderColor: ink.fg, backgroundColor: ink.card, overflow: 'hidden', padding: 2 },
-  field: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    borderWidth: stroke.base,
-    borderColor: ink.fg,
-    borderRadius: radius.md,
-    backgroundColor: ink.card,
-    paddingHorizontal: 14,
-    minHeight: 50,
-  },
+  pills: { gap: 6, paddingVertical: 2 },
+  pill: { paddingHorizontal: 14, height: 32, borderRadius: radius.pill, justifyContent: 'center', backgroundColor: ink.card, borderWidth: hairline, borderColor: ink.border },
+  pillOn: { backgroundColor: ink.navy, borderColor: ink.navy },
+  track: { backgroundColor: ink.wash, overflow: 'hidden' },
+  field: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: hairline, borderColor: ink.border, borderRadius: radius.md, backgroundColor: ink.card, paddingHorizontal: 14, minHeight: 48 },
   fieldMulti: { alignItems: 'flex-start', paddingVertical: 10 },
   fieldInput: { flex: 1, fontFamily: font.medium, fontSize: 16, color: ink.fg, paddingVertical: 0 },
   fieldInputMulti: { minHeight: 64, textAlignVertical: 'top' },
-  empty: { alignItems: 'center', gap: 10, paddingHorizontal: 32, paddingVertical: 40 },
-  emptyMarks: { flexDirection: 'row', gap: 4 },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    alignSelf: 'flex-start',
-    borderWidth: stroke.thin,
-    borderColor: ink.fg,
-    borderRadius: radius.pill,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    maxWidth: '100%',
-  },
+  empty: { alignItems: 'center', gap: 8, paddingHorizontal: 32, paddingVertical: 40 },
+  emptyArt: { width: 64, height: 64, borderRadius: 32, backgroundColor: ink.wash, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
+  skeleton: { backgroundColor: ink.wash, borderRadius: radius.md },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', backgroundColor: ink.wash, borderRadius: radius.pill, paddingHorizontal: 11, paddingVertical: 6, maxWidth: '100%' },
+  chipOn: { backgroundColor: ink.accent },
+  badge: { alignSelf: 'flex-start', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 3 },
 });

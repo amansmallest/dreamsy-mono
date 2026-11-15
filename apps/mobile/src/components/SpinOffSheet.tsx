@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { api, ApiError } from '../api';
 import { errorMessage, ink } from '../theme';
-import { Chip, Field, Header, InkButton, SquareButton, Txt } from '../ui';
+import { Button as InkButton, Chip, Field, Header, SquareButton, Txt } from '../ui';
 
 const IDEAS = ['Same game, but in space', 'Make it a boss rush', 'Two times faster', 'Cozy version, no enemies', 'Spooky night edition'];
 
@@ -35,12 +35,12 @@ export function SpinOffSheet({ visible, source, onClose, onCreated }: Props) {
     if (busy) return;
     setError(null);
     try {
-      setBusy('Copying the game…');
+      setBusy('Copying…');
       const { game } = await api.remix(source.id);
       onCreated?.();
       const text = idea.trim();
       if (withIdea && text) {
-        setBusy('Telling Claude…');
+        setBusy('Starting build…');
         await api.generate(game.id, { prompt: text }).catch((e) => {
           // The copy exists either way; a quota hit just means the user types it again later.
           if (!(e instanceof ApiError && e.status === 429)) throw e;
@@ -61,7 +61,7 @@ export function SpinOffSheet({ visible, source, onClose, onCreated }: Props) {
         <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
           <Txt variant="title">Make it yours</Txt>
           <Txt variant="body" muted>
-            You get your own copy of this game. Tell Claude what to change, and it starts building right away. The original creator gets credit.
+            Your own copy. The original creator gets credit.
           </Txt>
           <Field value={idea} onChangeText={setIdea} multiline maxLength={2000} placeholder="What should be different?" />
           <View style={styles.ideas}>
@@ -85,7 +85,7 @@ export function SpinOffSheet({ visible, source, onClose, onCreated }: Props) {
 }
 
 const styles = StyleSheet.create({
-  sheet: { flex: 1, backgroundColor: ink.bg },
+  sheet: { flex: 1, backgroundColor: ink.card },
   header: { paddingTop: 16 },
   body: { padding: 20, gap: 12 },
   ideas: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

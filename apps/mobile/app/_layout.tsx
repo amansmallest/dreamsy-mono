@@ -1,10 +1,6 @@
-import { Silkscreen_400Regular, Silkscreen_700Bold } from '@expo-google-fonts/silkscreen';
-import {
-  SpaceGrotesk_400Regular,
-  SpaceGrotesk_500Medium,
-  SpaceGrotesk_600SemiBold,
-  SpaceGrotesk_700Bold,
-} from '@expo-google-fonts/space-grotesk';
+import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
+import { InterTight_700Bold, InterTight_800ExtraBold } from '@expo-google-fonts/inter-tight';
+import { Silkscreen_400Regular } from '@expo-google-fonts/silkscreen';
 import { useFonts } from 'expo-font';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { Stack } from 'expo-router';
@@ -26,18 +22,19 @@ const pushed = {
   headerTintColor: ink.fg,
   headerShadowVisible: false,
   headerStyle: { backgroundColor: ink.bg },
-  headerTitleStyle: { fontFamily: font.pixelBold, fontSize: 14, color: ink.fg },
+  headerTitleStyle: { fontFamily: font.displayBold, fontSize: 17, color: ink.fg },
 };
 
 function RootNavigator() {
   const { status, user } = useAuth();
   const [fontsLoaded, fontError] = useFonts({
     Silkscreen_400Regular,
-    Silkscreen_700Bold,
-    SpaceGrotesk_400Regular,
-    SpaceGrotesk_500Medium,
-    SpaceGrotesk_600SemiBold,
-    SpaceGrotesk_700Bold,
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+    InterTight_700Bold,
+    InterTight_800ExtraBold,
   });
   const ready = status !== 'loading' && (fontsLoaded || !!fontError);
 
@@ -58,6 +55,7 @@ function RootNavigator() {
         <Stack.Screen name="discover/[id]" options={pushed} />
         <Stack.Screen name="user/[id]" options={pushed} />
         <Stack.Screen name="avatar" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="scan" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
         <Stack.Screen
           name="play/[id]"
           options={{ presentation: 'fullScreenModal', animation: 'fade', gestureEnabled: false }}

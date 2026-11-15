@@ -7,7 +7,7 @@ import { useAuth } from '@/auth';
 import { normalizeAvatar, type AvatarConfig } from '@/avatar';
 import { AvatarMaker } from '@/components/AvatarMaker';
 import { errorMessage, ink } from '@/theme';
-import { Header, InkButton, SquareButton, Txt } from '@/ui';
+import { Button as InkButton, Header, SquareButton, Txt } from '@/ui';
 
 /** Edit avatar (modal from the profile). */
 export default function AvatarScreen() {
@@ -48,7 +48,7 @@ export default function AvatarScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: ink.bg },
+  screen: { flex: 1, backgroundColor: ink.card },
   header: { paddingTop: 16 },
   body: { padding: 24 },
   footer: { paddingHorizontal: 24, paddingBottom: 8 },

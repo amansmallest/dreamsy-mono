@@ -1,7 +1,7 @@
 import { FlatList, Modal, StyleSheet, View } from 'react-native';
 import { thumbnailUrlFor, type Game, type GameVersion } from '../api';
-import { ink, radius, stroke } from '../theme';
-import { Chip, Header, InkButton, Loading, SquareButton, Txt } from '../ui';
+import { hairline, ink, radius } from '../theme';
+import { Badge, Button as InkButton, Header, Loading, SquareButton, Txt } from '../ui';
 import { Thumbnail } from './Thumbnail';
 
 type Props = {
@@ -31,7 +31,7 @@ export function VersionsSheet({ visible, onClose, game, versions, headers, gener
         />
         {generating && (
           <Txt variant="meta" muted center style={styles.note}>
-            Restoring is paused while Claude is building.
+            Restore unlocks when the build finishes.
           </Txt>
         )}
         {versions === null ? (
@@ -61,17 +61,19 @@ export function VersionsSheet({ visible, onClose, game, versions, headers, gener
                       <View style={styles.cardMain}>
                         <View style={styles.tags}>
                           <Txt variant="pixel">v{item.version}</Txt>
-                          {current && <Chip label="current" />}
-                          {live && <Chip label="live" filled />}
+                          {current && <Badge label="current" tone="sky" />}
+                          {live && <Badge label="live" tone="ok" />}
                         </View>
                         <Txt variant="meta" muted>
                           {new Date(item.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
                         </Txt>
                       </View>
                     </View>
-                    <Txt variant="body" numberOfLines={3}>
-                      {item.summary || 'No summary'}
-                    </Txt>
+                    {!!item.summary && (
+                      <Txt variant="body" numberOfLines={3}>
+                        {item.summary}
+                      </Txt>
+                    )}
                     <View style={styles.actions}>
                       <InkButton label="Play" icon="play" size="sm" variant="outline" onPress={() => onPlay(item.version)} style={styles.flex} />
                       {!current && (
@@ -104,12 +106,12 @@ const styles = StyleSheet.create({
   list: { padding: 20, paddingBottom: 48 },
   row: { flexDirection: 'row', gap: 12 },
   rail: { width: 16, alignItems: 'center' },
-  dot: { width: 14, height: 14, borderRadius: 7, borderWidth: stroke.base, borderColor: ink.fg, backgroundColor: ink.card, marginTop: 18 },
-  dotOn: { backgroundColor: ink.fg },
-  line: { flex: 1, width: 2, backgroundColor: ink.fg, marginVertical: 2 },
-  card: { flex: 1, backgroundColor: ink.card, borderWidth: stroke.base, borderColor: ink.fg, borderRadius: radius.lg, padding: 12, gap: 10, marginBottom: 14 },
+  dot: { width: 12, height: 12, borderRadius: 6, backgroundColor: ink.sky, marginTop: 20 },
+  dotOn: { backgroundColor: ink.accent },
+  line: { flex: 1, width: 2, backgroundColor: ink.wash, marginVertical: 2 },
+  card: { flex: 1, backgroundColor: ink.card, borderWidth: hairline, borderColor: ink.border, borderRadius: radius.lg, padding: 12, gap: 10, marginBottom: 14 },
   cardTop: { flexDirection: 'row', gap: 12, alignItems: 'center' },
-  thumb: { width: 72, aspectRatio: 16 / 10, borderRadius: radius.sm, borderWidth: stroke.thin, borderColor: ink.fg },
+  thumb: { width: 72, aspectRatio: 16 / 10, borderRadius: radius.sm },
   cardMain: { flex: 1, gap: 4 },
   tags: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
   actions: { flexDirection: 'row', gap: 8 },

@@ -3,8 +3,8 @@ import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { api, thumbnailUrlFor, type Game } from '../api';
 import { shareGame } from '../social';
-import { errorMessage, ink, radius, stroke } from '../theme';
-import { Field, Header, InkButton, Sparkle, SquareButton, Txt } from '../ui';
+import { errorMessage, ink, radius } from '../theme';
+import { Button as InkButton, Field, Header, PixelSky, Sparkle, SquareButton, Txt } from '../ui';
 import { Thumbnail } from './Thumbnail';
 
 type Props = {
@@ -67,15 +67,16 @@ export function PublishSheet({ visible, game, headers, onClose, onChange }: Prop
         />
         {live ? (
           <View style={styles.done}>
+            <PixelSky dense style={styles.doneSky} />
             <View style={styles.marks}>
-              <Sparkle size={40} />
-              <Sparkle size={18} style={{ marginTop: 30 }} />
+              <Sparkle size={36} />
+              <Sparkle size={16} style={{ marginTop: 26 }} />
             </View>
             <Txt variant="display" center>
               {live.name}
             </Txt>
             <Txt variant="body" muted center>
-              {wasLive ? 'Players now get the new version.' : 'Your game is in the feed. Send it to a friend.'}
+              {wasLive ? 'Players now get the new version.' : "It's in the feed now."}
             </Txt>
             <View style={styles.doneActions}>
               <InkButton label="Share" icon="share-outline" sparkles onPress={() => void shareGame(live)} />
@@ -101,21 +102,21 @@ export function PublishSheet({ visible, game, headers, onClose, onChange }: Prop
                 style={styles.cover}
               />
               <Txt variant="meta" muted center>
-                The cover is a screenshot from Claude's last playtest.
+                Cover comes from the last playtest.
               </Txt>
               <Txt variant="label" muted>
                 Name
               </Txt>
               <Field value={name} onChangeText={setName} maxLength={80} placeholder="Game name" />
               <Txt variant="label" muted>
-                What is it?
+                Description
               </Txt>
               <Field
                 value={description}
                 onChangeText={setDescription}
                 multiline
                 maxLength={500}
-                placeholder="One or two lines that make people want to play"
+                placeholder="One or two lines"
               />
               {wasLive && (
                 <Txt variant="meta" muted>
@@ -146,13 +147,14 @@ export function PublishSheet({ visible, game, headers, onClose, onChange }: Prop
 }
 
 const styles = StyleSheet.create({
-  sheet: { flex: 1, backgroundColor: ink.bg },
+  sheet: { flex: 1, backgroundColor: ink.card },
   header: { paddingTop: 16 },
   flex: { flex: 1 },
   body: { padding: 20, gap: 10 },
-  cover: { aspectRatio: 16 / 10, borderRadius: radius.lg, borderWidth: stroke.bold, borderColor: ink.fg },
+  cover: { aspectRatio: 16 / 10, borderRadius: radius.lg },
   footer: { padding: 20, paddingBottom: 36 },
   done: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, gap: 12 },
+  doneSky: { position: 'absolute', top: 0, left: 0, right: 0, height: '45%' },
   marks: { flexDirection: 'row', gap: 6 },
   doneActions: { alignSelf: 'stretch', gap: 12, marginTop: 16 },
 });

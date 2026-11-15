@@ -141,6 +141,8 @@ export type FeedGame = {
   stats: GameStats;
   publishedAt: string;
   remixOf: RemixOf | null;
+  /** Present on authed lists (feed, search, profiles). */
+  viewer?: Viewer;
 };
 export type FeedTab = 'trending' | 'new' | 'top' | 'following';
 export type Page<K extends string, T> = { [k in K]: T[] } & { next: string | null };

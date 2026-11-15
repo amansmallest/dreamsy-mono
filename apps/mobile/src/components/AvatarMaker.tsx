@@ -21,6 +21,7 @@ export function AvatarHero({ avatar, seed, size = 220 }: { avatar: AvatarConfig 
       <Sparkle size={size * 0.07} style={{ position: 'absolute', left: size * 0.2, top: size * 0.24 }} />
       <Sparkle size={size * 0.13} style={{ position: 'absolute', right: 14, bottom: size * 0.18 }} />
       <Sparkle size={size * 0.07} style={{ position: 'absolute', right: size * 0.02, bottom: size * 0.38 }} />
+      <View style={[styles.halo, { width: size * 0.92, height: size * 0.92, borderRadius: size }]} />
       <InkAvatar avatar={avatar} seed={seed} size={size} framed={false} />
     </View>
   );
@@ -54,7 +55,7 @@ export function AvatarMaker({ value, onChange, seed }: { value: AvatarConfig; on
         {PART_ORDER.map((p) => (
           <View key={p} style={styles.part}>
             <RoundButton icon={PART_ICON[p]} size={50} filled={p === part} label={p} onPress={() => setPart(p)} />
-            <Txt variant="label" color={p === part ? ink.fg : ink.muted}>
+            <Txt variant="label" color={p === part ? ink.accent : ink.muted}>
               {p}
             </Txt>
           </View>
@@ -71,6 +72,7 @@ export function AvatarMaker({ value, onChange, seed }: { value: AvatarConfig; on
 const styles = StyleSheet.create({
   maker: { alignItems: 'center', gap: 18 },
   hero: { alignItems: 'center', justifyContent: 'center' },
+  halo: { position: 'absolute', backgroundColor: ink.wash },
   pickerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, alignSelf: 'stretch' },
   pickerText: { flex: 1, gap: 2 },
   parts: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 10, rowGap: 12 },

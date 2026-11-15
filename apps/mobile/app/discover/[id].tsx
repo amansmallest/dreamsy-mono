@@ -1,16 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActionSheetIOS, Alert, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { ActionSheetIOS, Alert, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { api, ApiError, type FeedGame, type Creator, type Game, type GameStats, type Orientation, type RemixOf } from '@/api';
 import { useAuth } from '@/auth';
 import { Avatar } from '@/components/Avatar';
-import { GameTile, RemixBadge } from '@/components/GameCard';
+import { GameCard, RemixBadge } from '@/components/GameCard';
 import { SpinOffSheet } from '@/components/SpinOffSheet';
 import { Thumbnail } from '@/components/Thumbnail';
 import { compact, REPORT_REASONS, shareGame } from '@/social';
-import { errorMessage, ink } from '@/theme';
-import { Card, Empty, InkButton, Loading, RoundButton, Txt, type IconName } from '@/ui';
+import { errorMessage, hairline, ink, radius } from '@/theme';
+import { Button, Empty, Loading, Pressy, Txt, type IconName } from '@/ui';
 
 /** Everything the page shows, merged from GET /v1/games/:id and GET /v1/public/games/:id. */
 type Detail = {
@@ -27,15 +27,16 @@ type Detail = {
   latestVersion: number | null;
 };
 
-/** Game page: preview, Play, Like, Share, Spin-off, creator, spin-offs row, report. */
+/** Game page: cover, name and creator, big Play, actions, stats, about, spin-offs. */
 export default function GameScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, spin } = useLocalSearchParams<{ id: string; spin?: string }>();
+  const { width } = useWindowDimensions();
   const { user } = useAuth();
   const [game, setGame] = useState<Detail | null>(null);
   const [liked, setLiked] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [spinOffOpen, setSpinOffOpen] = useState(false);
+  const [spinOffOpen, setSpinOffOpen] = useState(spin === '1');
   const [spinOffs, setSpinOffs] = useState<FeedGame[]>([]);
   const likeSeq = useRef(0);
 
@@ -134,26 +135,20 @@ export default function GameScreen() {
     return (
       <View style={styles.center}>
         <Stack.Screen options={{ title: '' }} />
-        {error ? (
-          <Empty title="Hmm" body={error} action={<InkButton label="Try again" size="sm" variant="outline" onPress={load} />} />
-        ) : (
-          <Loading />
-        )}
+        {error ? <Empty title="Can't open this game" body={error} action={<Button label="Try again" size="sm" variant="outline" onPress={load} />} /> : <Loading />}
       </View>
     );
   }
 
   const canPlay = !!game.publishedVersion;
+  const portrait = game.orientation === 'portrait';
 
   return (
-    <ScrollView
-      style={styles.scroll}
-      contentContainerStyle={styles.content}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={pull} tintColor={ink.fg} />}
-    >
+    <ScrollView style={styles.scroll} contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={pull} tintColor={ink.accent} />}>
       <Stack.Screen
         options={{
           title: game.name,
+          headerStyle: { backgroundColor: ink.bg },
           headerRight: () => (
             <Pressable accessibilityLabel="More" onPress={menu} hitSlop={10}>
               <Ionicons name="ellipsis-horizontal" size={22} color={ink.fg} />
@@ -162,90 +157,66 @@ export default function GameScreen() {
         }}
       />
 
-      <Card style={styles.heroCard}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Play" disabled={!canPlay} onPress={play}>
-          <Thumbnail
-            url={game.thumbnailUrl}
-            seed={game.id}
-            name={game.name}
-            size="lg"
-            style={[styles.hero, { aspectRatio: game.orientation === 'portrait' ? 4 / 5 : 16 / 10 }]}
-          />
-          {canPlay && (
-            <View style={styles.heroPlay} pointerEvents="none">
-              <Ionicons name="play" size={30} color={ink.accentFg} style={styles.heroPlayIcon} />
-            </View>
-          )}
-        </Pressable>
-      </Card>
+      <Pressable accessibilityRole="button" accessibilityLabel="Play" disabled={!canPlay} onPress={play}>
+        <Thumbnail url={game.thumbnailUrl} seed={game.id} name={game.name} size="lg" style={{ width, height: portrait ? Math.min(width * 1.1, 480) : Math.round(width * 0.62) }} />
+      </Pressable>
 
-      <View style={styles.titleBlock}>
-        <Txt variant="display" center>
+      <View style={styles.body}>
+        <Txt variant="display" style={styles.name}>
           {game.name}
         </Txt>
+        {game.creator && (
+          <Pressable onPress={() => router.push({ pathname: '/user/[id]', params: { id: game.creator!.id } })} style={styles.who} hitSlop={4}>
+            <Avatar user={game.creator} size={22} />
+            <Txt variant="meta" muted>
+              By
+            </Txt>
+            <Txt variant="label" color={ink.accent}>
+              @{game.creator.handle}
+            </Txt>
+          </Pressable>
+        )}
         {game.remixOf && (
-          <View style={styles.centerRow}>
-            <RemixBadge
-              name={game.remixOf.name}
-              onPress={() => router.push({ pathname: '/discover/[id]', params: { id: game.remixOf!.gameId } })}
-            />
+          <RemixBadge name={game.remixOf.name} onPress={() => router.push({ pathname: '/discover/[id]', params: { id: game.remixOf!.gameId } })} />
+        )}
+
+        <Button label={canPlay ? 'Play' : 'Not published yet'} icon="play" disabled={!canPlay} onPress={play} style={styles.play} />
+
+        <View style={styles.actions}>
+          <Action icon={liked ? 'heart' : 'heart-outline'} color={liked ? ink.danger : ink.navy} label={compact(game.stats.likes)} a11y={liked ? 'Unlike' : 'Like'} onPress={toggleLike} />
+          <Action icon="git-branch-outline" label="Spin-off" onPress={() => setSpinOffOpen(true)} />
+          <Action icon="share-outline" label="Share" disabled={!canPlay} onPress={() => void shareGame(game)} />
+          {isOwner && <Action icon="create-outline" label="Edit" onPress={() => router.push({ pathname: '/game/[id]', params: { id: game.id } })} />}
+        </View>
+
+        <View style={styles.stats}>
+          <Stat label="Plays" value={compact(game.stats.plays)} />
+          <Stat label="Likes" value={compact(game.stats.likes)} />
+          <Stat label="Spin-offs" value={compact(game.stats.remixes)} />
+          <Stat label="Screen" value={portrait ? 'Portrait' : 'Landscape'} />
+        </View>
+
+        {!!game.description && (
+          <View style={styles.about}>
+            <Txt variant="pixel">About</Txt>
+            <Txt variant="body">{game.description}</Txt>
           </View>
         )}
       </View>
 
-      {game.creator && (
-        <Card
-          accessibilityLabel={`@${game.creator.handle}`}
-          onPress={() => router.push({ pathname: '/user/[id]', params: { id: game.creator!.id } })}
-          style={styles.creator}
-        >
-          <Avatar user={game.creator} size={40} />
-          <View style={styles.flex}>
-            <Txt variant="label" muted>
-              made by
-            </Txt>
-            <Txt variant="heading">@{game.creator.handle}</Txt>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color={ink.fg} />
-        </Card>
-      )}
-
-      <Card style={styles.stats}>
-        <Stat value={game.stats.plays} label="plays" />
-        <Stat value={game.stats.likes} label="likes" />
-        <Stat value={game.stats.remixes} label="spin-offs" last />
-      </Card>
-
-      <InkButton label={canPlay ? 'Play' : 'Not published yet'} icon="play" sparkles={canPlay} disabled={!canPlay} onPress={play} />
-
-      <View style={styles.actions}>
-        <Action icon={liked ? 'heart' : 'heart-outline'} filled={liked} label={liked ? 'Liked' : 'Like'} onPress={toggleLike} />
-        <Action icon="share-outline" label="Share" onPress={() => void shareGame(game)} disabled={!canPlay} />
-        <Action icon="git-branch-outline" label="Spin-off" onPress={() => setSpinOffOpen(true)} />
-        {isOwner && <Action icon="create-outline" label="Edit" onPress={() => router.push({ pathname: '/game/[id]', params: { id: game.id } })} />}
-      </View>
-
       {spinOffs.length > 0 && (
         <View style={styles.spinOffs}>
-          <Txt variant="label" muted>
+          <Txt variant="pixel" style={styles.sectionTitle}>
             Spin-offs
           </Txt>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.spinOffRow}>
             {spinOffs.map((g) => (
-              <GameTile key={g.id} game={g} width={150} />
+              <GameCard key={g.id} game={g} width={140} />
             ))}
           </ScrollView>
         </View>
       )}
 
-      {!!game.description && (
-        <Card style={styles.desc}>
-          <Txt variant="label" muted>
-            About
-          </Txt>
-          <Txt variant="body">{game.description}</Txt>
-        </Card>
-      )}
       <SpinOffSheet
         visible={spinOffOpen}
         source={game}
@@ -276,34 +247,26 @@ function pick(title: string, options: string[], onPick: (i: number) => void, des
   }
 }
 
-function Stat({ value, label, last }: { value: number; label: string; last?: boolean }) {
+function Action({ icon, label, onPress, color = ink.navy, disabled, a11y }: { icon: IconName; label: string; onPress: () => void; color?: string; disabled?: boolean; a11y?: string }) {
   return (
-    <View style={[styles.stat, !last && styles.statDivider]}>
-      <Txt variant="title">{compact(value)}</Txt>
-      <Txt variant="label" muted>
+    <Pressy accessibilityRole="button" accessibilityLabel={a11y ?? label} disabled={disabled} onPress={onPress} style={[styles.action, disabled && { opacity: 0.4 }]}>
+      <Ionicons name={icon} size={22} color={color} />
+      <Txt variant="label" color={ink.navy}>
         {label}
       </Txt>
-    </View>
+    </Pressy>
   );
 }
 
-function Action({
-  icon,
-  label,
-  onPress,
-  filled,
-  disabled,
-}: {
-  icon: IconName;
-  label: string;
-  onPress: () => void;
-  filled?: boolean;
-  disabled?: boolean;
-}) {
+function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <View style={styles.action}>
-      <RoundButton icon={icon} label={label} onPress={onPress} filled={filled} disabled={disabled} size={62} />
-      <Txt variant="label">{label}</Txt>
+    <View style={styles.stat}>
+      <Txt variant="pixel" color={ink.navy} numberOfLines={1}>
+        {value}
+      </Txt>
+      <Txt variant="meta" muted>
+        {label}
+      </Txt>
     </View>
   );
 }
@@ -311,35 +274,18 @@ function Action({
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: ink.bg },
   scroll: { backgroundColor: ink.bg },
-  content: { padding: 20, gap: 18, paddingBottom: 48 },
-  heroCard: { borderRadius: 26 },
-  hero: { maxHeight: 460 },
-  heroPlay: {
-    position: 'absolute',
-    left: '50%',
-    top: '50%',
-    marginLeft: -36,
-    marginTop: -36,
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: ink.fg,
-    borderWidth: 3,
-    borderColor: ink.card,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  heroPlayIcon: { marginLeft: 4 },
-  titleBlock: { gap: 8 },
-  centerRow: { alignItems: 'center' },
-  creator: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12 },
+  content: { paddingBottom: 48 },
+  body: { padding: 16, gap: 10 },
+  name: { fontSize: 30, lineHeight: 34, color: ink.navy },
+  who: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   flex: { flex: 1 },
-  stats: { flexDirection: 'row', paddingVertical: 14 },
+  play: { marginTop: 8 },
+  actions: { flexDirection: 'row', gap: 8, marginTop: 4 },
+  action: { flex: 1, alignItems: 'center', gap: 4, paddingVertical: 10, borderRadius: radius.md, backgroundColor: ink.card },
+  stats: { flexDirection: 'row', marginTop: 6, paddingVertical: 14, borderRadius: radius.lg, backgroundColor: ink.wash },
   stat: { flex: 1, alignItems: 'center', gap: 2 },
-  statDivider: { borderRightWidth: 1.5, borderRightColor: ink.border },
-  actions: { flexDirection: 'row', justifyContent: 'center', gap: 18 },
-  action: { alignItems: 'center', gap: 6 },
-  desc: { padding: 16, gap: 6 },
-  spinOffs: { gap: 10 },
-  spinOffRow: { gap: 12 },
+  about: { gap: 6, marginTop: 10 },
+  spinOffs: { marginTop: 18, paddingTop: 16, gap: 12, borderTopWidth: hairline, borderTopColor: ink.border },
+  sectionTitle: { paddingHorizontal: 16 },
+  spinOffRow: { gap: 12, paddingHorizontal: 16 },
 });

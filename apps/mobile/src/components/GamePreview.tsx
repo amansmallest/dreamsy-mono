@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { ink, radius, stroke } from '../theme';
-import { Sparkle, Txt } from '../ui';
+import { ink, radius } from '../theme';
+import { PixelSky, Sparkle, Txt } from '../ui';
 import { EngineView } from './EngineView';
 
 export type GamePreviewProps = {
@@ -11,7 +11,7 @@ export type GamePreviewProps = {
 };
 
 /**
- * Inline, playable preview of (gameId, version) in a 16:10 ink-framed card. Reloads whenever the
+ * Inline, playable preview of (gameId, version) in a rounded 16:10 card. Reloads whenever the
  * version changes. Engine errors show as a small dismissible banner over the card.
  */
 export function GamePreview({ gameId, version }: GamePreviewProps) {
@@ -22,15 +22,13 @@ export function GamePreview({ gameId, version }: GamePreviewProps) {
   if (version <= 0) {
     return (
       <View style={[styles.card, styles.empty]}>
+        <PixelSky dense style={StyleSheet.absoluteFill} />
         <View style={styles.marks}>
-          <Sparkle size={30} />
-          <Sparkle size={14} style={{ marginTop: 22 }} />
+          <Sparkle size={26} color={ink.navy} />
+          <Sparkle size={12} color={ink.navy} style={{ marginTop: 18 }} />
         </View>
-        <Txt variant="pixel" center>
-          Blank page
-        </Txt>
-        <Txt variant="meta" muted center>
-          Describe your game below and Dreamsy will draw it here.
+        <Txt variant="pixel" color={ink.navy} center>
+          Describe your game below
         </Txt>
       </View>
     );
@@ -54,12 +52,11 @@ const styles = StyleSheet.create({
   card: {
     aspectRatio: 16 / 10,
     borderRadius: radius.lg,
-    borderWidth: stroke.bold,
-    borderColor: ink.fg,
+    backgroundColor: ink.navy,
     overflow: 'hidden',
   },
   fill: { flex: 1 },
-  empty: { justifyContent: 'center', alignItems: 'center', padding: 20, gap: 8, backgroundColor: ink.card },
+  empty: { justifyContent: 'center', alignItems: 'center', padding: 20, gap: 10, backgroundColor: ink.wash },
   marks: { flexDirection: 'row', gap: 4 },
   banner: {
     position: 'absolute',

@@ -86,7 +86,7 @@ export default function PlayScreen() {
         <EngineView gameId={id} version={v} insets={insets} style={styles.fill} onQuit={close} onError={setError} />
       ) : (
         <View style={[styles.fill, styles.center]}>
-          <ActivityIndicator color="#8b949e" />
+          <ActivityIndicator color={ink.sky} />
         </View>
       )}
       <Pressable
@@ -96,7 +96,7 @@ export default function PlayScreen() {
         hitSlop={10}
         style={[styles.close, { top: chrome.top + 10, left: chrome.left + 12 }]}
       >
-        <Ionicons name="close" size={20} color={ink.fg} />
+        <Ionicons name="close" size={20} color={ink.accentFg} />
       </Pressable>
       {error && (
         <Pressable
@@ -113,21 +113,19 @@ export default function PlayScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#0d1117' },
+  screen: { flex: 1, backgroundColor: '#0A1630' },
   fill: { flex: 1 },
   center: { alignItems: 'center', justifyContent: 'center' },
-  note: { color: '#8b949e', fontSize: 15 },
+  note: { color: ink.sky, fontSize: 15 },
   close: {
     position: 'absolute',
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: ink.card,
-    borderWidth: 2,
-    borderColor: ink.fg,
+    backgroundColor: 'rgba(13,42,102,0.55)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  banner: { position: 'absolute', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: ink.danger, borderWidth: 2, borderColor: ink.fg },
+  banner: { position: 'absolute', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: ink.danger },
   bannerText: { color: '#fff', fontSize: 12 },
 });

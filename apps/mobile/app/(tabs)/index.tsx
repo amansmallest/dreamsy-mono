@@ -1,114 +1,214 @@
-import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import { FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { api, type FeedGame, type FeedTab } from '@/api';
 import { useAuth } from '@/auth';
 import { Avatar } from '@/components/Avatar';
-import { GameCard } from '@/components/GameCard';
-import { ink } from '@/theme';
-import { Empty, Field, Header, Loading, Pills, Txt } from '@/ui';
-import { usePaged } from '@/usePaged';
+import { FeaturedGame, GameCard } from '@/components/GameCard';
+import { errorMessage, ink, radius } from '@/theme';
+import { Button, Empty, IconButton, PixelSparkle, Pressy, Skeleton, Txt } from '@/ui';
+import { useWallet } from '@/wallet';
 
-const TABS: { value: FeedTab; label: string }[] = [
-  { value: 'trending', label: 'Hot' },
-  { value: 'new', label: 'New' },
-  { value: 'top', label: 'Top' },
-  { value: 'following', label: 'Following' },
+const SHELVES: { tab: FeedTab; title: string }[] = [
+  { tab: 'trending', title: 'Trending' },
+  { tab: 'following', title: 'From creators you follow' },
+  { tab: 'top', title: 'Most liked' },
+  { tab: 'new', title: 'Just released' },
 ];
+const PER_SHELF = 12;
+const PAD = 16;
 
-const idOf = (g: FeedGame) => g.id;
+type Shelves = Partial<Record<FeedTab, FeedGame[]>>;
 
-/** Home: feed tabs (GET /v1/feed) and search (GET /v1/search). */
+/** Home: a game marketplace. Featured banner, then shelves of games that scroll sideways. */
 export default function HomeScreen() {
   const { user } = useAuth();
-  const [tab, setTab] = useState<FeedTab>('trending');
-  const [query, setQuery] = useState('');
-  const q = useDebounced(query.trim(), 300);
-  const searching = q.length > 0;
+  const { wallet, refresh: refreshWallet } = useWallet();
+  const { width } = useWindowDimensions();
+  const [shelves, setShelves] = useState<Shelves | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const fetchPage = useCallback(
-    async (cursor: string | null) => {
-      const r = searching ? await api.search(q, cursor) : await api.feed(tab, cursor);
-      return { items: r.games, next: r.next };
-    },
-    [searching, q, tab],
+  const load = useCallback(async () => {
+    const results = await Promise.allSettled(SHELVES.map((s) => api.feed(s.tab, null, PER_SHELF)));
+    const next: Shelves = {};
+    results.forEach((r, i) => {
+      if (r.status === 'fulfilled') next[SHELVES[i]!.tab] = r.value.games;
+    });
+    const failed = results.find((r) => r.status === 'rejected');
+    setError(failed && Object.keys(next).length === 0 ? errorMessage((failed as PromiseRejectedResult).reason) : null);
+    setShelves(next);
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (user) void refreshWallet();
+    }, [user, refreshWallet]),
   );
-  const list = usePaged(searching ? `search:${q}` : `feed:${tab}`, fetchPage, idOf);
 
-  const empty = searching
-    ? { title: 'Nothing found', body: `No games match “${q}”.` }
-    : tab === 'following'
-      ? { title: 'Quiet in here', body: 'Follow creators to see their new games here.' }
-      : { title: 'No games yet', body: 'Be the first: tap the big + and make one.' };
+  const pull = async () => {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  };
+
+  const trending = shelves?.trending ?? [];
+  const featured = trending[0];
+  const card = Math.round((width - PAD * 2 - 12 * 2) / 2.6);
+  const nothing = shelves !== null && SHELVES.every((s) => !shelves[s.tab]?.length);
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
-      <Header
-        title="Dreamsy"
-        subtitle={user ? `hi @${user.handle}` : undefined}
-        right={
-          user && (
-            <Pressable accessibilityRole="button" accessibilityLabel="Your profile" onPress={() => router.navigate('/profile')} hitSlop={6}>
-              <Avatar user={user} size={42} />
-            </Pressable>
-          )
-        }
-      />
-      <View style={styles.top}>
-        <Field
-          value={query}
-          onChangeText={setQuery}
-          placeholder="Search games and creators"
-          returnKeyType="search"
-          autoCorrect={false}
-          autoCapitalize="none"
-          clearButtonMode="while-editing"
-          style={styles.search}
-        />
-        {!searching && <Pills options={TABS} value={tab} onChange={setTab} />}
+      <View style={styles.bar}>
+        <Pressable onPress={() => router.navigate('/profile')} hitSlop={6} accessibilityLabel="Profile">
+          {user ? <Avatar user={user} size={34} /> : <View style={styles.avatarStub} />}
+        </Pressable>
+        <View style={styles.logo}>
+          <PixelSparkle size={14} />
+          <Txt variant="title" style={styles.word}>
+            dreamsy
+          </Txt>
+        </View>
+        <View style={styles.barRight}>
+          {wallet && (
+            <Pressy onPress={() => router.navigate('/market')} style={styles.stars} accessibilityLabel={`${wallet.balance} Stars`}>
+              <PixelSparkle size={11} color={ink.accent} />
+              <Txt variant="label" color={ink.navy}>
+                {wallet.balance.toLocaleString()}
+              </Txt>
+            </Pressy>
+          )}
+          <IconButton icon="qr-code-outline" label="Scan a game QR code" size={36} onPress={() => router.push('/scan')} />
+        </View>
       </View>
 
-      {list.items === null ? (
-        <Loading />
-      ) : (
-        <FlatList
-          data={list.items}
-          keyExtractor={idOf}
-          renderItem={({ item }) => <GameCard game={item} />}
-          refreshControl={<RefreshControl refreshing={list.refreshing} onRefresh={list.refresh} tintColor={ink.fg} />}
-          onEndReached={list.loadMore}
-          onEndReachedThreshold={0.6}
-          contentContainerStyle={styles.list}
-          keyboardDismissMode="on-drag"
-          keyboardShouldPersistTaps="handled"
-          ListHeaderComponent={
-            list.error ? (
-              <Txt variant="meta" color={ink.danger} center>
-                {list.error}
-              </Txt>
-            ) : undefined
-          }
-          ListEmptyComponent={list.error ? undefined : <Empty {...empty} />}
-          ListFooterComponent={list.loadingMore ? <Loading style={{ marginTop: 0 }} /> : undefined}
-        />
-      )}
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={pull} tintColor={ink.accent} />}
+      >
+        <Pressy onPress={() => router.navigate('/search')} haptic={false} style={styles.search} accessibilityRole="search">
+          <Ionicons name="search" size={17} color={ink.muted} />
+          <Txt variant="body" color={ink.faint}>
+            Search games
+          </Txt>
+        </Pressy>
+
+        {shelves === null ? (
+          <HomeSkeleton width={width} card={card} />
+        ) : nothing ? (
+          <Empty
+            title={error ? "Couldn't load games" : 'No games yet'}
+            body={error ?? 'Make the first one.'}
+            action={error ? <Button label="Try again" size="sm" variant="outline" onPress={load} /> : <Button label="Make a game" size="md" onPress={() => router.navigate('/create')} />}
+          />
+        ) : (
+          <>
+            {featured && (
+              <View style={styles.pad}>
+                <FeaturedGame game={featured} width={width - PAD * 2} />
+              </View>
+            )}
+            {SHELVES.map((s) => {
+              const games = s.tab === 'trending' ? trending.slice(1) : shelves[s.tab];
+              if (!games?.length) return null;
+              return <Shelf key={s.tab} title={s.title} tab={s.tab} games={games} card={card} />;
+            })}
+            <CreateBanner />
+          </>
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
-function useDebounced<T>(value: T, ms: number): T {
-  const [v, setV] = useState(value);
-  useEffect(() => {
-    const t = setTimeout(() => setV(value), ms);
-    return () => clearTimeout(t);
-  }, [value, ms]);
-  return v;
+function Shelf({ title, tab, games, card }: { title: string; tab: FeedTab; games: FeedGame[]; card: number }) {
+  return (
+    <View style={styles.shelf}>
+      <View style={styles.shelfHead}>
+        <Txt variant="pixel" style={styles.shelfTitle}>
+          {title}
+        </Txt>
+        <Pressable hitSlop={10} onPress={() => router.navigate({ pathname: '/search', params: { sort: tab } })} style={styles.seeAll}>
+          <Txt variant="label" color={ink.accent}>
+            See all
+          </Txt>
+          <Ionicons name="chevron-forward" size={14} color={ink.accent} />
+        </Pressable>
+      </View>
+      <FlatList
+        horizontal
+        data={games}
+        keyExtractor={(g) => g.id}
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.shelfRow}
+        renderItem={({ item }) => <GameCard game={item} width={card} />}
+      />
+    </View>
+  );
+}
+
+/** Closing card: the way into Create. */
+function CreateBanner() {
+  return (
+    <Pressy onPress={() => router.navigate('/create')} haptic={false} style={styles.create}>
+      <View style={styles.createIcon}>
+        <Ionicons name="add" size={22} color={ink.accentFg} />
+      </View>
+      <View style={styles.flex}>
+        <Txt variant="heading" color={ink.navy}>
+          Make your own game
+        </Txt>
+        <Txt variant="meta" color={ink.navy}>
+          Describe it. Dreamsy builds it.
+        </Txt>
+      </View>
+      <Ionicons name="chevron-forward" size={18} color={ink.navy} />
+    </Pressy>
+  );
+}
+
+function HomeSkeleton({ width, card }: { width: number; card: number }) {
+  return (
+    <View>
+      <Skeleton style={{ marginHorizontal: PAD, height: Math.round((width - PAD * 2) * 0.62), borderRadius: radius.xl }} />
+      {[0, 1].map((i) => (
+        <View key={i} style={styles.shelf}>
+          <Skeleton style={{ marginHorizontal: PAD, width: 120, height: 14, borderRadius: 7 }} />
+          <View style={styles.shelfRow}>
+            {[0, 1, 2].map((j) => (
+              <Skeleton key={j} style={{ width: card, height: card, borderRadius: radius.md }} />
+            ))}
+          </View>
+        </View>
+      ))}
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: ink.bg },
-  top: { paddingHorizontal: 20, paddingBottom: 6, gap: 12 },
-  search: { minHeight: 46 },
-  list: { padding: 20, paddingTop: 10, gap: 18 },
+  bar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: PAD, height: 52, gap: 10 },
+  avatarStub: { width: 34, height: 34, borderRadius: 17, backgroundColor: ink.sky },
+  logo: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  word: { fontSize: 22, letterSpacing: -1, color: ink.navy },
+  barRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  stars: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 30, paddingHorizontal: 10, borderRadius: radius.pill, backgroundColor: ink.card },
+  content: { paddingBottom: 32 },
+  search: { flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: PAD, marginTop: 4, marginBottom: 16, paddingHorizontal: 14, height: 44, borderRadius: radius.md, backgroundColor: ink.card },
+  pad: { paddingHorizontal: PAD },
+  shelf: { marginTop: 26, gap: 12 },
+  shelfHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: PAD },
+  shelfTitle: { fontSize: 18 },
+  seeAll: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  shelfRow: { flexDirection: 'row', gap: 12, paddingHorizontal: PAD },
+  create: { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: PAD, marginTop: 30, padding: 16, borderRadius: radius.lg, backgroundColor: ink.wash },
+  createIcon: { width: 40, height: 40, borderRadius: radius.sm, backgroundColor: ink.accent, alignItems: 'center', justifyContent: 'center' },
+  flex: { flex: 1 },
 });

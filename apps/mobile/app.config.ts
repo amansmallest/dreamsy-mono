@@ -36,10 +36,17 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     // Google sign-in runs through Supabase OAuth in the system auth sheet (src/auth/supabase.ts).
     'expo-web-browser',
     [
+      'expo-camera',
+      {
+        cameraPermission: 'Dreamsy uses the camera to scan QR codes for games from the dashboard and share links.',
+        microphonePermission: false,
+        recordAudioAndroid: false,
+      },
+    ],
+    [
       'expo-image-picker',
       {
         photosPermission: 'Dreamsy uses your photos as reference images for the games you create.',
-        cameraPermission: false,
         microphonePermission: false,
       },
     ],

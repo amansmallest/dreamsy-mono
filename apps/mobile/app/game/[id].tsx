@@ -39,8 +39,8 @@ import { PublishSheet } from '@/components/PublishSheet';
 import { VersionsSheet } from '@/components/VersionsSheet';
 import { useGenerationProgress } from '@/generationProgress';
 import { shareGame } from '@/social';
-import { errorMessage, font, ink, radius, stroke } from '@/theme';
-import { Card, Chip, Empty, InkButton, Loading, Sparkle, Txt } from '@/ui';
+import { errorMessage, floating, font, hairline, ink, radius } from '@/theme';
+import { Button as InkButton, Card, Chip, Empty, Loading, Sparkle, Txt } from '@/ui';
 
 const MAX_IMAGES = 8; // API limit per generation
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // API upload limit
@@ -276,7 +276,7 @@ export default function GameWorkspaceScreen() {
       void loadQuota();
     } catch (e) {
       if (e instanceof ApiError && e.status === 409) {
-        setComposerError('Already building something for this game. Wait for it to finish, or cancel it.');
+        setComposerError('A build is already running. Wait for it or stop it.');
         await attachToActive(activeGenerationIdFrom(e));
       } else if (e instanceof ApiError && e.status === 429) {
         const q = quotaFrom(e);
@@ -332,7 +332,7 @@ export default function GameWorkspaceScreen() {
   // ---------- versions sheet ----------
 
   const restore = (version: number) => {
-    Alert.alert(`Restore version ${version}?`, 'This makes a new version with that game. Nothing is lost.', [
+    Alert.alert(`Restore version ${version}?`, 'Saved as a new version. Nothing is lost.', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Restore',
@@ -401,7 +401,7 @@ export default function GameWorkspaceScreen() {
               hitSlop={8}
               style={styles.headerIcon}
             >
-              <Ionicons name="time-outline" size={20} color={ink.fg} />
+              <Ionicons name="time-outline" size={19} color={ink.navy} />
             </Pressable>
           ),
         }}
@@ -467,14 +467,14 @@ export default function GameWorkspaceScreen() {
             What are we making?
           </Txt>
           <Txt variant="body" muted center>
-            Say it like you'd tell a friend. Add pictures for the look you want.
+            Describe it in a sentence. Add pictures for the look.
           </Txt>
           {STARTERS.map((s) => (
             <Card key={s} onPress={() => setPrompt(s)} style={styles.starter} accessibilityLabel={s}>
               <Txt variant="body" style={styles.flex}>
                 {s}
               </Txt>
-              <Ionicons name="arrow-down" size={16} color={ink.fg} />
+              <Ionicons name="arrow-down" size={16} color={ink.accent} />
             </Card>
           ))}
         </ScrollView>
@@ -560,14 +560,14 @@ export default function GameWorkspaceScreen() {
             hitSlop={6}
             style={[styles.circle, { opacity: sending || attachments.length >= MAX_IMAGES ? 0.4 : 1 }]}
           >
-            <Ionicons name="image-outline" size={19} color={ink.fg} />
+            <Ionicons name="image-outline" size={19} color={ink.navy} />
           </Pressable>
           <TextInput
             value={prompt}
             onChangeText={setPrompt}
-            placeholder={active ? 'Claude is building… type your next idea' : game.latestVersion ? 'What should change?' : 'Describe your game'}
+            placeholder={active ? 'Next idea' : game.latestVersion ? 'What should change?' : 'Describe your game'}
             placeholderTextColor={ink.muted}
-            selectionColor={ink.fg}
+            selectionColor={ink.accent}
             multiline
             maxLength={60000}
             style={styles.input}
@@ -636,7 +636,7 @@ function RenameDialog({ visible, initial, onDone }: { visible: boolean; initial:
             maxLength={80}
             returnKeyType="done"
             onSubmitEditing={() => onDone(value)}
-            selectionColor={ink.fg}
+            selectionColor={ink.accent}
             style={styles.dialogInput}
           />
           <View style={styles.dialogActions}>
@@ -680,47 +680,36 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6, maxWidth: 230 },
   headerTitle: { flexShrink: 1 },
-  headerIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    borderWidth: stroke.base,
-    borderColor: ink.fg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: ink.card,
-  },
-  top: { paddingHorizontal: 16, paddingTop: 6, paddingBottom: 10, gap: 10, borderBottomWidth: stroke.base, borderBottomColor: ink.fg },
+  headerIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: ink.wash },
+  top: { paddingHorizontal: 12, paddingTop: 6, paddingBottom: 12, gap: 10, backgroundColor: ink.card, borderBottomWidth: hairline, borderBottomColor: ink.border },
   playPill: {
     position: 'absolute',
-    top: 18,
-    left: 28,
+    top: 16,
+    left: 22,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: ink.fg,
+    backgroundColor: 'rgba(13,42,102,0.82)',
     borderRadius: radius.pill,
-    borderWidth: stroke.base,
-    borderColor: ink.card,
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
-  statusRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  statusRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, paddingHorizontal: 4 },
   status: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 },
-  statusDot: { width: 10, height: 10, borderRadius: 5, borderWidth: stroke.base, borderColor: ink.fg },
-  statusDotLive: { backgroundColor: ink.ok, borderColor: ink.ok },
-  toast: { position: 'absolute', top: 16, left: 24, right: 24, borderRadius: radius.pill, backgroundColor: ink.fg },
+  statusDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: ink.faint },
+  statusDotLive: { backgroundColor: ink.ok },
+  toast: { position: 'absolute', top: 14, left: 22, right: 22, borderRadius: radius.pill, backgroundColor: ink.navy, ...floating },
   toastInner: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingVertical: 10 },
   starters: { padding: 20, gap: 10, alignItems: 'stretch' },
   marks: { flexDirection: 'row', gap: 4, alignSelf: 'center' },
   starter: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 12 },
-  timeline: { padding: 16, gap: 18 },
+  timeline: { paddingHorizontal: 12, paddingVertical: 16, gap: 16 },
   system: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  systemLine: { flex: 1, height: 1.5, backgroundColor: ink.border },
-  composer: { borderTopWidth: stroke.base, borderTopColor: ink.fg, backgroundColor: ink.bg, paddingHorizontal: 12, paddingTop: 10, gap: 8 },
+  systemLine: { flex: 1, height: hairline, backgroundColor: ink.border },
+  composer: { borderTopWidth: hairline, borderTopColor: ink.border, backgroundColor: ink.card, paddingHorizontal: 12, paddingTop: 10, gap: 8 },
   chips: { gap: 8 },
   thumbs: { gap: 10, paddingTop: 6, paddingRight: 6 },
-  thumb: { width: 56, height: 56, borderRadius: 12, borderWidth: stroke.thin, borderColor: ink.fg },
+  thumb: { width: 56, height: 56, borderRadius: radius.sm, borderWidth: hairline, borderColor: ink.border },
   thumbRemove: {
     position: 'absolute',
     top: -6,
@@ -728,22 +717,13 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: ink.fg,
+    backgroundColor: ink.navy,
     alignItems: 'center',
     justifyContent: 'center',
   },
   inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
-  circle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: stroke.base,
-    borderColor: ink.fg,
-    backgroundColor: ink.card,
-  },
-  send: { backgroundColor: ink.fg },
+  circle: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: ink.wash, marginBottom: 2 },
+  send: { backgroundColor: ink.accent },
   input: {
     flex: 1,
     minHeight: 44,
@@ -753,22 +733,18 @@ const styles = StyleSheet.create({
     paddingTop: 11,
     paddingBottom: 11,
     fontSize: 16,
-    fontFamily: font.medium,
+    fontFamily: font.body,
     color: ink.fg,
-    backgroundColor: ink.card,
-    borderWidth: stroke.base,
-    borderColor: ink.fg,
+    backgroundColor: ink.bg,
   },
-  backdrop: { flex: 1, backgroundColor: 'rgba(20,20,20,0.45)', justifyContent: 'center', padding: 24 },
-  dialog: { padding: 18, gap: 12 },
+  backdrop: { flex: 1, backgroundColor: 'rgba(13,42,102,0.35)', justifyContent: 'center', padding: 24 },
+  dialog: { padding: 18, gap: 12, borderRadius: radius.xl, ...floating },
   dialogInput: {
-    borderWidth: stroke.base,
-    borderColor: ink.fg,
     borderRadius: radius.md,
     paddingHorizontal: 14,
     height: 50,
     fontSize: 16,
-    fontFamily: font.medium,
+    fontFamily: font.body,
     color: ink.fg,
     backgroundColor: ink.bg,
   },

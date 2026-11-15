@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
@@ -15,24 +16,24 @@ import {
 import { api, ApiError, type FeedGame, type UserProfile } from '../api';
 import { useAuth } from '../auth';
 import { compact } from '../social';
-import { errorMessage, ink } from '../theme';
-import { Card, Empty, Field, InkButton, Loading, ProgressBar, RoundButton, Txt } from '../ui';
-import { AvatarHero } from './AvatarMaker';
-import { GameTile } from './GameCard';
+import { errorMessage, hairline, ink, radius } from '../theme';
+import { Button, Empty, Field, Loading, ProgressBar, Txt } from '../ui';
+import { Avatar } from './Avatar';
+import { GameCard } from './GameCard';
 
 const HANDLE_RE = /^[a-z0-9_]{3,20}$/;
 const GAP = 12;
-const PAD = 20;
+const PAD = 16;
 
 /**
- * A creator's profile: handle, bio, stats, follow (others) or edit (self), published games grid.
- * `header`/`footer` slot in screen-specific sections (the Profile tab's wallet, sign out).
+ * Instagram-style profile: avatar + stats, name/bio, level, actions, 3-column game grid.
+ * `header` slots in under the actions (the Me tab's Stars wallet); `footer` goes after the grid.
  */
 export function ProfileView({ userId, header, footer, onRefresh }: { userId: string; header?: ReactNode; footer?: ReactNode; onRefresh?: () => Promise<void> }) {
   const { user: me, updateUser } = useAuth();
   const isSelf = me?.id === userId;
   const { width } = useWindowDimensions();
-  const tileW = (width - PAD * 2 - GAP) / 2;
+  const tile = (width - PAD * 2 - GAP) / 2;
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [games, setGames] = useState<FeedGame[] | null>(null);
@@ -121,83 +122,75 @@ export function ProfileView({ userId, header, footer, onRefresh }: { userId: str
   if (!profile) {
     return (
       <View style={styles.center}>
-        {error ? (
-          <Empty title="Couldn't load" body={error} action={<InkButton label="Try again" size="sm" variant="outline" onPress={load} />} />
-        ) : (
-          <Loading />
-        )}
+        {error ? <Empty title="Couldn't load" body={error} action={<Button label="Try again" size="sm" variant="outline" onPress={load} />} /> : <Loading />}
       </View>
     );
   }
 
   const u = profile.user;
-  const avatar = isSelf ? (me?.avatar ?? u.avatar) : u.avatar;
+  const avatarUser = { id: u.id, avatar: isSelf ? (me?.avatar ?? u.avatar) : u.avatar };
   const lvl = levelOf(profile.stats);
 
   return (
     <ScrollView
       style={styles.scroll}
       contentContainerStyle={styles.content}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={pull} tintColor={ink.fg} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={pull} tintColor={ink.accent} />}
     >
-      <View style={styles.head}>
-        <Pressable disabled={!isSelf} onPress={() => router.push('/avatar')} accessibilityLabel="Edit avatar">
-          <AvatarHero avatar={avatar} seed={u.id} size={190} />
+      <View style={styles.top}>
+        <Pressable disabled={!isSelf} onPress={() => router.push('/avatar')} accessibilityLabel="Edit avatar" style={styles.avatarWrap}>
+          <Avatar user={avatarUser} size={88} />
+          {isSelf && (
+            <View style={styles.avatarPlus}>
+              <Ionicons name="add" size={14} color={ink.accentFg} />
+            </View>
+          )}
         </Pressable>
-        <Txt variant="display" center numberOfLines={1}>
-          @{u.handle}
-        </Txt>
-        <Txt variant="heading" center>
-          lv. {lvl.level} <Txt variant="meta" muted>({compact(lvl.exp)} exp)</Txt>
-        </Txt>
-        {!!u.bio && (
-          <Txt variant="body" muted center style={styles.bio}>
-            {u.bio}
+        <View style={styles.stats}>
+          <Stat value={profile.stats.games} label="games" />
+          <Stat value={profile.stats.plays} label="plays" />
+          <Stat value={profile.stats.followers} label="fans" />
+          <Stat value={profile.stats.following} label="following" />
+        </View>
+      </View>
+
+      <View style={styles.about}>
+        <Txt variant="heading">@{u.handle}</Txt>
+        {!!u.bio && <Txt variant="body">{u.bio}</Txt>}
+        <View style={styles.level}>
+          <Txt variant="badge" color={ink.navy}>
+            lv {lvl.level}
           </Txt>
+          <ProgressBar value={lvl.progress} height={6} style={styles.flex} />
+          <Txt variant="meta" muted>
+            {compact(lvl.exp)} / {compact(lvl.to)} exp
+          </Txt>
+        </View>
+      </View>
+
+      <View style={styles.actions}>
+        {isSelf ? (
+          <>
+            <Button label="Edit profile" variant="outline" size="sm" onPress={() => setEditing(true)} style={styles.flex} />
+            <Button label="Edit avatar" variant="outline" size="sm" onPress={() => router.push('/avatar')} style={styles.flex} />
+          </>
+        ) : (
+          <Button
+            label={profile.viewer.following ? 'Following' : 'Follow'}
+            variant={profile.viewer.following ? 'outline' : 'solid'}
+            size="sm"
+            onPress={toggleFollow}
+            style={styles.flex}
+          />
         )}
       </View>
 
-      <View style={styles.levelBlock}>
-        <ProgressBar value={lvl.progress} height={20} />
-        <View style={styles.levelEnds}>
-          <Txt variant="meta" muted>
-            {compact(lvl.from)} exp
-          </Txt>
-          <Txt variant="meta" muted>
-            {compact(lvl.to)} exp
-          </Txt>
-        </View>
-      </View>
+      {header && <View style={styles.slot}>{header}</View>}
 
-      {isSelf ? (
-        <View style={styles.actionsRow}>
-          <RoundButton icon="pencil" label="Edit name and bio" onPress={() => setEditing(true)} />
-          <RoundButton icon="shirt-outline" label="Edit avatar" onPress={() => router.push('/avatar')} />
-          <RoundButton icon="add" filled label="Make a game" onPress={() => router.navigate('/create')} />
-        </View>
-      ) : (
-        <InkButton
-          label={profile.viewer.following ? 'Following' : 'Follow'}
-          variant={profile.viewer.following ? 'outline' : 'solid'}
-          icon={profile.viewer.following ? 'checkmark' : 'add'}
-          sparkles={!profile.viewer.following}
-          onPress={toggleFollow}
-        />
-      )}
-
-      <Card style={styles.stats}>
-        <Stat value={profile.stats.games} label="games" />
-        <Stat value={profile.stats.plays} label="plays" />
-        <Stat value={profile.stats.likes} label="likes" />
-        <Stat value={profile.stats.followers} label="fans" />
-        <Stat value={profile.stats.following} label="follows" last />
-      </Card>
-
-      {header}
-
-      <Txt variant="label" muted>
-        {isSelf ? 'My published games' : 'Games'}
+      <Txt variant="pixel" style={styles.section}>
+        Creations
       </Txt>
+
       {error && (
         <Txt variant="meta" color={ink.danger} center>
           {error}
@@ -207,23 +200,22 @@ export function ProfileView({ userId, header, footer, onRefresh }: { userId: str
         <Loading />
       ) : games.length === 0 ? (
         <Empty
-          title="No games yet"
-          body={isSelf ? 'Publish a game from Make and it shows up here.' : 'Nothing published yet.'}
+          title={isSelf ? 'Share your first game' : 'No games yet'}
+          body={isSelf ? 'Published games show up here.' : undefined}
+          action={isSelf ? <Button label="Make a game" size="md" onPress={() => router.navigate('/create')} /> : undefined}
         />
       ) : (
         <View style={styles.grid}>
           {games.map((g) => (
-            <GameTile key={g.id} game={g} width={tileW} />
+            <GameCard key={g.id} game={g} width={tile} />
           ))}
         </View>
       )}
-      {next && <InkButton label="Show more" size="sm" variant="outline" busy={moreBusy} onPress={loadMore} style={styles.more} />}
+      {next && <Button label="Show more" size="sm" variant="ghost" busy={moreBusy} onPress={loadMore} style={styles.more} />}
 
-      {footer}
+      {footer && <View style={styles.slot}>{footer}</View>}
 
-      {isSelf && (
-        <EditProfileDialog visible={editing} handle={u.handle} bio={u.bio ?? ''} onCancel={() => setEditing(false)} onSave={save} />
-      )}
+      {isSelf && <EditProfileDialog visible={editing} handle={u.handle} bio={u.bio ?? ''} onCancel={() => setEditing(false)} onSave={save} />}
     </ScrollView>
   );
 }
@@ -234,16 +226,16 @@ function levelOf(stats: UserProfile['stats']) {
   const level = Math.floor(Math.sqrt(exp / 100)) + 1;
   const from = 100 * (level - 1) ** 2;
   const to = 100 * level ** 2;
-  return { exp, level, from, to, progress: (exp - from) / (to - from) };
+  return { exp, level, to, progress: (exp - from) / (to - from) };
 }
 
-function Stat({ value, label, last }: { value: number; label: string; last?: boolean }) {
+function Stat({ value, label }: { value: number; label: string }) {
   return (
-    <View style={[styles.stat, !last && styles.statDivider]}>
-      <Txt variant="heading">{compact(value)}</Txt>
-      <Txt variant="label" muted>
-        {label}
+    <View style={styles.stat}>
+      <Txt variant="pixel" style={styles.statValue}>
+        {compact(value)}
       </Txt>
+      <Txt variant="meta">{label}</Txt>
     </View>
   );
 }
@@ -290,61 +282,75 @@ function EditProfileDialog({
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
-      <KeyboardAvoidingView style={styles.backdrop} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <Card style={styles.dialog}>
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onCancel}>
+      <KeyboardAvoidingView style={styles.sheet} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <View style={styles.sheetBar}>
+          <Pressable onPress={onCancel} hitSlop={10}>
+            <Txt variant="body">Cancel</Txt>
+          </Pressable>
           <Txt variant="pixel">Edit profile</Txt>
+          <Pressable onPress={submit} disabled={!valid || busy} hitSlop={10}>
+            <Txt variant="heading" color={valid && !busy ? ink.accent : ink.faint}>
+              Done
+            </Txt>
+          </Pressable>
+        </View>
+        <View style={styles.sheetBody}>
           <Txt variant="label" muted>
             Handle
           </Txt>
-          <Field
-            prefix="@"
-            value={handle}
-            onChangeText={(t) => setHandle(t.toLowerCase())}
-            autoCapitalize="none"
-            autoCorrect={false}
-            maxLength={20}
-          />
-          {!valid && (
+          <Field prefix="@" value={handle} onChangeText={(t) => setHandle(t.toLowerCase())} autoCapitalize="none" autoCorrect={false} maxLength={20} />
+          {!!h && !valid && (
             <Txt variant="meta" muted>
-              3–20 characters: a–z, 0–9, underscore.
+              3–20 characters: a–z, 0–9, underscore
             </Txt>
           )}
-          <Txt variant="label" muted>
+          <Txt variant="label" muted style={{ marginTop: 8 }}>
             Bio
           </Txt>
-          <Field value={bio} onChangeText={setBio} multiline maxLength={160} placeholder="A line about you and your games" />
+          <Field value={bio} onChangeText={setBio} multiline maxLength={160} />
           {error && (
             <Txt variant="meta" color={ink.danger}>
               {error}
             </Txt>
           )}
-          <View style={styles.dialogActions}>
-            <InkButton label="Cancel" variant="outline" size="md" onPress={onCancel} style={styles.flex} />
-            <InkButton label="Save" size="md" busy={busy} disabled={!valid} onPress={submit} style={styles.flex} />
-          </View>
-        </Card>
+        </View>
       </KeyboardAvoidingView>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: ink.bg },
-  scroll: { backgroundColor: ink.bg },
-  content: { padding: PAD, gap: 18, paddingBottom: 48 },
-  head: { alignItems: 'center', gap: 4 },
-  bio: { marginHorizontal: 16, marginTop: 4 },
-  levelBlock: { gap: 6 },
-  levelEnds: { flexDirection: 'row', justifyContent: 'space-between' },
-  actionsRow: { flexDirection: 'row', justifyContent: 'center', gap: 22 },
-  stats: { flexDirection: 'row', paddingVertical: 12 },
-  stat: { flex: 1, alignItems: 'center', gap: 2 },
-  statDivider: { borderRightWidth: 1.5, borderRightColor: ink.border },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: GAP },
-  more: { alignSelf: 'center' },
-  backdrop: { flex: 1, backgroundColor: 'rgba(20,20,20,0.45)', justifyContent: 'center', padding: 24 },
-  dialog: { padding: 18, gap: 10 },
-  dialogActions: { flexDirection: 'row', gap: 10, marginTop: 8 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: ink.card },
+  scroll: { backgroundColor: ink.card },
+  content: { paddingBottom: 40 },
+  top: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 8, gap: 16 },
+  avatarWrap: { width: 88, height: 88 },
+  avatarPlus: {
+    position: 'absolute',
+    right: 0,
+    bottom: 0,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: ink.accent,
+    borderWidth: 3,
+    borderColor: ink.card,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stats: { flex: 1, flexDirection: 'row', justifyContent: 'space-between' },
+  stat: { alignItems: 'center', gap: 1 },
+  statValue: { fontSize: 18 },
+  about: { paddingHorizontal: 16, paddingTop: 12, gap: 4 },
+  level: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8 },
   flex: { flex: 1 },
+  actions: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingTop: 14 },
+  slot: { paddingHorizontal: 16, paddingTop: 14 },
+  section: { fontSize: 18, paddingHorizontal: PAD, marginTop: 24, marginBottom: 12 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: GAP, rowGap: 18, paddingHorizontal: PAD },
+  more: { alignSelf: 'center', marginTop: 8 },
+  sheet: { flex: 1, backgroundColor: ink.card },
+  sheetBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, height: 56, borderBottomWidth: hairline, borderBottomColor: ink.border },
+  sheetBody: { padding: 16, gap: 8 },
 });

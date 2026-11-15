@@ -3,8 +3,8 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { isAppleSignInAvailable, isSupabaseConfigured, SignInCancelled, useAuth } from '@/auth';
 import { AvatarHero } from '@/components/AvatarMaker';
-import { ink } from '@/theme';
-import { Field, InkButton, Txt } from '@/ui';
+import { hairline, ink } from '@/theme';
+import { Button as InkButton, Field, PixelSky, Sparkle, Txt } from '@/ui';
 
 type Busy = 'send' | 'verify' | 'google' | 'apple' | 'guest';
 
@@ -66,14 +66,13 @@ export default function SignInScreen() {
 
   return (
     <SafeAreaView style={styles.screen}>
+      <PixelSky dense style={styles.sky} />
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
           <View style={styles.top}>
-            <Txt variant="pixel" center>
-              Dreamsy
-            </Txt>
-            <Txt variant="meta" muted center>
-              make games by talking
+            <Sparkle size={14} color={ink.navy} />
+            <Txt variant="title" color={ink.navy} style={styles.logo}>
+              dreamsy
             </Txt>
           </View>
 
@@ -84,8 +83,8 @@ export default function SignInScreen() {
             </Txt>
             <Txt variant="body" muted center style={styles.subtitle}>
               {sentTo
-                ? `We sent a code to ${sentTo}. Type it in below.`
-                : 'Describe a game and Dreamsy builds it. Play, spin off and share what others dreamed up.'}
+                ? `Code sent to ${sentTo}.`
+                : 'Describe a game. Dreamsy builds it.'}
             </Txt>
           </View>
 
@@ -110,7 +109,7 @@ export default function SignInScreen() {
                   </Txt>
                 </Pressable>
                 <Pressable hitSlop={8} onPress={() => void send()} disabled={!!busy || resendIn > 0}>
-                  <Txt variant="label" color={resendIn > 0 ? ink.muted : ink.fg}>
+                  <Txt variant="label" color={resendIn > 0 ? ink.muted : ink.accent}>
                     {busy === 'send' ? 'Sending…' : resendIn > 0 ? `Resend in ${resendIn}s` : 'Resend code'}
                   </Txt>
                 </Pressable>
@@ -183,7 +182,7 @@ export default function SignInScreen() {
               style={({ pressed }) => [styles.guest, { opacity: pressed || busy ? 0.5 : 1 }]}
             >
               <Txt variant="label" muted>
-                {busy === 'guest' ? 'One sec…' : 'Just look around as a guest'}
+                {busy === 'guest' ? 'One sec…' : 'Look around first'}
               </Txt>
             </Pressable>
           )}
@@ -194,18 +193,20 @@ export default function SignInScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: ink.bg },
+  screen: { flex: 1, backgroundColor: ink.card },
+  sky: { position: 'absolute', top: 0, left: 0, right: 0, height: '52%' },
   flex: { flex: 1 },
   scroll: { flexGrow: 1, paddingHorizontal: 24, paddingBottom: 12 },
-  top: { paddingTop: 12, gap: 2 },
+  top: { paddingTop: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
+  logo: { fontSize: 22 },
   hero: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 16 },
-  title: { fontSize: 38, lineHeight: 42, marginTop: 4 },
+  title: { fontSize: 38, lineHeight: 42, marginTop: 4, color: ink.navy },
   subtitle: { maxWidth: 320 },
   form: { gap: 12 },
   code: { minHeight: 58 },
   row: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 4, paddingTop: 2 },
   or: { flexDirection: 'row', alignItems: 'center', gap: 10, marginVertical: 2 },
-  orLine: { flex: 1, height: 1.5, backgroundColor: ink.border },
+  orLine: { flex: 1, height: hairline, backgroundColor: ink.border },
   error: { marginTop: 12 },
   guest: { height: 44, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
 });

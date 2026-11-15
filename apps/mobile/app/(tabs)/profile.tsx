@@ -1,12 +1,13 @@
-import { useFocusEffect } from 'expo-router';
-import { useCallback } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { ActionSheetIOS, Alert, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { LedgerEntry } from '@/api';
 import { useAuth } from '@/auth';
 import { ProfileView } from '@/components/ProfileView';
-import { ink } from '@/theme';
-import { Card, Header, InkButton, Sparkle, Txt } from '@/ui';
+import { ink, radius } from '@/theme';
+import { IconButton, PixelSparkle, Txt } from '@/ui';
 import { useWallet } from '@/wallet';
 
 const KIND_LABEL: Record<string, string> = {
@@ -20,12 +21,12 @@ const describe = (e: LedgerEntry) => {
   return e.itemId ? `${kind} · ${e.itemId}` : kind;
 };
 
-/** Own profile: avatar hero + level, games, Stars wallet + recent ledger. */
+/** Me: handle bar with a menu, Instagram profile, Stars wallet. */
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
   const { wallet, recent, error, refresh } = useWallet();
+  const [open, setOpen] = useState(false);
 
-  // Refetch whenever the tab comes into view; in-game purchases also trigger a refetch (walletChanged).
   useFocusEffect(
     useCallback(() => {
       void refresh();
@@ -40,55 +41,74 @@ export default function ProfileScreen() {
       { text: 'Sign out', style: 'destructive', onPress: () => void signOut() },
     ]);
 
+  const menu = () => {
+    const items = ['Edit avatar', 'Scan a game', 'Sign out'];
+    const pick = (i: number) => (i === 0 ? router.push('/avatar') : i === 1 ? router.push('/scan') : confirmSignOut());
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions({ options: [...items, 'Cancel'], cancelButtonIndex: 3, destructiveButtonIndex: 2 }, (i) => i < 3 && pick(i));
+    } else {
+      Alert.alert('Menu', undefined, [...items.map((t, i) => ({ text: t, onPress: () => pick(i) })), { text: 'Cancel', style: 'cancel' as const }]);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
-      <Header title="Me" subtitle="lvl up ↑" />
+      <View style={styles.bar}>
+        <Txt variant="title" numberOfLines={1} style={styles.handle}>
+          {user.handle}
+        </Txt>
+        <IconButton icon="menu-outline" label="Menu" onPress={menu} />
+      </View>
       <ProfileView
         userId={user.id}
         onRefresh={refresh}
         header={
-          <Card style={styles.wallet}>
-            <View style={styles.walletTop}>
-              <Sparkle size={18} />
-              <Txt variant="label" muted>
-                Stars
-              </Txt>
-            </View>
-            <Txt variant="display">{wallet ? wallet.balance : '–'}</Txt>
-            {error && (
-              <Txt variant="meta" color={ink.danger}>
-                {error}
-              </Txt>
-            )}
-            {recent.slice(0, 5).map((item, i) => (
-              <View key={`${item.createdAt}-${i}`} style={styles.row}>
-                <View style={styles.rowMain}>
-                  <Txt variant="body" numberOfLines={1}>
-                    {describe(item)}
+          <Pressable onPress={() => setOpen((o) => !o)} style={styles.wallet} accessibilityRole="button" accessibilityLabel="Stars">
+            <View style={styles.walletRow}>
+              <View style={styles.star}>
+                <PixelSparkle size={14} color={ink.accentFg} />
+              </View>
+              <View style={styles.flex}>
+                <Txt variant="pixel">{wallet ? wallet.balance.toLocaleString() : '–'} Stars</Txt>
+                {error && (
+                  <Txt variant="meta" color={ink.danger}>
+                    {error}
                   </Txt>
-                  <Txt variant="meta" muted>
-                    {new Date(item.createdAt).toLocaleDateString()}
+                )}
+              </View>
+              {recent.length > 0 && <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={18} color={ink.muted} />}
+            </View>
+            {open &&
+              recent.slice(0, 6).map((item, i) => (
+                <View key={`${item.createdAt}-${i}`} style={styles.ledger}>
+                  <View style={styles.flex}>
+                    <Txt variant="body" numberOfLines={1}>
+                      {describe(item)}
+                    </Txt>
+                    <Txt variant="meta" muted>
+                      {new Date(item.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                    </Txt>
+                  </View>
+                  <Txt variant="heading" color={item.delta < 0 ? ink.fg : ink.ok}>
+                    {item.delta > 0 ? '+' : ''}
+                    {item.delta}
                   </Txt>
                 </View>
-                <Txt variant="heading" color={item.delta < 0 ? ink.fg : ink.ok}>
-                  {item.delta > 0 ? '+' : ''}
-                  {item.delta}
-                </Txt>
-              </View>
-            ))}
-          </Card>
+              ))}
+          </Pressable>
         }
-        footer={<InkButton label="Sign out" variant="outline" size="md" icon="log-out-outline" onPress={confirmSignOut} style={styles.signOut} />}
       />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: ink.bg },
-  wallet: { padding: 16, gap: 6 },
-  walletTop: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderTopWidth: 1.5, borderTopColor: ink.border },
-  rowMain: { flex: 1, gap: 1 },
-  signOut: { marginTop: 12 },
+  screen: { flex: 1, backgroundColor: ink.card },
+  bar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, height: 48 },
+  handle: { flex: 1, fontSize: 22 },
+  wallet: { backgroundColor: ink.wash, borderRadius: radius.lg, padding: 12, gap: 8 },
+  walletRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  star: { width: 32, height: 32, borderRadius: 16, backgroundColor: ink.accent, alignItems: 'center', justifyContent: 'center' },
+  flex: { flex: 1 },
+  ledger: { flexDirection: 'row', alignItems: 'center', paddingTop: 8, borderTopWidth: 1, borderTopColor: ink.sky },
 });

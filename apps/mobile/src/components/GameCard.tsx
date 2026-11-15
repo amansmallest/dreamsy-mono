@@ -3,65 +3,99 @@ import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import type { FeedGame } from '../api';
 import { compact } from '../social';
-import { ink, stroke } from '../theme';
-import { Card, Chip, Txt } from '../ui';
+import { floating, ink, radius } from '../theme';
+import { Badge, Button, Chip, Pressy, Txt } from '../ui';
 import { Avatar } from './Avatar';
 import { Thumbnail } from './Thumbnail';
 
-export const openGame = (id: string) => router.push({ pathname: '/discover/[id]', params: { id } });
+export const openGame = (id: string, params: Record<string, string> = {}) =>
+  router.push({ pathname: '/discover/[id]', params: { id, ...params } });
 
-function Stats({ game, size = 12 }: { game: FeedGame; size?: number }) {
+const NEW_MS = 3 * 24 * 3600 * 1000;
+const isNew = (g: FeedGame) => !!g.publishedAt && Date.now() - new Date(g.publishedAt).getTime() < NEW_MS;
+
+/** Likes and plays, side by side. */
+export function GameStatsLine({ game, color = ink.muted }: { game: FeedGame; color?: string }) {
   return (
-    <View style={styles.stats}>
-      <Ionicons name="play" size={size} color={ink.fg} />
-      <Txt variant="meta">{compact(game.stats.plays)}</Txt>
-      <Ionicons name="heart" size={size} color={ink.fg} style={styles.statGap} />
-      <Txt variant="meta">{compact(game.stats.likes)}</Txt>
+    <View style={styles.statsLine}>
+      <Ionicons name="heart" size={11} color={color} />
+      <Txt variant="meta" color={color} style={styles.statText}>
+        {compact(game.stats.likes)}
+      </Txt>
+      <Ionicons name="play" size={11} color={color} style={styles.statGap} />
+      <Txt variant="meta" color={color} style={styles.statText}>
+        {compact(game.stats.plays)}
+      </Txt>
     </View>
   );
 }
 
-/** Full-width feed card. */
-export function GameCard({ game }: { game: FeedGame }) {
+/** Marketplace tile: square cover, name, likes and plays. Shelves and grids. */
+export function GameCard({ game, width }: { game: FeedGame; width: number }) {
   return (
-    <Card accessibilityLabel={`${game.name} by @${game.creator.handle}`} onPress={() => openGame(game.id)}>
-      <Thumbnail url={game.thumbnailUrl} seed={game.id} name={game.name} size="lg" style={styles.thumb} />
-      {game.orientation === 'portrait' && (
-        <View style={styles.orient}>
-          <Ionicons name="phone-portrait-outline" size={12} color={ink.fg} />
-        </View>
-      )}
-      <View style={styles.meta}>
-        <View style={styles.row}>
-          <Txt variant="heading" numberOfLines={1} style={styles.flex}>
-            {game.name}
-          </Txt>
-          <Stats game={game} />
-        </View>
-        <View style={styles.row}>
-          <Avatar user={game.creator} size={22} />
-          <Txt variant="meta" muted numberOfLines={1} style={styles.flex}>
-            @{game.creator.handle}
-          </Txt>
-        </View>
-        {game.remixOf && <RemixBadge name={game.remixOf.name} />}
+    <Pressy accessibilityRole="button" accessibilityLabel={game.name} onPress={() => openGame(game.id)} haptic={false} style={{ width, gap: 6 }}>
+      <View>
+        <Thumbnail url={game.thumbnailUrl} seed={game.id} name={game.name} style={[styles.cover, { width, height: width }]} />
+        {isNew(game) && <Badge label="new" tone="blue" style={styles.corner} />}
+        {game.orientation === 'portrait' && (
+          <View style={styles.portrait}>
+            <Ionicons name="phone-portrait-outline" size={11} color={ink.accentFg} />
+          </View>
+        )}
       </View>
-    </Card>
+      <Txt variant="heading" numberOfLines={2} style={styles.name}>
+        {game.name}
+      </Txt>
+      <GameStatsLine game={game} />
+    </Pressy>
   );
 }
 
-/** Compact grid tile (profiles). */
-export function GameTile({ game, width }: { game: FeedGame; width: number }) {
+/** The big banner at the top of Home. */
+export function FeaturedGame({ game, width }: { game: FeedGame; width: number }) {
+  const h = Math.round(width * 0.62);
   return (
-    <Card accessibilityLabel={game.name} onPress={() => openGame(game.id)} style={{ width }}>
-      <Thumbnail url={game.thumbnailUrl} seed={game.id} name={game.name} style={styles.tileThumb} />
-      <View style={styles.tileMeta}>
-        <Txt variant="heading" numberOfLines={1} style={styles.tileName}>
+    <Pressy accessibilityRole="button" accessibilityLabel={game.name} onPress={() => openGame(game.id)} haptic={false} style={[styles.featured, { width, height: h }]}>
+      <Thumbnail url={game.thumbnailUrl} seed={game.id} name={game.name} size="lg" style={StyleSheet.absoluteFill} />
+      <View style={styles.featuredShade} />
+      <Badge label="featured" tone="white" style={styles.corner} />
+      <View style={styles.featuredBottom}>
+        <View style={styles.flex}>
+          <Txt variant="title" color={ink.accentFg} numberOfLines={2}>
+            {game.name}
+          </Txt>
+          <View style={styles.featuredWho}>
+            <Avatar user={game.creator} size={18} />
+            <Txt variant="meta" color={ink.accentFg} numberOfLines={1} style={styles.flexShrink}>
+              @{game.creator.handle}
+            </Txt>
+            <GameStatsLine game={game} color={ink.accentFg} />
+          </View>
+        </View>
+        <Button label="Play" icon="play" size="md" onPress={() => openGame(game.id)} />
+      </View>
+    </Pressy>
+  );
+}
+
+/** List row: small cover, name, creator, stats. Search results. */
+export function GameRow({ game }: { game: FeedGame }) {
+  return (
+    <Pressy accessibilityRole="button" accessibilityLabel={game.name} onPress={() => openGame(game.id)} haptic={false} style={styles.row}>
+      <Thumbnail url={game.thumbnailUrl} seed={game.id} name={game.name} style={styles.rowThumb} />
+      <View style={styles.rowMain}>
+        <Txt variant="heading" numberOfLines={1}>
           {game.name}
         </Txt>
-        <Stats game={game} size={10} />
+        <Txt variant="meta" muted numberOfLines={1}>
+          @{game.creator.handle}
+        </Txt>
+        <GameStatsLine game={game} />
       </View>
-    </Card>
+      <View style={styles.rowPlay}>
+        <Ionicons name="play" size={16} color={ink.accentFg} style={{ marginLeft: 2 }} />
+      </View>
+    </Pressy>
   );
 }
 
@@ -69,24 +103,24 @@ export function RemixBadge({ name, onPress }: { name?: string; onPress?: () => v
   return <Chip icon="git-branch-outline" label={`Spin-off of ${name || 'another game'}`} onPress={onPress} />;
 }
 
+export { Badge };
+
 const styles = StyleSheet.create({
-  thumb: { aspectRatio: 16 / 10, borderBottomWidth: stroke.base, borderBottomColor: ink.fg },
-  orient: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    backgroundColor: ink.card,
-    borderWidth: stroke.thin,
-    borderColor: ink.fg,
-    borderRadius: 10,
-    padding: 4,
-  },
-  meta: { gap: 6, padding: 14 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   flex: { flex: 1 },
-  stats: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  statGap: { marginLeft: 6 },
-  tileThumb: { aspectRatio: 1, borderBottomWidth: stroke.base, borderBottomColor: ink.fg },
-  tileMeta: { padding: 10, gap: 4 },
-  tileName: { fontSize: 15 },
+  flexShrink: { flexShrink: 1 },
+  cover: { borderRadius: radius.md },
+  corner: { position: 'absolute', top: 8, left: 8 },
+  portrait: { position: 'absolute', bottom: 8, right: 8, width: 20, height: 20, borderRadius: 10, backgroundColor: 'rgba(13,42,102,0.55)', alignItems: 'center', justifyContent: 'center' },
+  name: { fontSize: 14, lineHeight: 18 },
+  statsLine: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  statText: { fontSize: 12 },
+  statGap: { marginLeft: 8 },
+  featured: { borderRadius: radius.xl, overflow: 'hidden', ...floating },
+  featuredShade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '60%', backgroundColor: 'rgba(13,42,102,0.45)' },
+  featuredBottom: { position: 'absolute', left: 16, right: 16, bottom: 16, flexDirection: 'row', alignItems: 'flex-end', gap: 12 },
+  featuredWho: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 8 },
+  rowThumb: { width: 64, height: 64, borderRadius: radius.md },
+  rowMain: { flex: 1, gap: 2 },
+  rowPlay: { width: 36, height: 36, borderRadius: 18, backgroundColor: ink.accent, alignItems: 'center', justifyContent: 'center' },
 });

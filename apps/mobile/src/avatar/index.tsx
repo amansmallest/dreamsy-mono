@@ -332,16 +332,15 @@ export const InkAvatar = memo(function InkAvatar({ avatar, seed, size = 36, fram
       <Svg width={size} height={size} viewBox="0 0 100 100">
         <Defs>
           <ClipPath id={clip}>
-            <Circle cx={50} cy={50} r={47} />
+            <Circle cx={50} cy={50} r={50} />
           </ClipPath>
         </Defs>
-        <Circle cx={50} cy={50} r={47} fill={ink.wash} />
+        <Circle cx={50} cy={50} r={50} fill={ink.sky} />
         <G clipPath={`url(#${clip})`}>
           <G transform="translate(6 12) scale(0.88)">
             <Bust a={a} />
           </G>
         </G>
-        <Circle cx={50} cy={50} r={47} fill="none" stroke={ink.fg} strokeWidth={size < 40 ? 6 : 4} />
       </Svg>
     </View>
   );

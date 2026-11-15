@@ -32,6 +32,18 @@ export function compact(n: number | undefined | null): string {
 }
 const trim = (x: number) => (x >= 100 ? Math.round(x).toString() : x.toFixed(1).replace(/\.0$/, ''));
 
+/** "now", "5m", "3h", "2d", "4w", then a short date. */
+export function timeAgo(iso: string | null | undefined): string {
+  if (!iso) return '';
+  const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+  if (s < 60) return 'now';
+  if (s < 3600) return `${Math.floor(s / 60)}m`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h`;
+  if (s < 86400 * 7) return `${Math.floor(s / 86400)}d`;
+  if (s < 86400 * 35) return `${Math.floor(s / (86400 * 7))}w`;
+  return new Date(iso).toLocaleDateString([], { month: 'short', day: 'numeric' });
+}
+
 /** Deterministic two-color gradient for a game without a thumbnail. */
 const PALETTE: [string, string][] = [
   ['#6a5af9', '#d66efd'],

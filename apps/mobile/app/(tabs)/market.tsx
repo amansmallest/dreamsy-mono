@@ -6,8 +6,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { absoluteApiUrl, api, type MarketItem, type MarketSort } from '@/api';
 import { openGame } from '@/components/GameCard';
 import { compact } from '@/social';
-import { ink, stroke } from '@/theme';
-import { Card, Empty, Header, Loading, Pills, Txt, type IconName } from '@/ui';
+import { ink, radius } from '@/theme';
+import { Badge, Empty, Header, Loading, Pills, PixelSky, PixelSparkle, Pressy, Txt, type IconName } from '@/ui';
 import { usePaged } from '@/usePaged';
 
 const SORTS: { value: MarketSort; label: string }[] = [
@@ -38,7 +38,7 @@ export default function MarketScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
-      <Header title="Shop" subtitle="items from the games" />
+      <Header title="Shop" />
       <View style={styles.top}>
         <Pills options={SORTS} value={sort} onChange={setSort} />
       </View>
@@ -48,7 +48,9 @@ export default function MarketScreen() {
         <FlatList
           data={list.items}
           keyExtractor={idOf}
-          refreshControl={<RefreshControl refreshing={list.refreshing} onRefresh={list.refresh} tintColor={ink.fg} />}
+          numColumns={2}
+          columnWrapperStyle={styles.cols}
+          refreshControl={<RefreshControl refreshing={list.refreshing} onRefresh={list.refresh} tintColor={ink.accent} />}
           onEndReached={list.loadMore}
           onEndReachedThreshold={0.6}
           contentContainerStyle={styles.list}
@@ -59,70 +61,70 @@ export default function MarketScreen() {
               </Txt>
             ) : undefined
           }
-          ListEmptyComponent={list.error ? undefined : <Empty title="Shelves are empty" body="Games with store items show up here." />}
+          ListEmptyComponent={list.error ? undefined : <Empty title="Nothing for sale yet" body="Items from games show up here." />}
           ListFooterComponent={list.loadingMore ? <Loading style={{ marginTop: 0 }} /> : undefined}
-          renderItem={({ item }) => <ItemRow item={item} />}
+          renderItem={({ item }) => <ItemCard item={item} />}
         />
       )}
     </SafeAreaView>
   );
 }
 
-function ItemRow({ item }: { item: MarketItem }) {
+function ItemCard({ item }: { item: MarketItem }) {
   const icon = absoluteApiUrl(item.iconUrl);
   return (
-    <Card
+    <Pressy
       accessibilityLabel={`${item.name}, ${item.price} Stars, in ${item.gameName}`}
       onPress={() => openGame(item.gameId)}
-      style={styles.row}
+      haptic={false}
+      style={styles.item}
     >
-      <View style={styles.icon}>
+      <View style={styles.art}>
+        <PixelSky style={StyleSheet.absoluteFill} />
         {icon ? (
           <Image source={{ uri: icon }} style={StyleSheet.absoluteFill} contentFit="cover" transition={120} />
         ) : (
-          <Ionicons name={KIND_ICON[item.kind] ?? 'pricetag-outline'} size={26} color={ink.fg} />
+          <View style={styles.iconBubble}>
+            <Ionicons name={KIND_ICON[item.kind] ?? 'pricetag-outline'} size={26} color={ink.navy} />
+          </View>
         )}
+        <Badge label={item.kind} tone="white" style={styles.kind} />
       </View>
-      <View style={styles.main}>
+      <View style={styles.meta}>
         <Txt variant="heading" numberOfLines={1}>
           {item.name}
         </Txt>
         <Txt variant="meta" muted numberOfLines={1}>
           {item.gameName}
-          {item.sales > 0 ? ` · ${compact(item.sales)} sold` : ''}
         </Txt>
-        {!!item.description && (
-          <Txt variant="meta" muted numberOfLines={1}>
-            {item.description}
-          </Txt>
-        )}
+        <View style={styles.priceRow}>
+          <View style={styles.price}>
+            <PixelSparkle size={10} color={ink.accentFg} />
+            <Txt variant="label" color={ink.accentFg}>
+              {item.price}
+            </Txt>
+          </View>
+          {item.sales > 0 && (
+            <Txt variant="meta" muted>
+              {compact(item.sales)} sold
+            </Txt>
+          )}
+        </View>
       </View>
-      <View style={styles.price}>
-        <Txt variant="pixel" color={ink.accentFg} style={styles.priceText}>
-          ★ {item.price}
-        </Txt>
-      </View>
-    </Card>
+    </Pressy>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: ink.bg },
-  top: { paddingHorizontal: 20, paddingBottom: 6 },
-  list: { padding: 20, paddingTop: 10, gap: 12 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12 },
-  icon: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    borderWidth: stroke.base,
-    borderColor: ink.fg,
-    backgroundColor: ink.wash,
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  main: { flex: 1, gap: 2 },
-  price: { borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7, backgroundColor: ink.fg },
-  priceText: { fontSize: 12 },
+  top: { paddingHorizontal: 16, paddingBottom: 8 },
+  list: { padding: 16, paddingTop: 4, gap: 12 },
+  cols: { gap: 12 },
+  item: { flex: 1, backgroundColor: ink.card, borderRadius: radius.lg, overflow: 'hidden' },
+  art: { aspectRatio: 1, alignItems: 'center', justifyContent: 'center' },
+  iconBubble: { width: 56, height: 56, borderRadius: 28, backgroundColor: ink.card, alignItems: 'center', justifyContent: 'center' },
+  kind: { position: 'absolute', top: 8, left: 8 },
+  meta: { padding: 12, gap: 3 },
+  priceRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 },
+  price: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: ink.accent, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 4 },
 });

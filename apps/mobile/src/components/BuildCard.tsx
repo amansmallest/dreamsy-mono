@@ -3,8 +3,8 @@ import { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { ActivityIndicator, Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import { isActiveGeneration, thumbnailUrlFor, type GameVersion, type Generation } from '../api';
 import { BUILD_STAGES, etaLine, summarizeBuild, useEtaRemaining, type Progress } from '../generationProgress';
-import { ink, radius, stroke } from '../theme';
-import { InkButton, ProgressBar, Sparkle, Txt } from '../ui';
+import { floating, hairline, ink, radius } from '../theme';
+import { Button as InkButton, PixelSky, ProgressBar, Sparkle, Txt } from '../ui';
 import { Thumbnail } from './Thumbnail';
 
 const MAX_LOG = 4;
@@ -40,7 +40,12 @@ export function BuildTurn(props: Props) {
           </View>
         )}
       </View>
-      <BuildCard {...props} />
+      <View style={styles.them}>
+        <View style={styles.mark}>
+          <Sparkle size={14} color={ink.accentFg} />
+        </View>
+        <BuildCard {...props} />
+      </View>
     </View>
   );
 }
@@ -48,9 +53,6 @@ export function BuildTurn(props: Props) {
 function ClaudeHead({ title, right }: { title: string; right?: ReactNode }) {
   return (
     <View style={styles.head}>
-      <View style={styles.mark}>
-        <Sparkle size={14} color={ink.accentFg} />
-      </View>
       <Txt variant="pixel" style={styles.headTitle} numberOfLines={1}>
         {title}
       </Txt>
@@ -98,7 +100,7 @@ function BuildCard({ generation: g, version, progress, gameId, imageHeaders, can
       <View style={[styles.card, styles.failed]}>
         <ClaudeHead title="Couldn't build that" />
         <Txt variant="body" muted>
-          {g.error ? friendlyError(g.error) : 'Something went wrong. Try saying it a different way.'}
+          {g.error ? friendlyError(g.error) : 'Try saying it a different way.'}
         </Txt>
       </View>
     );
@@ -135,11 +137,12 @@ function LiveCard({
 
   return (
     <View style={styles.card}>
+      <PixelSky style={styles.sky} />
       <ClaudeHead
-        title={queued ? 'Waiting for a builder' : 'Claude is building'}
+        title={queued ? 'In line' : 'Building'}
         right={
           <Pressable accessibilityRole="button" onPress={onCancel} disabled={canceling} hitSlop={10}>
-            <Txt variant="label" color={ink.danger} style={{ opacity: canceling ? 0.5 : 1 }}>
+            <Txt variant="label" color={ink.navy} style={{ opacity: canceling ? 0.5 : 1 }}>
               {canceling ? 'Stopping' : 'Stop'}
             </Txt>
           </Pressable>
@@ -151,13 +154,13 @@ function LiveCard({
       <View style={styles.activity}>
         <Pulse />
         <Txt variant="heading" style={styles.flex} numberOfLines={1}>
-          {queued ? 'In line, starting soon' : (summary.activity ?? 'Getting started')}
+          {queued ? 'Starting soon' : (summary.activity ?? 'Getting started')}
         </Txt>
       </View>
 
       {rounds > 1 && (
         <View style={styles.rounds}>
-          <ProgressBar value={Math.max(0.04, (round - 1) / rounds)} height={14} />
+          <ProgressBar value={Math.max(0.04, (round - 1) / rounds)} height={8} />
           <Txt variant="meta" muted>
             {eta}
           </Txt>
@@ -195,7 +198,7 @@ function LiveCard({
       )}
       {rounds > 1 && (
         <Txt variant="meta" muted>
-          You can leave. It keeps building, and new versions show up here.
+          Safe to leave. New versions land here.
         </Txt>
       )}
     </View>
@@ -239,7 +242,7 @@ function Counts({ counts }: { counts: { edits: number; sprites: number; art: num
     <View style={styles.counts}>
       {items.map((it) => (
         <View key={it.label} style={styles.count}>
-          <Ionicons name={it.icon} size={13} color={ink.fg} />
+          <Ionicons name={it.icon} size={13} color={ink.accent} />
           <Txt variant="meta">
             {it.n} {it.label}
           </Txt>
@@ -249,7 +252,7 @@ function Counts({ counts }: { counts: { edits: number; sprites: number; art: num
   );
 }
 
-/** Small breathing ink dot: "alive". */
+/** Small breathing blue dot: "alive". */
 function Pulse() {
   const v = useRef(new Animated.Value(0)).current;
   useEffect(() => {
@@ -282,58 +285,59 @@ const styles = StyleSheet.create({
   turn: { gap: 10 },
   you: {
     alignSelf: 'flex-end',
-    maxWidth: '85%',
-    backgroundColor: ink.fg,
-    borderRadius: 20,
+    maxWidth: '82%',
+    backgroundColor: ink.accent,
+    borderRadius: 22,
     borderBottomRightRadius: 6,
     paddingHorizontal: 14,
     paddingVertical: 10,
     gap: 4,
   },
   youMeta: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  them: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
   card: {
-    alignSelf: 'stretch',
+    flex: 1,
     backgroundColor: ink.card,
-    borderWidth: stroke.base,
-    borderColor: ink.fg,
+    borderWidth: hairline,
+    borderColor: ink.border,
     borderRadius: radius.lg,
     borderBottomLeftRadius: 6,
     padding: 14,
     gap: 12,
+    overflow: 'hidden',
   },
   failed: { borderColor: ink.danger },
   quiet: { opacity: 0.6 },
   head: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  mark: { width: 24, height: 24, borderRadius: 12, backgroundColor: ink.fg, alignItems: 'center', justifyContent: 'center' },
-  headTitle: { flex: 1, fontSize: 12 },
+  mark: { width: 28, height: 28, borderRadius: 14, backgroundColor: ink.accent, alignItems: 'center', justifyContent: 'center' },
+  headTitle: { flex: 1, fontSize: 14 },
+  sky: { marginHorizontal: -14, marginTop: -14, height: 44, justifyContent: 'center', paddingHorizontal: 14 },
   activity: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  pulse: { width: 10, height: 10, borderRadius: 5, backgroundColor: ink.fg },
+  pulse: { width: 8, height: 8, borderRadius: 4, backgroundColor: ink.accent },
   flex: { flex: 1 },
   rounds: { gap: 6 },
   stages: { flexDirection: 'row' },
-  stage: { flex: 1, alignItems: 'center', gap: 4 },
+  stage: { flex: 1, alignItems: 'center', gap: 5 },
   stageDot: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: stroke.base,
-    borderColor: ink.fg,
-    backgroundColor: ink.card,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: ink.wash,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1,
   },
-  stageDotOn: { backgroundColor: ink.fg },
-  stageLabel: { fontSize: 9 },
-  stageLine: { position: 'absolute', top: 10, left: '50%', right: '-50%', height: 2, backgroundColor: ink.border },
-  stageLineOn: { backgroundColor: ink.fg },
-  log: { gap: 6, borderTopWidth: 1.5, borderTopColor: ink.border, paddingTop: 10 },
+  stageDotOn: { backgroundColor: ink.accent },
+  stageLabel: { fontSize: 10 },
+  stageLine: { position: 'absolute', top: 9, left: '50%', right: '-50%', height: 2, backgroundColor: ink.wash },
+  stageLineOn: { backgroundColor: ink.accent },
+  log: { gap: 6, borderTopWidth: hairline, borderTopColor: ink.border, paddingTop: 10 },
   logRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
-  logDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: ink.border, marginTop: 6 },
-  logDotNow: { backgroundColor: ink.fg },
+  logDot: { width: 5, height: 5, borderRadius: 1, backgroundColor: ink.sky, marginTop: 6 },
+  logDotNow: { backgroundColor: ink.accent },
   counts: { flexDirection: 'row', gap: 14 },
   count: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  result: { aspectRatio: 16 / 10, borderRadius: radius.md, borderWidth: stroke.thin, borderColor: ink.fg },
+  result: { aspectRatio: 16 / 10, borderRadius: radius.md },
   resultPlay: {
     position: 'absolute',
     right: 10,
@@ -341,10 +345,9 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: ink.fg,
-    borderWidth: 2,
-    borderColor: ink.card,
+    backgroundColor: ink.accent,
     alignItems: 'center',
     justifyContent: 'center',
+    ...floating,
   },
 });

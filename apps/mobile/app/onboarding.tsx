@@ -6,7 +6,7 @@ import { useAuth } from '@/auth';
 import { avatarFromSeed, type AvatarConfig } from '@/avatar';
 import { AvatarHero, AvatarMaker } from '@/components/AvatarMaker';
 import { errorMessage, ink } from '@/theme';
-import { Field, Header, InkButton, ProgressBar, Txt } from '@/ui';
+import { Button as InkButton, Field, Header, ProgressBar, Txt } from '@/ui';
 
 const HANDLE_RE = /^[a-z0-9_]{3,20}$/;
 
@@ -31,7 +31,7 @@ export default function OnboardingScreen() {
       if (h !== user.handle) updateUser((await api.updateMe({ handle: h })).user);
       setStep(1);
     } catch (e) {
-      setError(e instanceof ApiError && e.status === 409 ? 'That one is taken. Try another.' : errorMessage(e));
+      setError(e instanceof ApiError && e.status === 409 ? 'That handle is taken.' : errorMessage(e));
     } finally {
       setBusy(false);
     }
@@ -63,7 +63,7 @@ export default function OnboardingScreen() {
           </Pressable>
         }
       />
-      <ProgressBar value={step === 0 ? 0.5 : 1} height={12} style={styles.progress} />
+      <ProgressBar value={step === 0 ? 0.5 : 1} height={6} style={styles.progress} />
 
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         {step === 0 ? (
@@ -73,7 +73,7 @@ export default function OnboardingScreen() {
               What should players call you?
             </Txt>
             <Txt variant="body" muted center>
-              This is on every game you make. You can change it later.
+              Shown on every game you make.
             </Txt>
             <Field
               prefix="@"
@@ -116,7 +116,7 @@ export default function OnboardingScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: ink.bg },
+  screen: { flex: 1, backgroundColor: ink.card },
   flex: { flex: 1 },
   progress: { marginHorizontal: 24 },
   body: { padding: 24, gap: 12, alignItems: 'center' },

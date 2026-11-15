@@ -95,3 +95,20 @@ export const prune = internalMutation({
     return null;
   },
 });
+
+/** Admin: remove one build and its events (e.g. smoke tests). `npx convex run --prod live:removeBuild '{"genId":"..."}'` */
+export const removeBuild = internalMutation({
+  args: { genId: v.string() },
+  returns: v.null(),
+  handler: async (ctx, { genId }) => {
+    const b = await ctx.db.query("builds").withIndex("by_genId", (q) => q.eq("genId", genId)).unique();
+    if (b) await ctx.db.delete("builds", b._id);
+    for await (const e of ctx.db.query("events").withIndex("by_genId_and_at", (q) => q.eq("genId", genId))) await ctx.db.delete("events", e._id);
+    const s = await ctx.db.query("stats").withIndex("by_key", (q) => q.eq("key", "global")).unique();
+    if (s && b) await ctx.db.patch("stats", s._id, {
+      started: Math.max(0, s.started - 1),
+      ...(b.status !== "running" ? { [b.status]: Math.max(0, s[b.status] - 1) } : {}),
+    });
+    return null;
+  },
+});

@@ -43,3 +43,4 @@ Engine alone: `pnpm -C engine-web dev` → http://localhost:2005 (game picker). 
 - Deploy code: `./scripts/deploy.sh` (rsync + rebuild; data kept).
 - DNS (Cloudflare, proxied): api.dreamsy.dev + play.dreamsy.dev → A 15.252.199.188. Caddy: api → API, play → engine (static build copied to /srv/dreamsy/engine by deploy.sh). App + web point at prod by default; `dev.sh --local` for the laptop stack.
 - Migrated from local on 2026-11-15 12:06: 5 users, 13 games, 24 versions, blobs + memory + sprite library.
+- Convex live feed (`services/live`): prod deployment `vivid-vulture-808` (dashboard https://dashboard.convex.dev/d/vivid-vulture-808), dev `uncommon-fox-891`. API mirrors key build steps (`services/api/src/live.ts`, env CONVEX_SITE_URL + LIVE_INGEST_SECRET) → `POST /ingest` → tables builds/events/stats; clients subscribe to `live:feed` / `live:build`. Web "Live now" panel on Home (`VITE_CONVEX_URL`). Deploy functions: `cd services/live && npx convex deploy -y`.

@@ -1,0 +1,2389 @@
+{
+  "entities": {
+    "Folder": {
+      "dimension": "any",
+      "container": true,
+      "doc": "Groups entities. No transform.",
+      "props": {
+        "visible": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": true,
+          "doc": "Rendered and processed when true."
+        }
+      }
+    },
+    "Node2D": {
+      "dimension": "2d",
+      "container": true,
+      "doc": "Empty 2D transform. Use to group and move children together.",
+      "props": {
+        "visible": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": true,
+          "doc": "Rendered and processed when true."
+        },
+        "position": {
+          "type": {
+            "kind": "vec2"
+          },
+          "default": [
+            0,
+            0
+          ],
+          "doc": "Pixels, relative to parent. +y is down."
+        },
+        "rotation": {
+          "type": {
+            "kind": "number"
+          },
+          "default": 0,
+          "doc": "Degrees, clockwise."
+        },
+        "scale": {
+          "type": {
+            "kind": "vec2"
+          },
+          "default": [
+            1,
+            1
+          ],
+          "doc": "Scale factor."
+        },
+        "z_index": {
+          "type": {
+            "kind": "int",
+            "min": -4096,
+            "max": 4096
+          },
+          "default": 0,
+          "doc": "Draw order; higher draws on top."
+        }
+      }
+    },
+    "Sprite2D": {
+      "dimension": "2d",
+      "container": true,
+      "doc": "Draws an image. Without a texture draws a solid rect of `size` in `modulate`.",
+      "props": {
+        "visible": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": true,
+          "doc": "Rendered and processed when true."
+        },
+        "position": {
+          "type": {
+            "kind": "vec2"
+          },
+          "default": [
+            0,
+            0
+          ],
+          "doc": "Pixels, relative to parent. +y is down."
+        },
+        "rotation": {
+          "type": {
+            "kind": "number"
+          },
+          "default": 0,
+          "doc": "Degrees, clockwise."
+        },
+        "scale": {
+          "type": {
+            "kind": "vec2"
+          },
+          "default": [
+            1,
+            1
+          ],
+          "doc": "Scale factor."
+        },
+        "z_index": {
+          "type": {
+            "kind": "int",
+            "min": -4096,
+            "max": 4096
+          },
+          "default": 0,
+          "doc": "Draw order; higher draws on top."
+        },
+        "texture": {
+          "type": {
+            "kind": "asset",
+            "assetKind": "image"
+          },
+          "doc": "Image asset."
+        },
+        "size": {
+          "type": {
+            "kind": "vec2"
+          },
+          "default": [
+            32,
+            32
+          ],
+          "doc": "Displayed size in pixels (texture is scaled to fit)."
+        },
+        "modulate": {
+          "type": {
+            "kind": "color"
+          },
+          "default": "#ffffff",
+          "doc": "Tint."
+        },
+        "flip_h": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": false,
+          "doc": "Mirror horizontally."
+        },
+        "flip_v": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": false,
+          "doc": "Mirror vertically."
+        },
+        "anims": {
+          "type": {
+            "kind": "string",
+            "maxLength": 200
+          },
+          "default": "",
+          "doc": "Animation set, \"data/anims/<name>.json\" (frame lists). Play with e:play(\"run\")."
+        },
+        "anim": {
+          "type": {
+            "kind": "string",
+            "maxLength": 64
+          },
+          "default": "",
+          "doc": "Animation playing (set to start one at spawn; e:play() changes it)."
+        },
+        "auto_flip": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": false,
+          "doc": "Face the direction of horizontal movement (sets flip_h from the velocity of this sprite or its Body2D parent). Art should face right."
+        },
+        "color": {
+          "type": {
+            "kind": "color"
+          },
+          "doc": "Alias of `modulate` (handy for untextured solid rects); setting it sets modulate."
+        },
+        "emissive": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": false,
+          "doc": "Drawn above Lighting2D darkness at full brightness (glowing eyes, lamps, UI-like world text)."
+        },
+        "blend": {
+          "type": {
+            "kind": "enum",
+            "values": [
+              "normal",
+              "add"
+            ]
+          },
+          "default": "normal",
+          "doc": "\"add\" = additive (glows, fire, light beams, fake night lights): brightens what is behind."
+        }
+      }
+    },
+    "Body2D": {
+      "dimension": "2d",
+      "container": true,
+      "doc": "Physics body. Put Sprite2D children on it for visuals.",
+      "props": {
+        "visible": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": true,
+          "doc": "Rendered and processed when true."
+        },
+        "position": {
+          "type": {
+            "kind": "vec2"
+          },
+          "default": [
+            0,
+            0
+          ],
+          "doc": "Pixels, relative to parent. +y is down."
+        },
+        "rotation": {
+          "type": {
+            "kind": "number"
+          },
+          "default": 0,
+          "doc": "Degrees, clockwise."
+        },
+        "scale": {
+          "type": {
+            "kind": "vec2"
+          },
+          "default": [
+            1,
+            1
+          ],
+          "doc": "Scale factor."
+        },
+        "z_index": {
+          "type": {
+            "kind": "int",
+            "min": -4096,
+            "max": 4096
+          },
+          "default": 0,
+          "doc": "Draw order; higher draws on top."
+        },
+        "body": {
+          "type": {
+            "kind": "enum",
+            "values": [
+              "static",
+              "dynamic",
+              "kinematic"
+            ]
+          },
+          "default": "static",
+          "doc": "static = walls/floors, dynamic = simulated, kinematic = moved by script."
+        },
+        "shape": {
+          "type": {
+            "kind": "enum",
+            "values": [
+              "rect",
+              "circle",
+              "capsule"
+            ]
+          },
+          "default": "rect",
+          "doc": "Collision shape."
+        },
+        "size": {
+          "type": {
+            "kind": "vec2"
+          },
+          "default": [
+            32,
+            32
+          ],
+          "doc": "rect: w,h. circle: x = diameter. capsule: w,h."
+        },
+        "mass": {
+          "type": {
+            "kind": "number",
+            "min": 0.001
+          },
+          "default": 1,
+          "doc": "kg (dynamic only)."
+        },
+        "friction": {
+          "type": {
+            "kind": "number",
+            "min": 0,
+            "max": 1
+          },
+          "default": 0.5,
+          "doc": "0..1."
+        },
+        "bounce": {
+          "type": {
+            "kind": "number",
+            "min": 0,
+            "max": 1
+          },
+          "default": 0,
+          "doc": "Restitution 0..1."
+        },
+        "gravity_scale": {
+          "type": {
+            "kind": "number"
+          },
+          "default": 1,
+          "doc": "Multiplier on world gravity."
+        },
+        "lock_rotation": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": false,
+          "doc": "Prevent physics from rotating the body."
+        },
+        "layer": {
+          "type": {
+            "kind": "string",
+            "maxLength": 32
+          },
+          "default": "",
+          "doc": "Collision layer name from dreamsy.toml [physics] layers (e.g. \"player\"). \"\" = on every layer."
+        },
+        "mask": {
+          "type": {
+            "kind": "string",
+            "maxLength": 600
+          },
+          "default": "",
+          "doc": "Comma-separated layers this collides with / detects (e.g. \"world,enemy\"). \"\" = every layer."
+        }
+      }
+    },
+    "Area2D": {
+      "dimension": "2d",
+      "container": true,
+      "doc": "Trigger zone: reports overlaps, no collision response.",
+      "props": {
+        "visible": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": true,
+          "doc": "Rendered and processed when true."
+        },
+        "position": {
+          "type": {
+            "kind": "vec2"
+          },
+          "default": [
+            0,
+            0
+          ],
+          "doc": "Pixels, relative to parent. +y is down."
+        },
+        "rotation": {
+          "type": {
+            "kind": "number"
+          },
+          "default": 0,
+          "doc": "Degrees, clockwise."
+        },
+        "scale": {
+          "type": {
+            "kind": "vec2"
+          },
+          "default": [
+            1,
+            1
+          ],
+          "doc": "Scale factor."
+        },
+        "z_index": {
+          "type": {
+            "kind": "int",
+            "min": -4096,
+            "max": 4096
+          },
+          "default": 0,
+          "doc": "Draw order; higher draws on top."
+        },
+        "shape": {
+          "type": {
+            "kind": "enum",
+            "values": [
+              "rect",
+              "circle"
+            ]
+          },
+          "default": "rect",
+          "doc": "Shape."
+        },
+        "size": {
+          "type": {
+            "kind": "vec2"
+          },
+          "default": [
+            32,
+            32
+          ],
+          "doc": "Size."
+        },
+        "layer": {
+          "type": {
+            "kind": "string",
+            "maxLength": 32
+          },
+          "default": "",
+          "doc": "Collision layer name from dreamsy.toml [physics] layers (e.g. \"player\"). \"\" = on every layer."
+        },
+        "mask": {
+          "type": {
+            "kind": "string",
+            "maxLength": 600
+          },
+          "default": "",
+          "doc": "Comma-separated layers this collides with / detects (e.g. \"world,enemy\"). \"\" = every layer."
+        }
+      }
+    },
+    "Camera2D": {
+      "dimension": "2d",
+      "container": false,
+      "doc": "2D camera. The `current` one renders.",
+      "props": {
+        "visible": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": true,
+          "doc": "Rendered and processed when true."
+        },
+        "position": {
+          "type": {
+            "kind": "vec2"
+          },
+          "default": [
+            0,
+            0
+          ],
+          "doc": "Pixels, relative to parent. +y is down."
+        },
+        "rotation": {
+          "type": {
+            "kind": "number"
+          },
+          "default": 0,
+          "doc": "Degrees, clockwise."
+        },
+        "scale": {
+          "type": {
+            "kind": "vec2"
+          },
+          "default": [
+            1,
+            1
+          ],
+          "doc": "Scale factor."
+        },
+        "z_index": {
+          "type": {
+            "kind": "int",
+            "min": -4096,
+            "max": 4096
+          },
+          "default": 0,
+          "doc": "Draw order; higher draws on top."
+        },
+        "zoom": {
+          "type": {
+            "kind": "number",
+            "min": 0.05,
+            "max": 20
+          },
+          "default": 1,
+          "doc": "Zoom factor."
+        },
+        "follow": {
+          "type": {
+            "kind": "entity"
+          },
+          "doc": "Entity to follow."
+        },
+        "current": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": true,
+          "doc": "Active camera."
+        },
+        "smoothing": {
+          "type": {
+            "kind": "number",
+            "min": 0,
+            "max": 0.99
+          },
+          "default": 0,
+          "doc": "Follow smoothing: 0 = locked to the target, 0.5 = soft, 0.9 = very floaty."
+        },
+        "deadzone": {
+          "type": {
+            "kind": "vec2"
+          },
+          "default": [
+            0,
+            0
+          ],
+          "doc": "Box (world px, w,h) around the view center the target can move in without the camera moving."
+        },
+        "limit_min": {
+          "type": {
+            "kind": "vec2"
+          },
+          "doc": "World top-left corner the view may not go past (unset = no limit)."
+        },
+        "limit_max": {
+          "type": {
+            "kind": "vec2"
+          },
+          "doc": "World bottom-right corner the view may not go past (unset = no limit)."
+        }
+      }
+    },
+    "Text2D": {
+      "dimension": "2d",
+      "container": false,
+      "doc": "Text placed in the world.",
+      "props": {
+        "visible": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": true,
+          "doc": "Rendered and processed when true."
+        },
+        "position": {
+          "type": {
+            "kind": "vec2"
+          },
+          "default": [
+            0,
+            0
+          ],
+          "doc": "Pixels, relative to parent. +y is down."
+        },
+        "rotation": {
+          "type": {
+            "kind": "number"
+          },
+          "default": 0,
+          "doc": "Degrees, clockwise."
+        },
+        "scale": {
+          "type": {
+            "kind": "vec2"
+          },
+          "default": [
+            1,
+            1
+          ],
+          "doc": "Scale factor."
+        },
+        "z_index": {
+          "type": {
+            "kind": "int",
+            "min": -4096,
+            "max": 4096
+          },
+          "default": 0,
+          "doc": "Draw order; higher draws on top."
+        },
+        "text": {
+          "type": {
+            "kind": "string",
+            "maxLength": 2000
+          },
+          "default": "",
+          "doc": "Text."
+        },
+        "font_size": {
+          "type": {
+            "kind": "int",
+            "min": 4,
+            "max": 256
+          },
+          "default": 16,
+          "doc": "Pixels."
+        },
+        "color": {
+          "type": {
+            "kind": "color"
+          },
+          "default": "#ffffff",
+          "doc": "Color."
+        },
+        "align": {
+          "type": {
+            "kind": "enum",
+            "values": [
+              "left",
+              "center",
+              "right"
+            ]
+          },
+          "default": "center",
+          "doc": "Horizontal anchor: center = text centered on position, left = text starts at position, right = text ends at position. Vertically centered on position."
+        },
+        "font": {
+          "type": {
+            "kind": "enum",
+            "values": [
+              "default",
+              "pixel",
+              "rounded",
+              "bold",
+              "serif"
+            ]
+          },
+          "default": "default",
+          "doc": "Font family; \"default\" = the game's [ui] font (from the style preset)."
+        },
+        "outline": {
+          "type": {
+            "kind": "color"
+          },
+          "default": "#00000000",
+          "doc": "Outline color (set outline_size too)."
+        },
+        "outline_size": {
+          "type": {
+            "kind": "int",
+            "min": 0,
+            "max": 16
+          },
+          "default": 0,
+          "doc": "Outline thickness in pixels (0 = none). 2-4 makes text readable on busy backgrounds."
+        },
+        "shadow": {
+          "type": {
+            "kind": "color"
+          },
+          "default": "#00000000",
+          "doc": "Drop shadow color (transparent = none)."
+        },
+        "shadow_offset": {
+          "type": {
+            "kind": "vec2"
+          },
+          "default": [
+            2,
+            2
+          ],
+          "doc": "Drop shadow offset in pixels."
+        },
+        "emissive": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": false,
+          "doc": "Drawn above Lighting2D darkness at full brightness (glowing eyes, lamps, UI-like world text)."
+        }
+      }
+    },
+    "TileMap2D": {
+      "dimension": "2d",
+      "container": false,
+      "doc": "A grid of tiles (a level) drawn and collided as one entity. `position` is the top-left corner of tile (0,0).",
+      "props": {
+        "visible": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": true,
+          "doc": "Rendered and processed when true."
+        },
+        "position": {
+          "type": {
+            "kind": "vec2"
+          },
+          "default": [
+            0,
+            0
+          ],
+          "doc": "Pixels, relative to parent. +y is down."
+        },
+        "rotation": {
+          "type": {
+            "kind": "number"
+          },
+          "default": 0,
+          "doc": "Degrees, clockwise."
+        },
+        "scale": {
+          "type": {
+            "kind": "vec2"
+          },
+          "default": [
+            1,
+            1
+          ],
+          "doc": "Scale factor."
+        },
+        "z_index": {
+          "type": {
+            "kind": "int",
+            "min": -4096,
+            "max": 4096
+          },
+          "default": 0,
+          "doc": "Draw order; higher draws on top."
+        },
+        "tile_size": {
+          "type": {
+            "kind": "int",
+            "min": 1,
+            "max": 256
+          },
+          "default": 16,
+          "doc": "Tile width and height in pixels."
+        },
+        "tileset": {
+          "type": {
+            "kind": "string",
+            "maxLength": 200
+          },
+          "default": "",
+          "doc": "Tileset file, \"data/tilesets/<name>.json\"."
+        },
+        "data": {
+          "type": {
+            "kind": "string",
+            "maxLength": 65536
+          },
+          "default": "",
+          "doc": "The grid: rows of tile characters joined by \"\\n\" (top row first), or \"file:data/levels/<name>.txt\"."
+        },
+        "collision": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": true,
+          "doc": "Solid tiles block bodies."
+        },
+        "layer": {
+          "type": {
+            "kind": "string",
+            "maxLength": 32
+          },
+          "default": "",
+          "doc": "Collision layer name from dreamsy.toml [physics] layers (e.g. \"player\"). \"\" = on every layer."
+        },
+        "mask": {
+          "type": {
+            "kind": "string",
+            "maxLength": 600
+          },
+          "default": "",
+          "doc": "Comma-separated layers this collides with / detects (e.g. \"world,enemy\"). \"\" = every layer."
+        }
+      }
+    },
+    "Particles2D": {
+      "dimension": "2d",
+      "container": false,
+      "doc": "Particle emitter (dust, sparks, explosions, trails). Emits `rate`/s while `emitting`; e:burst(n) emits n at once. Particles move in world space.",
+      "props": {
+        "visible": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": true,
+          "doc": "Rendered and processed when true."
+        },
+        "position": {
+          "type": {
+            "kind": "vec2"
+          },
+          "default": [
+            0,
+            0
+          ],
+          "doc": "Pixels, relative to parent. +y is down."
+        },
+        "rotation": {
+          "type": {
+            "kind": "number"
+          },
+          "default": 0,
+          "doc": "Degrees, clockwise."
+        },
+        "scale": {
+          "type": {
+            "kind": "vec2"
+          },
+          "default": [
+            1,
+            1
+          ],
+          "doc": "Scale factor."
+        },
+        "z_index": {
+          "type": {
+            "kind": "int",
+            "min": -4096,
+            "max": 4096
+          },
+          "default": 0,
+          "doc": "Draw order; higher draws on top."
+        },
+        "emitting": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": true,
+          "doc": "Emit continuously at `rate`."
+        },
+        "rate": {
+          "type": {
+            "kind": "number",
+            "min": 0,
+            "max": 1000
+          },
+          "default": 20,
+          "doc": "Particles per second while emitting."
+        },
+        "lifetime": {
+          "type": {
+            "kind": "number",
+            "min": 0.05,
+            "max": 10
+          },
+          "default": 1,
+          "doc": "Seconds each particle lives."
+        },
+        "lifetime_random": {
+          "type": {
+            "kind": "number",
+            "min": 0,
+            "max": 1
+          },
+          "default": 0.3,
+          "doc": "0..1: random fraction shaved off each lifetime."
+        },
+        "direction": {
+          "type": {
+            "kind": "number"
+          },
+          "default": -90,
+          "doc": "Emit direction in degrees (0 = right, -90 = up, 90 = down)."
+        },
+        "spread": {
+          "type": {
+            "kind": "number",
+            "min": 0,
+            "max": 360
+          },
+          "default": 45,
+          "doc": "Cone width in degrees around `direction` (360 = all around)."
+        },
+        "speed": {
+          "type": {
+            "kind": "number",
+            "min": 0,
+            "max": 5000
+          },
+          "default": 120,
+          "doc": "Initial speed (px/s)."
+        },
+        "speed_random": {
+          "type": {
+            "kind": "number",
+            "min": 0,
+            "max": 1
+          },
+          "default": 0.3,
+          "doc": "0..1: random fraction of speed removed per particle."
+        },
+        "gravity": {
+          "type": {
+            "kind": "vec2"
+          },
+          "default": [
+            0,
+            0
+          ],
+          "doc": "Acceleration (px/s²), e.g. [0, 600] to fall."
+        },
+        "damping": {
+          "type": {
+            "kind": "number",
+            "min": 0,
+            "max": 50
+          },
+          "default": 0,
+          "doc": "Velocity drag per second (0 = none)."
+        },
+        "start_color": {
+          "type": {
+            "kind": "color"
+          },
+          "default": "#ffffff",
+          "doc": "Color at birth."
+        },
+        "end_color": {
+          "type": {
+            "kind": "color"
+          },
+          "default": "#ffffff00",
+          "doc": "Color at death (fades between)."
+        },
+        "start_size": {
+          "type": {
+            "kind": "number",
+            "min": 0,
+            "max": 512
+          },
+          "default": 8,
+          "doc": "Size at birth (px)."
+        },
+        "end_size": {
+          "type": {
+            "kind": "number",
+            "min": 0,
+            "max": 512
+          },
+          "default": 2,
+          "doc": "Size at death (px)."
+        },
+        "shape": {
+          "type": {
+            "kind": "enum",
+            "values": [
+              "square",
+              "circle"
+            ]
+          },
+          "default": "square",
+          "doc": "Shape when there is no texture."
+        },
+        "texture": {
+          "type": {
+            "kind": "asset",
+            "assetKind": "image"
+          },
+          "doc": "Optional particle image (tinted by the color)."
+        },
+        "emission_size": {
+          "type": {
+            "kind": "vec2"
+          },
+          "default": [
+            0,
+            0
+          ],
+          "doc": "Spawn area (w,h px) around the emitter; [0,0] = a point."
+        },
+        "max_particles": {
+          "type": {
+            "kind": "int",
+            "min": 1,
+            "max": 4096
+          },
+          "default": 256,
+          "doc": "Cap on live particles."
+        },
+        "emissive": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": false,
+          "doc": "Drawn above Lighting2D darkness at full brightness (glowing eyes, lamps, UI-like world text)."
+        },
+        "blend": {
+          "type": {
+            "kind": "enum",
+            "values": [
+              "normal",
+              "add"
+            ]
+          },
+          "default": "normal",
+          "doc": "\"add\" = additive (glows, fire, light beams, fake night lights): brightens what is behind."
+        }
+      }
+    },
+    "Light2D": {
+      "dimension": "2d",
+      "container": false,
+      "doc": "Point light for dark scenes (needs a Lighting2D in the scene). Child of the player = a torch that follows. Up to 64 lit at once (nearest to the view).",
+      "props": {
+        "visible": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": true,
+          "doc": "Rendered and processed when true."
+        },
+        "position": {
+          "type": {
+            "kind": "vec2"
+          },
+          "default": [
+            0,
+            0
+          ],
+          "doc": "Pixels, relative to parent. +y is down."
+        },
+        "rotation": {
+          "type": {
+            "kind": "number"
+          },
+          "default": 0,
+          "doc": "Degrees, clockwise."
+        },
+        "scale": {
+          "type": {
+            "kind": "vec2"
+          },
+          "default": [
+            1,
+            1
+          ],
+          "doc": "Scale factor."
+        },
+        "z_index": {
+          "type": {
+            "kind": "int",
+            "min": -4096,
+            "max": 4096
+          },
+          "default": 0,
+          "doc": "Draw order; higher draws on top."
+        },
+        "radius": {
+          "type": {
+            "kind": "number",
+            "min": 1,
+            "max": 4096
+          },
+          "default": 160,
+          "doc": "Reach in pixels (light is 0 at the edge)."
+        },
+        "color": {
+          "type": {
+            "kind": "color"
+          },
+          "default": "#ffe2a8",
+          "doc": "Light color."
+        },
+        "energy": {
+          "type": {
+            "kind": "number",
+            "min": 0,
+            "max": 8
+          },
+          "default": 1,
+          "doc": "Brightness multiplier (0 = off; >1 burns out to full brightness sooner)."
+        },
+        "falloff": {
+          "type": {
+            "kind": "number",
+            "min": 0.1,
+            "max": 8
+          },
+          "default": 2,
+          "doc": "Edge softness: 1 = linear, 2 = soft (default), 4 = tight bright core."
+        },
+        "flicker": {
+          "type": {
+            "kind": "number",
+            "min": 0,
+            "max": 1
+          },
+          "default": 0,
+          "doc": "0..1 random brightness flicker (torches 0.15, candles 0.3)."
+        },
+        "flicker_speed": {
+          "type": {
+            "kind": "number",
+            "min": 0,
+            "max": 60
+          },
+          "default": 8,
+          "doc": "Flicker rate (Hz-ish)."
+        },
+        "enabled": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": true,
+          "doc": "Lit when true (tween `energy` to fade instead of popping)."
+        }
+      }
+    },
+    "Lighting2D": {
+      "dimension": "2d",
+      "container": false,
+      "doc": "Scene darkness: everything (except `emissive` things and UI) is darkened toward `ambient`; Light2Ds cut holes. One per scene.",
+      "props": {
+        "visible": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": true,
+          "doc": "Rendered and processed when true."
+        },
+        "ambient": {
+          "type": {
+            "kind": "color"
+          },
+          "default": "#0b0d1a",
+          "doc": "Color of unlit areas (deep blue night, black cave, red alarm)."
+        },
+        "darkness": {
+          "type": {
+            "kind": "number",
+            "min": 0,
+            "max": 1
+          },
+          "default": 0.85,
+          "doc": "0 = no darkening, 1 = unlit areas are exactly `ambient`."
+        },
+        "vignette": {
+          "type": {
+            "kind": "number",
+            "min": 0,
+            "max": 1
+          },
+          "default": 0,
+          "doc": "0..1 darker screen edges."
+        }
+      }
+    },
+    "SpawnPoint2D": {
+      "dimension": "2d",
+      "container": false,
+      "doc": "Where player avatars spawn.",
+      "props": {
+        "visible": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": true,
+          "doc": "Rendered and processed when true."
+        },
+        "position": {
+          "type": {
+            "kind": "vec2"
+          },
+          "default": [
+            0,
+            0
+          ],
+          "doc": "Pixels, relative to parent. +y is down."
+        },
+        "rotation": {
+          "type": {
+            "kind": "number"
+          },
+          "default": 0,
+          "doc": "Degrees, clockwise."
+        },
+        "scale": {
+          "type": {
+            "kind": "vec2"
+          },
+          "default": [
+            1,
+            1
+          ],
+          "doc": "Scale factor."
+        },
+        "z_index": {
+          "type": {
+            "kind": "int",
+            "min": -4096,
+            "max": 4096
+          },
+          "default": 0,
+          "doc": "Draw order; higher draws on top."
+        }
+      }
+    },
+    "Node3D": {
+      "dimension": "3d",
+      "container": true,
+      "doc": "Empty 3D transform.",
+      "props": {
+        "visible": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": true,
+          "doc": "Rendered and processed when true."
+        },
+        "position": {
+          "type": {
+            "kind": "vec3"
+          },
+          "default": [
+            0,
+            0,
+            0
+          ],
+          "doc": "Meters, relative to parent. +y is up."
+        },
+        "rotation": {
+          "type": {
+            "kind": "vec3"
+          },
+          "default": [
+            0,
+            0,
+            0
+          ],
+          "doc": "Euler degrees (x, y, z)."
+        },
+        "scale": {
+          "type": {
+            "kind": "vec3"
+          },
+          "default": [
+            1,
+            1,
+            1
+          ],
+          "doc": "Scale factor."
+        }
+      }
+    },
+    "Mesh3D": {
+      "dimension": "3d",
+      "container": true,
+      "doc": "Visible geometry: a mesh asset, or a primitive when `mesh` is unset.",
+      "props": {
+        "visible": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": true,
+          "doc": "Rendered and processed when true."
+        },
+        "position": {
+          "type": {
+            "kind": "vec3"
+          },
+          "default": [
+            0,
+            0,
+            0
+          ],
+          "doc": "Meters, relative to parent. +y is up."
+        },
+        "rotation": {
+          "type": {
+            "kind": "vec3"
+          },
+          "default": [
+            0,
+            0,
+            0
+          ],
+          "doc": "Euler degrees (x, y, z)."
+        },
+        "scale": {
+          "type": {
+            "kind": "vec3"
+          },
+          "default": [
+            1,
+            1,
+            1
+          ],
+          "doc": "Scale factor."
+        },
+        "mesh": {
+          "type": {
+            "kind": "asset",
+            "assetKind": "mesh"
+          },
+          "doc": "glTF mesh asset. Overrides `primitive`."
+        },
+        "primitive": {
+          "type": {
+            "kind": "enum",
+            "values": [
+              "box",
+              "sphere",
+              "capsule",
+              "cylinder",
+              "plane"
+            ]
+          },
+          "default": "box",
+          "doc": "Used when `mesh` is unset."
+        },
+        "size": {
+          "type": {
+            "kind": "vec3"
+          },
+          "default": [
+            1,
+            1,
+            1
+          ],
+          "doc": "Primitive size in meters."
+        },
+        "color": {
+          "type": {
+            "kind": "color"
+          },
+          "default": "#cccccc",
+          "doc": "Albedo for primitives / tint for meshes."
+        },
+        "texture": {
+          "type": {
+            "kind": "asset",
+            "assetKind": "image"
+          },
+          "doc": "Albedo texture for primitives."
+        },
+        "cast_shadow": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": true,
+          "doc": "Casts shadows."
+        }
+      }
+    },
+    "Body3D": {
+      "dimension": "3d",
+      "container": true,
+      "doc": "Physics body. Put Mesh3D children on it for visuals.",
+      "props": {
+        "visible": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": true,
+          "doc": "Rendered and processed when true."
+        },
+        "position": {
+          "type": {
+            "kind": "vec3"
+          },
+          "default": [
+            0,
+            0,
+            0
+          ],
+          "doc": "Meters, relative to parent. +y is up."
+        },
+        "rotation": {
+          "type": {
+            "kind": "vec3"
+          },
+          "default": [
+            0,
+            0,
+            0
+          ],
+          "doc": "Euler degrees (x, y, z)."
+        },
+        "scale": {
+          "type": {
+            "kind": "vec3"
+          },
+          "default": [
+            1,
+            1,
+            1
+          ],
+          "doc": "Scale factor."
+        },
+        "body": {
+          "type": {
+            "kind": "enum",
+            "values": [
+              "static",
+              "dynamic",
+              "kinematic"
+            ]
+          },
+          "default": "static",
+          "doc": "static / dynamic / kinematic."
+        },
+        "shape": {
+          "type": {
+            "kind": "enum",
+            "values": [
+              "box",
+              "sphere",
+              "capsule",
+              "cylinder"
+            ]
+          },
+          "default": "box",
+          "doc": "Collision shape."
+        },
+        "size": {
+          "type": {
+            "kind": "vec3"
+          },
+          "default": [
+            1,
+            1,
+            1
+          ],
+          "doc": "Shape size in meters."
+        },
+        "mass": {
+          "type": {
+            "kind": "number",
+            "min": 0.001
+          },
+          "default": 1,
+          "doc": "kg (dynamic only)."
+        },
+        "friction": {
+          "type": {
+            "kind": "number",
+            "min": 0,
+            "max": 1
+          },
+          "default": 0.5,
+          "doc": "0..1."
+        },
+        "bounce": {
+          "type": {
+            "kind": "number",
+            "min": 0,
+            "max": 1
+          },
+          "default": 0,
+          "doc": "Restitution 0..1."
+        },
+        "gravity_scale": {
+          "type": {
+            "kind": "number"
+          },
+          "default": 1,
+          "doc": "Multiplier on world gravity."
+        },
+        "lock_rotation": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": false,
+          "doc": "Prevent physics from rotating the body."
+        }
+      }
+    },
+    "Area3D": {
+      "dimension": "3d",
+      "container": true,
+      "doc": "Trigger volume.",
+      "props": {
+        "visible": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": true,
+          "doc": "Rendered and processed when true."
+        },
+        "position": {
+          "type": {
+            "kind": "vec3"
+          },
+          "default": [
+            0,
+            0,
+            0
+          ],
+          "doc": "Meters, relative to parent. +y is up."
+        },
+        "rotation": {
+          "type": {
+            "kind": "vec3"
+          },
+          "default": [
+            0,
+            0,
+            0
+          ],
+          "doc": "Euler degrees (x, y, z)."
+        },
+        "scale": {
+          "type": {
+            "kind": "vec3"
+          },
+          "default": [
+            1,
+            1,
+            1
+          ],
+          "doc": "Scale factor."
+        },
+        "shape": {
+          "type": {
+            "kind": "enum",
+            "values": [
+              "box",
+              "sphere"
+            ]
+          },
+          "default": "box",
+          "doc": "Shape."
+        },
+        "size": {
+          "type": {
+            "kind": "vec3"
+          },
+          "default": [
+            1,
+            1,
+            1
+          ],
+          "doc": "Size."
+        }
+      }
+    },
+    "Camera3D": {
+      "dimension": "3d",
+      "container": false,
+      "doc": "3D camera. The `current` one renders.",
+      "props": {
+        "visible": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": true,
+          "doc": "Rendered and processed when true."
+        },
+        "position": {
+          "type": {
+            "kind": "vec3"
+          },
+          "default": [
+            0,
+            0,
+            0
+          ],
+          "doc": "Meters, relative to parent. +y is up."
+        },
+        "rotation": {
+          "type": {
+            "kind": "vec3"
+          },
+          "default": [
+            0,
+            0,
+            0
+          ],
+          "doc": "Euler degrees (x, y, z)."
+        },
+        "scale": {
+          "type": {
+            "kind": "vec3"
+          },
+          "default": [
+            1,
+            1,
+            1
+          ],
+          "doc": "Scale factor."
+        },
+        "fov": {
+          "type": {
+            "kind": "number",
+            "min": 10,
+            "max": 170
+          },
+          "default": 70,
+          "doc": "Vertical FOV degrees."
+        },
+        "follow": {
+          "type": {
+            "kind": "entity"
+          },
+          "doc": "Entity to follow."
+        },
+        "current": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": true,
+          "doc": "Active camera."
+        }
+      }
+    },
+    "Light3D": {
+      "dimension": "3d",
+      "container": false,
+      "doc": "Light source.",
+      "props": {
+        "visible": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": true,
+          "doc": "Rendered and processed when true."
+        },
+        "position": {
+          "type": {
+            "kind": "vec3"
+          },
+          "default": [
+            0,
+            0,
+            0
+          ],
+          "doc": "Meters, relative to parent. +y is up."
+        },
+        "rotation": {
+          "type": {
+            "kind": "vec3"
+          },
+          "default": [
+            0,
+            0,
+            0
+          ],
+          "doc": "Euler degrees (x, y, z)."
+        },
+        "scale": {
+          "type": {
+            "kind": "vec3"
+          },
+          "default": [
+            1,
+            1,
+            1
+          ],
+          "doc": "Scale factor."
+        },
+        "kind": {
+          "type": {
+            "kind": "enum",
+            "values": [
+              "directional",
+              "point",
+              "spot"
+            ]
+          },
+          "default": "directional",
+          "doc": "Light type."
+        },
+        "color": {
+          "type": {
+            "kind": "color"
+          },
+          "default": "#ffffff",
+          "doc": "Color."
+        },
+        "energy": {
+          "type": {
+            "kind": "number",
+            "min": 0,
+            "max": 100
+          },
+          "default": 1,
+          "doc": "Intensity."
+        },
+        "range": {
+          "type": {
+            "kind": "number",
+            "min": 0
+          },
+          "default": 10,
+          "doc": "Meters (point/spot)."
+        },
+        "shadows": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": true,
+          "doc": "Casts shadows."
+        }
+      }
+    },
+    "Environment3D": {
+      "dimension": "3d",
+      "container": false,
+      "doc": "Sky, ambient light and fog. One per scene.",
+      "props": {
+        "visible": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": true,
+          "doc": "Rendered and processed when true."
+        },
+        "sky_color": {
+          "type": {
+            "kind": "color"
+          },
+          "default": "#87ceeb",
+          "doc": "Sky."
+        },
+        "ground_color": {
+          "type": {
+            "kind": "color"
+          },
+          "default": "#6b8e23",
+          "doc": "Horizon/ground."
+        },
+        "ambient_energy": {
+          "type": {
+            "kind": "number",
+            "min": 0,
+            "max": 10
+          },
+          "default": 0.5,
+          "doc": "Ambient light."
+        },
+        "fog": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": false,
+          "doc": "Enable fog."
+        }
+      }
+    },
+    "SpawnPoint3D": {
+      "dimension": "3d",
+      "container": false,
+      "doc": "Where player avatars spawn.",
+      "props": {
+        "visible": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": true,
+          "doc": "Rendered and processed when true."
+        },
+        "position": {
+          "type": {
+            "kind": "vec3"
+          },
+          "default": [
+            0,
+            0,
+            0
+          ],
+          "doc": "Meters, relative to parent. +y is up."
+        },
+        "rotation": {
+          "type": {
+            "kind": "vec3"
+          },
+          "default": [
+            0,
+            0,
+            0
+          ],
+          "doc": "Euler degrees (x, y, z)."
+        },
+        "scale": {
+          "type": {
+            "kind": "vec3"
+          },
+          "default": [
+            1,
+            1,
+            1
+          ],
+          "doc": "Scale factor."
+        }
+      }
+    },
+    "Sound": {
+      "dimension": "any",
+      "container": false,
+      "doc": "Audio player. Spatial if under a 2D/3D transform and `spatial` is true.",
+      "props": {
+        "visible": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": true,
+          "doc": "Rendered and processed when true."
+        },
+        "sound": {
+          "type": {
+            "kind": "asset",
+            "assetKind": "audio"
+          },
+          "doc": "Audio asset."
+        },
+        "volume_db": {
+          "type": {
+            "kind": "number",
+            "min": -80,
+            "max": 24
+          },
+          "default": 0,
+          "doc": "Volume."
+        },
+        "autoplay": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": false,
+          "doc": "Play on start."
+        },
+        "loop": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": false,
+          "doc": "Loop."
+        },
+        "spatial": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": false,
+          "doc": "Positional audio."
+        }
+      }
+    },
+    "UIText": {
+      "dimension": "any",
+      "container": false,
+      "doc": "Screen-space text (HUD).",
+      "props": {
+        "visible": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": true,
+          "doc": "Rendered and processed when true."
+        },
+        "anchor": {
+          "type": {
+            "kind": "enum",
+            "values": [
+              "top_left",
+              "top",
+              "top_right",
+              "left",
+              "center",
+              "right",
+              "bottom_left",
+              "bottom",
+              "bottom_right"
+            ]
+          },
+          "default": "top_left",
+          "doc": "Screen anchor (top-level UI stays inside the phone safe area: notch, home bar)."
+        },
+        "offset": {
+          "type": {
+            "kind": "vec2"
+          },
+          "default": [
+            0,
+            0
+          ],
+          "doc": "Pixels from the anchor."
+        },
+        "size": {
+          "type": {
+            "kind": "vec2"
+          },
+          "default": [
+            200,
+            48
+          ],
+          "doc": "Pixels."
+        },
+        "z_index": {
+          "type": {
+            "kind": "int",
+            "min": -4096,
+            "max": 4096
+          },
+          "default": 0,
+          "doc": "Draw order among UI."
+        },
+        "scale": {
+          "type": {
+            "kind": "vec2"
+          },
+          "default": [
+            1,
+            1
+          ],
+          "doc": "Visual scale around the center (tween it to pop/bounce UI; layout size is unchanged)."
+        },
+        "text": {
+          "type": {
+            "kind": "string",
+            "maxLength": 2000
+          },
+          "default": "",
+          "doc": "Text."
+        },
+        "font_size": {
+          "type": {
+            "kind": "int",
+            "min": 4,
+            "max": 256
+          },
+          "default": 24,
+          "doc": "Pixels."
+        },
+        "color": {
+          "type": {
+            "kind": "color"
+          },
+          "default": "#ffffff",
+          "doc": "Color."
+        },
+        "align": {
+          "type": {
+            "kind": "enum",
+            "values": [
+              "left",
+              "center",
+              "right"
+            ]
+          },
+          "default": "left",
+          "doc": "Alignment."
+        },
+        "valign": {
+          "type": {
+            "kind": "enum",
+            "values": [
+              "top",
+              "center",
+              "bottom"
+            ]
+          },
+          "default": "center",
+          "doc": "Vertical alignment inside `size`."
+        },
+        "font": {
+          "type": {
+            "kind": "enum",
+            "values": [
+              "default",
+              "pixel",
+              "rounded",
+              "bold",
+              "serif"
+            ]
+          },
+          "default": "default",
+          "doc": "Font family; \"default\" = the game's [ui] font (from the style preset)."
+        },
+        "outline": {
+          "type": {
+            "kind": "color"
+          },
+          "default": "#00000000",
+          "doc": "Outline color (set outline_size too)."
+        },
+        "outline_size": {
+          "type": {
+            "kind": "int",
+            "min": 0,
+            "max": 16
+          },
+          "default": 0,
+          "doc": "Outline thickness in pixels (0 = none). 2-4 makes text readable on busy backgrounds."
+        },
+        "shadow": {
+          "type": {
+            "kind": "color"
+          },
+          "default": "#00000000",
+          "doc": "Drop shadow color (transparent = none)."
+        },
+        "shadow_offset": {
+          "type": {
+            "kind": "vec2"
+          },
+          "default": [
+            2,
+            2
+          ],
+          "doc": "Drop shadow offset in pixels."
+        },
+        "input_transparent": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": true,
+          "doc": "Taps pass through to what is behind (UIText never takes taps)."
+        }
+      }
+    },
+    "UIButton": {
+      "dimension": "any",
+      "container": false,
+      "doc": "Screen-space button; scripts listen for presses.",
+      "props": {
+        "visible": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": true,
+          "doc": "Rendered and processed when true."
+        },
+        "anchor": {
+          "type": {
+            "kind": "enum",
+            "values": [
+              "top_left",
+              "top",
+              "top_right",
+              "left",
+              "center",
+              "right",
+              "bottom_left",
+              "bottom",
+              "bottom_right"
+            ]
+          },
+          "default": "top_left",
+          "doc": "Screen anchor (top-level UI stays inside the phone safe area: notch, home bar)."
+        },
+        "offset": {
+          "type": {
+            "kind": "vec2"
+          },
+          "default": [
+            0,
+            0
+          ],
+          "doc": "Pixels from the anchor."
+        },
+        "size": {
+          "type": {
+            "kind": "vec2"
+          },
+          "default": [
+            200,
+            48
+          ],
+          "doc": "Pixels."
+        },
+        "z_index": {
+          "type": {
+            "kind": "int",
+            "min": -4096,
+            "max": 4096
+          },
+          "default": 0,
+          "doc": "Draw order among UI."
+        },
+        "scale": {
+          "type": {
+            "kind": "vec2"
+          },
+          "default": [
+            1,
+            1
+          ],
+          "doc": "Visual scale around the center (tween it to pop/bounce UI; layout size is unchanged)."
+        },
+        "text": {
+          "type": {
+            "kind": "string",
+            "maxLength": 2000
+          },
+          "default": "Button",
+          "doc": "Label (empty = icon only)."
+        },
+        "font_size": {
+          "type": {
+            "kind": "int",
+            "min": 4,
+            "max": 256
+          },
+          "default": 24,
+          "doc": "Pixels."
+        },
+        "color": {
+          "type": {
+            "kind": "color"
+          },
+          "default": "#ffffff",
+          "doc": "Text color."
+        },
+        "background": {
+          "type": {
+            "kind": "color"
+          },
+          "default": "#333333cc",
+          "doc": "Fill."
+        },
+        "font": {
+          "type": {
+            "kind": "enum",
+            "values": [
+              "default",
+              "pixel",
+              "rounded",
+              "bold",
+              "serif"
+            ]
+          },
+          "default": "default",
+          "doc": "Font family; \"default\" = the game's [ui] font (from the style preset)."
+        },
+        "icon": {
+          "type": {
+            "kind": "asset",
+            "assetKind": "image"
+          },
+          "doc": "Optional icon image shown with the label."
+        },
+        "icon_size": {
+          "type": {
+            "kind": "int",
+            "min": 0,
+            "max": 512
+          },
+          "default": 0,
+          "doc": "Icon size in pixels (0 = 70% of the button height, or 45% with icon_position top)."
+        },
+        "icon_position": {
+          "type": {
+            "kind": "enum",
+            "values": [
+              "left",
+              "top"
+            ]
+          },
+          "default": "left",
+          "doc": "Icon left of the label, or above it."
+        }
+      }
+    },
+    "UIPanel": {
+      "dimension": "any",
+      "container": true,
+      "doc": "Screen-space rectangle; parent for other UI.",
+      "props": {
+        "visible": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": true,
+          "doc": "Rendered and processed when true."
+        },
+        "anchor": {
+          "type": {
+            "kind": "enum",
+            "values": [
+              "top_left",
+              "top",
+              "top_right",
+              "left",
+              "center",
+              "right",
+              "bottom_left",
+              "bottom",
+              "bottom_right"
+            ]
+          },
+          "default": "top_left",
+          "doc": "Screen anchor (top-level UI stays inside the phone safe area: notch, home bar)."
+        },
+        "offset": {
+          "type": {
+            "kind": "vec2"
+          },
+          "default": [
+            0,
+            0
+          ],
+          "doc": "Pixels from the anchor."
+        },
+        "size": {
+          "type": {
+            "kind": "vec2"
+          },
+          "default": [
+            200,
+            48
+          ],
+          "doc": "Pixels."
+        },
+        "z_index": {
+          "type": {
+            "kind": "int",
+            "min": -4096,
+            "max": 4096
+          },
+          "default": 0,
+          "doc": "Draw order among UI."
+        },
+        "scale": {
+          "type": {
+            "kind": "vec2"
+          },
+          "default": [
+            1,
+            1
+          ],
+          "doc": "Visual scale around the center (tween it to pop/bounce UI; layout size is unchanged)."
+        },
+        "background": {
+          "type": {
+            "kind": "color"
+          },
+          "default": "#000000aa",
+          "doc": "Fill."
+        },
+        "image": {
+          "type": {
+            "kind": "asset",
+            "assetKind": "image"
+          },
+          "doc": "Optional background image."
+        },
+        "input_transparent": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": false,
+          "doc": "Taps pass through the panel itself (its buttons still work) — for HUD frames over the play area."
+        },
+        "scroll": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": false,
+          "doc": "Vertical scrolling list: clips children; drag/flick on touch, mouse wheel on desktop. Content height = lowest child (use layout = \"stack\" to stack children automatically)."
+        },
+        "layout": {
+          "type": {
+            "kind": "enum",
+            "values": [
+              "none",
+              "stack"
+            ]
+          },
+          "default": "none",
+          "doc": "stack = children placed top to bottom in order (their offset.y adds extra space, anchor picks left/center/right); none = each child uses its own anchor + offset."
+        },
+        "gap": {
+          "type": {
+            "kind": "int",
+            "min": 0,
+            "max": 1000
+          },
+          "default": 12,
+          "doc": "Space between stacked children (layout = stack)."
+        },
+        "padding": {
+          "type": {
+            "kind": "int",
+            "min": 0,
+            "max": 1000
+          },
+          "default": 0,
+          "doc": "Inset of stacked children from the panel's top (layout = stack)."
+        },
+        "tint": {
+          "type": {
+            "kind": "color"
+          },
+          "default": "#ffffff",
+          "doc": "Multiplies `image` (recolor one panel image)."
+        },
+        "radius": {
+          "type": {
+            "kind": "int",
+            "min": -1,
+            "max": 1000
+          },
+          "default": -1,
+          "doc": "Corner radius in pixels (-1 = from the [ui] panel style)."
+        },
+        "clip": {
+          "type": {
+            "kind": "bool"
+          },
+          "default": false,
+          "doc": "Clip children to the panel (scroll panels always clip)."
+        }
+      }
+    }
+  },
+  "styles": {
+    "pixel": {
+      "dimensions": [
+        "2d"
+      ],
+      "label": "Pixel art",
+      "build": "Retro pixel art. Design on a 16px (or 32px) grid; positions and sizes are multiples of it. Small limited palette (≤16 colors, use style.palette if set). Sprites are tiny and readable; animate with few frames. Base resolution is low and upscaled.",
+      "assetPrompt": "pixel art, crisp hard pixel edges, no anti-aliasing, no blur, limited color palette, transparent background, single centered subject, orthographic side or 3/4 view, game sprite",
+      "render": {
+        "textureFilter": "nearest",
+        "pixelSnap": true,
+        "baseResolution": [
+          320,
+          180
+        ],
+        "shading": "unshaded",
+        "outline": false
+      },
+      "primitivesFirst": false
+    },
+    "blocky": {
+      "dimensions": [
+        "2d",
+        "3d"
+      ],
+      "label": "Blocky",
+      "build": "Chunky block/voxel look. Build the world and most props from primitives (box, cylinder, sphere) with flat colors; compose characters from boxes. Use generated meshes only for hero objects. Bright saturated palette, 1-unit grid.",
+      "assetPrompt": "blocky voxel style, chunky cube shapes, flat saturated colors, simple, low detail, toy-like, plain background, single centered subject",
+      "render": {
+        "textureFilter": "nearest",
+        "pixelSnap": false,
+        "baseResolution": null,
+        "shading": "flat",
+        "outline": false
+      },
+      "primitivesFirst": true
+    },
+    "clean": {
+      "dimensions": [
+        "2d",
+        "3d"
+      ],
+      "label": "Clean",
+      "build": "Minimal flat-vector look. Simple geometric shapes, generous whitespace, soft palette of 3–5 colors, no texture noise. Readability over detail. In 3D: smooth low-poly with solid materials.",
+      "assetPrompt": "clean flat vector illustration, simple geometric shapes, smooth edges, soft limited palette, minimal detail, no texture, no outlines, plain background, single centered subject",
+      "render": {
+        "textureFilter": "linear",
+        "pixelSnap": false,
+        "baseResolution": null,
+        "shading": "flat",
+        "outline": false
+      },
+      "primitivesFirst": true
+    },
+    "toon": {
+      "dimensions": [
+        "2d",
+        "3d"
+      ],
+      "label": "Toon",
+      "build": "Cel-shaded cartoon. Exaggerated proportions, bold silhouettes, dark outlines, 2–3 tone shading. Generated meshes for characters and key props; primitives for terrain blocks.",
+      "assetPrompt": "cartoon style, cel shading, bold dark outlines, exaggerated proportions, vibrant colors, plain background, single centered subject",
+      "render": {
+        "textureFilter": "linear",
+        "pixelSnap": false,
+        "baseResolution": null,
+        "shading": "toon",
+        "outline": true
+      },
+      "primitivesFirst": false
+    },
+    "custom": {
+      "dimensions": [
+        "2d",
+        "3d"
+      ],
+      "label": "Custom",
+      "build": "Follow style.notes and the reference images exactly; keep every asset consistent with them.",
+      "assetPrompt": "",
+      "render": {
+        "textureFilter": "linear",
+        "pixelSnap": false,
+        "baseResolution": null,
+        "shading": "standard",
+        "outline": false
+      },
+      "primitivesFirst": false
+    }
+  }
+}

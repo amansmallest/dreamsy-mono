@@ -1,0 +1,37 @@
+# Revyl Test Definition
+
+_meta:
+    remote_id: e140e3af-4687-4155-8a37-e57902eb4c5c
+    remote_version: 2
+    local_version: 2
+    last_synced_at: "2026-11-15T14:10:38-08:00"
+    checksum: a2c5703216c039c04ff7808ebb9f015936b1cce26393f7d8e68ae0dab1d0c085
+test:
+    metadata:
+        name: guest-smoke
+        platform: ios
+        tags:
+            - smoke
+    build:
+        name: capy--org_01M7G6493CH6FF4PQHGWX2EY81--dreamsy-ios
+    device:
+        model: iPhone 17 Pro Max
+        os_version: iOS 27.0
+        orientation: portrait
+    blocks:
+        - type: validation
+          step_description: The Dreamsy welcome screen with a "Look around first" option is visible
+        - type: instructions
+          step_description: Tap "Look around first"
+        - type: validation
+          step_description: The onboarding screen asks what players should call you
+        - type: instructions
+          step_description: Type a handle made of "revyl" followed by six random digits in the handle field
+        - type: instructions
+          step_description: Tap Next
+        - type: validation
+          step_description: The avatar step of onboarding is visible
+        - type: instructions
+          step_description: Tap "That's me"
+        - type: validation
+          step_description: The home screen is visible and shows at least one game

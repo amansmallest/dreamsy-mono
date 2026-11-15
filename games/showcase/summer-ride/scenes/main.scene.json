@@ -1,0 +1,136 @@
+{
+  "format": "0",
+  "root": "title_root",
+  "entities": {
+    "title_root": {
+      "type": "Node2D",
+      "scripts": [
+        "scripts/client/title.luau"
+      ],
+      "children": [
+        "title_bg",
+        "title_logo",
+        "title_bike",
+        "title_cam",
+        "title_panel",
+        "title_sub",
+        "title_help",
+        "start_button"
+      ]
+    },
+    "title_bg": {
+      "type": "Node2D"
+    },
+    "title_bike": {
+      "type": "Sprite2D",
+      "props": {
+        "texture": "asset:bike_1",
+        "size": [
+          48,
+          40
+        ],
+        "position": [
+          190,
+          164
+        ],
+        "z_index": 10
+      }
+    },
+    "title_cam": {
+      "type": "Camera2D",
+      "props": {
+        "position": [
+          214,
+          120
+        ],
+        "zoom": 3
+      }
+    },
+    "title_panel": {
+      "type": "UIPanel",
+      "props": {
+        "anchor": "top",
+        "offset": [
+          0,
+          168
+        ],
+        "size": [
+          760,
+          84
+        ],
+        "background": "#2a317099"
+      }
+    },
+    "title_sub": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top",
+        "offset": [
+          0,
+          174
+        ],
+        "size": [
+          740,
+          40
+        ],
+        "font_size": 28,
+        "align": "center",
+        "color": "#e8c27a",
+        "text": "Catch the evening train with Mio and Mochi!",
+        "z_index": 2
+      }
+    },
+    "title_help": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top",
+        "offset": [
+          0,
+          214
+        ],
+        "size": [
+          740,
+          32
+        ],
+        "font_size": 22,
+        "align": "center",
+        "color": "#f2ece6",
+        "text": "Jump: hop rocks & puddles  -  Right: pedal faster",
+        "z_index": 2
+      }
+    },
+    "start_button": {
+      "type": "UIButton",
+      "props": {
+        "anchor": "bottom",
+        "offset": [
+          0,
+          -40
+        ],
+        "size": [
+          320,
+          80
+        ],
+        "font_size": 40,
+        "text": "Ride!",
+        "background": "#c9685aee",
+        "color": "#f2ece6"
+      }
+    },
+    "title_logo": {
+      "type": "Sprite2D",
+      "props": {
+        "texture": "asset:title_logo",
+        "size": [
+          196,
+          32
+        ],
+        "position": [
+          214,
+          32
+        ],
+        "z_index": 80
+      }
+    }
+  }
+}

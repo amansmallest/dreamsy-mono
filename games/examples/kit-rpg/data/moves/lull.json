@@ -1,0 +1,13 @@
+{
+  "name": "Lull",
+  "type": "moon",
+  "category": "status",
+  "accuracy": 70,
+  "pp": 15,
+  "effects": [
+    {
+      "type": "status",
+      "status": "sleep"
+    }
+  ]
+}

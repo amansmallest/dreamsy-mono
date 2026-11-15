@@ -1,0 +1,13 @@
+{
+  "text": "Collect 100 coins in one run",
+  "stat": "coins",
+  "target": 100,
+  "scope": "run",
+  "order": 6,
+  "reward": [
+    {
+      "earn": "coins",
+      "amount": 150
+    }
+  ]
+}

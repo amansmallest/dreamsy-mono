@@ -1,0 +1,7 @@
+{
+ "name": "Stone",
+ "icon": "asset:stone",
+ "category": "material",
+ "value": 2,
+ "stack": 999
+}

@@ -1,0 +1,10 @@
+{
+ "name": "Oil Flask",
+ "rarity": "common",
+ "icon": "asset:rl_oil_flask",
+ "text": "Start each combat with 1 Strength.",
+ "on": "battle_start",
+ "effects": [
+  "apply strength 1 self"
+ ]
+}

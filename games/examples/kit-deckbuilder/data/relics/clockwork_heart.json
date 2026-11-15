@@ -1,0 +1,9 @@
+{
+ "name": "Clockwork Heart",
+ "rarity": "uncommon",
+ "icon": "asset:rl_clockwork_heart",
+ "text": "+10 Max HP.",
+ "mods": {
+  "max_hp": 10
+ }
+}

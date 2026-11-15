@@ -1,0 +1,13 @@
+{
+  "name": "Frost Nova",
+  "icon": "asset:i_dash",
+  "charge": 2,
+  "action": "nova",
+  "effects": [
+    {
+      "shield": 4
+    }
+  ],
+  "description": "Freeze foes, +4 shield.",
+  "price": 55
+}

@@ -1,0 +1,41 @@
+{
+  "name": "Warden Vela",
+  "party": [
+    {
+      "creature": "glimmet",
+      "level": 7
+    },
+    {
+      "creature": "duskmole",
+      "level": 7
+    },
+    {
+      "creature": "stellion",
+      "level": 9
+    }
+  ],
+  "ai": "smart",
+  "items": {
+    "tonic": 1
+  },
+  "reward": 800,
+  "flags": [
+    "trial_1"
+  ],
+  "music": "battle",
+  "intro": [
+    "I am Vela, warden of the Starfall Trial.",
+    "Show me the bond you share with your team!"
+  ],
+  "defeat": [
+    "Your light outshines mine.",
+    "Take the Starfall Sigil. You have earned it."
+  ],
+  "after": [
+    "Elder Moss will want to hear of your victory."
+  ],
+  "battle": {
+    "sky": "#29366f",
+    "ground": "#3b5dc9"
+  }
+}

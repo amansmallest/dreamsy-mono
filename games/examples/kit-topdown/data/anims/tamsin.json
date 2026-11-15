@@ -1,0 +1,23 @@
+{
+  "down": {
+    "frames": [
+      "asset:hero_down1",
+      "asset:hero_down2"
+    ],
+    "fps": 6
+  },
+  "up": {
+    "frames": [
+      "asset:hero_up1",
+      "asset:hero_up2"
+    ],
+    "fps": 6
+  },
+  "side": {
+    "frames": [
+      "asset:hero_side1",
+      "asset:hero_side2"
+    ],
+    "fps": 6
+  }
+}

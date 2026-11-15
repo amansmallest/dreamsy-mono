@@ -1,0 +1,8 @@
+{
+  "kind": "image",
+  "file": "hero_up2.svg",
+  "source": {
+    "model": "claude-opus-5-5",
+    "prompt": "hand-written pixel art SVG: hero up step"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "Pop",
+  "order": 3,
+  "mechanic": "match3",
+  "description": "Match three, clear the goal",
+  "icon": "asset:pack_match",
+  "unlock": { "stars": 12 },
+  "levels": [
+    "data/levels/match_01.json",
+    "data/levels/match_02.json",
+    "data/levels/match_03.json",
+    { "generate": { "count": 7, "seed": 31, "params": { "w": 7, "h": 7, "colors": 5 },
+      "curve": [ { "at": 0, "params": { "goal": "score", "moves": 20, "target": 0.6, "jelly": 8 } },
+                 { "at": 0.3, "params": { "goal": "jelly", "moves": 18, "target": 0.7, "jelly": 10 } },
+                 { "at": 0.65, "params": { "goal": "collect", "moves": 16, "target": 0.8, "jelly": 12 } } ] } }
+  ]
+}

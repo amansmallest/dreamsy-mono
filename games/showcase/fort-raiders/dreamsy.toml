@@ -1,0 +1,14 @@
+format = "0"
+name = "Village Raiders"
+dimension = "2d"
+entry_scene = "scenes/main.scene.json"
+
+[style]
+preset = "toon"
+
+[server]
+mode = "none"
+
+[players]
+max = 1
+

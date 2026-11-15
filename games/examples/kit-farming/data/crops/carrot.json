@@ -1,0 +1,17 @@
+{
+ "stages": [
+  1,
+  2,
+  2
+ ],
+ "price": 70,
+ "seed": {
+  "price": 30,
+  "icon": "asset:carrot_seeds"
+ },
+ "name": "Carrot",
+ "seasons": [
+  "spring"
+ ],
+ "icon": "asset:carrot"
+}

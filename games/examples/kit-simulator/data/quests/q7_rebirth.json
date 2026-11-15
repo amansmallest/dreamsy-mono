@@ -1,0 +1,26 @@
+{
+ "title": "Born Again",
+ "autoStart": true,
+ "steps": [
+  {
+   "id": "s1",
+   "text": "Rebirth once",
+   "objectives": [
+    {
+     "id": "o",
+     "event": "rebirth",
+     "count": 1
+    }
+   ]
+  }
+ ],
+ "rewards": [
+  {
+   "pet": "clover_fox"
+  }
+ ],
+ "requires": {
+  "quest": "q6_canyon",
+  "is": "done"
+ }
+}

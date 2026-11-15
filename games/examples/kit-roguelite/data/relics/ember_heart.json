@@ -1,0 +1,17 @@
+{
+  "name": "Ember Heart",
+  "rarity": "common",
+  "icon": "asset:i_flame",
+  "tags": [
+    "fire"
+  ],
+  "stack": true,
+  "maxStack": 3,
+  "description": "+1 damage. Stacks.",
+  "mods": [
+    {
+      "stat": "damage",
+      "add": 1
+    }
+  ]
+}

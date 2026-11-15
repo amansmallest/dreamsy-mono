@@ -1,0 +1,40 @@
+{
+  "name": "Stellion",
+  "types": [
+    "star"
+  ],
+  "base": {
+    "hp": 70,
+    "atk": 80,
+    "def": 70,
+    "mag": 75,
+    "res": 70,
+    "spd": 85
+  },
+  "learnset": [
+    {
+      "level": 1,
+      "move": "star_tap"
+    },
+    {
+      "level": 1,
+      "move": "twinkle"
+    },
+    {
+      "level": 6,
+      "move": "shooting_star"
+    },
+    {
+      "level": 9,
+      "move": "comet_rush"
+    }
+  ],
+  "catch_rate": 45,
+  "xp_yield": 150,
+  "xp_curve": "medium",
+  "sprites": {
+    "front": "asset:stellion",
+    "icon": "asset:stellion"
+  },
+  "description": "A proud constellation beast. Keepers of the trial ride it."
+}

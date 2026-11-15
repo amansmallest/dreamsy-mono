@@ -1,0 +1,25 @@
+{
+  "name": "Warden",
+  "order": 1,
+  "icon": "asset:warden",
+  "sprite": "asset:warden",
+  "description": "Sturdy lantern-knight. Sweeping blade, close range.",
+  "stats": {
+    "hp": 34,
+    "damage": 3,
+    "fireRate": 1.6,
+    "speed": 74,
+    "armor": 0,
+    "range": 1
+  },
+  "weapon": {
+    "kind": "swing",
+    "range": 22,
+    "arc": 150,
+    "knockback": 170
+  },
+  "relics": [
+    "lantern_oath"
+  ],
+  "active": "ember_bomb"
+}

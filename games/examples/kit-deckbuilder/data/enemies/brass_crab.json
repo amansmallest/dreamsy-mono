@@ -1,0 +1,31 @@
+{
+ "name": "Brass Crab",
+ "hp": [
+  16,
+  19
+ ],
+ "tier": "normal",
+ "act": "undertow",
+ "cost": 2,
+ "sprite": "asset:en_brass_crab",
+ "moves": {
+  "clamp": {
+   "effects": [
+    "damage 8"
+   ]
+  },
+  "shell": {
+   "effects": [
+    "block 7",
+    "damage 3"
+   ]
+  }
+ },
+ "pattern": {
+  "kind": "cycle",
+  "moves": [
+   "clamp",
+   "shell"
+  ]
+ }
+}

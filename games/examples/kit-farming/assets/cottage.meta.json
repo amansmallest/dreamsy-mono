@@ -1,0 +1,8 @@
+{
+ "kind": "image",
+ "file": "cottage.svg",
+ "source": {
+  "model": "claude-opus-5-5",
+  "prompt": "hand-written SVG"
+ }
+}

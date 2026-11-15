@@ -1,0 +1,12 @@
+{
+ "name": "Wick Trim",
+ "cost": 0,
+ "type": "skill",
+ "rarity": "common",
+ "effects": [
+  "draw 2",
+  "discard 1"
+ ],
+ "character": "wick",
+ "art": "asset:art_sun"
+}

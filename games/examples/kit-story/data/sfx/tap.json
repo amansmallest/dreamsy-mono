@@ -1,0 +1,7 @@
+{
+ "wave": "sine",
+ "freq": 660,
+ "sustain": 0.01,
+ "decay": 0.06,
+ "volume": 0.25
+}

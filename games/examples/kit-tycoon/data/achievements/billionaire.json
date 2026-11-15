@@ -1,0 +1,11 @@
+{
+  "name": "Sugar Baron",
+  "desc": "Bake 1B coins",
+  "order": 10,
+  "when": {
+    "earned": 1000000000
+  },
+  "reward": {
+    "mult": 1.05
+  }
+}

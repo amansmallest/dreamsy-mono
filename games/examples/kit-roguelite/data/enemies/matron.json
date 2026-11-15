@@ -1,0 +1,53 @@
+{
+  "name": "Crystal Matron",
+  "sprite": "asset:matron",
+  "hp": 90,
+  "cost": 0,
+  "boss": true,
+  "size": 26,
+  "behavior": "boss",
+  "dps": 2.2,
+  "phases": [
+    {
+      "hp": 1.0,
+      "pattern": [
+        {
+          "behavior": "chase",
+          "time": 2.5,
+          "speed": 30
+        },
+        {
+          "action": "ring",
+          "count": 8,
+          "wait": 1.0
+        }
+      ]
+    },
+    {
+      "hp": 0.5,
+      "pattern": [
+        {
+          "action": "summon",
+          "kind": "wisp",
+          "wait": 0.6
+        },
+        {
+          "behavior": "charge",
+          "time": 2.2,
+          "range": 140,
+          "speed": 170
+        },
+        {
+          "action": "ring",
+          "count": 12,
+          "wait": 0.9
+        }
+      ]
+    }
+  ],
+  "contact": {
+    "amount": 2,
+    "knockback": 200
+  },
+  "armor": 1
+}

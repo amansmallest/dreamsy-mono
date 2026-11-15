@@ -1,0 +1,7 @@
+{
+  "name": "Gem",
+  "description": "Shiny and rare.",
+  "icon": "asset:gem",
+  "category": "loot",
+  "value": 50
+}

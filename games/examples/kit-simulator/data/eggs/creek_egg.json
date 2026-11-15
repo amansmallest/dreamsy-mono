@@ -1,0 +1,15 @@
+{
+ "name": "Creek Egg",
+ "order": 2,
+ "cost": {
+  "coins": 3000
+ },
+ "zone": "creek",
+ "icon": "asset:egg_creek",
+ "pets": {
+  "frog": 55,
+  "otter": 30,
+  "kingfisher": 13.5,
+  "crystal_newt": 1.5
+ }
+}

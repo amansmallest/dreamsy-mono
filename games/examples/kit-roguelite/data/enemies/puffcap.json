@@ -1,0 +1,23 @@
+{
+  "name": "Puffcap",
+  "sprite": "asset:puffcap",
+  "hp": 5,
+  "cost": 2,
+  "behavior": "turret",
+  "params": {
+    "range": 150,
+    "fireEvery": 1.8,
+    "burst": 3,
+    "spread": 25
+  },
+  "projectile": {
+    "sprite": "asset:spit",
+    "speed": 90,
+    "amount": 1,
+    "status": {
+      "name": "poison",
+      "chance": 0.3,
+      "duration": 2
+    }
+  }
+}

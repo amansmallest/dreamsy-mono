@@ -1,0 +1,42 @@
+{
+  "name": "Sprout Cup",
+  "tracks": [
+    "pea_patch",
+    "teapot_turns",
+    "greenhouse"
+  ],
+  "points": [
+    10,
+    7,
+    5,
+    3
+  ],
+  "difficulty": "normal",
+  "reward": {
+    "coins": 500,
+    "flag": "cup_won"
+  },
+  "rivals": [
+    {
+      "id": "moss",
+      "name": "Moss",
+      "car": "snap_pea",
+      "preset": "normal",
+      "color": "#7cc35a"
+    },
+    {
+      "id": "clover",
+      "name": "Clover",
+      "car": "pumpkin_hauler",
+      "preset": "normal",
+      "color": "#ff9a3c"
+    },
+    {
+      "id": "fern",
+      "name": "Fern",
+      "car": "dragonfly_gt",
+      "preset": "easy",
+      "color": "#3fa7d6"
+    }
+  ]
+}

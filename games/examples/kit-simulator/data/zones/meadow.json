@@ -1,0 +1,27 @@
+{
+ "name": "Sunny Meadow",
+ "order": 1,
+ "color": "#bfe39a",
+ "desc": "Smooth pebbles and the odd shiny one.",
+ "icon": "asset:zone_meadow",
+ "nodes": [
+  {
+   "id": "pebble",
+   "hp": 3,
+   "reward": 1,
+   "size": 1,
+   "weight": 1.0,
+   "sprite": "asset:node_pebble",
+   "color": "#d8d3ca"
+  },
+  {
+   "id": "shiny",
+   "hp": 9,
+   "reward": 4,
+   "size": 1,
+   "weight": 0.35,
+   "sprite": "asset:node_shiny",
+   "color": "#fff6b0"
+  }
+ ]
+}

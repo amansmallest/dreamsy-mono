@@ -1,0 +1,8 @@
+{
+ "name": "Chest",
+ "icon": "asset:chest",
+ "category": "build",
+ "data": {
+  "place": "chest"
+ }
+}

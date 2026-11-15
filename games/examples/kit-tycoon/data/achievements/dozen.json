@@ -1,0 +1,13 @@
+{
+  "name": "A Baker's Dozen",
+  "desc": "Own 13 Muffin Tins",
+  "order": 2,
+  "when": {
+    "owned": {
+      "muffin_tin": 13
+    }
+  },
+  "reward": {
+    "mult": 1.05
+  }
+}

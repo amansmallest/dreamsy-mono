@@ -1,0 +1,7 @@
+{
+ "format": "0",
+ "root": "world",
+ "entities": {
+  "world": { "type": "Node2D", "scripts": ["scripts/client/main.luau"] }
+ }
+}

@@ -1,0 +1,14 @@
+{
+ "name": "Growth Tonic",
+ "icon": "asset:tonic",
+ "inputs": {
+  "egg": 1,
+  "radish": 1
+ },
+ "data": {
+  "fertilizer": {
+   "speed": 0.5
+  }
+ },
+ "category": "fertilizer"
+}

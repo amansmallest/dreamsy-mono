@@ -1,0 +1,95 @@
+# Lanternlight, chapter 2: questions in the cottage, the deduction board, two endings.
+@chapter ch2 "Fog Over Saltreach"
+@label ch2_start
+@bg cottage fade
+@music mystery
+> Morning. The fog has thinned to a grey veil. The keepers' cottage smells of woodsmoke and burnt toast.
+@show juniper smile right
+Juniper: So you're the one who brought the light back. I'm Juniper. I draw maps of places nobody visits.
+Juniper (thinking): I was sketching the cove at midnight. Terrible light for it, which is to say, no light at all.
+* "Did you see anything out on the water?" -> ch2_jun_saw {aff juniper 1}
+* "Funny place to be at midnight, with the lamp out." -> ch2_jun_sharp {aff juniper -1}
+
+@label ch2_jun_sharp
+Juniper (thinking): Funny place to be at any hour. That's why I come.
+Juniper: But since you ask so sweetly...
+@goto ch2_jun_saw
+
+@label ch2_jun_saw
+Juniper: A lantern. One lantern, low on the water, coming from the far cottage toward the boathouse slipway.
+Juniper: Rowing, not motoring. Whoever it was didn't want to be heard.
+@clue lantern_boat
+@if has brass_key or toolbox_open
+  Juniper (smile): You found the boathouse key? Ott swore blind it fell in the harbour.
+@endif
+@hide juniper
+@show ott neutral right
+@show mira neutral left
+> Ott stamps in, shaking water from his coat. His boots leave large dark prints on the boards.
+Ott: Light's back, then. Good. Can a man get his tea?
+Mira: Ott, where were you last night? Around midnight?
+Ott (angry): Abed by ten, like every night. Ask anyone.
+Mira: There isn't anyone, Ott. There's us.
+@clue ott_alibi
+* "Nobody's accusing you, Ott. We just want to understand." -> ch2_gentle {aff ott 1}
+* "Those are big boots, Ott. Bigger than the prints in the boathouse?" -> ch2_press {aff ott -1}
+
+@label ch2_gentle
+Ott (sad): Understand. Hm.
+Ott: Some things are better left in the fog, keeper.
+@goto ch2_board
+
+@label ch2_press
+Ott (angry): Measure my boots, will you? Forty years on this rock and a stranger measures my boots.
+@goto ch2_board
+
+@label ch2_board
+@hide all
+> Ott storms off to the porch. Mira pours tea nobody drinks. You lay everything you know across the table.
+@deduce who_dimmed
+
+@label ch2_failed
+@bg harbor fade
+@show mira worried left
+> Your theory falls apart the moment you say it aloud. Ott laughs, without much humour, and Juniper quietly packs her maps.
+Mira (worried): We'll never know now, will we?
+@goto ch2_fog
+
+@label ch2_solved
+@bg harbor fade
+@music tide
+@show ott sad right
+@show mira worried left
+> You find Ott on the jetty, staring at the Teeth. You don't have to say much. He's been waiting for someone to ask.
+Ott (sad): Aye. It was me. I rowed across at midnight, cut the wick, rowed back.
+Ott: There's a skiff, the Gannet. Smugglers. They use our light to find the cove. I thought one dark night and they'd run onto the Teeth and leave us be.
+Mira (worried): The supply boat was out there too, Ott! Those are our friends!
+Ott (sad): I know. I knew it by one in the morning. I couldn't row back fast enough to undo it.
+* "Then we stop the Gannet properly. Together. Report them to the harbour board." -> ch2_together {aff ott 2} {aff mira 2}
+* "You nearly drowned a crew. I'm reporting you, not them." -> ch2_report {aff ott -2} {aff mira -1}
+
+@label ch2_together
+Ott: ...Together. Hm. Haven't been part of a together in a long while.
+Mira (happy): I'll write the report. My handwriting is better than both of yours.
+@goto ch2_final
+
+@label ch2_report
+Ott (angry): Do as you like, keeper. You will anyway.
+@goto ch2_final
+
+@label ch2_final
+@if aff mira >= 3 and solved who_dimmed
+  @hide all
+  @cg relit
+  > That night the three of you climb the tower together. Ott trims the wick. Mira polishes the lens. Juniper draws the beam.
+  > When the Gannet's sail shows at the edge of the light, the harbour board's cutter is already waiting.
+  @end keeper
+@endif
+@goto ch2_fog
+
+@label ch2_fog
+@hide all
+@bg harbor fade
+> The lamp turns every twelve seconds, just as it should. But the island goes quiet when you walk into a room.
+> You did your job. Somehow it doesn't feel like enough.
+@end fog

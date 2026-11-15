@@ -1,0 +1,23 @@
+{
+ "bpm": 128,
+ "steps": 16,
+ "channels": [
+  {
+   "wave": "square",
+   "volume": 0.22,
+   "duty": 0.125,
+   "notes": "D5 . F5 . A5 . F5 . D5 . C5 . A4 . C5 ."
+  },
+  {
+   "wave": "triangle",
+   "volume": 0.45,
+   "notes": "D2 - D3 . D2 - D3 . A1 - A2 . C2 - C3 ."
+  },
+  {
+   "wave": "noise",
+   "volume": 0.2,
+   "notes": "C2 . C8 . C5 . C8 . C2 . C8 . C5 . C8 C8"
+  }
+ ],
+ "loop": true
+}

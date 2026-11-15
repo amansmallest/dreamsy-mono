@@ -1,0 +1,22 @@
+{
+  "id": "common",
+  "rolls": 1,
+  "entries": [
+    {
+      "nothing": true,
+      "weight": 4
+    },
+    {
+      "item": "coin",
+      "weight": 5,
+      "count": [
+        1,
+        3
+      ]
+    },
+    {
+      "item": "potion",
+      "weight": 1
+    }
+  ]
+}

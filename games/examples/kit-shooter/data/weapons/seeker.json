@@ -1,0 +1,21 @@
+{
+ "name": "Seeker pods",
+ "kind": "homing",
+ "sprite": "asset:missile",
+ "size": [
+  12,
+  30
+ ],
+ "levels": [
+  {
+   "rate": 2.5,
+   "count": 2,
+   "spread": 70,
+   "damage": 1,
+   "speed": 520,
+   "homing": 260,
+   "homingRange": 500,
+   "lifetime": 2.2
+  }
+ ]
+}

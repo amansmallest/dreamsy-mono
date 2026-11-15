@@ -1,0 +1,87 @@
+{
+ "lives": 3,
+ "bombs": 2,
+ "maxBombs": 5,
+ "continues": 2,
+ "currency": "credits",
+ "currencyName": "Credits",
+ "autoFire": true,
+ "campaign": [
+  "nebula_run",
+  "ice_belt"
+ ],
+ "startShip": "starling",
+ "grazeRadius": 28,
+ "magnet": 160,
+ "score": {
+  "comboWindow": 1.6,
+  "multEvery": 8,
+  "maxMult": 8,
+  "grazePoints": 10,
+  "extends": [
+   60000,
+   200000
+  ]
+ },
+ "pickups": {
+  "power": "asset:pickup_power",
+  "bomb": "asset:pickup_bomb",
+  "life": "asset:pickup_life",
+  "coin": "asset:coin"
+ },
+ "shop": [
+  {
+   "id": "power",
+   "name": "Power cell",
+   "cost": 40,
+   "max": 3,
+   "effect": {
+    "power": 1
+   }
+  },
+  {
+   "id": "bomb",
+   "name": "Nova bomb",
+   "cost": 30,
+   "effect": {
+    "bomb": 1
+   }
+  },
+  {
+   "id": "life",
+   "name": "Spare hull",
+   "cost": 120,
+   "max": 2,
+   "effect": {
+    "life": 1
+   }
+  },
+  {
+   "id": "orbit",
+   "name": "Halo orbs",
+   "cost": 90,
+   "max": 1,
+   "effect": {
+    "sub": "orbit"
+   }
+  },
+  {
+   "id": "seeker",
+   "name": "Seeker pods",
+   "cost": 110,
+   "max": 1,
+   "effect": {
+    "sub": "seeker"
+   }
+  },
+  {
+   "id": "fan",
+   "name": "Fan cannon",
+   "cost": 80,
+   "max": 1,
+   "effect": {
+    "weapon": "fan"
+   }
+  }
+ ]
+}

@@ -1,0 +1,8 @@
+{
+  "name": "Star Jar",
+  "kind": "capture",
+  "power": 1,
+  "price": 150,
+  "icon": "asset:item_jar",
+  "description": "Catches weakened wild creatures."
+}

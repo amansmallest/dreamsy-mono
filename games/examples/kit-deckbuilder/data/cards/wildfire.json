@@ -1,0 +1,16 @@
+{
+ "name": "Wildfire",
+ "cost": "X",
+ "type": "attack",
+ "rarity": "uncommon",
+ "effects": [
+  "damage 6 xX"
+ ],
+ "upgrade": {
+  "effects": [
+   "damage 6 xX+1"
+  ]
+ },
+ "character": "wick",
+ "art": "asset:art_flame"
+}

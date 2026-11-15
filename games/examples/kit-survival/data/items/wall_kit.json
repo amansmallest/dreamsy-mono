@@ -1,0 +1,8 @@
+{
+ "name": "Wall",
+ "icon": "asset:wall",
+ "category": "build",
+ "data": {
+  "place": "wall"
+ }
+}

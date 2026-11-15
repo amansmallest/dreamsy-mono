@@ -1,0 +1,26 @@
+format = "0"
+name = "Lanternfall"
+description = "Keep the last lamps of the drowned Undertow Bazaar burning: draft cards, read enemy intents and ring down the Drowned Bell. Built on the deckbuilder kit."
+dimension = "2d"
+orientation = "portrait"
+entry_scene = "scenes/main.scene.json"
+kits = ["deckbuilder"]
+
+[players]
+min = 1
+max = 1
+
+[server]
+mode = "none"
+
+[ui]
+primary = "#c8743a"
+accent = "#ffd27a"
+background = "#132029"
+text = "#f6efe2"
+panel = "rounded"
+font = "rounded"
+
+[style]
+preset = "clean"
+palette = ["#0d2a33", "#132029", "#c8743a", "#ffd27a", "#f6efe2", "#a5462f", "#2f6aa5", "#7b46a8"]

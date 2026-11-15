@@ -1,0 +1,13 @@
+{
+ "name": "Stone Axe",
+ "icon": "asset:stone_axe",
+ "category": "tool",
+ "stack": 1,
+ "data": {
+  "tool": {
+   "kind": "axe",
+   "tier": 1,
+   "power": 2
+  }
+ }
+}

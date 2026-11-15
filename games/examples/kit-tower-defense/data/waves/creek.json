@@ -1,0 +1,205 @@
+{
+  "id": "creek",
+  "scaling": {
+    "hp": 0.04
+  },
+  "waves": [
+    {
+      "groups": [
+        {
+          "enemy": "beetle",
+          "count": 6,
+          "interval": 1.2,
+          "delay": 0,
+          "path": "S"
+        },
+        {
+          "enemy": "beetle",
+          "count": 6,
+          "interval": 1.2,
+          "delay": 0.6,
+          "path": "T"
+        }
+      ],
+      "bonus": 20
+    },
+    {
+      "groups": [
+        {
+          "enemy": "slime",
+          "count": 4,
+          "interval": 2.0,
+          "delay": 0,
+          "path": "S"
+        },
+        {
+          "enemy": "ant",
+          "count": 8,
+          "interval": 0.7,
+          "delay": 2,
+          "path": "T"
+        }
+      ],
+      "bonus": 25
+    },
+    {
+      "groups": [
+        {
+          "enemy": "moth",
+          "count": 8,
+          "interval": 0.9,
+          "delay": 0,
+          "path": "*"
+        },
+        {
+          "enemy": "beetle",
+          "count": 10,
+          "interval": 0.8,
+          "delay": 3,
+          "path": "S"
+        }
+      ],
+      "bonus": 25
+    },
+    {
+      "groups": [
+        {
+          "enemy": "toad",
+          "count": 2,
+          "interval": 4,
+          "delay": 0,
+          "path": "T"
+        },
+        {
+          "enemy": "beetle",
+          "count": 10,
+          "interval": 0.7,
+          "delay": 1,
+          "path": "T"
+        }
+      ],
+      "bonus": 30
+    },
+    {
+      "groups": [
+        {
+          "enemy": "snail",
+          "count": 6,
+          "interval": 1.6,
+          "delay": 0,
+          "path": "S"
+        },
+        {
+          "enemy": "slime",
+          "count": 5,
+          "interval": 1.8,
+          "delay": 2,
+          "path": "T"
+        }
+      ],
+      "bonus": 30
+    },
+    {
+      "groups": [
+        {
+          "enemy": "ant",
+          "count": 24,
+          "interval": 0.35,
+          "delay": 0,
+          "path": "*"
+        }
+      ],
+      "bonus": 35
+    },
+    {
+      "groups": [
+        {
+          "enemy": "toad",
+          "count": 3,
+          "interval": 3,
+          "delay": 0,
+          "path": "S"
+        },
+        {
+          "enemy": "slime",
+          "count": 4,
+          "interval": 1.4,
+          "delay": 1,
+          "path": "S"
+        },
+        {
+          "enemy": "moth",
+          "count": 8,
+          "interval": 0.9,
+          "delay": 4,
+          "path": "T"
+        }
+      ],
+      "bonus": 35
+    },
+    {
+      "groups": [
+        {
+          "enemy": "snail",
+          "count": 10,
+          "interval": 1.1,
+          "delay": 0,
+          "path": "*"
+        },
+        {
+          "enemy": "toad",
+          "count": 2,
+          "interval": 4,
+          "delay": 6,
+          "path": "T"
+        }
+      ],
+      "bonus": 40
+    },
+    {
+      "groups": [
+        {
+          "enemy": "moth",
+          "count": 16,
+          "interval": 0.6,
+          "delay": 0,
+          "path": "*"
+        },
+        {
+          "enemy": "ant",
+          "count": 16,
+          "interval": 0.4,
+          "delay": 4,
+          "path": "*"
+        }
+      ],
+      "bonus": 45
+    },
+    {
+      "groups": [
+        {
+          "enemy": "slime",
+          "count": 10,
+          "interval": 1.0,
+          "delay": 0,
+          "path": "S"
+        },
+        {
+          "enemy": "toad",
+          "count": 4,
+          "interval": 2.5,
+          "delay": 2,
+          "path": "T"
+        },
+        {
+          "enemy": "snail",
+          "count": 8,
+          "interval": 1.2,
+          "delay": 6,
+          "path": "*"
+        }
+      ],
+      "bonus": 60
+    }
+  ]
+}

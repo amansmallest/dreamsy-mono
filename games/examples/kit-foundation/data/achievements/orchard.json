@@ -1,0 +1,13 @@
+{
+  "name": "Orchard Keeper",
+  "description": "Pick 10 apples.",
+  "icon": "asset:apple",
+  "event": "apple_picked",
+  "count": 10,
+  "rewards": [
+    {
+      "earn": "gold",
+      "amount": 10
+    }
+  ]
+}

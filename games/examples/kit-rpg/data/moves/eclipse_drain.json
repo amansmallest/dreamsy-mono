@@ -1,0 +1,14 @@
+{
+  "name": "Eclipse Drain",
+  "type": "moon",
+  "category": "magic",
+  "power": 45,
+  "accuracy": 100,
+  "pp": 15,
+  "effects": [
+    {
+      "type": "drain",
+      "percent": 50
+    }
+  ]
+}

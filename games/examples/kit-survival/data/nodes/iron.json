@@ -1,0 +1,17 @@
+{
+ "name": "Iron vein",
+ "tile": "I",
+ "hp": 8,
+ "tool": "pick",
+ "tier": 1,
+ "drops": [
+  {
+   "item": "ore",
+   "count": [
+    1,
+    2
+   ]
+  }
+ ],
+ "respawn": 400
+}

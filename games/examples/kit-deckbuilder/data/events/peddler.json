@@ -1,0 +1,25 @@
+{
+ "name": "Gill Peddler",
+ "image": "asset:ev_peddler",
+ "text": "\"Cards, cards, wet but working!\" A fish-faced trader grins.",
+ "choices": [
+  {
+   "text": "Buy a rare card (60 gold)",
+   "condition": "gold >= 60",
+   "effects": [
+    "gold -60",
+    "card random rare"
+   ]
+  },
+  {
+   "text": "Sell a weak card (+25 gold)",
+   "effects": [
+    "remove_card 1",
+    "gold 25"
+   ]
+  },
+  {
+   "text": "Leave"
+  }
+ ]
+}

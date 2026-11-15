@@ -1,0 +1,13 @@
+{
+  "text": "Grab 5 gems (total)",
+  "stat": "gems",
+  "target": 5,
+  "scope": "total",
+  "order": 10,
+  "reward": [
+    {
+      "earn": "coins",
+      "amount": 200
+    }
+  ]
+}

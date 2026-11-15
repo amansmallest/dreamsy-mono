@@ -1,0 +1,15 @@
+{
+  "name": "Harvest Moon",
+  "description": "Double apples.",
+  "icon": "asset:gem",
+  "branch": "garden",
+  "cost": 2,
+  "requiresAny": [
+    "green_thumb",
+    "golden_touch"
+  ],
+  "condition": {
+    "quest": "apple_pie",
+    "is": "done"
+  }
+}

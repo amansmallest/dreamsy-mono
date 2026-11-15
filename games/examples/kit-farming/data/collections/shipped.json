@@ -1,0 +1,26 @@
+{
+ "name": "Shipping Log",
+ "auto": "shipped",
+ "items": [
+  "radish",
+  "peas",
+  "carrot",
+  "lettuce",
+  "strawberry",
+  "sunflower",
+  "potato",
+  "moonmelon",
+  "egg",
+  "goat_milk",
+  "jam",
+  "cheese"
+ ],
+ "rewards": {
+  "6": [
+   {
+    "earn": "gold",
+    "amount": 500
+   }
+  ]
+ }
+}

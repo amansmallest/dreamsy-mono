@@ -1,0 +1,31 @@
+{
+  "title": "Whispering Shrine",
+  "text": "A cracked shrine hums.\nIt wants something warm.",
+  "choices": [
+    {
+      "text": "Offer blood (-6 HP): relic",
+      "cost": {
+        "hp": 6
+      },
+      "effects": [
+        {
+          "relic": "random"
+        }
+      ]
+    },
+    {
+      "text": "Offer 40 gold: heal 50%",
+      "cost": {
+        "gold": 40
+      },
+      "effects": [
+        {
+          "healPct": 0.5
+        }
+      ]
+    },
+    {
+      "text": "Walk away"
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+ "title": "Say hi to Juniper",
+ "autoStart": true,
+ "steps": [
+  {
+   "id": "t",
+   "text": "Talk to Juniper in town",
+   "objectives": [
+    {
+     "id": "x",
+     "event": "talked",
+     "match": {
+      "villager": "juniper"
+     },
+     "perEvent": true,
+     "count": 1
+    }
+   ]
+  }
+ ],
+ "rewards": [
+  {
+   "set": "met_juniper"
+  },
+  {
+   "toast": "Juniper now sells Sunflower seeds"
+  }
+ ]
+}

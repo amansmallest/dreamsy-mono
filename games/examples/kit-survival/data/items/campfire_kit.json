@@ -1,0 +1,8 @@
+{
+ "name": "Campfire",
+ "icon": "asset:campfire",
+ "category": "build",
+ "data": {
+  "place": "campfire"
+ }
+}

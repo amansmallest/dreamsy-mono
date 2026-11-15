@@ -1,0 +1,40 @@
+{
+  "name": "Lumoth",
+  "types": [
+    "moon"
+  ],
+  "base": {
+    "hp": 60,
+    "atk": 45,
+    "def": 55,
+    "mag": 85,
+    "res": 75,
+    "spd": 90
+  },
+  "learnset": [
+    {
+      "level": 1,
+      "move": "night_nip"
+    },
+    {
+      "level": 1,
+      "move": "lull"
+    },
+    {
+      "level": 8,
+      "move": "moonbeam"
+    },
+    {
+      "level": 10,
+      "move": "eclipse_drain"
+    }
+  ],
+  "catch_rate": 75,
+  "xp_yield": 140,
+  "xp_curve": "medium",
+  "sprites": {
+    "front": "asset:lumoth",
+    "icon": "asset:lumoth"
+  },
+  "description": "Its glowing wings map the night sky."
+}

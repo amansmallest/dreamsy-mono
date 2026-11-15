@@ -1,0 +1,12 @@
+{
+ "name": "Ember Toss",
+ "cost": 0,
+ "type": "attack",
+ "rarity": "common",
+ "effects": [
+  "damage 5"
+ ],
+ "exhaust": true,
+ "character": "wick",
+ "art": "asset:art_flame"
+}

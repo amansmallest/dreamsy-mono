@@ -1,0 +1,13 @@
+{
+  "name": "Deep Pockets +20% gold",
+  "branch": "fortune",
+  "cost": {
+    "embers": 20
+  },
+  "mods": [
+    {
+      "stat": "goldMult",
+      "pct": 0.2
+    }
+  ]
+}

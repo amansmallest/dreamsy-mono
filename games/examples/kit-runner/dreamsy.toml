@@ -1,0 +1,26 @@
+format = "0"
+name = "Pebble Dash"
+description = "Runner kit showcase: swipe through three biomes of endless lanes (coins, magnets, shields, 2x, missions, daily challenge, unlockable runners) and climb six obby stages with checkpoints, a timer and your best-run ghost."
+dimension = "2d"
+orientation = "portrait"
+entry_scene = "scenes/run.scene.json"
+kits = ["runner"]
+
+[players]
+min = 1
+max = 1
+
+[server]
+mode = "none"
+
+[style]
+preset = "clean"
+palette = ["#23202e", "#ffffff", "#ffd23f", "#e8574f", "#3fb8ff", "#2bc46b", "#b388ff", "#ff4fd8", "#8fd3ff"]
+
+[ui]
+primary = "#3f5bd9"
+accent = "#ffd23f"
+background = "#23202e"
+text = "#ffffff"
+panel = "rounded"
+font = "rounded"

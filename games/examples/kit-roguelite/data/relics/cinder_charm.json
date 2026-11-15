@@ -1,0 +1,14 @@
+{
+  "name": "Cinder Charm",
+  "rarity": "common",
+  "icon": "asset:i_flame",
+  "tags": [
+    "fire"
+  ],
+  "description": "Hits may burn.",
+  "onHit": {
+    "name": "burn",
+    "chance": 0.25,
+    "duration": 2
+  }
+}

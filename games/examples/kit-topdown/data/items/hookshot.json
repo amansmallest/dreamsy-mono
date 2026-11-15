@@ -1,0 +1,9 @@
+{
+  "name": "Reel Hook",
+  "kind": "hookshot",
+  "sprite": "asset:hookshot_icon",
+  "range": 120,
+  "speed": 300,
+  "message": "ITEM button: pull yourself to hook posts",
+  "id": "hookshot"
+}

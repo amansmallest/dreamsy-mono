@@ -1,0 +1,26 @@
+format = "0"
+name = "Lanternlight"
+description = "The lighthouse on Saltreach went dark the night you arrived. Relight the lamp, read the clues, and decide who you trust. Built on the story kit."
+dimension = "2d"
+orientation = "portrait"
+entry_scene = "scenes/main.scene.json"
+kits = ["story"]
+
+[players]
+min = 1
+max = 1
+
+[server]
+mode = "none"
+
+[ui]
+primary = "#2f7f86"
+accent = "#ffd36b"
+background = "#1c1a2b"
+text = "#f5efe2"
+panel = "rounded"
+font = "rounded"
+
+[style]
+preset = "clean"
+palette = ["#1c1a2b", "#2f7f86", "#ffd36b", "#c8404a", "#3d5a80", "#5f8f4e", "#f5efe2", "#8a5a3c"]

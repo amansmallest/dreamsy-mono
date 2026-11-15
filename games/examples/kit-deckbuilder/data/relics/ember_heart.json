@@ -1,0 +1,10 @@
+{
+ "name": "Ember Heart",
+ "rarity": "starter",
+ "icon": "asset:rl_ember_heart",
+ "text": "After each combat, heal 6 HP.",
+ "on": "battle_end",
+ "effects": [
+  "heal 6"
+ ]
+}

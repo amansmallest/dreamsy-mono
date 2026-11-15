@@ -1,0 +1,36 @@
+{
+  "name": "Duskmole",
+  "types": [
+    "moon"
+  ],
+  "base": {
+    "hp": 60,
+    "atk": 65,
+    "def": 65,
+    "mag": 35,
+    "res": 45,
+    "spd": 30
+  },
+  "learnset": [
+    {
+      "level": 1,
+      "move": "night_nip"
+    },
+    {
+      "level": 5,
+      "move": "lull"
+    },
+    {
+      "level": 9,
+      "move": "moonbeam"
+    }
+  ],
+  "catch_rate": 160,
+  "xp_yield": 62,
+  "xp_curve": "slow",
+  "sprites": {
+    "front": "asset:duskmole",
+    "icon": "asset:duskmole"
+  },
+  "description": "Digs tunnels that glow faintly at night."
+}

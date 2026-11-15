@@ -1,0 +1,29 @@
+{
+  "name": "Spore Nest",
+  "behaviour": "spawner",
+  "sprite": "asset:spore_nest",
+  "size": [
+    14,
+    14
+  ],
+  "draw_size": [
+    16,
+    16
+  ],
+  "hp": 4,
+  "speed": 0,
+  "knockback": false,
+  "spawn": {
+    "enemy": "mirelet",
+    "interval": 3.5,
+    "max": 2,
+    "radius": 18
+  },
+  "drops": [
+    {
+      "item": "heart",
+      "chance": 1
+    }
+  ],
+  "id": "spore_nest"
+}

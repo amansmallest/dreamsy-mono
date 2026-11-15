@@ -1,0 +1,6 @@
+{
+ "needs": {
+  "fiber": 3
+ },
+ "category": "materials"
+}

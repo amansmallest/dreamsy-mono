@@ -1,0 +1,11 @@
+{
+ "name": "Creeping Rot",
+ "cost": 1,
+ "type": "skill",
+ "rarity": "uncommon",
+ "effects": [
+  "apply poison 3 all"
+ ],
+ "character": "wick",
+ "art": "asset:art_poison"
+}

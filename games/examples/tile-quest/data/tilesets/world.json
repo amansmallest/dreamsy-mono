@@ -1,0 +1,12 @@
+{
+  "tiles": {
+    "G": {"sprite": "asset:tile_grass", "solid": true},
+    "D": {"sprite": "asset:tile_dirt", "solid": true},
+    "B": {"sprite": "asset:tile_brick", "solid": true, "tags": ["breakable"]},
+    "=": {"color": "#a76f4a", "solid": true},
+    "^": {"sprite": "asset:tile_spike", "tags": ["spike"]},
+    "o": {"sprite": "asset:tile_coin", "tags": ["coin"]},
+    "F": {"sprite": "asset:tile_flag", "tags": ["goal"]},
+    "c": {"color": "#f4f4f4"}
+  }
+}

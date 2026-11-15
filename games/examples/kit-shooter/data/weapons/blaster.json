@@ -1,0 +1,34 @@
+{
+ "name": "Blaster",
+ "kind": "shot",
+ "sprite": "asset:shot_blue",
+ "size": [
+  14,
+  34
+ ],
+ "sfx": "shot",
+ "levels": [
+  {
+   "rate": 10,
+   "count": 1,
+   "damage": 1,
+   "speed": 1000,
+   "gap": 16
+  },
+  {
+   "count": 2
+  },
+  {
+   "count": 3
+  },
+  {
+   "count": 3,
+   "damage": 2
+  },
+  {
+   "count": 5,
+   "damage": 2,
+   "gap": 14
+  }
+ ]
+}

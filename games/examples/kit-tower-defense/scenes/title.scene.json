@@ -1,0 +1,99 @@
+{
+  "format": "0",
+  "root": "title_world",
+  "entities": {
+    "title_world": {
+      "type": "Node2D",
+      "children": [
+        "title_cam",
+        "title_bg",
+        "title_vault",
+        "title_name",
+        "title_tag"
+      ],
+      "scripts": [
+        "scripts/client/title.luau"
+      ]
+    },
+    "title_bg": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          360,
+          640
+        ],
+        "size": [
+          720,
+          1280
+        ],
+        "z_index": -10,
+        "modulate": "#7fb24f"
+      }
+    },
+    "title_vault": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          360,
+          250
+        ],
+        "size": [
+          200,
+          200
+        ],
+        "texture": "asset:logo_vault"
+      }
+    },
+    "title_name": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top",
+        "offset": [
+          0,
+          360
+        ],
+        "size": [
+          680,
+          90
+        ],
+        "text": "BRAMBLE WATCH",
+        "font_size": 72,
+        "align": "center",
+        "color": "#ffd166",
+        "outline": "#26301f",
+        "outline_size": 6
+      }
+    },
+    "title_tag": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top",
+        "offset": [
+          0,
+          450
+        ],
+        "size": [
+          680,
+          50
+        ],
+        "text": "Guard the seed vault!",
+        "font_size": 32,
+        "align": "center",
+        "color": "#ffffff",
+        "outline": "#26301f",
+        "outline_size": 4
+      }
+    },
+    "title_cam": {
+      "type": "Camera2D",
+      "props": {
+        "position": [
+          360,
+          640
+        ],
+        "zoom": 1,
+        "current": true
+      }
+    }
+  }
+}

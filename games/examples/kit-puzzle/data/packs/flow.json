@@ -1,0 +1,15 @@
+{
+  "name": "Flow",
+  "order": 2,
+  "mechanic": "flow",
+  "description": "Link the pairs, fill the grid",
+  "icon": "asset:pack_flow",
+  "unlock": { "stars": 6 },
+  "levels": [
+    "data/levels/flow_01.txt",
+    "data/levels/flow_02.txt",
+    "data/levels/flow_03.txt",
+    { "generate": { "count": 7, "seed": 21,
+      "curve": [ { "at": 0, "params": { "w": 5, "pairs": 5 } }, { "at": 0.5, "params": { "w": 6, "pairs": 5 } }, { "at": 1, "params": { "w": 7, "pairs": 6 } } ] } }
+  ]
+}

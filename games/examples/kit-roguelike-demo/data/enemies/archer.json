@@ -1,0 +1,31 @@
+{
+  "id": "archer",
+  "name": "Skeleton Archer",
+  "sprite": "asset:skeleton",
+  "size": 10,
+  "cost": 2,
+  "hp": 4,
+  "minLevel": 2,
+  "behavior": "keep_distance",
+  "params": {
+    "min": 48,
+    "max": 90,
+    "speed": 36,
+    "aggro": 150,
+    "fireEvery": 1.8
+  },
+  "projectile": {
+    "sprite": "asset:arrow",
+    "speed": 150,
+    "amount": 1,
+    "status": {
+      "name": "slow",
+      "duration": 1.5
+    }
+  },
+  "resist": {
+    "poison": 1,
+    "fire": -0.5
+  },
+  "loot": "common"
+}

@@ -1,0 +1,33 @@
+{
+ "name": "Spitter",
+ "sprite": "asset:spitter",
+ "size": [
+  60,
+  60
+ ],
+ "hp": 5,
+ "score": 200,
+ "cost": 2,
+ "minLevel": 2,
+ "behavior": "keep_distance",
+ "params": {
+  "speed": 90,
+  "min": 200,
+  "max": 340,
+  "aggro": 4000,
+  "fireEvery": 1.6
+ },
+ "bullet": {
+  "sprite": "asset:bullet_violet",
+  "size": [
+   24,
+   24
+  ],
+  "radius": 7,
+  "speed": 230
+ },
+ "drops": {
+  "coins": 1,
+  "power": 0.08
+ }
+}

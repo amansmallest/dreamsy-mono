@@ -1,0 +1,15 @@
+{
+  "name": "Scorch",
+  "type": "sun",
+  "category": "magic",
+  "power": 30,
+  "accuracy": 100,
+  "pp": 25,
+  "effects": [
+    {
+      "type": "status",
+      "status": "burn",
+      "chance": 30
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "name": "Glow Spitter",
+  "sprite": "asset:spitter",
+  "hp": 4,
+  "cost": 2,
+  "minLevel": 2,
+  "behavior": "keep_distance",
+  "params": {
+    "min": 50,
+    "max": 100,
+    "speed": 36,
+    "aggro": 180,
+    "fireEvery": 1.6
+  },
+  "projectile": {
+    "sprite": "asset:orb",
+    "speed": 120,
+    "amount": 1
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "Pell the Peddler",
+  "sprite": "asset:merchant",
+  "dialog": [
+    "Gleams for goods! Have a look."
+  ],
+  "shop": [
+    {
+      "item": "bomb_pack",
+      "price": 10
+    },
+    {
+      "item": "heart",
+      "price": 5
+    }
+  ],
+  "too_poor": "Come back with more gleams!",
+  "id": "merchant"
+}

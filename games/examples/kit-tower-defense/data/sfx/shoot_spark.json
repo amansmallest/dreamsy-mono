@@ -1,0 +1,8 @@
+{
+  "wave": "saw",
+  "freq": 900,
+  "vibrato": 6,
+  "vibrato_speed": 30,
+  "decay": 0.12,
+  "volume": 0.25
+}

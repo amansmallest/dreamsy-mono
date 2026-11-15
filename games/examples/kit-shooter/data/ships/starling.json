@@ -1,0 +1,13 @@
+{
+ "name": "Starling",
+ "order": 1,
+ "sprite": "asset:ship_starling",
+ "size": [
+  76,
+  76
+ ],
+ "weapon": "blaster",
+ "speed": 440,
+ "hitbox": 7,
+ "iframes": 2
+}

@@ -1,0 +1,9 @@
+{
+ "name": "Glimmer Newt",
+ "rarity": "legendary",
+ "bonus": {
+  "power": 1.0,
+  "coins": 0.6
+ },
+ "icon": "asset:pet_crystal_newt"
+}

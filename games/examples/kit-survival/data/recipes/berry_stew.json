@@ -1,0 +1,8 @@
+{
+ "needs": {
+  "berries": 3,
+  "water": 1
+ },
+ "station": "campfire",
+ "category": "food"
+}

@@ -1,0 +1,20 @@
+{
+ "name": "Sunken Forge",
+ "image": "asset:ev_forge",
+ "text": "The forge still glows under the tide. Its heat whispers bargains.",
+ "choices": [
+  {
+   "text": "Temper (upgrade 2 cards, gain Dread)",
+   "effects": [
+    "upgrade_deck 2",
+    "add dread deck"
+   ]
+  },
+  {
+   "text": "Warm your hands (heal 8)",
+   "effects": [
+    "heal 8"
+   ]
+  }
+ ]
+}

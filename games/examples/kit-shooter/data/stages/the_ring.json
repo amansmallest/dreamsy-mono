@@ -1,0 +1,36 @@
+{
+ "name": "The Ring",
+ "order": 3,
+ "mode": "arena",
+ "width": 1000,
+ "height": 1400,
+ "background": "asset:bg_arena",
+ "borderColor": "#5ad1ff",
+ "music": "arena",
+ "specks": 0,
+ "events": [
+  {
+   "t": 0.5,
+   "text": "THE RING"
+  }
+ ],
+ "waves": {
+  "count": 6,
+  "budget": 5,
+  "growth": 1.4,
+  "gap": 0.5,
+  "rest": 2,
+  "enemies": [
+   "mite",
+   "spitter"
+  ],
+  "boss": {
+   "id": "hive",
+   "every": 6
+  },
+  "seed": 7
+ },
+ "reward": {
+  "credits": 80
+ }
+}

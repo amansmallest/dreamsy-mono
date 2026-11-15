@@ -1,0 +1,13 @@
+{
+ "name": "Kestrel",
+ "order": 2,
+ "sprite": "asset:ship_kestrel",
+ "size": [
+  76,
+  76
+ ],
+ "weapon": "fan",
+ "speed": 400,
+ "hitbox": 8,
+ "cost": 250
+}

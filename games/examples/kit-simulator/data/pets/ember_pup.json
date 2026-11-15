@@ -1,0 +1,8 @@
+{
+ "name": "Ember Pup",
+ "rarity": "uncommon",
+ "bonus": {
+  "power": 0.6
+ },
+ "icon": "asset:pet_ember_pup"
+}

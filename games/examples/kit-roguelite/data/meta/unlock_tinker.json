@@ -1,0 +1,8 @@
+{
+  "name": "Hire the Tinker",
+  "branch": "heroes",
+  "cost": {
+    "embers": 40
+  },
+  "description": "Unlocks the Tinker class."
+}

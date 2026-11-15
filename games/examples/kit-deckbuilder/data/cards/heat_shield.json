@@ -1,0 +1,11 @@
+{
+ "name": "Heat Shield",
+ "cost": 2,
+ "type": "skill",
+ "rarity": "uncommon",
+ "effects": [
+  "block 13"
+ ],
+ "character": "wick",
+ "art": "asset:art_shield"
+}

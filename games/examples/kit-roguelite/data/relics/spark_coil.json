@@ -1,0 +1,17 @@
+{
+  "name": "Spark Coil",
+  "rarity": "starter",
+  "icon": "asset:i_ring",
+  "description": "Crits charge your active item.",
+  "triggers": [
+    {
+      "on": "crit",
+      "every": 4,
+      "effects": [
+        {
+          "charge": 1
+        }
+      ]
+    }
+  ]
+}

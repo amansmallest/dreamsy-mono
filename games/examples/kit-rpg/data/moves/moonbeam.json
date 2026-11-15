@@ -1,0 +1,8 @@
+{
+  "name": "Moonbeam",
+  "type": "moon",
+  "category": "magic",
+  "power": 60,
+  "accuracy": 100,
+  "pp": 15
+}

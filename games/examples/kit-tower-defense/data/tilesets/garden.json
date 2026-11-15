@@ -1,0 +1,25 @@
+{
+  "tiles": {
+    "#": {
+      "sprite": "asset:tile_path"
+    },
+    "S": {
+      "sprite": "asset:tile_burrow"
+    },
+    "T": {
+      "sprite": "asset:tile_burrow"
+    },
+    "E": {
+      "sprite": "asset:tile_vault"
+    },
+    "o": {
+      "sprite": "asset:tile_plot"
+    },
+    "t": {
+      "sprite": "asset:tile_tree"
+    },
+    "w": {
+      "sprite": "asset:tile_water"
+    }
+  }
+}

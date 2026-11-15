@@ -1,0 +1,27 @@
+{
+ "title": "Open for Business",
+ "autoStart": true,
+ "steps": [
+  {
+   "id": "s1",
+   "text": "Sell your bag 5 times",
+   "objectives": [
+    {
+     "id": "o",
+     "event": "sim_sold",
+     "count": 5
+    }
+   ]
+  }
+ ],
+ "rewards": [
+  {
+   "earn": "coins",
+   "amount": 150
+  }
+ ],
+ "requires": {
+  "quest": "q1_first_haul",
+  "is": "done"
+ }
+}

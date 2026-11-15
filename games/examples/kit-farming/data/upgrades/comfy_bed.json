@@ -1,0 +1,12 @@
+{
+ "name": "Comfy Bed (+40 energy)",
+ "cost": {
+  "gold": 1500
+ },
+ "mods": [
+  {
+   "stat": "max_energy",
+   "add": 40
+  }
+ ]
+}

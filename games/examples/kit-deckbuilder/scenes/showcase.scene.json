@@ -1,0 +1,1 @@
+{ "format": "0", "root": "showcase", "entities": { "showcase": { "type": "Node2D", "scripts": ["scripts/client/showcase.luau"] } } }

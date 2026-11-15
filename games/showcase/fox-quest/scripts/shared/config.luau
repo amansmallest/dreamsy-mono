@@ -1,0 +1,31 @@
+-- Shared tunables for Fox Explorer
+return {
+	GRAVITY = 1100,
+	MAX_FALL = 520,
+	MOVE_SPEED = 160,
+	GROUND_ACCEL = 1400,
+	AIR_ACCEL = 900,
+	JUMP_SPEED = 440,
+	STOMP_BOUNCE = 320,
+	COYOTE = 0.1,
+	JUMP_BUFFER = 0.12,
+	START_LIVES = 3,
+	INVULN = 1.5,
+	FALL_LIMIT = 330,
+	BEETLE_SPEED = 40,
+	CHECKPOINTS = {
+		{ name = "Level 1", trigger = -100000, x = 48, y = 190 },
+		{ name = "Level 2", trigger = 1500, x = 1520, y = 190 },
+		{ name = "Level 3", trigger = 3120, x = 3140, y = 190 },
+	},
+	BEETLE_PATROL = {
+		beetle_1 = { 620, 1000 },
+		beetle_2 = { 1130, 1380 },
+		beetle_3 = { 1780, 2060 },
+		beetle_4 = { 2320, 2580 },
+		beetle_5 = { 2560, 2740 },
+		beetle_6 = { 2870, 3020 },
+		beetle_7 = { 3540, 3820 },
+		beetle_8 = { 4050, 4340 },
+	},
+}

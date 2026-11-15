@@ -1,0 +1,11 @@
+{
+  "name": "Hundred Club",
+  "desc": "Own 100 ovens in total",
+  "order": 6,
+  "when": {
+    "owned_total": 100
+  },
+  "reward": {
+    "mult": 1.05
+  }
+}

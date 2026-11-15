@@ -1,0 +1,216 @@
+{
+  "format": "0",
+  "root": "title",
+  "entities": {
+    "title": {
+      "type": "Node2D",
+      "children": [
+        "title_cam",
+        "title_bg",
+        "title_hero",
+        "title_star_a",
+        "title_star_b",
+        "title_sparkle",
+        "title_ui"
+      ],
+      "scripts": [
+        "scripts/client/title.luau"
+      ]
+    },
+    "title_cam": {
+      "type": "Camera2D",
+      "props": {
+        "position": [
+          0,
+          0
+        ],
+        "zoom": 1
+      }
+    },
+    "title_bg": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          800,
+          1400
+        ],
+        "modulate": "#29366f",
+        "z_index": -10
+      }
+    },
+    "title_hero": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          0,
+          120
+        ],
+        "size": [
+          300,
+          300
+        ],
+        "texture": "asset:stellion"
+      }
+    },
+    "title_star_a": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          -220,
+          -60
+        ],
+        "size": [
+          140,
+          140
+        ],
+        "texture": "asset:sunnip"
+      }
+    },
+    "title_star_b": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          220,
+          -40
+        ],
+        "size": [
+          140,
+          140
+        ],
+        "texture": "asset:mothlet"
+      }
+    },
+    "title_sparkle": {
+      "type": "Particles2D",
+      "props": {
+        "position": [
+          0,
+          -640
+        ],
+        "emission_size": [
+          720,
+          10
+        ],
+        "direction": 90,
+        "spread": 20,
+        "speed": 90,
+        "rate": 14,
+        "lifetime": 6,
+        "start_color": "#ffcd75",
+        "end_color": "#ffcd7500",
+        "start_size": 6,
+        "end_size": 2
+      }
+    },
+    "title_ui": {
+      "type": "UIPanel",
+      "props": {
+        "anchor": "top_left",
+        "size": [
+          720,
+          1280
+        ],
+        "background": "#00000000"
+      },
+      "children": [
+        "title_name",
+        "title_sub",
+        "btn_new",
+        "btn_continue",
+        "title_hint"
+      ]
+    },
+    "title_name": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top",
+        "offset": [
+          0,
+          150
+        ],
+        "size": [
+          680,
+          90
+        ],
+        "text": "STARFALL",
+        "font_size": 76,
+        "align": "center",
+        "color": "#ffcd75",
+        "outline": "#1a1c2c",
+        "outline_size": 4
+      }
+    },
+    "title_sub": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top",
+        "offset": [
+          0,
+          250
+        ],
+        "size": [
+          680,
+          50
+        ],
+        "text": "KEEPERS",
+        "font_size": 40,
+        "align": "center",
+        "color": "#f4f4f4",
+        "outline": "#1a1c2c",
+        "outline_size": 3
+      }
+    },
+    "btn_new": {
+      "type": "UIButton",
+      "props": {
+        "anchor": "bottom",
+        "offset": [
+          0,
+          -300
+        ],
+        "size": [
+          440,
+          110
+        ],
+        "text": "NEW GAME",
+        "font_size": 38,
+        "background": "#3b5dc9"
+      }
+    },
+    "btn_continue": {
+      "type": "UIButton",
+      "props": {
+        "anchor": "bottom",
+        "offset": [
+          0,
+          -170
+        ],
+        "size": [
+          440,
+          110
+        ],
+        "text": "CONTINUE",
+        "font_size": 38,
+        "background": "#38b764"
+      }
+    },
+    "title_hint": {
+      "type": "UIText",
+      "props": {
+        "anchor": "bottom",
+        "offset": [
+          0,
+          -60
+        ],
+        "size": [
+          680,
+          50
+        ],
+        "text": "An rpg-kit example",
+        "font_size": 22,
+        "align": "center",
+        "color": "#94b0c2"
+      }
+    }
+  }
+}

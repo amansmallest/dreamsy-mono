@@ -1,0 +1,10 @@
+{
+ "wave": "sine",
+ "freq": 220,
+ "slide": -1,
+ "attack": 0.2,
+ "sustain": 0.4,
+ "decay": 1.0,
+ "vibrato": 1,
+ "vibrato_speed": 4
+}

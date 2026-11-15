@@ -1,0 +1,19 @@
+{
+  "name": "Servo Whisks",
+  "desc": "Pastry Bots ×3",
+  "order": 7,
+  "icon": "asset:gen_pastry_bot",
+  "cost": {
+    "amount": 3400000000
+  },
+  "effect": {
+    "kind": "output",
+    "target": "pastry_bot",
+    "value": 3
+  },
+  "requires": {
+    "owned": {
+      "pastry_bot": 25
+    }
+  }
+}

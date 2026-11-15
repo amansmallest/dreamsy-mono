@@ -1,0 +1,67 @@
+{
+  "currency": "coins",
+  "points": [
+    10,
+    7,
+    5,
+    3
+  ],
+  "prize": [
+    120,
+    80,
+    50,
+    30
+  ],
+  "xp": [
+    60,
+    40,
+    30,
+    20
+  ],
+  "upgrades": {
+    "engine": {
+      "name": "Engine",
+      "stat": "maxSpeed",
+      "pct": 0.04,
+      "levels": 5,
+      "cost": {
+        "base": 150,
+        "growth": 1.6
+      },
+      "order": 1
+    },
+    "turbo": {
+      "name": "Turbo",
+      "stat": "accel",
+      "pct": 0.06,
+      "levels": 5,
+      "cost": {
+        "base": 120,
+        "growth": 1.6
+      },
+      "order": 2
+    },
+    "tires": {
+      "name": "Tires",
+      "stat": "grip",
+      "pct": 0.06,
+      "levels": 5,
+      "cost": {
+        "base": 100,
+        "growth": 1.6
+      },
+      "order": 3
+    },
+    "nitro": {
+      "name": "Nitro",
+      "stat": "nitro",
+      "pct": 0.12,
+      "levels": 5,
+      "cost": {
+        "base": 90,
+        "growth": 1.6
+      },
+      "order": 4
+    }
+  }
+}

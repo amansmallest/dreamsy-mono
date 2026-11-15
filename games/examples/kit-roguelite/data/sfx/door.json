@@ -1,0 +1,7 @@
+{
+  "wave": "triangle",
+  "freq": 220,
+  "slide": 0.7,
+  "sustain": 0.05,
+  "decay": 0.3
+}

@@ -1,0 +1,17 @@
+{
+ "name": "Rock",
+ "tile": "R",
+ "hp": 5,
+ "tool": "pick",
+ "tier": 1,
+ "drops": [
+  {
+   "item": "stone",
+   "count": [
+    2,
+    3
+   ]
+  }
+ ],
+ "respawn": 300
+}

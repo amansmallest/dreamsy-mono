@@ -1,0 +1,8 @@
+{
+  "wave": "saw",
+  "freq": 300,
+  "slide": -3,
+  "sustain": 0.2,
+  "decay": 0.8,
+  "volume": 0.5
+}

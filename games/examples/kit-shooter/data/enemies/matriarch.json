@@ -1,0 +1,113 @@
+{
+ "name": "Cryo Matriarch",
+ "boss": true,
+ "sprite": "asset:boss_matriarch",
+ "size": [
+  260,
+  196
+ ],
+ "radius": 84,
+ "hp": 800,
+ "score": 40000,
+ "enter": {
+  "y": 290,
+  "speed": 120
+ },
+ "music": "boss",
+ "drops": {
+  "coins": 30
+ },
+ "phases": [
+  {
+   "hp": 1.0,
+   "pattern": [
+    {
+     "action": "fire",
+     "emitter": "m_wave",
+     "for": 3,
+     "wait": 3.3
+    },
+    {
+     "behavior": "patrol",
+     "points": [
+      [
+       -150,
+       -30
+      ],
+      [
+       150,
+       30
+      ]
+     ],
+     "relative": true,
+     "speed": 120,
+     "wait": 0.2,
+     "time": 2.4
+    },
+    {
+     "action": "fire",
+     "emitter": "m_aimed_burst",
+     "for": 2.5,
+     "wait": 2.6
+    }
+   ]
+  },
+  {
+   "hp": 0.6,
+   "pattern": [
+    {
+     "action": "fire",
+     "emitter": "m_flower",
+     "for": 4,
+     "wait": 4.3
+    },
+    {
+     "action": "summon",
+     "enemy": "diver",
+     "count": 3,
+     "wait": 1
+    },
+    {
+     "action": "fire",
+     "emitters": [
+      "m_wave",
+      "m_aimed_burst"
+     ],
+     "for": 3,
+     "wait": 3.4
+    }
+   ]
+  },
+  {
+   "hp": 0.25,
+   "pattern": [
+    {
+     "action": "fire",
+     "emitters": [
+      "m_double_spiral",
+      "m_flower"
+     ],
+     "for": 5,
+     "wait": 5.5
+    },
+    {
+     "behavior": "patrol",
+     "points": [
+      [
+       -120,
+       0
+      ],
+      [
+       120,
+       0
+      ]
+     ],
+     "relative": true,
+     "speed": 160,
+     "wait": 0.1,
+     "time": 2
+    }
+   ]
+  }
+ ]
+}

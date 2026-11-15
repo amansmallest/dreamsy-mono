@@ -1,0 +1,43 @@
+{
+ "name": "Tide Witch",
+ "hp": [
+  42,
+  46
+ ],
+ "tier": "elite",
+ "act": "undertow",
+ "sprite": "asset:en_tide_witch",
+ "moves": {
+  "hex": {
+   "effects": [
+    "apply weak 2",
+    "apply frail 2"
+   ]
+  },
+  "wave": {
+   "effects": [
+    "damage 12"
+   ]
+  },
+  "brew": {
+   "effects": [
+    "apply strength 3 self",
+    "block 10"
+   ]
+  }
+ },
+ "pattern": {
+  "kind": "sequence",
+  "moves": [
+   "hex"
+  ],
+  "then": {
+   "kind": "cycle",
+   "moves": [
+    "wave",
+    "brew",
+    "wave"
+   ]
+  }
+ }
+}

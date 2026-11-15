@@ -1,0 +1,9 @@
+{
+  "name": "Flare Tap",
+  "type": "sun",
+  "category": "physical",
+  "power": 40,
+  "accuracy": 100,
+  "pp": 30,
+  "description": "A quick, warm swipe."
+}

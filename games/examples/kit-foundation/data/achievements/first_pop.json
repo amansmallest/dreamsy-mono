@@ -1,0 +1,9 @@
+{
+  "name": "First Pop",
+  "description": "Defeat a slime.",
+  "icon": "asset:slime",
+  "event": "enemy_defeated",
+  "match": {
+    "enemy": "slime"
+  }
+}

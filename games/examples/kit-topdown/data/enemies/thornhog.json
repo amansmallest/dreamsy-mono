@@ -1,0 +1,24 @@
+{
+  "name": "Thornhog",
+  "behaviour": "charger",
+  "sprite": "asset:thornhog",
+  "faces": "left",
+  "size": [
+    14,
+    10
+  ],
+  "draw_size": [
+    16,
+    16
+  ],
+  "hp": 4,
+  "speed": 18,
+  "damage": 2,
+  "aggro": 90,
+  "charge": {
+    "speed": 130,
+    "windup": 0.45,
+    "stun": 0.8
+  },
+  "id": "thornhog"
+}

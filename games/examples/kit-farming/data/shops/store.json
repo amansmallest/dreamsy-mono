@@ -1,0 +1,54 @@
+{
+ "name": "Juniper's Goods",
+ "hours": [
+  540,
+  1200
+ ],
+ "closed": [
+  "wed"
+ ],
+ "stock": [
+  {
+   "item": "radish_seeds"
+  },
+  {
+   "item": "lettuce_seeds"
+  },
+  {
+   "item": "carrot_seeds"
+  },
+  {
+   "item": "peas_seeds"
+  },
+  {
+   "item": "potato_seeds"
+  },
+  {
+   "item": "sunflower_seeds",
+   "condition": {
+    "flag": "met_juniper"
+   }
+  },
+  {
+   "item": "strawberry_seeds",
+   "condition": {
+    "flag": "blossom_fair"
+   },
+   "showLocked": true
+  },
+  {
+   "item": "moonmelon_seeds",
+   "condition": {
+    "flag": "moonmelon_unlocked"
+   },
+   "showLocked": true
+  },
+  {
+   "item": "hay",
+   "price": 10
+  },
+  {
+   "animal": "hen"
+  }
+ ]
+}

@@ -1,0 +1,27 @@
+{
+ "title": "Reach for the Stars",
+ "autoStart": true,
+ "steps": [
+  {
+   "id": "s1",
+   "text": "Unlock Starfall Peak",
+   "objectives": [
+    {
+     "id": "o",
+     "condition": {
+      "zone": "peak"
+     }
+    }
+   ]
+  }
+ ],
+ "rewards": [
+  {
+   "hatch": "star_egg"
+  }
+ ],
+ "requires": {
+  "quest": "q7_rebirth",
+  "is": "done"
+ }
+}

@@ -1,0 +1,102 @@
+{
+  "id": "acorn",
+  "name": "Acorn Mortar",
+  "cost": 80,
+  "range": 2.5,
+  "rate": 0.6,
+  "damage": 18,
+  "damage_type": "explosive",
+  "ground": true,
+  "air": false,
+  "splash": {
+    "radius": 1.0,
+    "falloff": 0.5
+  },
+  "targeting": "first",
+  "sprite": "asset:tower_acorn",
+  "icon": "asset:tower_acorn",
+  "projectile": {
+    "color": "#8b5a2b",
+    "speed": 7,
+    "size": 0.2
+  },
+  "upgrades": [
+    {
+      "name": "Heavy Acorns",
+      "desc": "+8 damage",
+      "cost": 70,
+      "add": {
+        "damage": 8
+      }
+    },
+    {
+      "name": "Bigger Blast",
+      "desc": "+0.3 splash radius",
+      "cost": 90,
+      "add": {
+        "splash.radius": 0.3
+      }
+    }
+  ],
+  "branches": [
+    {
+      "id": "a",
+      "name": "Walnut Barrage",
+      "sprite": "asset:tower_acorn_a",
+      "icon": "asset:tower_acorn_a",
+      "tiers": [
+        {
+          "name": "Walnut Shells",
+          "desc": "x1.6 damage, bigger blast",
+          "cost": 140,
+          "mul": {
+            "damage": 1.6
+          },
+          "add": {
+            "splash.radius": 0.3
+          }
+        },
+        {
+          "name": "Walnut Barrage",
+          "desc": "x1.5 damage, x1.2 rate",
+          "cost": 230,
+          "mul": {
+            "damage": 1.5,
+            "rate": 1.2
+          }
+        }
+      ]
+    },
+    {
+      "id": "b",
+      "name": "Sticky Burrs",
+      "sprite": "asset:tower_acorn_b",
+      "icon": "asset:tower_acorn_b",
+      "tiers": [
+        {
+          "name": "Sticky Burrs",
+          "desc": "Blasts slow enemies",
+          "cost": 120,
+          "set": {
+            "slow": {
+              "factor": 0.6,
+              "duration": 1.2
+            }
+          }
+        },
+        {
+          "name": "Smoldering Burrs",
+          "desc": "Blasts set enemies on fire",
+          "cost": 200,
+          "set": {
+            "dot": {
+              "dps": 12,
+              "duration": 3,
+              "type": "fire"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

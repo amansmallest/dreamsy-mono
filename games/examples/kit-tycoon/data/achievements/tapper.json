@@ -1,0 +1,11 @@
+{
+  "name": "Busy Fingers",
+  "desc": "Tap 100 times",
+  "order": 3,
+  "when": {
+    "taps": 100
+  },
+  "reward": {
+    "mult": 1.05
+  }
+}

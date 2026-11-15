@@ -1,0 +1,15 @@
+{
+  "name": "Bramble Mail",
+  "rarity": "uncommon",
+  "icon": "asset:i_shield",
+  "tags": [
+    "blood"
+  ],
+  "description": "Deal 2 damage back when hit.",
+  "mods": [
+    {
+      "stat": "thorns",
+      "add": 2
+    }
+  ]
+}

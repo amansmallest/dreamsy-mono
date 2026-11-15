@@ -1,0 +1,29 @@
+format = "0"
+name = "Ember Isle"
+description = "Wash up on a wild island: chop, mine and craft your way from a crude pick to iron, build walls and a campfire, and hold out through three nights of shadow beasts. Built on the survival kit."
+dimension = "2d"
+orientation = "portrait"
+entry_scene = "scenes/main.scene.json"
+kits = ["survival"]
+
+[players]
+min = 1
+max = 1
+
+[server]
+mode = "none"
+
+[physics]
+layers = ["player", "enemy", "world"]
+
+[ui]
+primary = "#c46b2e"
+accent = "#ffd166"
+background = "#1d2430"
+text = "#f7f3e9"
+panel = "rounded"
+font = "rounded"
+
+[style]
+preset = "clean"
+palette = ["#1d2430", "#7fb069", "#4e7d55", "#3d8fd1", "#c46b2e", "#ffd166", "#f7f3e9", "#2b1f4a"]

@@ -1,0 +1,12 @@
+{
+  "name": "Shooting Star",
+  "type": "star",
+  "category": "magic",
+  "power": 25,
+  "accuracy": 95,
+  "pp": 20,
+  "hits": [
+    2,
+    3
+  ]
+}

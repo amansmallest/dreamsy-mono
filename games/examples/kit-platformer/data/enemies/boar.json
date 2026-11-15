@@ -1,0 +1,22 @@
+{
+  "name": "Bramble Boar",
+  "behaviour": "chaser",
+  "sprite": "asset:boar",
+  "faces": "left",
+  "hp": 2,
+  "size": [
+    22,
+    11
+  ],
+  "draw_size": [
+    26,
+    11
+  ],
+  "speed": 35,
+  "chase": {
+    "range": 150,
+    "speed_mult": 2.4,
+    "jump_height": 24
+  },
+  "id": "boar"
+}

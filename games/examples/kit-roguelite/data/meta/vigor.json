@@ -1,0 +1,22 @@
+{
+  "name": "Vigor +4 HP",
+  "branch": "body",
+  "maxRank": 3,
+  "cost": [
+    {
+      "embers": 15
+    },
+    {
+      "embers": 30
+    },
+    {
+      "embers": 50
+    }
+  ],
+  "mods": [
+    {
+      "stat": "hp",
+      "add": 4
+    }
+  ]
+}

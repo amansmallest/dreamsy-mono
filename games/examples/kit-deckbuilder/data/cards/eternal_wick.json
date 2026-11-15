@@ -1,0 +1,14 @@
+{
+ "name": "Eternal Wick",
+ "cost": 2,
+ "type": "power",
+ "rarity": "rare",
+ "effects": [
+  "apply ritual 1 self"
+ ],
+ "upgrade": {
+  "cost": 1
+ },
+ "character": "wick",
+ "art": "asset:art_flame"
+}

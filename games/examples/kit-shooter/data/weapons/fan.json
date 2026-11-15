@@ -1,0 +1,33 @@
+{
+ "name": "Fan cannon",
+ "kind": "spread",
+ "sprite": "asset:shot_green",
+ "size": [
+  20,
+  20
+ ],
+ "sfx": "shot",
+ "levels": [
+  {
+   "rate": 7,
+   "count": 3,
+   "spread": 24,
+   "damage": 1,
+   "speed": 850
+  },
+  {
+   "count": 5,
+   "spread": 36
+  },
+  {
+   "count": 5,
+   "spread": 40,
+   "damage": 2
+  },
+  {
+   "count": 7,
+   "spread": 50,
+   "damage": 2
+  }
+ ]
+}

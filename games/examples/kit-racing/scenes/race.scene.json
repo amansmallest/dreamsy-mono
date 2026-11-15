@@ -1,0 +1,12 @@
+{
+  "format": "0",
+  "root": "race_root",
+  "entities": {
+    "race_root": {
+      "type": "Node2D",
+      "scripts": [
+        "scripts/client/race.luau"
+      ]
+    }
+  }
+}

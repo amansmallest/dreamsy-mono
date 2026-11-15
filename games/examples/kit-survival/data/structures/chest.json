@@ -1,0 +1,7 @@
+{
+ "name": "Chest",
+ "tile": "H",
+ "kind": "storage",
+ "slots": 12,
+ "hp": 20
+}

@@ -1,0 +1,49 @@
+{
+  "name": "Wisp",
+  "sprite": "asset:wisp",
+  "hp": 3,
+  "cost": 2,
+  "minLevel": 2,
+  "fsm": {
+    "start": "drift",
+    "states": {
+      "drift": {
+        "behavior": "wander",
+        "speed": 30
+      },
+      "dive": {
+        "behavior": "chase",
+        "speed": 80
+      },
+      "run": {
+        "behavior": "flee",
+        "speed": 70
+      }
+    },
+    "transitions": [
+      {
+        "from": "drift",
+        "to": "dive",
+        "when": "near:110"
+      },
+      {
+        "from": "dive",
+        "to": "run",
+        "when": "after:1.5"
+      },
+      {
+        "from": "run",
+        "to": "drift",
+        "when": "after:1.2"
+      }
+    ]
+  },
+  "contact": {
+    "amount": 1,
+    "status": {
+      "name": "slow",
+      "duration": 1.5
+    }
+  },
+  "flying": true
+}

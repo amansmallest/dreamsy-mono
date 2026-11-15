@@ -1,0 +1,17 @@
+{
+ "pattern": "aimed",
+ "count": 5,
+ "spread": 30,
+ "rate": 0.5,
+ "burst": 3,
+ "burstGap": 0.12,
+ "speed": 300,
+ "bullet": {
+  "sprite": "asset:bullet_pink",
+  "size": [
+   22,
+   22
+  ],
+  "radius": 6
+ }
+}

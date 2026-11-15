@@ -1,0 +1,20 @@
+{
+  "name": "Pastry Bot",
+  "order": 7,
+  "icon": "asset:gen_pastry_bot",
+  "cost": {
+    "base": 57000000,
+    "growth": 1.12
+  },
+  "output": 1100000,
+  "cycle": 24,
+  "manager": {
+    "name": "Pastry Bot Chef",
+    "cost": 680000000
+  },
+  "unlock": {
+    "owned": {
+      "candy_lab": 10
+    }
+  }
+}

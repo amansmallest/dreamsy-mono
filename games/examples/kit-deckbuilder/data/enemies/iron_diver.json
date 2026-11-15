@@ -1,0 +1,39 @@
+{
+ "name": "Iron Diver",
+ "hp": [
+  54,
+  58
+ ],
+ "tier": "elite",
+ "act": "undertow",
+ "sprite": "asset:en_iron_diver",
+ "start": [
+  "apply thorns 2 self"
+ ],
+ "moves": {
+  "harpoon": {
+   "effects": [
+    "damage 14"
+   ]
+  },
+  "haul": {
+   "effects": [
+    "damage 6 x2"
+   ]
+  },
+  "seal": {
+   "effects": [
+    "block 12"
+   ]
+  }
+ },
+ "pattern": {
+  "kind": "random",
+  "weights": {
+   "harpoon": 2,
+   "haul": 2,
+   "seal": 1
+  },
+  "noRepeat": 1
+ }
+}

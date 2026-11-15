@@ -1,0 +1,8 @@
+{
+  "name": "Apple",
+  "description": "Crunchy. The owl loves them.",
+  "icon": "asset:apple",
+  "category": "food",
+  "stack": 20,
+  "value": 2
+}

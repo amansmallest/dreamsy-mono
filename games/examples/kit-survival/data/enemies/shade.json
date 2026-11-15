@@ -1,0 +1,15 @@
+{
+ "name": "Shade",
+ "sprite": "asset:shade",
+ "hp": 3,
+ "cost": 1,
+ "behavior": "chase",
+ "params": {
+  "speed": 75
+ },
+ "contact": {
+  "amount": 8,
+  "knockback": 160
+ },
+ "size": 0.7
+}

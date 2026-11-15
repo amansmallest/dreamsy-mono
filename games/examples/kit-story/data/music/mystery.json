@@ -1,0 +1,18 @@
+{
+ "bpm": 96,
+ "steps": 16,
+ "loop": true,
+ "channels": [
+  {
+   "wave": "triangle",
+   "volume": 0.35,
+   "notes": "D3 . D3 . F3 . D3 . G#3 . A3 . F3 . E3 . D3 . . . D3 . F3 . A3 . G#3 . F3 . E3 ."
+  },
+  {
+   "wave": "square",
+   "duty": 0.125,
+   "volume": 0.15,
+   "notes": "D5 - - - . . . . F5 - E5 - . . . . D5 - - - . . . . A4 - - - C#5 - - -"
+  }
+ ]
+}

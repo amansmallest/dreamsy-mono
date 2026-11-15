@@ -1,0 +1,100 @@
+{
+  "name": "Hollow Cave",
+  "music": "cave",
+  "layers": [
+    {
+      "data": "file:data/levels/cave.txt",
+      "tileset": "data/tilesets/world.json"
+    }
+  ],
+  "battle": {
+    "sky": "#333c57",
+    "ground": "#566c86"
+  },
+  "spawns": {
+    "south": [
+      8,
+      15,
+      "up"
+    ],
+    "north": [
+      8,
+      1,
+      "down"
+    ]
+  },
+  "warps": [
+    {
+      "at": [
+        8,
+        16
+      ],
+      "to": "route1",
+      "spawn": "north"
+    },
+    {
+      "at": [
+        8,
+        0
+      ],
+      "to": "trial",
+      "spawn": "entry"
+    }
+  ],
+  "encounters": {
+    "cave": {
+      "rate": 0.12,
+      "table": [
+        {
+          "creature": "duskmole",
+          "min": 4,
+          "max": 6,
+          "weight": 50
+        },
+        {
+          "creature": "glimmet",
+          "min": 4,
+          "max": 5,
+          "weight": 30
+        },
+        {
+          "creature": "mothlet",
+          "min": 5,
+          "max": 5,
+          "weight": 20
+        }
+      ]
+    }
+  },
+  "npcs": [
+    {
+      "id": "spelunker_bo_npc",
+      "name": "Spelunker Bo",
+      "at": [
+        12,
+        7
+      ],
+      "facing": "down",
+      "sprite": "asset:npc_ranger",
+      "trainer": "spelunker_bo",
+      "sight": 3
+    }
+  ],
+  "items": [
+    {
+      "at": [
+        1,
+        9
+      ],
+      "item": "moon_charm",
+      "flag": "found_moon_charm"
+    },
+    {
+      "at": [
+        15,
+        14
+      ],
+      "item": "wake_mint"
+    }
+  ]
+}

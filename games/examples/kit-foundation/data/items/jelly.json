@@ -1,0 +1,8 @@
+{
+  "name": "Slime Jelly",
+  "description": "Wobbly loot.",
+  "icon": "asset:jelly",
+  "category": "loot",
+  "stack": 30,
+  "value": 1
+}

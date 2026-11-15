@@ -1,0 +1,19 @@
+{
+  "name": "Glacier Plate",
+  "rarity": "uncommon",
+  "icon": "asset:i_shield",
+  "tags": [
+    "frost"
+  ],
+  "description": "+1 armor, +6 max HP.",
+  "mods": [
+    {
+      "stat": "armor",
+      "add": 1
+    },
+    {
+      "stat": "hp",
+      "add": 6
+    }
+  ]
+}

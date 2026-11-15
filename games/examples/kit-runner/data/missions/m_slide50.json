@@ -1,0 +1,13 @@
+{
+  "text": "Slide 50 times (total)",
+  "stat": "slides",
+  "target": 50,
+  "scope": "total",
+  "order": 7,
+  "reward": [
+    {
+      "earn": "coins",
+      "amount": 100
+    }
+  ]
+}

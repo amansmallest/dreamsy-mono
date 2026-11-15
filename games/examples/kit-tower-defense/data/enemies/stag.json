@@ -1,0 +1,20 @@
+{
+  "id": "stag",
+  "name": "Stag King",
+  "hp": 1000,
+  "speed": 0.38,
+  "armor": 4,
+  "resist": {
+    "magic": 0.2
+  },
+  "lives": 10,
+  "boss": true,
+  "split": {
+    "into": "beetle",
+    "count": 4
+  },
+  "bounty": 200,
+  "sprite": "asset:enemy_stag",
+  "size": 1.25,
+  "color": "#4a2f5e"
+}

@@ -1,0 +1,27 @@
+{
+  "name": "Thorn Pod",
+  "behaviour": "turret",
+  "sprite": "asset:spitter",
+  "faces": "left",
+  "size": [
+    14,
+    14
+  ],
+  "draw_size": [
+    16,
+    15
+  ],
+  "shoot": {
+    "interval": 1.6,
+    "aim": "fixed",
+    "angle": 180,
+    "speed": 110,
+    "range": 260,
+    "sprite": "asset:spit",
+    "size": [
+      8,
+      8
+    ]
+  },
+  "id": "pod"
+}

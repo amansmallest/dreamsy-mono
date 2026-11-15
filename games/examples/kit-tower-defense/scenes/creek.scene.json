@@ -1,0 +1,63 @@
+{
+  "format": "0",
+  "root": "creek_world",
+  "entities": {
+    "creek_world": {
+      "type": "Node2D",
+      "children": [
+        "creek_cam",
+        "creek_bg",
+        "creek_map",
+        "creek_layer"
+      ],
+      "scripts": [
+        "scripts/client/level.luau"
+      ]
+    },
+    "creek_bg": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          360,
+          640
+        ],
+        "size": [
+          720,
+          1280
+        ],
+        "z_index": -10,
+        "modulate": "#7fb24f"
+      }
+    },
+    "creek_map": {
+      "type": "TileMap2D",
+      "props": {
+        "position": [
+          8,
+          112
+        ],
+        "tile_size": 64,
+        "tileset": "data/tilesets/garden.json",
+        "data": "file:data/levels/creek.txt",
+        "collision": false
+      }
+    },
+    "creek_layer": {
+      "type": "Node2D",
+      "props": {
+        "z_index": 5
+      }
+    },
+    "creek_cam": {
+      "type": "Camera2D",
+      "props": {
+        "position": [
+          360,
+          640
+        ],
+        "zoom": 1,
+        "current": true
+      }
+    }
+  }
+}

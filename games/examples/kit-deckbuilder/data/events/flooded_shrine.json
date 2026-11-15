@@ -1,0 +1,25 @@
+{
+ "name": "Flooded Shrine",
+ "image": "asset:ev_shrine",
+ "text": "A lamp still burns beneath the water, ringed by offerings.",
+ "choices": [
+  {
+   "text": "Reach in (lose 7 HP, gain a relic)",
+   "effects": [
+    "lose_hp 7",
+    "relic random"
+   ],
+   "result": "Your arm comes back numb, and holding something."
+  },
+  {
+   "text": "Pray (heal 12 HP)",
+   "effects": [
+    "heal 12"
+   ],
+   "result": "The flame steadies you."
+  },
+  {
+   "text": "Leave"
+  }
+ ]
+}

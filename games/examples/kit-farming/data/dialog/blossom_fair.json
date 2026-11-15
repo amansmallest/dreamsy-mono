@@ -1,0 +1,18 @@
+{
+ "speaker": "Juniper",
+ "portrait": "asset:juniper",
+ "start": "a",
+ "nodes": {
+  "a": {
+   "lines": [
+    "Welcome to the Blossom Fair!",
+    {
+     "text": "The flower crowns are mine. I made forty.",
+     "speaker": "Pip"
+    },
+    "Here's 200g from the town fund for our newest farmer.",
+    "And starting today, I stock strawberry seeds!"
+   ]
+  }
+ }
+}

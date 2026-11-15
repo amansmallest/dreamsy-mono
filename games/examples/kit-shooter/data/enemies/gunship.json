@@ -1,0 +1,25 @@
+{
+ "name": "Gunship",
+ "sprite": "asset:gunship",
+ "size": [
+  110,
+  92
+ ],
+ "radius": 40,
+ "hp": 22,
+ "score": 800,
+ "path": {
+  "kind": "stop",
+  "speed": 170,
+  "stopY": 300,
+  "hold": 3.5,
+  "exitSpeed": 220
+ },
+ "emitters": [
+  "fan_down"
+ ],
+ "drops": {
+  "power": 0.6,
+  "coins": 4
+ }
+}

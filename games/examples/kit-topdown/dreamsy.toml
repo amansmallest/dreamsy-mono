@@ -1,0 +1,27 @@
+format = "0"
+name = "Tamsin of Wickhollow"
+description = "A tiny top-down adventure: talk to Granny Wick, explore Wickhollow, delve the Mirewell Grotto for bombs and a reel hook, and beat the Mire Warden. Built on the topdown kit."
+dimension = "2d"
+orientation = "portrait"
+entry_scene = "scenes/overworld.scene.json"
+kits = ["topdown"]
+
+[players]
+min = 1
+max = 1
+
+[server]
+mode = "none"
+
+[style]
+preset = "pixel"
+grid = 16
+palette = ["#1b1b2f", "#5cc85a", "#2e8b3e", "#c9a27a", "#2a6e8e", "#a8a8b8", "#e53935", "#ffd54f", "#5ee0ef", "#b05cd0"]
+
+[ui]
+primary = "#2a6e8e"
+accent = "#ffd34a"
+background = "#1b1b2f"
+text = "#f5f5f5"
+panel = "pixel"
+font = "pixel"

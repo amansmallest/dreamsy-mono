@@ -1,0 +1,19 @@
+{
+  "name": "Lucky Clover",
+  "rarity": "common",
+  "icon": "asset:i_clover",
+  "tags": [
+    "gold"
+  ],
+  "description": "+8% crit chance. Better relic odds.",
+  "mods": [
+    {
+      "stat": "crit",
+      "add": 0.08
+    },
+    {
+      "stat": "luck",
+      "add": 0.3
+    }
+  ]
+}

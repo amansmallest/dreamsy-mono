@@ -1,0 +1,243 @@
+{
+  "id": "stump",
+  "scaling": {
+    "hp": 0.05
+  },
+  "waves": [
+    {
+      "groups": [
+        {
+          "enemy": "beetle",
+          "count": 10,
+          "interval": 1.0,
+          "delay": 0,
+          "path": "S"
+        },
+        {
+          "enemy": "ant",
+          "count": 6,
+          "interval": 0.8,
+          "delay": 4,
+          "path": "T"
+        }
+      ],
+      "bonus": 25
+    },
+    {
+      "groups": [
+        {
+          "enemy": "slime",
+          "count": 5,
+          "interval": 1.8,
+          "delay": 0,
+          "path": "S"
+        },
+        {
+          "enemy": "moth",
+          "count": 4,
+          "interval": 1.0,
+          "delay": 3,
+          "path": "T"
+        }
+      ],
+      "bonus": 25
+    },
+    {
+      "groups": [
+        {
+          "enemy": "snail",
+          "count": 6,
+          "interval": 1.6,
+          "delay": 0,
+          "path": "S"
+        },
+        {
+          "enemy": "ant",
+          "count": 14,
+          "interval": 0.5,
+          "delay": 2,
+          "path": "T"
+        }
+      ],
+      "bonus": 30
+    },
+    {
+      "groups": [
+        {
+          "enemy": "toad",
+          "count": 3,
+          "interval": 3,
+          "delay": 0,
+          "path": "S"
+        },
+        {
+          "enemy": "beetle",
+          "count": 12,
+          "interval": 0.6,
+          "delay": 1,
+          "path": "S"
+        }
+      ],
+      "bonus": 30
+    },
+    {
+      "groups": [
+        {
+          "enemy": "moth",
+          "count": 10,
+          "interval": 0.7,
+          "delay": 0,
+          "path": "*"
+        }
+      ],
+      "bonus": 35
+    },
+    {
+      "groups": [
+        {
+          "enemy": "slime",
+          "count": 8,
+          "interval": 1.3,
+          "delay": 0,
+          "path": "*"
+        },
+        {
+          "enemy": "snail",
+          "count": 6,
+          "interval": 1.5,
+          "delay": 4,
+          "path": "S"
+        }
+      ],
+      "bonus": 35
+    },
+    {
+      "groups": [
+        {
+          "enemy": "ant",
+          "count": 30,
+          "interval": 0.3,
+          "delay": 0,
+          "path": "T"
+        },
+        {
+          "enemy": "toad",
+          "count": 3,
+          "interval": 3,
+          "delay": 3,
+          "path": "S"
+        }
+      ],
+      "bonus": 40
+    },
+    {
+      "groups": [
+        {
+          "enemy": "snail",
+          "count": 9,
+          "interval": 1.0,
+          "delay": 0,
+          "path": "S"
+        },
+        {
+          "enemy": "moth",
+          "count": 8,
+          "interval": 0.7,
+          "delay": 2,
+          "path": "T"
+        }
+      ],
+      "bonus": 40
+    },
+    {
+      "groups": [
+        {
+          "enemy": "toad",
+          "count": 5,
+          "interval": 2.2,
+          "delay": 0,
+          "path": "*"
+        },
+        {
+          "enemy": "slime",
+          "count": 10,
+          "interval": 1.0,
+          "delay": 2,
+          "path": "*"
+        }
+      ],
+      "bonus": 45
+    },
+    {
+      "groups": [
+        {
+          "enemy": "beetle",
+          "count": 24,
+          "interval": 0.4,
+          "delay": 0,
+          "path": "*"
+        },
+        {
+          "enemy": "moth",
+          "count": 10,
+          "interval": 0.6,
+          "delay": 4,
+          "path": "T"
+        }
+      ],
+      "bonus": 50
+    },
+    {
+      "groups": [
+        {
+          "enemy": "snail",
+          "count": 14,
+          "interval": 0.9,
+          "delay": 0,
+          "path": "S"
+        },
+        {
+          "enemy": "toad",
+          "count": 4,
+          "interval": 2.5,
+          "delay": 2,
+          "path": "T"
+        },
+        {
+          "enemy": "ant",
+          "count": 20,
+          "interval": 0.35,
+          "delay": 6,
+          "path": "T"
+        }
+      ],
+      "bonus": 60
+    },
+    {
+      "groups": [
+        {
+          "enemy": "stag",
+          "count": 1,
+          "interval": 1,
+          "delay": 0,
+          "path": "S"
+        },
+        {
+          "enemy": "beetle",
+          "count": 12,
+          "interval": 1.0,
+          "delay": 4,
+          "path": "S"
+        },
+        {
+          "enemy": "moth",
+          "count": 10,
+          "interval": 1.0,
+          "delay": 8,
+          "path": "T"
+        }
+      ],
+      "bonus": 0
+    }
+  ]
+}

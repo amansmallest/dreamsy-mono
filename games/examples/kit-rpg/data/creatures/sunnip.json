@@ -1,0 +1,47 @@
+{
+  "name": "Sunnip",
+  "types": [
+    "sun"
+  ],
+  "base": {
+    "hp": 45,
+    "atk": 52,
+    "def": 43,
+    "mag": 55,
+    "res": 45,
+    "spd": 60
+  },
+  "learnset": [
+    {
+      "level": 1,
+      "move": "flare_tap"
+    },
+    {
+      "level": 1,
+      "move": "warm_up"
+    },
+    {
+      "level": 6,
+      "move": "scorch"
+    },
+    {
+      "level": 10,
+      "move": "sunbeam"
+    }
+  ],
+  "catch_rate": 45,
+  "xp_yield": 64,
+  "xp_curve": "medium",
+  "sprites": {
+    "front": "asset:sunnip",
+    "icon": "asset:sunnip",
+    "back": "asset:sunnip_back"
+  },
+  "description": "A sprout-sized sun spirit. Its crest glows brighter when it is happy.",
+  "evolution": [
+    {
+      "into": "solarch",
+      "level": 9
+    }
+  ]
+}

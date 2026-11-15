@@ -1,0 +1,142 @@
+{
+ "format": "0",
+ "root": "world",
+ "entities": {
+  "world": {
+   "type": "Node2D",
+   "children": [
+    "camera",
+    "ground",
+    "path",
+    "leaf_1",
+    "leaf_2",
+    "leaf_3",
+    "leaf_4",
+    "leaf_5"
+   ],
+   "scripts": [
+    "scripts/client/play.luau"
+   ]
+  },
+  "ground": {
+   "type": "Sprite2D",
+   "props": {
+    "position": [
+     360,
+     640
+    ],
+    "size": [
+     760,
+     1320
+    ],
+    "modulate": "#bfe39a",
+    "z_index": -20
+   }
+  },
+  "path": {
+   "type": "Sprite2D",
+   "props": {
+    "position": [
+     360,
+     560
+    ],
+    "size": [
+     680,
+     640
+    ],
+    "modulate": "#ffffff2a",
+    "z_index": -19
+   }
+  },
+  "leaf_1": {
+   "type": "Sprite2D",
+   "props": {
+    "position": [
+     40,
+     230
+    ],
+    "size": [
+     48,
+     48
+    ],
+    "texture": "asset:leaf",
+    "rotation": -20,
+    "z_index": -18
+   }
+  },
+  "leaf_2": {
+   "type": "Sprite2D",
+   "props": {
+    "position": [
+     690,
+     300
+    ],
+    "size": [
+     40,
+     40
+    ],
+    "texture": "asset:leaf",
+    "rotation": 40,
+    "z_index": -18
+   }
+  },
+  "leaf_3": {
+   "type": "Sprite2D",
+   "props": {
+    "position": [
+     26,
+     760
+    ],
+    "size": [
+     44,
+     44
+    ],
+    "texture": "asset:leaf",
+    "rotation": 70,
+    "z_index": -18
+   }
+  },
+  "leaf_4": {
+   "type": "Sprite2D",
+   "props": {
+    "position": [
+     694,
+     820
+    ],
+    "size": [
+     52,
+     52
+    ],
+    "texture": "asset:leaf",
+    "rotation": -60,
+    "z_index": -18
+   }
+  },
+  "leaf_5": {
+   "type": "Sprite2D",
+   "props": {
+    "position": [
+     360,
+     900
+    ],
+    "size": [
+     36,
+     36
+    ],
+    "texture": "asset:leaf",
+    "rotation": 10,
+    "z_index": -18
+   }
+  },
+  "camera": {
+   "type": "Camera2D",
+   "props": {
+    "position": [
+     360,
+     640
+    ],
+    "current": true
+   }
+  }
+ }
+}

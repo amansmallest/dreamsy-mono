@@ -1,0 +1,37 @@
+{
+  "title": "Lost Merchant",
+  "text": "\"Spare coin for a lantern-lit map?\"",
+  "choices": [
+    {
+      "text": "Give 25 gold: +6 max HP",
+      "cost": {
+        "gold": 25
+      },
+      "effects": [
+        {
+          "maxHp": 6
+        }
+      ]
+    },
+    {
+      "text": "Rob him: +50 gold, -5 HP",
+      "cost": {
+        "hp": 5
+      },
+      "effects": [
+        {
+          "gold": 50,
+          "raw": true
+        }
+      ]
+    },
+    {
+      "text": "Wish him well (+3 embers)",
+      "effects": [
+        {
+          "meta": 3
+        }
+      ]
+    }
+  ]
+}

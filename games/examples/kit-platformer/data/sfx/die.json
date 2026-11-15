@@ -1,0 +1,8 @@
+{
+  "wave": "square",
+  "freq": 520,
+  "slide": -2.5,
+  "sustain": 0.1,
+  "decay": 0.6,
+  "volume": 0.5
+}

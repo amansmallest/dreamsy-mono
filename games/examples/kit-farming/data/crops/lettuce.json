@@ -1,0 +1,17 @@
+{
+ "stages": [
+  1,
+  1,
+  2
+ ],
+ "price": 50,
+ "seed": {
+  "price": 20,
+  "icon": "asset:lettuce_seeds"
+ },
+ "name": "Lettuce",
+ "seasons": [
+  "spring"
+ ],
+ "icon": "asset:lettuce"
+}

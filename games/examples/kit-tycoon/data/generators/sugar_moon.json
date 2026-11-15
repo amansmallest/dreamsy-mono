@@ -1,0 +1,20 @@
+{
+  "name": "Sugar Moon",
+  "order": 8,
+  "icon": "asset:gen_sugar_moon",
+  "cost": {
+    "base": 850000000,
+    "growth": 1.115
+  },
+  "output": 11000000,
+  "cycle": 40,
+  "manager": {
+    "name": "Sugar Moon Chef",
+    "cost": 10000000000
+  },
+  "unlock": {
+    "owned": {
+      "pastry_bot": 10
+    }
+  }
+}

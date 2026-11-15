@@ -1,0 +1,11 @@
+{
+  "name": "Millionaire",
+  "desc": "Bake 1M coins",
+  "order": 7,
+  "when": {
+    "earned": 1000000
+  },
+  "reward": {
+    "mult": 1.05
+  }
+}

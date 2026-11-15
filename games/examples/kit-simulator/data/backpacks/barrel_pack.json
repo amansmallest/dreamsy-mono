@@ -1,0 +1,7 @@
+{
+ "name": "Barrel Pack",
+ "order": 3,
+ "cost": 14000,
+ "capacity": 300,
+ "icon": "asset:pack_barrel"
+}

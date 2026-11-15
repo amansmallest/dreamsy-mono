@@ -1,0 +1,14 @@
+{
+ "name": "Meadow Egg",
+ "order": 1,
+ "cost": {
+  "coins": 250
+ },
+ "icon": "asset:egg_meadow",
+ "pets": {
+  "bun": 60,
+  "snail": 28,
+  "ladybug": 10,
+  "clover_fox": 2
+ }
+}

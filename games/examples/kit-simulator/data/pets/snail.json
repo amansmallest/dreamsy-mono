@@ -1,0 +1,8 @@
+{
+ "name": "Shellby",
+ "rarity": "uncommon",
+ "bonus": {
+  "capacity": 0.25
+ },
+ "icon": "asset:pet_snail"
+}

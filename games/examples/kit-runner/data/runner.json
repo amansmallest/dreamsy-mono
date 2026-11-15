@@ -1,0 +1,75 @@
+{
+  "currency": "coins",
+  "currencyName": "Coins",
+  "biomes": [
+    {
+      "id": "meadow",
+      "name": "Meadow Lane",
+      "length": 500,
+      "bg": "asset:bg_meadow",
+      "decor": [
+        "asset:tree",
+        "asset:tree"
+      ],
+      "music": "run"
+    },
+    {
+      "id": "canyon",
+      "name": "Sun Canyon",
+      "length": 500,
+      "bg": "asset:bg_canyon",
+      "decor": [
+        "asset:rock",
+        "asset:rock"
+      ],
+      "music": "run"
+    },
+    {
+      "id": "neon",
+      "name": "Neon Night",
+      "length": 500,
+      "bg": "asset:bg_neon",
+      "decor": [
+        "asset:lamp",
+        "asset:lamp"
+      ],
+      "music": "night"
+    }
+  ],
+  "procStages": [
+    {
+      "id": "gen_breeze",
+      "name": "Breezy Climb",
+      "seed": 101,
+      "difficulty": 3,
+      "platforms": 14,
+      "order": 4
+    },
+    {
+      "id": "gen_twister",
+      "name": "Twister Tower",
+      "seed": 202,
+      "difficulty": 6,
+      "platforms": 18,
+      "order": 5
+    },
+    {
+      "id": "gen_summit",
+      "name": "Storm Summit",
+      "seed": 303,
+      "difficulty": 9,
+      "platforms": 22,
+      "order": 6
+    }
+  ],
+  "daily": {
+    "base": 600,
+    "spread": 500,
+    "reward": [
+      {
+        "earn": "coins",
+        "amount": 150
+      }
+    ]
+  }
+}

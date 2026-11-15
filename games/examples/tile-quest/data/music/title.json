@@ -1,0 +1,18 @@
+{
+  "bpm": 100,
+  "steps": 16,
+  "loop": true,
+  "channels": [
+    {
+      "wave": "triangle",
+      "volume": 0.5,
+      "notes": "C5 - - E5 G5 - - - A5 - G5 - E5 - - . D5 - - F5 A5 - - - G5 - - - - - - ."
+    },
+    {
+      "wave": "square",
+      "duty": 0.125,
+      "volume": 0.25,
+      "notes": "C3 - - - G3 - - - A2 - - - E3 - - - F2 - - - C3 - - - G2 - - - G3 - - -"
+    }
+  ]
+}

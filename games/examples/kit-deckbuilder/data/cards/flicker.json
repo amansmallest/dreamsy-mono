@@ -1,0 +1,13 @@
+{
+ "name": "Flicker",
+ "cost": 0,
+ "type": "skill",
+ "rarity": "uncommon",
+ "effects": [
+  "block 4",
+  "draw 1"
+ ],
+ "retain": true,
+ "character": "wick",
+ "art": "asset:art_sun"
+}

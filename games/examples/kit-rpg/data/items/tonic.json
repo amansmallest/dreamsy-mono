@@ -1,0 +1,8 @@
+{
+  "name": "Tonic",
+  "kind": "heal",
+  "heal": 20,
+  "price": 100,
+  "icon": "asset:item_tonic",
+  "description": "Restores 20 HP."
+}

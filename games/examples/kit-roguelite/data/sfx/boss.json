@@ -1,0 +1,10 @@
+{
+  "wave": "saw",
+  "freq": 110,
+  "slide": -0.5,
+  "vibrato": 4,
+  "vibrato_speed": 6,
+  "sustain": 0.4,
+  "decay": 0.8,
+  "volume": 0.5
+}

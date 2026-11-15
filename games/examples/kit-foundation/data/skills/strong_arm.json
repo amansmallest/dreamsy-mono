@@ -1,0 +1,14 @@
+{
+  "name": "Strong Arm",
+  "description": "+1 damage per rank.",
+  "icon": "asset:star",
+  "branch": "combat",
+  "maxRank": 3,
+  "cost": 1,
+  "mods": [
+    {
+      "stat": "damage",
+      "add": 1
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "name": "Golden Touch",
+  "description": "+3 gold per slime.",
+  "icon": "asset:coin",
+  "branch": "combat",
+  "cost": {
+    "points": 1,
+    "gold": 20
+  },
+  "requires": [
+    {
+      "id": "strong_arm",
+      "rank": 1
+    }
+  ]
+}

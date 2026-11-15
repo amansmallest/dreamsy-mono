@@ -1,0 +1,12 @@
+{
+ "name": "Smolder",
+ "cost": 1,
+ "type": "skill",
+ "rarity": "common",
+ "target": "enemy",
+ "effects": [
+  "apply poison 4"
+ ],
+ "character": "wick",
+ "art": "asset:art_poison"
+}

@@ -1,0 +1,17 @@
+{
+ "stages": [
+  1,
+  1,
+  1
+ ],
+ "price": 40,
+ "seed": {
+  "price": 15,
+  "icon": "asset:radish_seeds"
+ },
+ "name": "Radish",
+ "seasons": [
+  "spring"
+ ],
+ "icon": "asset:radish"
+}

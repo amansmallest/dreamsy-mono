@@ -1,0 +1,9 @@
+{
+ "name": "Zip",
+ "rarity": "rare",
+ "bonus": {
+  "speed": 0.4,
+  "power": 0.2
+ },
+ "icon": "asset:pet_kingfisher"
+}

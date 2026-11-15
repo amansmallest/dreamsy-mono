@@ -1,0 +1,8 @@
+{
+ "name": "Campfire",
+ "tile": "F",
+ "kind": "fire",
+ "warmth": 16,
+ "radius": 3,
+ "hp": 20
+}

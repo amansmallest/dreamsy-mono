@@ -1,0 +1,9 @@
+{
+  "name": "Driftwood Sword",
+  "kind": "sword",
+  "damage": 2,
+  "sprite": "asset:sword_icon",
+  "equip": false,
+  "message": "Press ATTACK to swing",
+  "id": "sword"
+}

@@ -1,0 +1,10 @@
+{
+  "wave": "triangle",
+  "freq": 660,
+  "slide": 1.5,
+  "sustain": 0.1,
+  "decay": 0.4,
+  "vibrato": 1,
+  "vibrato_speed": 14,
+  "volume": 0.5
+}

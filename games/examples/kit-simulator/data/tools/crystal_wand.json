@@ -1,0 +1,8 @@
+{
+ "name": "Crystal Wand",
+ "order": 5,
+ "cost": 70000,
+ "power": 180,
+ "speed": 2.5,
+ "icon": "asset:tool_wand"
+}

@@ -1,0 +1,38 @@
+{
+ "title": "First Harvest",
+ "autoStart": true,
+ "steps": [
+  {
+   "id": "h",
+   "text": "Harvest 5 crops",
+   "objectives": [
+    {
+     "id": "c",
+     "event": "harvested",
+     "count": 5
+    }
+   ]
+  },
+  {
+   "id": "s",
+   "text": "Ship something in the bin",
+   "objectives": [
+    {
+     "id": "b",
+     "event": "item_binned",
+     "perEvent": true,
+     "count": 1
+    }
+   ]
+  }
+ ],
+ "rewards": [
+  {
+   "earn": "gold",
+   "amount": 150
+  },
+  {
+   "toast": "Quest done: First Harvest (+150g)"
+  }
+ ]
+}

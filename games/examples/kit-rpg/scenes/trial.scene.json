@@ -1,0 +1,9 @@
+{
+  "format": "0",
+  "root": "trial_world",
+  "entities": {
+    "trial_world": {
+      "type": "Node2D"
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "Swift Boots",
+  "rarity": "uncommon",
+  "icon": "asset:i_boot",
+  "description": "+20% move speed, +15% attack speed.",
+  "mods": [
+    {
+      "stat": "speed",
+      "pct": 0.2
+    },
+    {
+      "stat": "fireRate",
+      "pct": 0.15
+    }
+  ]
+}

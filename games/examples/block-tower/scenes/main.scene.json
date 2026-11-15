@@ -1,0 +1,38 @@
+{
+  "format": "0",
+  "root": "world",
+  "entities": {
+    "world": {
+      "type": "Node3D",
+      "children": ["env", "sun", "camera", "spawn", "base", "steps", "goal"]
+    },
+    "env": { "type": "Environment3D", "props": { "sky_color": "#7ec8ff", "ambient_energy": 0.6 } },
+    "sun": { "type": "Light3D", "props": { "kind": "directional", "rotation": [-50, 30, 0], "energy": 1.2 } },
+    "camera": { "type": "Camera3D", "props": { "position": [0, 6, 12], "rotation": [-20, 0, 0] } },
+    "spawn": { "type": "SpawnPoint3D", "props": { "position": [0, 1, 0] } },
+    "base": {
+      "type": "Body3D",
+      "props": { "body": "static", "shape": "box", "size": [16, 1, 16], "position": [0, -0.5, 0] },
+      "children": ["base_mesh"]
+    },
+    "base_mesh": { "type": "Mesh3D", "props": { "primitive": "box", "size": [16, 1, 16], "color": "#5bbf4a" } },
+    "steps": {
+      "type": "Node3D",
+      "name": "Steps",
+      "children": ["step_1", "step_2", "step_3"]
+    },
+    "step_1": { "type": "Body3D", "props": { "body": "static", "size": [2, 0.5, 2], "position": [3, 1, 0] }, "children": ["step_1_mesh"] },
+    "step_1_mesh": { "type": "Mesh3D", "props": { "size": [2, 0.5, 2], "color": "#ff5964" } },
+    "step_2": { "type": "Body3D", "props": { "body": "static", "size": [2, 0.5, 2], "position": [3, 2.5, -3] }, "children": ["step_2_mesh"] },
+    "step_2_mesh": { "type": "Mesh3D", "props": { "size": [2, 0.5, 2], "color": "#ffe74c" } },
+    "step_3": { "type": "Body3D", "props": { "body": "kinematic", "size": [2, 0.5, 2], "position": [0, 4, -5] }, "scripts": ["scripts/server/mover.luau"], "children": ["step_3_mesh"] },
+    "step_3_mesh": { "type": "Mesh3D", "props": { "size": [2, 0.5, 2], "color": "#38618c" } },
+    "goal": {
+      "type": "Area3D",
+      "props": { "shape": "box", "size": [2, 2, 2], "position": [0, 6, -8] },
+      "scripts": ["scripts/server/goal.luau"],
+      "children": ["goal_mesh"]
+    },
+    "goal_mesh": { "type": "Mesh3D", "props": { "primitive": "cylinder", "size": [1, 2, 1], "color": "#ffd700" } }
+  }
+}

@@ -1,0 +1,11 @@
+{
+ "name": "Moth Lantern",
+ "rarity": "common",
+ "icon": "asset:rl_moth_lantern",
+ "text": "Draw 2 extra cards on your first turn.",
+ "on": "turn_start",
+ "first": true,
+ "effects": [
+  "draw 2"
+ ]
+}

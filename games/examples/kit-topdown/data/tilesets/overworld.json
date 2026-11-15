@@ -1,0 +1,230 @@
+{
+  "tiles": {
+    "T": {
+      "sprite": "asset:tree",
+      "tags": [
+        "solid"
+      ]
+    },
+    "R": {
+      "sprite": "asset:rock",
+      "tags": [
+        "solid"
+      ]
+    },
+    "H": {
+      "sprite": "asset:house",
+      "tags": [
+        "solid"
+      ]
+    },
+    "#": {
+      "sprite": "asset:wall",
+      "tags": [
+        "wall"
+      ]
+    },
+    "~": {
+      "sprite": "asset:water",
+      "tags": [
+        "water"
+      ]
+    },
+    "v": {
+      "sprite": "asset:pit",
+      "tags": [
+        "gap"
+      ]
+    },
+    "X": {
+      "sprite": "asset:cracked",
+      "tags": [
+        "cracked"
+      ]
+    },
+    "L": {
+      "sprite": "asset:door_locked",
+      "tags": [
+        "locked"
+      ]
+    },
+    "D": {
+      "sprite": "asset:door_boss",
+      "tags": [
+        "boss_locked"
+      ]
+    },
+    "b": {
+      "sprite": "asset:bush",
+      "tags": [
+        "bush"
+      ]
+    },
+    "O": {
+      "sprite": "asset:hook_post",
+      "tags": [
+        "hook"
+      ]
+    },
+    "B": {
+      "sprite": "asset:block",
+      "tags": [
+        "block"
+      ]
+    },
+    "G": {
+      "sprite": "asset:gate",
+      "tags": [
+        "gate"
+      ]
+    },
+    "S": {
+      "sprite": "asset:shutter",
+      "tags": [
+        "shutter"
+      ]
+    },
+    "i": {
+      "sprite": "asset:sign",
+      "tags": [
+        "sign",
+        "sign_village"
+      ]
+    },
+    "$": {
+      "sprite": "asset:rupee",
+      "tags": [
+        "rupee"
+      ]
+    },
+    "h": {
+      "sprite": "asset:heart_pickup",
+      "tags": [
+        "heart"
+      ]
+    },
+    "c": {
+      "sprite": "asset:heart_container",
+      "tags": [
+        "heart_container"
+      ]
+    },
+    "P": {
+      "tags": [
+        "player_start"
+      ]
+    },
+    "E": {
+      "tags": [
+        "entry",
+        "from_grotto",
+        "face_down"
+      ]
+    },
+    "e": {
+      "tags": [
+        "entry",
+        "from_overworld",
+        "face_up"
+      ]
+    },
+    "W": {
+      "color": "#1b1b2f",
+      "tags": [
+        "warp",
+        "to_grotto"
+      ]
+    },
+    "w": {
+      "color": "#1b1b2f",
+      "tags": [
+        "warp",
+        "to_overworld"
+      ]
+    },
+    "s": {
+      "tags": [
+        "enemy",
+        "mirelet"
+      ]
+    },
+    "g": {
+      "tags": [
+        "enemy",
+        "thornhog"
+      ]
+    },
+    "a": {
+      "tags": [
+        "enemy",
+        "reed_archer"
+      ]
+    },
+    "n": {
+      "tags": [
+        "enemy",
+        "spore_nest"
+      ]
+    },
+    "m": {
+      "tags": [
+        "enemy",
+        "mirelet"
+      ]
+    },
+    "j": {
+      "tags": [
+        "enemy",
+        "thornhog"
+      ]
+    },
+    "K": {
+      "tags": [
+        "boss",
+        "mire_warden"
+      ]
+    },
+    "N": {
+      "tags": [
+        "npc",
+        "elder"
+      ]
+    },
+    "M": {
+      "tags": [
+        "npc",
+        "merchant"
+      ]
+    },
+    "1": {
+      "tags": [
+        "chest",
+        "bombs"
+      ]
+    },
+    "2": {
+      "tags": [
+        "chest",
+        "small_key"
+      ]
+    },
+    "3": {
+      "tags": [
+        "chest",
+        "hookshot"
+      ]
+    },
+    "4": {
+      "tags": [
+        "chest",
+        "boss_key"
+      ]
+    },
+    "5": {
+      "tags": [
+        "chest",
+        "rupees_20"
+      ]
+    }
+  }
+}

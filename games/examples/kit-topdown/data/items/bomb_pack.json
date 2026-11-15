@@ -1,0 +1,8 @@
+{
+  "name": "Bomb Bag",
+  "kind": "ammo",
+  "ammo_for": "bombs",
+  "amount": 5,
+  "sprite": "asset:bomb",
+  "id": "bomb_pack"
+}

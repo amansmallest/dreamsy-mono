@@ -1,0 +1,27 @@
+format = "0"
+name = "Mossling"
+description = "A tiny moss sprite hops through Greenhollow and Thornreach: 5 levels, power-ups, hidden amber gems and a toad boss. Built on the platformer kit."
+dimension = "2d"
+orientation = "landscape"
+entry_scene = "scenes/world.scene.json"
+kits = ["platformer"]
+
+[players]
+min = 1
+max = 1
+
+[server]
+mode = "none"
+
+[style]
+preset = "pixel"
+grid = 16
+palette = ["#1b1b2f", "#5cc85a", "#2e8b3e", "#9a6440", "#ffd54f", "#ff9a1f", "#e53935", "#4aa8f5", "#8ed25a", "#a8a8b8"]
+
+[ui]
+primary = "#2e8b3e"
+accent = "#ffd34a"
+background = "#1b1b2f"
+text = "#f5f5f5"
+panel = "pixel"
+font = "pixel"

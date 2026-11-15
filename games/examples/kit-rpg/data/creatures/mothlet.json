@@ -1,0 +1,46 @@
+{
+  "name": "Mothlet",
+  "types": [
+    "moon"
+  ],
+  "base": {
+    "hp": 40,
+    "atk": 35,
+    "def": 40,
+    "mag": 55,
+    "res": 50,
+    "spd": 70
+  },
+  "learnset": [
+    {
+      "level": 1,
+      "move": "night_nip"
+    },
+    {
+      "level": 4,
+      "move": "lull"
+    },
+    {
+      "level": 8,
+      "move": "moonbeam"
+    },
+    {
+      "level": 11,
+      "move": "eclipse_drain"
+    }
+  ],
+  "catch_rate": 190,
+  "xp_yield": 52,
+  "xp_curve": "medium",
+  "sprites": {
+    "front": "asset:mothlet",
+    "icon": "asset:mothlet"
+  },
+  "description": "Flutters toward moonlight. Its wing dust makes travelers drowsy.",
+  "evolution": [
+    {
+      "into": "lumoth",
+      "level": 10
+    }
+  ]
+}

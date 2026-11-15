@@ -1,0 +1,48 @@
+{
+ "title": "Who put out the light?",
+ "prompt": "Tap two clues that explain each other. Find all three links.",
+ "links": [
+  {
+   "id": "snipped",
+   "clues": [
+    "cut_wick",
+    "shears_oil"
+   ],
+   "text": "The wick was snipped with the boathouse shears."
+  },
+  {
+   "id": "boots",
+   "clues": [
+    "wet_prints",
+    "ott_alibi"
+   ],
+   "text": "Someone with big boots was in the boathouse, yet Ott says he never left home."
+  },
+  {
+   "id": "crossing",
+   "clues": [
+    "ledger_gap",
+    "lantern_boat"
+   ],
+   "text": "The ferry made an unlogged crossing at midnight. Juniper saw its lantern."
+  }
+ ],
+ "question": {
+  "text": "Who put out the lamp?",
+  "options": [
+   {
+    "text": "Mira"
+   },
+   {
+    "text": "Ott",
+    "correct": true
+   },
+   {
+    "text": "Juniper"
+   }
+  ]
+ },
+ "mistakes": 4,
+ "solved": "ch2_solved",
+ "failed": "ch2_failed"
+}

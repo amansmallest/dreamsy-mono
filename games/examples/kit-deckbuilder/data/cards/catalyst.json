@@ -1,0 +1,13 @@
+{
+ "name": "Catalyst",
+ "cost": 1,
+ "type": "skill",
+ "rarity": "uncommon",
+ "target": "enemy",
+ "effects": [
+  "double poison"
+ ],
+ "exhaust": true,
+ "character": "wick",
+ "art": "asset:art_poison"
+}

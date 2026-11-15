@@ -1,0 +1,13 @@
+{
+ "name": "Berry Stew",
+ "icon": "asset:berry_stew",
+ "category": "food",
+ "data": {
+  "food": {
+   "hunger": 40,
+   "thirst": 10,
+   "health": 15,
+   "temperature": 4
+  }
+ }
+}

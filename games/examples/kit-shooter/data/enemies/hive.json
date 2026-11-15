@@ -1,0 +1,63 @@
+{
+ "name": "Hive Core",
+ "boss": true,
+ "sprite": "asset:brute",
+ "size": [
+  130,
+  130
+ ],
+ "radius": 52,
+ "hp": 700,
+ "score": 15000,
+ "cost": 0,
+ "drops": {
+  "coins": 15
+ },
+ "phases": [
+  {
+   "hp": 1.0,
+   "pattern": [
+    {
+     "behavior": "chase",
+     "speed": 70,
+     "aggro": 4000,
+     "leash": 99999,
+     "time": 3
+    },
+    {
+     "action": "fire",
+     "emitter": "hive_ring",
+     "for": 2,
+     "wait": 2.2
+    },
+    {
+     "action": "summon",
+     "enemy": "mite",
+     "count": 3,
+     "wait": 1
+    }
+   ]
+  },
+  {
+   "hp": 0.4,
+   "pattern": [
+    {
+     "behavior": "chase",
+     "speed": 110,
+     "aggro": 4000,
+     "leash": 99999,
+     "time": 2.5
+    },
+    {
+     "action": "fire",
+     "emitters": [
+      "hive_ring",
+      "aim_triple"
+     ],
+     "for": 2.5,
+     "wait": 2.6
+    }
+   ]
+  }
+ ]
+}

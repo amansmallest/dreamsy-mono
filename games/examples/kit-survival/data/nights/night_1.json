@@ -1,0 +1,8 @@
+{
+ "night": 1,
+ "budget": 3,
+ "enemies": [
+  "shade"
+ ],
+ "spawnEvery": 4
+}

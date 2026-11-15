@@ -1,0 +1,8 @@
+{
+  "kind": "image",
+  "file": "troop_archer.svg",
+  "source": {
+    "model": "claude-sonnet-5-5",
+    "prompt": "drawn as SVG"
+  }
+}

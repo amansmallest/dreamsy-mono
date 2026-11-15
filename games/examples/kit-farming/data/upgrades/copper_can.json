@@ -1,0 +1,12 @@
+{
+ "name": "Copper Can (waters 3)",
+ "cost": {
+  "gold": 450
+ },
+ "mods": [
+  {
+   "stat": "water_area",
+   "add": 2
+  }
+ ]
+}

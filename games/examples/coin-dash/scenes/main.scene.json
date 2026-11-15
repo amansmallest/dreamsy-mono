@@ -1,0 +1,66 @@
+{
+  "format": "0",
+  "root": "world",
+  "entities": {
+    "world": {
+      "type": "Node2D",
+      "name": "World",
+      "children": ["camera", "ground", "ledge_1", "ledge_2", "player", "coins", "hud_score", "hud_timer"]
+    },
+    "camera": {
+      "type": "Camera2D",
+      "props": { "position": [160, 90], "follow": "player" }
+    },
+    "ground": {
+      "type": "Body2D",
+      "name": "Ground",
+      "props": { "position": [160, 172], "body": "static", "shape": "rect", "size": [320, 16] },
+      "children": ["ground_sprite"]
+    },
+    "ground_sprite": {
+      "type": "Sprite2D",
+      "props": { "size": [320, 16], "modulate": "#38b764" }
+    },
+    "ledge_1": {
+      "type": "Body2D",
+      "props": { "position": [96, 128], "body": "static", "size": [64, 16] },
+      "children": ["ledge_1_sprite"]
+    },
+    "ledge_1_sprite": { "type": "Sprite2D", "props": { "size": [64, 16], "modulate": "#5d275d" } },
+    "ledge_2": {
+      "type": "Body2D",
+      "props": { "position": [224, 96], "body": "static", "size": [64, 16] },
+      "children": ["ledge_2_sprite"]
+    },
+    "ledge_2_sprite": { "type": "Sprite2D", "props": { "size": [64, 16], "modulate": "#5d275d" } },
+    "player": {
+      "type": "Body2D",
+      "name": "Player",
+      "props": { "position": [32, 144], "body": "dynamic", "shape": "rect", "size": [16, 16], "lock_rotation": true },
+      "scripts": ["scripts/client/player.luau"],
+      "tags": ["player"],
+      "children": ["player_sprite"]
+    },
+    "player_sprite": { "type": "Sprite2D", "props": { "size": [16, 16], "modulate": "#41a6f6" } },
+    "coins": {
+      "type": "Node2D",
+      "name": "Coins",
+      "scripts": ["scripts/client/coins.luau"],
+      "children": ["coin_1", "coin_2", "coin_3"]
+    },
+    "coin_1": { "type": "Area2D", "props": { "position": [96, 104], "shape": "circle", "size": [14, 14] }, "tags": ["coin"], "children": ["coin_1_sprite"] },
+    "coin_1_sprite": { "type": "Sprite2D", "props": { "texture": "asset:coin", "size": [16, 16] } },
+    "coin_2": { "type": "Area2D", "props": { "position": [224, 72], "shape": "circle", "size": [14, 14] }, "tags": ["coin"], "children": ["coin_2_sprite"] },
+    "coin_2_sprite": { "type": "Sprite2D", "props": { "texture": "asset:coin", "size": [16, 16] } },
+    "coin_3": { "type": "Area2D", "props": { "position": [288, 152], "shape": "circle", "size": [14, 14] }, "tags": ["coin"], "children": ["coin_3_sprite"] },
+    "coin_3_sprite": { "type": "Sprite2D", "props": { "texture": "asset:coin", "size": [16, 16] } },
+    "hud_score": {
+      "type": "UIText",
+      "props": { "anchor": "top_left", "offset": [8, 8], "text": "Coins: 0", "font_size": 16, "color": "#ffcd75" }
+    },
+    "hud_timer": {
+      "type": "UIText",
+      "props": { "anchor": "top_right", "offset": [-8, 8], "text": "30", "font_size": 16, "align": "right" }
+    }
+  }
+}

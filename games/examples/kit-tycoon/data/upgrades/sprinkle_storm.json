@@ -1,0 +1,19 @@
+{
+  "name": "Sprinkle Storm",
+  "desc": "Donuts ×3",
+  "order": 4,
+  "icon": "asset:gen_donut_fryer",
+  "cost": {
+    "amount": 1000000
+  },
+  "effect": {
+    "kind": "output",
+    "target": "donut_fryer",
+    "value": 3
+  },
+  "requires": {
+    "owned": {
+      "donut_fryer": 25
+    }
+  }
+}

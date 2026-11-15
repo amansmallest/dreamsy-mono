@@ -1,0 +1,41 @@
+{
+ "speaker": "Odessa",
+ "portrait": "asset:odessa",
+ "start": "a",
+ "nodes": {
+  "a": {
+   "lines": [
+    "These maps show Mossbell before the town.",
+    "Your farm was a wildflower meadow."
+   ],
+   "next": "ask"
+  },
+  "ask": {
+   "text": "Would you like to see the old valley maps?",
+   "choices": [
+    {
+     "text": "I'd love that.",
+     "next": "yes",
+     "effects": [
+      {
+       "set": "odessa_h2_kind"
+      }
+     ]
+    },
+    {
+     "text": "Maybe another time.",
+     "next": "no"
+    }
+   ]
+  },
+  "yes": {
+   "lines": [
+    "Now it feeds us all.",
+    "Fitting, isn't it?"
+   ]
+  },
+  "no": {
+   "text": "Oh... okay. Another time, then."
+  }
+ }
+}

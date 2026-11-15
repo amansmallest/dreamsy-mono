@@ -1,0 +1,24 @@
+{
+  "id": "creek",
+  "name": "Twin Creek",
+  "map": {
+    "grid": "file:data/levels/creek.txt",
+    "tile_size": 64,
+    "legend": {
+      "path": "#",
+      "spawns": "ST",
+      "exits": "E",
+      "build": "o"
+    }
+  },
+  "waves": "creek",
+  "money": 240,
+  "lives": 20,
+  "interest": {
+    "rate": 0.03,
+    "cap": 25
+  },
+  "sell_ratio": 0.7,
+  "between": 8,
+  "early_bonus": 2
+}

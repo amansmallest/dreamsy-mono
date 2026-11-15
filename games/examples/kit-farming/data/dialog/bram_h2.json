@@ -1,0 +1,41 @@
+{
+ "speaker": "Bram",
+ "portrait": "asset:bram",
+ "start": "a",
+ "nodes": {
+  "a": {
+   "lines": [
+    "Here. Feel the grain of this oak.",
+    "My dad taught me that."
+   ],
+   "next": "ask"
+  },
+  "ask": {
+   "text": "Fancy trying the plane on this board?",
+   "choices": [
+    {
+     "text": "I'd love that.",
+     "next": "yes",
+     "effects": [
+      {
+       "set": "bram_h2_kind"
+      }
+     ]
+    },
+    {
+     "text": "Maybe another time.",
+     "next": "no"
+    }
+   ]
+  },
+  "yes": {
+   "lines": [
+    "Ha! A natural.",
+    "I'll knock a bit off your next upgrade. Don't tell anyone."
+   ]
+  },
+  "no": {
+   "text": "Oh... okay. Another time, then."
+  }
+ }
+}

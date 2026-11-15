@@ -1,0 +1,100 @@
+{
+  "name": "Dawnmere",
+  "music": "town",
+  "layers": [
+    {
+      "data": "file:data/levels/town_ground.txt",
+      "tileset": "data/tilesets/world.json"
+    },
+    {
+      "data": "file:data/levels/town.txt",
+      "tileset": "data/tilesets/world.json"
+    }
+  ],
+  "spawns": {
+    "start": [
+      9,
+      12,
+      "up"
+    ],
+    "from_lodge": [
+      4,
+      6,
+      "down"
+    ],
+    "from_route": [
+      8,
+      2,
+      "down"
+    ]
+  },
+  "warps": [
+    {
+      "at": [
+        4,
+        5
+      ],
+      "to": "lodge",
+      "spawn": "door"
+    },
+    {
+      "at": [
+        8,
+        0
+      ],
+      "to": "route1",
+      "spawn": "south"
+    }
+  ],
+  "npcs": [
+    {
+      "id": "elder",
+      "name": "Elder Moss",
+      "at": [
+        11,
+        9
+      ],
+      "facing": "down",
+      "sprite": "asset:npc_elder",
+      "dialog": "elder",
+      "move": "look"
+    },
+    {
+      "id": "guard_kid",
+      "name": "Pip",
+      "at": [
+        8,
+        1
+      ],
+      "facing": "down",
+      "sprite": "asset:npc_kid",
+      "dialog": "guard_kid",
+      "if": {
+        "not_flag": "got_starter"
+      }
+    },
+    {
+      "id": "townie",
+      "name": "Ola",
+      "at": [
+        13,
+        12
+      ],
+      "sprite": "asset:npc_healer",
+      "move": "wander",
+      "radius": 2,
+      "lines": [
+        "Ever seen a Sunbeak at dawn? They sing so loudly!"
+      ]
+    }
+  ],
+  "signs": [
+    {
+      "at": [
+        7,
+        8
+      ],
+      "text": "DAWNMERE \u2014 where the stars came down."
+    }
+  ]
+}

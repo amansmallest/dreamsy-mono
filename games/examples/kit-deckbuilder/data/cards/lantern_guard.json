@@ -1,0 +1,11 @@
+{
+ "name": "Lantern Guard",
+ "cost": 1,
+ "type": "skill",
+ "rarity": "common",
+ "effects": [
+  "block 8"
+ ],
+ "character": "wick",
+ "art": "asset:art_shield"
+}

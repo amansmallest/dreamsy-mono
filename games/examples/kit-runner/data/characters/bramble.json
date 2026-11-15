@@ -1,0 +1,19 @@
+{
+  "name": "Bramble",
+  "order": 3,
+  "cost": {
+    "coins": 900
+  },
+  "tint": "#8ef08e",
+  "description": "Shield lasts 50% longer; quick lanes.",
+  "mods": [
+    {
+      "stat": "shieldTime",
+      "pct": 0.5
+    },
+    {
+      "stat": "laneTime",
+      "pct": -0.25
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+ "title": "Down to the Creek",
+ "autoStart": true,
+ "steps": [
+  {
+   "id": "s1",
+   "text": "Unlock Crystal Creek",
+   "objectives": [
+    {
+     "id": "o",
+     "condition": {
+      "zone": "creek"
+     }
+    }
+   ]
+  }
+ ],
+ "rewards": [
+  {
+   "earn": "coins",
+   "amount": 2000
+  }
+ ],
+ "requires": {
+  "quest": "q4_hatch",
+  "is": "done"
+ }
+}

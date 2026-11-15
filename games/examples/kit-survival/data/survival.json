@@ -1,0 +1,146 @@
+{
+ "world": {
+  "w": 40,
+  "h": 40,
+  "tile": 48,
+  "seed": 7,
+  "scale": 0.07,
+  "island": 0.35,
+  "clearRadius": 3
+ },
+ "biomes": [
+  {
+   "id": "sea",
+   "name": "Sea",
+   "char": "~",
+   "maxE": 0.25,
+   "walkable": false,
+   "temp": 14
+  },
+  {
+   "id": "beach",
+   "name": "Beach",
+   "char": "s",
+   "maxE": 0.3,
+   "temp": 24,
+   "nodes": {
+    "spring": 0.02,
+    "bush": 0.02
+   }
+  },
+  {
+   "id": "pinewood",
+   "name": "Pinewood",
+   "char": "f",
+   "minM": 0.52,
+   "temp": 15,
+   "nodes": {
+    "tree": 0.22,
+    "iron": 0.05,
+    "bush": 0.03,
+    "rock": 0.03
+   }
+  },
+  {
+   "id": "meadow",
+   "name": "Meadow",
+   "char": "g",
+   "temp": 21,
+   "nodes": {
+    "tree": 0.07,
+    "rock": 0.05,
+    "bush": 0.05,
+    "spring": 0.025
+   }
+  }
+ ],
+ "day": {
+  "length": 300,
+  "night": 0.33,
+  "start": 0.04,
+  "nightTemp": -12
+ },
+ "needs": {
+  "hunger": {
+   "decay": 2.5,
+   "damage": 6
+  },
+  "thirst": {
+   "decay": 3.5,
+   "damage": 8
+  },
+  "temperature": {
+   "min": 10,
+   "max": 32
+  }
+ },
+ "death": {
+  "drop": "half",
+  "keepTools": true,
+  "respawn": "bed",
+  "restore": {
+   "health": 60,
+   "hunger": 50,
+   "thirst": 50
+  }
+ },
+ "player": {
+  "speed": 190,
+  "swing": 0.4,
+  "damage": 1
+ },
+ "start": {
+  "items": {
+   "berries": 3,
+   "water": 1
+  }
+ },
+ "nightGrowth": 1.3,
+ "milestones": [
+  {
+   "id": "pick",
+   "label": "Craft a Crude Pick",
+   "item": "crude_pick"
+  },
+  {
+   "id": "bench",
+   "label": "Build a Workbench",
+   "structure": "workbench"
+  },
+  {
+   "id": "fire",
+   "label": "Light a Campfire before dark",
+   "structure": "campfire"
+  },
+  {
+   "id": "axe",
+   "label": "Craft a Stone Axe",
+   "item": "stone_axe"
+  },
+  {
+   "id": "wall",
+   "label": "Build a wall",
+   "structure": "wall"
+  },
+  {
+   "id": "bed",
+   "label": "Build a Bed",
+   "structure": "bed"
+  },
+  {
+   "id": "furnace",
+   "label": "Build a Furnace",
+   "structure": "furnace"
+  },
+  {
+   "id": "iron",
+   "label": "Forge an Iron Pick",
+   "item": "iron_pick"
+  },
+  {
+   "id": "night3",
+   "label": "Survive night 3",
+   "night": 3
+  }
+ ]
+}

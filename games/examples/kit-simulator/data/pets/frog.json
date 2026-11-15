@@ -1,0 +1,8 @@
+{
+ "name": "Ribbit",
+ "rarity": "common",
+ "bonus": {
+  "power": 0.2
+ },
+ "icon": "asset:pet_frog"
+}

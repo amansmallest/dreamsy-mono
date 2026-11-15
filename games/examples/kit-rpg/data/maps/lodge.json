@@ -1,0 +1,64 @@
+{
+  "name": "Keeper's Lodge",
+  "music": "town",
+  "zoom": 3,
+  "hide_name": true,
+  "layers": [
+    {
+      "data": "file:data/levels/lodge.txt",
+      "tileset": "data/tilesets/world.json"
+    }
+  ],
+  "spawns": {
+    "door": [
+      6,
+      7,
+      "up"
+    ]
+  },
+  "warps": [
+    {
+      "at": [
+        6,
+        8
+      ],
+      "to": "town",
+      "spawn": "from_lodge"
+    }
+  ],
+  "npcs": [
+    {
+      "id": "healer",
+      "name": "Healer Juno",
+      "at": [
+        2,
+        1
+      ],
+      "sprite": "asset:npc_healer",
+      "dialog": "healer",
+      "fixed": true
+    },
+    {
+      "id": "clerk",
+      "name": "Clerk Pell",
+      "at": [
+        10,
+        1
+      ],
+      "sprite": "asset:npc_clerk",
+      "dialog": "clerk",
+      "fixed": true
+    }
+  ],
+  "signs": [
+    {
+      "at": [
+        12,
+        3
+      ],
+      "dialog": "storage",
+      "sprite": "asset:item_jar",
+      "solid": true
+    }
+  ]
+}

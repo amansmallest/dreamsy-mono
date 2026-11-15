@@ -1,0 +1,7 @@
+{
+ "name": "Cloud Bag",
+ "order": 4,
+ "cost": 250000,
+ "capacity": 1500,
+ "icon": "asset:pack_cloud"
+}

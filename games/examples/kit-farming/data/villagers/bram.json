@@ -1,0 +1,75 @@
+{
+ "name": "Bram",
+ "sprite": "asset:bram",
+ "portrait": "asset:bram",
+ "size": 64,
+ "home": "workshop_in",
+ "birthday": {
+  "season": "spring",
+  "day": 15
+ },
+ "loves": [
+  "cheese",
+  "potato"
+ ],
+ "likes": [
+  "egg",
+  "goat_milk"
+ ],
+ "dislikes": [
+  "lettuce"
+ ],
+ "hates": [
+  "sunflower"
+ ],
+ "schedule": {
+  "default": [
+   [
+    360,
+    "workshop_in"
+   ],
+   [
+    720,
+    "pond"
+   ],
+   [
+    900,
+    "workshop_in"
+   ],
+   [
+    1140,
+    "square_e"
+   ],
+   [
+    1320,
+    "workshop_in"
+   ]
+  ],
+  "rain": [
+   [
+    360,
+    "workshop_in"
+   ]
+  ]
+ },
+ "lines": {
+  "default": [
+   "Measure twice, cut once.",
+   "Need an upgrade? I've got the lumber.",
+   "Fish aren't biting. Just like my customers."
+  ],
+  "hearts_2": [
+   "Your coop holding up? Built it to last."
+  ]
+ },
+ "heartEvents": [
+  {
+   "hearts": 2,
+   "dialog": "bram_h2"
+  },
+  {
+   "hearts": 4,
+   "dialog": "bram_h4"
+  }
+ ]
+}

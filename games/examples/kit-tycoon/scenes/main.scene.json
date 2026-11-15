@@ -1,0 +1,11 @@
+{
+  "format": "0",
+  "root": "world",
+  "entities": {
+    "world": { "type": "Node2D", "children": ["camera", "backdrop", "stripe_top", "stripe_bottom"] },
+    "camera": { "type": "Camera2D", "props": { "position": [360, 640], "current": true } },
+    "backdrop": { "type": "Sprite2D", "props": { "position": [360, 640], "size": [760, 1320], "modulate": "#fdf0e0", "z_index": -10 } },
+    "stripe_top": { "type": "Sprite2D", "props": { "position": [360, 412], "size": [760, 8], "modulate": "#f3c9a8", "z_index": -9 } },
+    "stripe_bottom": { "type": "Sprite2D", "props": { "position": [360, 1160], "size": [760, 8], "modulate": "#f3c9a8", "z_index": -9 } }
+  }
+}

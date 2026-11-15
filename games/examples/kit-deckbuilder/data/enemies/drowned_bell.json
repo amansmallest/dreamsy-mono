@@ -1,0 +1,55 @@
+{
+ "name": "The Drowned Bell",
+ "hp": 130,
+ "tier": "boss",
+ "act": "undertow",
+ "sprite": "asset:en_drowned_bell",
+ "start": [
+  "apply artifact 2 self"
+ ],
+ "moves": {
+  "toll": {
+   "name": "Toll",
+   "effects": [
+    "damage 6 x3"
+   ]
+  },
+  "resonate": {
+   "name": "Resonate",
+   "effects": [
+    "apply weak 2",
+    "apply vulnerable 2"
+   ]
+  },
+  "ring": {
+   "name": "Great Ring",
+   "effects": [
+    "damage 18"
+   ]
+  },
+  "sink": {
+   "name": "Sink",
+   "effects": [
+    "block 12",
+    "apply strength 2 self"
+   ]
+  }
+ },
+ "pattern": {
+  "kind": "sequence",
+  "moves": [
+   "resonate",
+   "toll",
+   "ring"
+  ],
+  "then": {
+   "kind": "cycle",
+   "moves": [
+    "sink",
+    "toll",
+    "ring",
+    "resonate"
+   ]
+  }
+ }
+}

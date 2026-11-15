@@ -1,0 +1,30 @@
+format = "0"
+name = "Kit Roguelike Demo"
+description = "Seeded procedural dungeon floors built on the combat, ai and procgen kits: enemies with AI behaviours, status effects, loot, stairs, a boss every third floor, run reset on death."
+dimension = "2d"
+orientation = "portrait"
+entry_scene = "scenes/main.scene.json"
+kits = ["combat", "ai", "procgen"]
+
+[players]
+min = 1
+max = 1
+
+[server]
+mode = "none"
+
+[physics]
+layers = ["player", "enemy", "world"]
+
+[style]
+preset = "pixel"
+grid = 16
+palette = ["#1a1c2c", "#5d275d", "#b13e53", "#ef7d57", "#ffcd75", "#a7f070", "#38b764", "#257179", "#29366f", "#3b5dc9", "#41a6f6", "#73eff7", "#f4f4f4", "#94b0c2", "#566c86", "#333c57"]
+
+[ui]
+primary = "#b13e53"
+accent = "#ffcd75"
+background = "#1a1c2c"
+text = "#f4f4f4"
+panel = "pixel"
+font = "pixel"

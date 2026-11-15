@@ -1,0 +1,15 @@
+{
+  "name": "Wisdom Potion",
+  "description": "Drink for +20 XP.",
+  "icon": "asset:potion",
+  "category": "potion",
+  "stack": 5,
+  "use": [
+    {
+      "xp": 20
+    },
+    {
+      "toast": "+20 XP"
+    }
+  ]
+}

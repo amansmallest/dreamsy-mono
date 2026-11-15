@@ -1,0 +1,15 @@
+{
+ "name": "Sprinkler",
+ "icon": "asset:sprinkler",
+ "inputs": {
+  "stone": 6,
+  "wood": 4
+ },
+ "data": {
+  "placeable": true,
+  "sprinkler": {
+   "area": 4
+  }
+ },
+ "category": "crafted"
+}

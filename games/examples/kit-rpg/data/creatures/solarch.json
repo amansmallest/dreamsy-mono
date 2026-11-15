@@ -1,0 +1,45 @@
+{
+  "name": "Solarch",
+  "types": [
+    "sun"
+  ],
+  "base": {
+    "hp": 65,
+    "atk": 72,
+    "def": 60,
+    "mag": 85,
+    "res": 65,
+    "spd": 80
+  },
+  "learnset": [
+    {
+      "level": 1,
+      "move": "flare_tap"
+    },
+    {
+      "level": 1,
+      "move": "warm_up"
+    },
+    {
+      "level": 6,
+      "move": "scorch"
+    },
+    {
+      "level": 9,
+      "move": "sunbeam"
+    },
+    {
+      "level": 14,
+      "move": "comet_rush"
+    }
+  ],
+  "catch_rate": 45,
+  "xp_yield": 142,
+  "xp_curve": "medium",
+  "sprites": {
+    "front": "asset:solarch",
+    "icon": "asset:solarch",
+    "back": "asset:solarch_back"
+  },
+  "description": "Its crown of flame lights the way for lost travelers."
+}

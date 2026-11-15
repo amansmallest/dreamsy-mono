@@ -1,0 +1,66 @@
+{
+  "currencies": [
+    {
+      "id": "coins",
+      "name": "Coins",
+      "icon": "asset:icon_coin",
+      "start": 5
+    },
+    {
+      "id": "whisks",
+      "name": "Golden Whisks",
+      "icon": "asset:icon_whisk"
+    }
+  ],
+  "tap": {
+    "currency": "coins",
+    "amount": 1,
+    "rate_fraction": 0.05
+  },
+  "offline": {
+    "cap_hours": 2,
+    "rate": 0.5
+  },
+  "milestones": [
+    {
+      "at": 25,
+      "mult": 2
+    },
+    {
+      "at": 50,
+      "mult": 2
+    },
+    {
+      "at": 100,
+      "mult": 2
+    },
+    {
+      "at": 150,
+      "mult": 2
+    },
+    {
+      "at": 200,
+      "mult": 2
+    },
+    {
+      "at": 300,
+      "mult": 2
+    }
+  ],
+  "prestige": [
+    {
+      "id": "whisk",
+      "name": "Reopen the Bakery",
+      "currency": "whisks",
+      "from": "coins",
+      "exponent": 0.33,
+      "scale": 1,
+      "bonus": 0.05,
+      "min_gain": 1,
+      "threshold": 2500000
+    }
+  ],
+  "events": {
+    "first_delay": 90
+  }
+}

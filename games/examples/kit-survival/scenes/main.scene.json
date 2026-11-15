@@ -1,0 +1,95 @@
+{
+ "format": "0",
+ "root": "world",
+ "entities": {
+  "world": {
+   "type": "Node2D",
+   "children": [
+    "map",
+    "objects",
+    "player",
+    "camera"
+   ],
+   "scripts": [
+    "scripts/client/main.luau"
+   ]
+  },
+  "map": {
+   "type": "TileMap2D",
+   "name": "Isle",
+   "props": {
+    "tile_size": 48,
+    "tileset": "data/tilesets/isle.json",
+    "data": "g",
+    "layer": "world",
+    "z_index": 0
+   }
+  },
+  "player": {
+   "type": "Body2D",
+   "name": "Castaway",
+   "props": {
+    "position": [
+     960,
+     960
+    ],
+    "body": "dynamic",
+    "gravity_scale": 0,
+    "lock_rotation": true,
+    "friction": 0,
+    "shape": "circle",
+    "size": [
+     30,
+     30
+    ],
+    "layer": "player",
+    "mask": "world",
+    "z_index": 5
+   },
+   "children": [
+    "player_sprite"
+   ],
+   "tags": [
+    "player"
+   ]
+  },
+  "player_sprite": {
+   "type": "Sprite2D",
+   "props": {
+    "texture": "asset:player",
+    "size": [
+     44,
+     44
+    ],
+    "auto_flip": true
+   }
+  },
+  "camera": {
+   "type": "Camera2D",
+   "props": {
+    "follow": "player",
+    "smoothing": 0.25,
+    "zoom": 1,
+    "limit_min": [
+     0,
+     0
+    ],
+    "limit_max": [
+     1920,
+     1920
+    ]
+   }
+  },
+  "objects": {
+   "type": "TileMap2D",
+   "name": "Objects",
+   "props": {
+    "tile_size": 48,
+    "tileset": "data/tilesets/isle.json",
+    "data": ".",
+    "layer": "world",
+    "z_index": 1
+   }
+  }
+ }
+}

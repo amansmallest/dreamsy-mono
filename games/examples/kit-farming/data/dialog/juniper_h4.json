@@ -1,0 +1,41 @@
+{
+ "speaker": "Juniper",
+ "portrait": "asset:juniper",
+ "start": "a",
+ "nodes": {
+  "a": {
+   "lines": [
+    "My grandmother started this shop.",
+    "Some days I wonder if I'm doing her proud."
+   ],
+   "next": "ask"
+  },
+  "ask": {
+   "text": "Will you walk with me to the pond after closing?",
+   "choices": [
+    {
+     "text": "I'd love that.",
+     "next": "yes",
+     "effects": [
+      {
+       "set": "juniper_h4_kind"
+      }
+     ]
+    },
+    {
+     "text": "Maybe another time.",
+     "next": "no"
+    }
+   ]
+  },
+  "yes": {
+   "lines": [
+    "Thank you. Really.",
+    "She would have liked you."
+   ]
+  },
+  "no": {
+   "text": "Oh... okay. Another time, then."
+  }
+ }
+}

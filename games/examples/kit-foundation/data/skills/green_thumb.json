@@ -1,0 +1,7 @@
+{
+  "name": "Green Thumb",
+  "description": "Trees regrow faster.",
+  "icon": "asset:apple",
+  "branch": "garden",
+  "cost": 1
+}

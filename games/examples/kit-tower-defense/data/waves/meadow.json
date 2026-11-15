@@ -1,0 +1,138 @@
+{
+  "id": "meadow",
+  "scaling": {
+    "hp": 0.05
+  },
+  "waves": [
+    {
+      "groups": [
+        {
+          "enemy": "beetle",
+          "count": 8,
+          "interval": 1.2,
+          "delay": 0
+        }
+      ],
+      "bonus": 20
+    },
+    {
+      "groups": [
+        {
+          "enemy": "beetle",
+          "count": 10,
+          "interval": 1.0,
+          "delay": 0
+        },
+        {
+          "enemy": "ant",
+          "count": 5,
+          "interval": 0.8,
+          "delay": 6
+        }
+      ],
+      "bonus": 20
+    },
+    {
+      "groups": [
+        {
+          "enemy": "ant",
+          "count": 14,
+          "interval": 0.6,
+          "delay": 0
+        }
+      ],
+      "bonus": 25
+    },
+    {
+      "groups": [
+        {
+          "enemy": "beetle",
+          "count": 10,
+          "interval": 0.9,
+          "delay": 0
+        },
+        {
+          "enemy": "snail",
+          "count": 3,
+          "interval": 2.5,
+          "delay": 8
+        }
+      ],
+      "bonus": 25
+    },
+    {
+      "groups": [
+        {
+          "enemy": "moth",
+          "count": 8,
+          "interval": 1.0,
+          "delay": 0
+        },
+        {
+          "enemy": "beetle",
+          "count": 8,
+          "interval": 0.9,
+          "delay": 4
+        }
+      ],
+      "bonus": 30
+    },
+    {
+      "groups": [
+        {
+          "enemy": "snail",
+          "count": 6,
+          "interval": 1.8,
+          "delay": 0
+        },
+        {
+          "enemy": "ant",
+          "count": 12,
+          "interval": 0.5,
+          "delay": 5
+        }
+      ],
+      "bonus": 30
+    },
+    {
+      "groups": [
+        {
+          "enemy": "beetle",
+          "count": 16,
+          "interval": 0.6,
+          "delay": 0
+        },
+        {
+          "enemy": "moth",
+          "count": 8,
+          "interval": 0.9,
+          "delay": 6
+        }
+      ],
+      "bonus": 35
+    },
+    {
+      "groups": [
+        {
+          "enemy": "snail",
+          "count": 8,
+          "interval": 1.4,
+          "delay": 0
+        },
+        {
+          "enemy": "ant",
+          "count": 16,
+          "interval": 0.4,
+          "delay": 3
+        },
+        {
+          "enemy": "moth",
+          "count": 10,
+          "interval": 0.8,
+          "delay": 8
+        }
+      ],
+      "bonus": 50
+    }
+  ]
+}

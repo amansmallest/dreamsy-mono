@@ -1,0 +1,13 @@
+{
+ "name": "Last Light",
+ "cost": 2,
+ "type": "attack",
+ "rarity": "uncommon",
+ "target": "enemy",
+ "effects": [
+  "damage 9",
+  "if target.hp < 50% then damage 9"
+ ],
+ "character": "wick",
+ "art": "asset:art_strike"
+}

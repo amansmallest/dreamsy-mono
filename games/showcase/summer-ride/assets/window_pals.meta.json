@@ -1,0 +1,8 @@
+{
+  "kind": "image",
+  "file": "window_pals.svg",
+  "source": {
+    "model": "claude-opus-5-5",
+    "prompt": "drawn as SVG"
+  }
+}

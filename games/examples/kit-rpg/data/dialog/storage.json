@@ -1,0 +1,10 @@
+{
+  "lines": [
+    "A Star Shelf. Creatures you catch beyond six rest here."
+  ],
+  "effects": [
+    {
+      "open_storage": true
+    }
+  ]
+}

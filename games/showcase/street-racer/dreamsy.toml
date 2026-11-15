@@ -1,0 +1,25 @@
+format = "0"
+name = "City Rush"
+dimension = "2d"
+entry_scene = "scenes/main.scene.json"
+
+[style]
+preset = "pixel"
+pack = "arcade-racer"
+palette = [ "#3b3338", "#605c59", "#716660", "#938273", "#a2a7a1", "#d9c598", "#c6955b", "#e0a030", "#87524b", "#d8403a", "#3a6fd8", "#3fb04a", "#f4f4f0", "#ffd84a" ]
+grid = 16
+
+[server]
+mode = "none"
+
+[players]
+max = 1
+
+[ui]
+primary = "#d8403a"
+accent = "#ffd84a"
+background = "#3b3338"
+text = "#f4f4f0"
+panel = "pixel"
+font = "pixel"
+

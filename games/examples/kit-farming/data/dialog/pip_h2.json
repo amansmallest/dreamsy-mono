@@ -1,0 +1,41 @@
+{
+ "speaker": "Pip",
+ "portrait": "asset:pip",
+ "start": "a",
+ "nodes": {
+  "a": {
+   "lines": [
+    "Ready... set...",
+    "GO!"
+   ],
+   "next": "ask"
+  },
+  "ask": {
+   "text": "Wanna race to the pond?",
+   "choices": [
+    {
+     "text": "I'd love that.",
+     "next": "yes",
+     "effects": [
+      {
+       "set": "pip_h2_kind"
+      }
+     ]
+    },
+    {
+     "text": "Maybe another time.",
+     "next": "no"
+    }
+   ]
+  },
+  "yes": {
+   "lines": [
+    "You let me win, didn't you?",
+    "...Thanks."
+   ]
+  },
+  "no": {
+   "text": "Oh... okay. Another time, then."
+  }
+ }
+}

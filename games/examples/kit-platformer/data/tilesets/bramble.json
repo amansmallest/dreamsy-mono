@@ -1,0 +1,181 @@
+{
+  "tiles": {
+    "G": {
+      "sprite": "asset:tile_grass",
+      "solid": true,
+      "tags": [
+        "solid"
+      ]
+    },
+    "#": {
+      "sprite": "asset:tile_dirt",
+      "solid": true,
+      "tags": [
+        "solid"
+      ]
+    },
+    "X": {
+      "sprite": "asset:tile_stone",
+      "solid": true,
+      "tags": [
+        "solid"
+      ]
+    },
+    "F": {
+      "sprite": "asset:tile_stone",
+      "tags": [
+        "fake"
+      ]
+    },
+    "B": {
+      "sprite": "asset:tile_crate",
+      "solid": true,
+      "tags": [
+        "breakable"
+      ]
+    },
+    "=": {
+      "sprite": "asset:tile_plank",
+      "tags": [
+        "oneway"
+      ]
+    },
+    "H": {
+      "sprite": "asset:tile_ladder",
+      "tags": [
+        "ladder"
+      ]
+    },
+    "^": {
+      "sprite": "asset:tile_spikes",
+      "tags": [
+        "hazard"
+      ]
+    },
+    "S": {
+      "sprite": "asset:tile_spring",
+      "solid": true,
+      "tags": [
+        "solid",
+        "spring"
+      ]
+    },
+    "o": {
+      "sprite": "asset:tile_seed",
+      "tags": [
+        "coin"
+      ]
+    },
+    "*": {
+      "sprite": "asset:tile_amber",
+      "tags": [
+        "gem"
+      ]
+    },
+    "+": {
+      "sprite": "asset:tile_heart",
+      "tags": [
+        "heart"
+      ]
+    },
+    "d": {
+      "sprite": "asset:orb_blue",
+      "tags": [
+        "powerup",
+        "double_jump"
+      ]
+    },
+    "j": {
+      "sprite": "asset:orb_green",
+      "tags": [
+        "powerup",
+        "wall_jump"
+      ]
+    },
+    "D": {
+      "sprite": "asset:orb_red",
+      "tags": [
+        "powerup",
+        "dash"
+      ]
+    },
+    "P": {
+      "tags": [
+        "player_start"
+      ]
+    },
+    "C": {
+      "tags": [
+        "checkpoint"
+      ]
+    },
+    "E": {
+      "tags": [
+        "goal"
+      ]
+    },
+    "b": {
+      "tags": [
+        "enemy",
+        "beetle"
+      ]
+    },
+    "f": {
+      "tags": [
+        "enemy",
+        "frog"
+      ]
+    },
+    "w": {
+      "tags": [
+        "enemy",
+        "wasp"
+      ]
+    },
+    "p": {
+      "tags": [
+        "enemy",
+        "spitter"
+      ]
+    },
+    "r": {
+      "tags": [
+        "enemy",
+        "boar"
+      ]
+    },
+    "T": {
+      "tags": [
+        "enemy",
+        "pod"
+      ]
+    },
+    "K": {
+      "tags": [
+        "boss",
+        "toad_king"
+      ]
+    },
+    "M": {
+      "tags": [
+        "platform",
+        "move_x",
+        "range_3"
+      ]
+    },
+    "V": {
+      "tags": [
+        "platform",
+        "move_y",
+        "range_5",
+        "speed_30"
+      ]
+    },
+    "L": {
+      "tags": [
+        "platform",
+        "fall"
+      ]
+    }
+  }
+}

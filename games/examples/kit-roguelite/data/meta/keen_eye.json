@@ -1,0 +1,16 @@
+{
+  "name": "Keen Eye +5% crit",
+  "branch": "fortune",
+  "cost": {
+    "embers": 35
+  },
+  "requires": [
+    "deep_pockets"
+  ],
+  "mods": [
+    {
+      "stat": "crit",
+      "add": 0.05
+    }
+  ]
+}

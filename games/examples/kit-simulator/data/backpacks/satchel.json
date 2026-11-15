@@ -1,0 +1,7 @@
+{
+ "name": "Satchel",
+ "order": 2,
+ "cost": 200,
+ "capacity": 60,
+ "icon": "asset:pack_satchel"
+}

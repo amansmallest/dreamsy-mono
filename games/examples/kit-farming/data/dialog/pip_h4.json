@@ -1,0 +1,41 @@
+{
+ "speaker": "Pip",
+ "portrait": "asset:pip",
+ "start": "a",
+ "nodes": {
+  "a": {
+   "lines": [
+    "I saved a seed from the fair!",
+    "It's a moonmelon. I think."
+   ],
+   "next": "ask"
+  },
+  "ask": {
+   "text": "Can I plant a seed on your farm?",
+   "choices": [
+    {
+     "text": "I'd love that.",
+     "next": "yes",
+     "effects": [
+      {
+       "set": "pip_h4_kind"
+      }
+     ]
+    },
+    {
+     "text": "Maybe another time.",
+     "next": "no"
+    }
+   ]
+  },
+  "yes": {
+   "lines": [
+    "When it grows we'll share it!",
+    "Promise?"
+   ]
+  },
+  "no": {
+   "text": "Oh... okay. Another time, then."
+  }
+ }
+}

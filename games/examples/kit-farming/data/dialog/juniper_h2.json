@@ -1,0 +1,41 @@
+{
+ "speaker": "Juniper",
+ "portrait": "asset:juniper",
+ "start": "a",
+ "nodes": {
+  "a": {
+   "lines": [
+    "Psst. I saved you something.",
+    "Sunflower seeds - first of the season."
+   ],
+   "next": "ask"
+  },
+  "ask": {
+   "text": "Want to help me sort the new seed shipment?",
+   "choices": [
+    {
+     "text": "I'd love that.",
+     "next": "yes",
+     "effects": [
+      {
+       "set": "juniper_h2_kind"
+      }
+     ]
+    },
+    {
+     "text": "Maybe another time.",
+     "next": "no"
+    }
+   ]
+  },
+  "yes": {
+   "lines": [
+    "Wonderful! The sunflowers are yours to sell now.",
+    "Come by any time."
+   ]
+  },
+  "no": {
+   "text": "Oh... okay. Another time, then."
+  }
+ }
+}

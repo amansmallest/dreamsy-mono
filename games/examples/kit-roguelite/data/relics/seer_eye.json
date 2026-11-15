@@ -1,0 +1,16 @@
+{
+  "name": "Seer's Eye",
+  "rarity": "rare",
+  "icon": "asset:i_eye",
+  "description": "+1 relic choice. Crits deal x2.5.",
+  "mods": [
+    {
+      "stat": "relicChoices",
+      "add": 1
+    },
+    {
+      "stat": "critMult",
+      "add": 0.5
+    }
+  ]
+}

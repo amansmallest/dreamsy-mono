@@ -1,0 +1,29 @@
+format = "0"
+name = "Mossbell Farm"
+description = "One spring on a little farm in Mossbell valley: till, plant, water, ship, befriend four neighbours and make it to the Blossom Fair. Built on the farming kit."
+dimension = "2d"
+orientation = "portrait"
+entry_scene = "scenes/main.scene.json"
+kits = ["farming"]
+
+[players]
+min = 1
+max = 1
+
+[server]
+mode = "none"
+
+[physics]
+layers = ["player", "world"]
+
+[ui]
+primary = "#4f8a5b"
+accent = "#ffd166"
+background = "#2b2135"
+text = "#fdf6e3"
+panel = "rounded"
+font = "rounded"
+
+[style]
+preset = "clean"
+palette = ["#2b2135", "#4f8a5b", "#ffd166", "#8fcf6a", "#a8774c", "#e8506a", "#5fa8e0", "#fdf6e3"]

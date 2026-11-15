@@ -1,0 +1,30 @@
+{
+ "name": "Ember Canyon",
+ "order": 3,
+ "color": "#f2c79a",
+ "desc": "Warm rocks that glow from inside.",
+ "icon": "asset:zone_canyon",
+ "nodes": [
+  {
+   "id": "ember",
+   "hp": 300,
+   "reward": 150,
+   "size": 2,
+   "weight": 1.0,
+   "sprite": "asset:node_ember",
+   "color": "#ffb07a"
+  },
+  {
+   "id": "magma",
+   "hp": 800,
+   "reward": 420,
+   "size": 2,
+   "weight": 0.35,
+   "sprite": "asset:node_magma",
+   "color": "#ffe08a"
+  }
+ ],
+ "unlock": {
+  "coins": 40000
+ }
+}

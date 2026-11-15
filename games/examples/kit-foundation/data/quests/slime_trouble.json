@@ -1,0 +1,39 @@
+{
+  "title": "Slime Trouble",
+  "description": "Slimes are eating the garden.",
+  "requires": {
+    "quest": "apple_pie"
+  },
+  "autoStart": true,
+  "steps": [
+    {
+      "id": "hunt",
+      "text": "Pop 3 slimes",
+      "objectives": [
+        {
+          "id": "slimes",
+          "text": "Slimes",
+          "event": "enemy_defeated",
+          "match": {
+            "enemy": "slime"
+          },
+          "count": 3
+        }
+      ]
+    }
+  ],
+  "rewards": [
+    {
+      "give": "gem"
+    },
+    {
+      "skillPoints": 1
+    },
+    {
+      "xp": 40
+    },
+    {
+      "toast": "Quest complete: Slime Trouble"
+    }
+  ]
+}

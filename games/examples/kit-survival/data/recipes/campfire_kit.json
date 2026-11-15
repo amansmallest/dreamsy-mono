@@ -1,0 +1,7 @@
+{
+ "needs": {
+  "wood": 6,
+  "stone": 4
+ },
+ "category": "build"
+}

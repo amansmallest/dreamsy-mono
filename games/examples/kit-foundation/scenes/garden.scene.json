@@ -1,0 +1,346 @@
+{
+  "format": "0",
+  "root": "garden",
+  "entities": {
+    "garden": {
+      "type": "Node2D",
+      "children": [
+        "cam",
+        "sky",
+        "lawn",
+        "path",
+        "tree_1",
+        "tree_2",
+        "tree_3",
+        "owl",
+        "slime",
+        "slime_hp",
+        "hud_bar",
+        "hud_gold",
+        "hud_level",
+        "hud_xp_back",
+        "hud_xp",
+        "hud_quest",
+        "btn_bag",
+        "btn_quests",
+        "btn_skills",
+        "btn_menu"
+      ],
+      "scripts": [
+        "scripts/client/garden.luau"
+      ]
+    },
+    "cam": {
+      "type": "Camera2D",
+      "props": {
+        "position": [
+          360,
+          640
+        ]
+      }
+    },
+    "sky": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          360,
+          300
+        ],
+        "size": [
+          720,
+          600
+        ],
+        "modulate": "#bde0fe",
+        "z_index": -20
+      }
+    },
+    "lawn": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          360,
+          940
+        ],
+        "size": [
+          720,
+          700
+        ],
+        "modulate": "#8cc084",
+        "z_index": -19
+      }
+    },
+    "path": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          360,
+          1000
+        ],
+        "size": [
+          720,
+          90
+        ],
+        "modulate": "#e9d8a6",
+        "z_index": -18
+      }
+    },
+    "tree_1": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          140,
+          560
+        ],
+        "size": [
+          200,
+          200
+        ],
+        "texture": "asset:tree"
+      },
+      "tags": [
+        "tree"
+      ]
+    },
+    "tree_2": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          360,
+          500
+        ],
+        "size": [
+          220,
+          220
+        ],
+        "texture": "asset:tree"
+      },
+      "tags": [
+        "tree"
+      ]
+    },
+    "tree_3": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          580,
+          560
+        ],
+        "size": [
+          200,
+          200
+        ],
+        "texture": "asset:tree"
+      },
+      "tags": [
+        "tree"
+      ]
+    },
+    "owl": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          170,
+          840
+        ],
+        "size": [
+          150,
+          150
+        ],
+        "texture": "asset:owl"
+      }
+    },
+    "slime": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          540,
+          860
+        ],
+        "size": [
+          140,
+          140
+        ],
+        "texture": "asset:slime"
+      }
+    },
+    "slime_hp": {
+      "type": "Text2D",
+      "props": {
+        "position": [
+          540,
+          770
+        ],
+        "text": "3/3",
+        "font_size": 26,
+        "color": "#22333b",
+        "font": "rounded"
+      }
+    },
+    "hud_bar": {
+      "type": "UIPanel",
+      "props": {
+        "anchor": "top",
+        "offset": [
+          0,
+          16
+        ],
+        "size": [
+          690,
+          170
+        ],
+        "background": "#22333bdd"
+      }
+    },
+    "hud_gold": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          36,
+          30
+        ],
+        "size": [
+          320,
+          50
+        ],
+        "text": "Gold 0",
+        "font_size": 34,
+        "color": "#ffd166"
+      }
+    },
+    "hud_level": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top_right",
+        "offset": [
+          -96,
+          30
+        ],
+        "size": [
+          300,
+          50
+        ],
+        "text": "Lv 1",
+        "font_size": 34,
+        "align": "right",
+        "color": "#f7f3e9"
+      }
+    },
+    "hud_xp_back": {
+      "type": "UIPanel",
+      "props": {
+        "anchor": "top",
+        "offset": [
+          0,
+          92
+        ],
+        "size": [
+          640,
+          18
+        ],
+        "background": "#ffffff33"
+      }
+    },
+    "hud_xp": {
+      "type": "UIPanel",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          40,
+          92
+        ],
+        "size": [
+          1,
+          18
+        ],
+        "background": "#ffd166"
+      }
+    },
+    "hud_quest": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top",
+        "offset": [
+          0,
+          120
+        ],
+        "size": [
+          640,
+          50
+        ],
+        "text": "",
+        "font_size": 26,
+        "align": "center",
+        "color": "#f7f3e9"
+      }
+    },
+    "btn_bag": {
+      "type": "UIButton",
+      "props": {
+        "anchor": "bottom_left",
+        "offset": [
+          24,
+          -40
+        ],
+        "size": [
+          156,
+          110
+        ],
+        "text": "Bag",
+        "font_size": 30,
+        "background": "#4f8a5b"
+      }
+    },
+    "btn_quests": {
+      "type": "UIButton",
+      "props": {
+        "anchor": "bottom",
+        "offset": [
+          -86,
+          -40
+        ],
+        "size": [
+          156,
+          110
+        ],
+        "text": "Quests",
+        "font_size": 30,
+        "background": "#4f8a5b"
+      }
+    },
+    "btn_skills": {
+      "type": "UIButton",
+      "props": {
+        "anchor": "bottom",
+        "offset": [
+          86,
+          -40
+        ],
+        "size": [
+          156,
+          110
+        ],
+        "text": "Skills",
+        "font_size": 30,
+        "background": "#4f8a5b"
+      }
+    },
+    "btn_menu": {
+      "type": "UIButton",
+      "props": {
+        "anchor": "bottom_right",
+        "offset": [
+          -24,
+          -40
+        ],
+        "size": [
+          156,
+          110
+        ],
+        "text": "Title",
+        "font_size": 30,
+        "background": "#22333b"
+      }
+    }
+  }
+}

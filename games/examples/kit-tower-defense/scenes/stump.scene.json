@@ -1,0 +1,63 @@
+{
+  "format": "0",
+  "root": "stump_world",
+  "entities": {
+    "stump_world": {
+      "type": "Node2D",
+      "children": [
+        "stump_cam",
+        "stump_bg",
+        "stump_map",
+        "stump_layer"
+      ],
+      "scripts": [
+        "scripts/client/level.luau"
+      ]
+    },
+    "stump_bg": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          360,
+          640
+        ],
+        "size": [
+          720,
+          1280
+        ],
+        "z_index": -10,
+        "modulate": "#7fb24f"
+      }
+    },
+    "stump_map": {
+      "type": "TileMap2D",
+      "props": {
+        "position": [
+          8,
+          112
+        ],
+        "tile_size": 64,
+        "tileset": "data/tilesets/garden.json",
+        "data": "file:data/levels/stump.txt",
+        "collision": false
+      }
+    },
+    "stump_layer": {
+      "type": "Node2D",
+      "props": {
+        "z_index": 5
+      }
+    },
+    "stump_cam": {
+      "type": "Camera2D",
+      "props": {
+        "position": [
+          360,
+          640
+        ],
+        "zoom": 1,
+        "current": true
+      }
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+ "name": "First Friend",
+ "description": "Reach 2 hearts with anyone",
+ "event": "heart_up",
+ "count": 2
+}

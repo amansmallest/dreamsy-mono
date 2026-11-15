@@ -1,0 +1,8 @@
+{
+ "name": "Copper Pick",
+ "order": 3,
+ "cost": 600,
+ "power": 12,
+ "speed": 1.5,
+ "icon": "asset:tool_copper"
+}

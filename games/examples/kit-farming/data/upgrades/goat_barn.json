@@ -1,0 +1,17 @@
+{
+ "name": "Goat Barn (2 goats)",
+ "cost": {
+  "gold": 3000
+ },
+ "mods": [
+  {
+   "stat": "barn_capacity",
+   "add": 2
+  }
+ ],
+ "effects": [
+  {
+   "set": "goat_barn"
+  }
+ ]
+}

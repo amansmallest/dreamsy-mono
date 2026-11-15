@@ -1,0 +1,18 @@
+{
+  "name": "Midas",
+  "description": "Clover + Purse: kills drop 2 gold.",
+  "relics": [
+    "lucky_clover",
+    "golden_purse"
+  ],
+  "triggers": [
+    {
+      "on": "kill",
+      "effects": [
+        {
+          "gold": 2
+        }
+      ]
+    }
+  ]
+}

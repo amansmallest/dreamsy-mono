@@ -1,0 +1,7 @@
+{
+ "name": "Pouch",
+ "order": 1,
+ "cost": 0,
+ "capacity": 15,
+ "icon": "asset:pack_pouch"
+}

@@ -1,0 +1,7 @@
+{
+ "needs": {
+  "stone": 16
+ },
+ "station": "workbench",
+ "category": "build"
+}

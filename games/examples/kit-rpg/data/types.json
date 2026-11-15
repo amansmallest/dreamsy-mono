@@ -1,0 +1,33 @@
+{
+  "types": {
+    "sun": {
+      "name": "Sun",
+      "color": "#e8743b"
+    },
+    "moon": {
+      "name": "Moon",
+      "color": "#3b5dc9"
+    },
+    "star": {
+      "name": "Star",
+      "color": "#8a5cc4"
+    }
+  },
+  "chart": {
+    "sun": {
+      "moon": 2,
+      "star": 0.5,
+      "sun": 0.5
+    },
+    "moon": {
+      "star": 2,
+      "sun": 0.5,
+      "moon": 0.5
+    },
+    "star": {
+      "sun": 2,
+      "moon": 0.5,
+      "star": 0.5
+    }
+  }
+}

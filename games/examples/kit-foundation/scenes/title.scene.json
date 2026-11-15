@@ -1,0 +1,132 @@
+{
+  "format": "0",
+  "root": "title",
+  "entities": {
+    "title": {
+      "type": "Node2D",
+      "children": [
+        "title_cam",
+        "title_bg",
+        "title_owl",
+        "title_logo",
+        "title_sub",
+        "btn_continue",
+        "btn_new"
+      ],
+      "scripts": [
+        "scripts/client/title.luau"
+      ]
+    },
+    "title_cam": {
+      "type": "Camera2D",
+      "props": {
+        "position": [
+          360,
+          640
+        ]
+      }
+    },
+    "title_bg": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          360,
+          640
+        ],
+        "size": [
+          720,
+          1280
+        ],
+        "modulate": "#8cc084",
+        "z_index": -10
+      }
+    },
+    "title_owl": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          360,
+          470
+        ],
+        "size": [
+          240,
+          240
+        ],
+        "texture": "asset:owl"
+      }
+    },
+    "title_logo": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top",
+        "offset": [
+          0,
+          120
+        ],
+        "size": [
+          680,
+          90
+        ],
+        "text": "Owl Garden",
+        "font_size": 72,
+        "align": "center",
+        "color": "#f7f3e9",
+        "outline": "#22333b",
+        "outline_size": 4
+      }
+    },
+    "title_sub": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top",
+        "offset": [
+          0,
+          210
+        ],
+        "size": [
+          680,
+          50
+        ],
+        "text": "core + progression + juice kits",
+        "font_size": 28,
+        "align": "center",
+        "color": "#22333b"
+      }
+    },
+    "btn_continue": {
+      "type": "UIButton",
+      "props": {
+        "anchor": "center",
+        "offset": [
+          0,
+          230
+        ],
+        "size": [
+          480,
+          110
+        ],
+        "text": "Continue",
+        "font_size": 40,
+        "background": "#4f8a5b",
+        "visible": false
+      }
+    },
+    "btn_new": {
+      "type": "UIButton",
+      "props": {
+        "anchor": "center",
+        "offset": [
+          0,
+          360
+        ],
+        "size": [
+          480,
+          110
+        ],
+        "text": "New Game",
+        "font_size": 40,
+        "background": "#22333b"
+      }
+    }
+  }
+}

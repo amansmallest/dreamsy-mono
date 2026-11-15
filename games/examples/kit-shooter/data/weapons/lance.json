@@ -1,0 +1,24 @@
+{
+ "name": "Lance",
+ "kind": "laser",
+ "color": "#e2b8ff",
+ "levels": [
+  {
+   "dps": 10,
+   "width": 16,
+   "length": 1100
+  },
+  {
+   "dps": 15,
+   "width": 22
+  },
+  {
+   "dps": 22,
+   "width": 28
+  },
+  {
+   "dps": 30,
+   "width": 36
+  }
+ ]
+}

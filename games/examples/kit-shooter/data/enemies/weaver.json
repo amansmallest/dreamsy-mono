@@ -1,0 +1,19 @@
+{
+ "name": "Weaver",
+ "sprite": "asset:weaver",
+ "size": [
+  60,
+  60
+ ],
+ "hp": 4,
+ "score": 120,
+ "path": {
+  "kind": "sine",
+  "speed": 130,
+  "amp": 120,
+  "freq": 0.35
+ },
+ "drops": {
+  "coins": 1
+ }
+}

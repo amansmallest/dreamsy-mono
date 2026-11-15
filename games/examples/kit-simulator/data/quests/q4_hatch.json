@@ -1,0 +1,26 @@
+{
+ "title": "A Little Friend",
+ "autoStart": true,
+ "steps": [
+  {
+   "id": "s1",
+   "text": "Hatch an egg",
+   "objectives": [
+    {
+     "id": "o",
+     "event": "pet_hatched",
+     "count": 1
+    }
+   ]
+  }
+ ],
+ "rewards": [
+  {
+   "pet": "bun"
+  }
+ ],
+ "requires": {
+  "quest": "q3_new_tool",
+  "is": "done"
+ }
+}

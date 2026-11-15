@@ -1,0 +1,8 @@
+{
+ "needs": {
+  "ore": 2,
+  "wood": 1
+ },
+ "station": "furnace",
+ "category": "materials"
+}

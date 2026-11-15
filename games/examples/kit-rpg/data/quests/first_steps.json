@@ -1,0 +1,33 @@
+{
+  "name": "First Steps",
+  "description": "Elder Moss gave you a partner. Prove you can be a Keeper.",
+  "steps": [
+    {
+      "id": "catch",
+      "text": "Catch a wild creature on Glimmer Path",
+      "objectives": [
+        {
+          "type": "catch",
+          "count": 1,
+          "text": "Creatures caught"
+        }
+      ]
+    },
+    {
+      "id": "report",
+      "text": "Tell Elder Moss about your catch",
+      "objectives": [
+        {
+          "type": "flag",
+          "flag": "reported_catch"
+        }
+      ]
+    }
+  ],
+  "rewards": {
+    "money": 300,
+    "items": {
+      "tonic": 3
+    }
+  }
+}

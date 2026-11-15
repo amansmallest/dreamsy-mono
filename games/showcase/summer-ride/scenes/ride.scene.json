@@ -1,0 +1,282 @@
+{
+  "format": "0",
+  "root": "ride_root",
+  "entities": {
+    "ride_root": {
+      "type": "Node2D",
+      "scripts": [
+        "scripts/client/ride.luau"
+      ],
+      "children": [
+        "ride_bg",
+        "train",
+        "station",
+        "goal_sign",
+        "ride_objects",
+        "player",
+        "ride_camera",
+        "hud_peach_panel",
+        "hud_peach_icon",
+        "hud_peaches",
+        "hud_time_panel",
+        "hud_time",
+        "hud_stage",
+        "msg_panel",
+        "msg_text",
+        "retry_button"
+      ]
+    },
+    "ride_bg": {
+      "type": "Node2D"
+    },
+    "train": {
+      "type": "Sprite2D",
+      "props": {
+        "texture": "asset:train",
+        "size": [
+          128,
+          30
+        ],
+        "position": [
+          0,
+          157
+        ],
+        "z_index": -66
+      }
+    },
+    "station": {
+      "type": "Sprite2D",
+      "props": {
+        "texture": "asset:station",
+        "size": [
+          64,
+          56
+        ],
+        "position": [
+          0,
+          148
+        ],
+        "z_index": -64
+      }
+    },
+    "goal_sign": {
+      "type": "Sprite2D",
+      "props": {
+        "texture": "asset:signpost",
+        "size": [
+          20,
+          28
+        ],
+        "position": [
+          0,
+          170
+        ],
+        "z_index": -55
+      }
+    },
+    "ride_objects": {
+      "type": "Node2D"
+    },
+    "player": {
+      "type": "Body2D",
+      "props": {
+        "body": "kinematic",
+        "size": [
+          20,
+          30
+        ],
+        "position": [
+          107,
+          164
+        ],
+        "z_index": 10
+      },
+      "tags": [
+        "player"
+      ],
+      "children": [
+        "player_sprite"
+      ]
+    },
+    "player_sprite": {
+      "type": "Sprite2D",
+      "props": {
+        "texture": "asset:bike_1",
+        "size": [
+          48,
+          40
+        ],
+        "z_index": 0
+      }
+    },
+    "ride_camera": {
+      "type": "Camera2D",
+      "props": {
+        "position": [
+          214,
+          120
+        ],
+        "zoom": 3
+      }
+    },
+    "hud_peach_panel": {
+      "type": "UIPanel",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          16,
+          16
+        ],
+        "size": [
+          180,
+          68
+        ],
+        "background": "#2a3170bb"
+      }
+    },
+    "hud_peach_icon": {
+      "type": "UIPanel",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          28,
+          26
+        ],
+        "size": [
+          48,
+          48
+        ],
+        "background": "#00000000",
+        "image": "asset:peach",
+        "z_index": 2
+      }
+    },
+    "hud_peaches": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          86,
+          26
+        ],
+        "size": [
+          110,
+          48
+        ],
+        "font_size": 36,
+        "color": "#f2ece6",
+        "text": "x 0",
+        "z_index": 2
+      }
+    },
+    "hud_time_panel": {
+      "type": "UIPanel",
+      "props": {
+        "anchor": "top_right",
+        "offset": [
+          -92,
+          16
+        ],
+        "size": [
+          250,
+          68
+        ],
+        "background": "#2a3170bb"
+      }
+    },
+    "hud_time": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top_right",
+        "offset": [
+          -104,
+          28
+        ],
+        "size": [
+          226,
+          48
+        ],
+        "font_size": 32,
+        "align": "right",
+        "color": "#f2ece6",
+        "text": "Train leaves in 1:10",
+        "z_index": 2
+      }
+    },
+    "hud_stage": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top",
+        "offset": [
+          0,
+          28
+        ],
+        "size": [
+          560,
+          40
+        ],
+        "font_size": 26,
+        "align": "center",
+        "color": "#f2ece6",
+        "text": ""
+      }
+    },
+    "msg_panel": {
+      "type": "UIPanel",
+      "props": {
+        "anchor": "center",
+        "offset": [
+          0,
+          -90
+        ],
+        "size": [
+          760,
+          230
+        ],
+        "background": "#2a3170e6",
+        "visible": false,
+        "z_index": 10
+      }
+    },
+    "msg_text": {
+      "type": "UIText",
+      "props": {
+        "anchor": "center",
+        "offset": [
+          0,
+          -120
+        ],
+        "size": [
+          720,
+          120
+        ],
+        "font_size": 36,
+        "align": "center",
+        "color": "#f2ece6",
+        "text": "",
+        "visible": false,
+        "z_index": 11
+      }
+    },
+    "retry_button": {
+      "type": "UIButton",
+      "props": {
+        "anchor": "center",
+        "offset": [
+          0,
+          -10
+        ],
+        "size": [
+          280,
+          72
+        ],
+        "font_size": 32,
+        "text": "Try again",
+        "background": "#c9685aee",
+        "color": "#f2ece6",
+        "visible": false,
+        "z_index": 12
+      }
+    }
+  }
+}

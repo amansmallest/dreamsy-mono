@@ -1,0 +1,103 @@
+{
+  "speaker": "Owl",
+  "portrait": "asset:owl",
+  "start": "root",
+  "nodes": {
+    "root": {
+      "branches": [
+        {
+          "condition": {
+            "quest": "apple_pie",
+            "step": "deliver"
+          },
+          "next": "deliver"
+        },
+        {
+          "condition": {
+            "quest": "apple_pie",
+            "is": "active"
+          },
+          "next": "waiting"
+        },
+        {
+          "condition": {
+            "quest": "apple_pie",
+            "is": "done"
+          },
+          "next": "after"
+        },
+        {
+          "next": "hello"
+        }
+      ]
+    },
+    "hello": {
+      "lines": [
+        "Hoo-hoo! Welcome to my garden.",
+        "I'd love to bake an apple pie..."
+      ],
+      "next": "ask"
+    },
+    "ask": {
+      "text": "Could you pick 3 apples for me?",
+      "choices": [
+        {
+          "text": "Sure thing!",
+          "next": "accept",
+          "effects": [
+            {
+              "quest": "apple_pie"
+            }
+          ]
+        },
+        {
+          "text": "I'm rich, buy them (99 gold)",
+          "condition": {
+            "currency": "gold",
+            "gte": 99
+          },
+          "showLocked": true,
+          "next": "rich"
+        },
+        {
+          "text": "Maybe later",
+          "next": "end"
+        }
+      ]
+    },
+    "accept": {
+      "text": "Wonderful! Tap the trees to pick apples."
+    },
+    "waiting": {
+      "text": "You have {item:apple} of 3 apples. Keep picking!"
+    },
+    "deliver": {
+      "lines": [
+        "Those look perfect!",
+        {
+          "text": "Here you go.",
+          "speaker": "You"
+        }
+      ],
+      "effects": [
+        {
+          "take": "apple",
+          "count": 3
+        },
+        {
+          "emit": "delivered"
+        }
+      ],
+      "next": "thanks"
+    },
+    "thanks": {
+      "text": "Take this potion. Oh, and watch out for slimes!"
+    },
+    "after": {
+      "text": "The pie smells great. Slimes popped: {flag:slimes_popped}."
+    },
+    "rich": {
+      "text": "Hoo! Money can't buy apple love."
+    }
+  }
+}

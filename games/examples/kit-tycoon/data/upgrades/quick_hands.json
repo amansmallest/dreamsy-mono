@@ -1,0 +1,20 @@
+{
+  "name": "Quick Hands",
+  "desc": "All ovens 50% faster, forever",
+  "order": 13,
+  "icon": "asset:icon_whisk",
+  "cost": {
+    "amount": 60,
+    "currency": "whisks"
+  },
+  "effects": [
+    {
+      "kind": "speed",
+      "value": 1.5
+    },
+    {
+      "kind": "offline_hours",
+      "value": 2
+    }
+  ]
+}

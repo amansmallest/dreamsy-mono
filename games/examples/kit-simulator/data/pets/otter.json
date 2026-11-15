@@ -1,0 +1,8 @@
+{
+ "name": "Paddles",
+ "rarity": "uncommon",
+ "bonus": {
+  "coins": 0.25
+ },
+ "icon": "asset:pet_otter"
+}

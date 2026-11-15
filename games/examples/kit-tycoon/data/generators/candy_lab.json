@@ -1,0 +1,20 @@
+{
+  "name": "Candy Lab",
+  "order": 6,
+  "icon": "asset:gen_candy_lab",
+  "cost": {
+    "base": 3800000,
+    "growth": 1.125
+  },
+  "output": 120000,
+  "cycle": 15,
+  "manager": {
+    "name": "Candy Lab Chef",
+    "cost": 46000000
+  },
+  "unlock": {
+    "owned": {
+      "cake_studio": 10
+    }
+  }
+}

@@ -1,0 +1,176 @@
+{
+  "format": "0",
+  "root": "title",
+  "entities": {
+    "title": {
+      "type": "Node2D",
+      "scripts": [
+        "scripts/client/title.luau"
+      ],
+      "children": [
+        "title_layer",
+        "title_cam",
+        "title_logo",
+        "title_sub_bg",
+        "title_sub_sh",
+        "title_sub",
+        "btn_start",
+        "title_help_bg",
+        "title_help",
+        "title_best"
+      ]
+    },
+    "title_layer": {
+      "type": "Node2D"
+    },
+    "title_cam": {
+      "type": "Camera2D",
+      "props": {
+        "position": [
+          0,
+          0
+        ],
+        "current": true
+      }
+    },
+    "title_logo": {
+      "type": "Sprite2D",
+      "props": {
+        "texture": "asset:logo",
+        "position": [
+          0,
+          -200
+        ],
+        "size": [
+          840,
+          156
+        ],
+        "z_index": 20
+      }
+    },
+    "title_sub_sh": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top",
+        "offset": [
+          3,
+          213
+        ],
+        "size": [
+          900,
+          40
+        ],
+        "text": "3 LAPS  -  5 RIVALS  -  ONE CITY",
+        "font_size": 30,
+        "color": "#3b3338",
+        "align": "center"
+      }
+    },
+    "title_sub": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top",
+        "offset": [
+          0,
+          210
+        ],
+        "size": [
+          900,
+          40
+        ],
+        "text": "3 LAPS  -  5 RIVALS  -  ONE CITY",
+        "font_size": 30,
+        "color": "#f4f4f0",
+        "align": "center",
+        "z_index": 1
+      }
+    },
+    "btn_start": {
+      "type": "UIButton",
+      "props": {
+        "anchor": "bottom",
+        "offset": [
+          0,
+          -110
+        ],
+        "size": [
+          360,
+          80
+        ],
+        "text": "START RACE",
+        "font_size": 40,
+        "color": "#f4f4f0",
+        "background": "#d8403aee",
+        "z_index": 5
+      }
+    },
+    "title_help": {
+      "type": "UIText",
+      "props": {
+        "anchor": "bottom",
+        "offset": [
+          0,
+          -40
+        ],
+        "size": [
+          1200,
+          40
+        ],
+        "text": "STEER: POINT WHERE YOU WANT TO GO   BOOST: ACTION   DRIFT + PASS TO REFILL",
+        "font_size": 22,
+        "color": "#ffd84a",
+        "align": "center",
+        "z_index": 5
+      }
+    },
+    "title_best": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          24,
+          20
+        ],
+        "size": [
+          500,
+          40
+        ],
+        "text": "",
+        "font_size": 24,
+        "color": "#ffd84a",
+        "z_index": 5
+      }
+    },
+    "title_help_bg": {
+      "type": "UIPanel",
+      "props": {
+        "anchor": "bottom",
+        "offset": [
+          0,
+          -40
+        ],
+        "size": [
+          1200,
+          40
+        ],
+        "background": "#3b3338cc",
+        "z_index": 4
+      }
+    },
+    "title_sub_bg": {
+      "type": "UIPanel",
+      "props": {
+        "anchor": "top",
+        "offset": [
+          0,
+          210
+        ],
+        "size": [
+          700,
+          44
+        ],
+        "background": "#3b3338bb"
+      }
+    }
+  }
+}

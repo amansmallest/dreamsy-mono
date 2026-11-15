@@ -1,0 +1,13 @@
+{
+  "name": "Bloodline",
+  "description": "2 blood relics: 8% lifesteal.",
+  "tags": {
+    "blood": 2
+  },
+  "mods": [
+    {
+      "stat": "lifesteal",
+      "add": 0.08
+    }
+  ]
+}

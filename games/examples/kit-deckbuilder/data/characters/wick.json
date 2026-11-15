@@ -1,0 +1,24 @@
+{
+ "name": "Wick the Lamplighter",
+ "hp": 72,
+ "energy": 3,
+ "draw": 5,
+ "gold": 99,
+ "sprite": "asset:hero_wick",
+ "deck": [
+  "jab",
+  "jab",
+  "jab",
+  "jab",
+  "jab",
+  "brace",
+  "brace",
+  "brace",
+  "brace",
+  "flare"
+ ],
+ "relics": [
+  "ember_heart"
+ ],
+ "text": "Keeps the last lamps of the Undertow burning."
+}

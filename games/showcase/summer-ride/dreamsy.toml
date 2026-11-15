@@ -1,0 +1,25 @@
+format = "0"
+name = "Summer Ride"
+dimension = "2d"
+entry_scene = "scenes/main.scene.json"
+
+[style]
+preset = "pixel"
+pack = "summer-fields"
+palette = [ "#f2ece6", "#dedacd", "#b7c1c2", "#81a3c5", "#5e7ed6", "#3b4a93", "#2a3170", "#8fbc8c", "#3d8594", "#2f6b5e", "#e8c27a", "#c9685a" ]
+grid = 16
+
+[server]
+mode = "none"
+
+[players]
+max = 1
+
+[ui]
+primary = "#5e7ed6"
+accent = "#e8c27a"
+background = "#2a3170"
+text = "#f2ece6"
+panel = "pixel"
+font = "pixel"
+

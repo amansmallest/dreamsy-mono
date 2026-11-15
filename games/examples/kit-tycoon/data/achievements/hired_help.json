@@ -1,0 +1,11 @@
+{
+  "name": "Hired Help",
+  "desc": "Hire 3 chefs",
+  "order": 4,
+  "when": {
+    "managers": 3
+  },
+  "reward": {
+    "mult": 1.05
+  }
+}

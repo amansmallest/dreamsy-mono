@@ -1,0 +1,16 @@
+{
+  "name": "Haggler -15% shop",
+  "branch": "fortune",
+  "cost": {
+    "embers": 45
+  },
+  "requires": [
+    "keen_eye"
+  ],
+  "mods": [
+    {
+      "stat": "shopDiscount",
+      "add": 0.15
+    }
+  ]
+}

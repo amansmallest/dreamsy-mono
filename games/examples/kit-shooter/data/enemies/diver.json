@@ -1,0 +1,19 @@
+{
+ "name": "Diver",
+ "sprite": "asset:diver",
+ "size": [
+  60,
+  60
+ ],
+ "hp": 5,
+ "score": 150,
+ "path": {
+  "kind": "dive",
+  "speed": 110,
+  "at": 1.4,
+  "diveSpeed": 430
+ },
+ "drops": {
+  "coins": 1
+ }
+}

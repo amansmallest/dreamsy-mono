@@ -1,0 +1,11 @@
+{
+  "speaker": "Clerk Pell",
+  "lines": [
+    "Welcome to the Lodge Mart!"
+  ],
+  "effects": [
+    {
+      "open_shop": "lodge_mart"
+    }
+  ]
+}

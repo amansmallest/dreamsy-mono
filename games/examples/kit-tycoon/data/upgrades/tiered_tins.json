@@ -1,0 +1,19 @@
+{
+  "name": "Tiered Tins",
+  "desc": "Cakes ×3",
+  "order": 5,
+  "icon": "asset:gen_cake_studio",
+  "cost": {
+    "amount": 15000000
+  },
+  "effect": {
+    "kind": "output",
+    "target": "cake_studio",
+    "value": 3
+  },
+  "requires": {
+    "owned": {
+      "cake_studio": 25
+    }
+  }
+}

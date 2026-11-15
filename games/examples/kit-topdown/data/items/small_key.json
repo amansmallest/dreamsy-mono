@@ -1,0 +1,6 @@
+{
+  "name": "Small Key",
+  "kind": "key",
+  "sprite": "asset:key",
+  "id": "small_key"
+}

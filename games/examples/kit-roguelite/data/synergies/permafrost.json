@@ -1,0 +1,13 @@
+{
+  "name": "Permafrost",
+  "description": "2 frost relics: +2 armor.",
+  "tags": {
+    "frost": 2
+  },
+  "mods": [
+    {
+      "stat": "armor",
+      "add": 2
+    }
+  ]
+}

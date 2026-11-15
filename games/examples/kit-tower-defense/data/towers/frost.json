@@ -1,0 +1,100 @@
+{
+  "id": "frost",
+  "name": "Dewdrop Chiller",
+  "cost": 70,
+  "range": 2.0,
+  "rate": 1.0,
+  "damage": 3,
+  "damage_type": "magic",
+  "ground": true,
+  "air": true,
+  "slow": {
+    "factor": 0.55,
+    "duration": 1.5
+  },
+  "targeting": "first",
+  "sprite": "asset:tower_frost",
+  "icon": "asset:tower_frost",
+  "projectile": {
+    "color": "#9ad7ff",
+    "speed": 10,
+    "size": 0.16
+  },
+  "upgrades": [
+    {
+      "name": "Colder Dew",
+      "desc": "Stronger slow",
+      "cost": 50,
+      "set": {
+        "slow.factor": 0.45
+      }
+    },
+    {
+      "name": "Wider Mist",
+      "desc": "+0.4 range",
+      "cost": 70,
+      "add": {
+        "range": 0.4
+      }
+    }
+  ],
+  "branches": [
+    {
+      "id": "a",
+      "name": "Hoarfrost",
+      "sprite": "asset:tower_frost_a",
+      "icon": "asset:tower_frost_a",
+      "tiers": [
+        {
+          "name": "Hoarfrost",
+          "desc": "Slows everything near the target",
+          "cost": 120,
+          "set": {
+            "splash": {
+              "radius": 0.9,
+              "falloff": 0.2
+            }
+          }
+        },
+        {
+          "name": "Deep Freeze",
+          "desc": "Much stronger, longer slow",
+          "cost": 190,
+          "set": {
+            "slow.factor": 0.3
+          },
+          "add": {
+            "slow.duration": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "b",
+      "name": "Ice Shards",
+      "sprite": "asset:tower_frost_b",
+      "icon": "asset:tower_frost_b",
+      "tiers": [
+        {
+          "name": "Ice Shards",
+          "desc": "+10 damage, x1.2 rate",
+          "cost": 110,
+          "add": {
+            "damage": 10
+          },
+          "mul": {
+            "rate": 1.2
+          }
+        },
+        {
+          "name": "Glacier Lance",
+          "desc": "+18 damage",
+          "cost": 180,
+          "add": {
+            "damage": 18
+          }
+        }
+      ]
+    }
+  ]
+}

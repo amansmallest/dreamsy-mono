@@ -1,0 +1,16 @@
+{
+  "name": "Second Wind: regen 2/room",
+  "branch": "body",
+  "cost": {
+    "embers": 60
+  },
+  "requires": [
+    "whetstone"
+  ],
+  "mods": [
+    {
+      "stat": "regen",
+      "add": 2
+    }
+  ]
+}

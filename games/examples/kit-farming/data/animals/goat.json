@@ -1,0 +1,13 @@
+{
+ "name": "Goat",
+ "building": "barn",
+ "price": 1400,
+ "product": "goat_milk",
+ "productName": "Goat Milk",
+ "productPrice": 140,
+ "productIcon": "asset:goat_milk",
+ "productEvery": 2,
+ "feed": "hay",
+ "sprite": "asset:goat",
+ "matureDays": 2
+}

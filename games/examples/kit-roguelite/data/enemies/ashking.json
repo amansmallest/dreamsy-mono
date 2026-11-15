@@ -1,0 +1,76 @@
+{
+  "name": "The Ash King",
+  "sprite": "asset:ashking",
+  "hp": 150,
+  "cost": 0,
+  "boss": true,
+  "size": 28,
+  "behavior": "boss",
+  "dps": 3,
+  "phases": [
+    {
+      "hp": 1.0,
+      "pattern": [
+        {
+          "behavior": "chase",
+          "time": 2.0,
+          "speed": 32
+        },
+        {
+          "action": "slam",
+          "wait": 0.8
+        },
+        {
+          "action": "ring",
+          "count": 10,
+          "wait": 0.8
+        }
+      ]
+    },
+    {
+      "hp": 0.6,
+      "pattern": [
+        {
+          "action": "summon",
+          "kind": "boar",
+          "wait": 0.6
+        },
+        {
+          "behavior": "charge",
+          "time": 2.0,
+          "range": 150,
+          "speed": 200
+        },
+        {
+          "action": "ring",
+          "count": 14,
+          "wait": 0.7
+        }
+      ]
+    },
+    {
+      "hp": 0.25,
+      "pattern": [
+        {
+          "action": "ring",
+          "count": 16,
+          "wait": 0.5
+        },
+        {
+          "behavior": "chase",
+          "time": 1.5,
+          "speed": 48
+        },
+        {
+          "action": "slam",
+          "wait": 0.6
+        }
+      ]
+    }
+  ],
+  "contact": {
+    "amount": 3,
+    "knockback": 240
+  },
+  "armor": 2
+}

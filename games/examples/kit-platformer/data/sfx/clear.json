@@ -1,0 +1,10 @@
+{
+  "wave": "square",
+  "freq": 523,
+  "slide": 1,
+  "sustain": 0.35,
+  "decay": 0.6,
+  "vibrato": 0.3,
+  "vibrato_speed": 8,
+  "volume": 0.45
+}

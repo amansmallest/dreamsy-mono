@@ -1,0 +1,12 @@
+{
+  "format": "0",
+  "root": "menu_root",
+  "entities": {
+    "menu_root": {
+      "type": "Node2D",
+      "scripts": [
+        "scripts/client/menu.luau"
+      ]
+    }
+  }
+}

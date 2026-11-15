@@ -1,0 +1,11 @@
+{
+ "name": "Berries",
+ "icon": "asset:berries",
+ "category": "food",
+ "data": {
+  "food": {
+   "hunger": 12,
+   "thirst": 2
+  }
+ }
+}

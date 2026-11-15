@@ -1,0 +1,93 @@
+{
+  "tiles": {
+    ",": {
+      "sprite": "asset:t_grass"
+    },
+    "\"": {
+      "sprite": "asset:t_tallgrass",
+      "tags": [
+        "grass"
+      ]
+    },
+    "=": {
+      "sprite": "asset:t_path"
+    },
+    "T": {
+      "sprite": "asset:t_tree",
+      "solid": true,
+      "color": "#38b764"
+    },
+    "~": {
+      "sprite": "asset:t_water",
+      "solid": true
+    },
+    "R": {
+      "sprite": "asset:t_roof",
+      "solid": true
+    },
+    "H": {
+      "sprite": "asset:t_wall",
+      "solid": true
+    },
+    "D": {
+      "sprite": "asset:t_door",
+      "tags": [
+        "door"
+      ]
+    },
+    "v": {
+      "sprite": "asset:t_ledge",
+      "tags": [
+        "ledge_down"
+      ]
+    },
+    "f": {
+      "sprite": "asset:t_flowers"
+    },
+    "F": {
+      "sprite": "asset:t_fence",
+      "solid": true
+    },
+    "S": {
+      "sprite": "asset:t_sign",
+      "solid": true
+    },
+    "C": {
+      "sprite": "asset:t_cavewall",
+      "solid": true
+    },
+    "c": {
+      "sprite": "asset:t_cavefloor"
+    },
+    "m": {
+      "sprite": "asset:t_cavemoss",
+      "tags": [
+        "cave"
+      ]
+    },
+    "t": {
+      "sprite": "asset:t_trialfloor"
+    },
+    "P": {
+      "sprite": "asset:t_pillar",
+      "solid": true
+    },
+    "*": {
+      "sprite": "asset:t_starmark"
+    },
+    "X": {
+      "sprite": "asset:t_counter",
+      "solid": true,
+      "tags": [
+        "counter"
+      ]
+    },
+    "_": {
+      "sprite": "asset:t_floor"
+    },
+    "#": {
+      "sprite": "asset:t_dark",
+      "solid": true
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "Goldie",
+  "order": 4,
+  "cost": {
+    "coins": 2000
+  },
+  "tint": "#ffd23f",
+  "description": "Coins are worth double.",
+  "mods": [
+    {
+      "stat": "coinValue",
+      "add": 1
+    }
+  ]
+}

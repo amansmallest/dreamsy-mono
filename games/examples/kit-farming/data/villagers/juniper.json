@@ -1,0 +1,90 @@
+{
+ "name": "Juniper",
+ "sprite": "asset:juniper",
+ "portrait": "asset:juniper",
+ "size": 64,
+ "home": "store_in",
+ "birthday": {
+  "season": "spring",
+  "day": 6
+ },
+ "loves": [
+  "strawberry",
+  "jam"
+ ],
+ "likes": [
+  "category:crop"
+ ],
+ "dislikes": [
+  "hay"
+ ],
+ "hates": [
+  "stone"
+ ],
+ "schedule": {
+  "default": [
+   [
+    360,
+    "store_in"
+   ],
+   [
+    1080,
+    "square_w"
+   ],
+   [
+    1260,
+    "store_in"
+   ]
+  ],
+  "rain": [
+   [
+    360,
+    "store_in"
+   ]
+  ],
+  "wed": [
+   [
+    360,
+    "store_in"
+   ],
+   [
+    600,
+    "pond"
+   ],
+   [
+    900,
+    "square_w"
+   ],
+   [
+    1200,
+    "store_in"
+   ]
+  ]
+ },
+ "lines": {
+  "default": [
+   "Seeds in, smiles out. That's my motto.",
+   "Rain tomorrow? Good for the radishes.",
+   "The square is lovely at sunset."
+  ],
+  "hearts_2": [
+   "You always brighten up my shop!"
+  ],
+  "rain": [
+   "Cozy weather for counting seed packets."
+  ],
+  "birthday": [
+   "You remembered my birthday?!"
+  ]
+ },
+ "heartEvents": [
+  {
+   "hearts": 2,
+   "dialog": "juniper_h2"
+  },
+  {
+   "hearts": 4,
+   "dialog": "juniper_h4"
+  }
+ ]
+}

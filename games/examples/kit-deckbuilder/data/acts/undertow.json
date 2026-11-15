@@ -1,0 +1,41 @@
+{
+ "name": "The Undertow Bazaar",
+ "order": 1,
+ "rows": 12,
+ "cols": 7,
+ "paths": 6,
+ "bosses": [
+  "drowned_bell"
+ ],
+ "encounters": {
+  "weak": [
+   [
+    "bilge_rat"
+   ],
+   [
+    "lantern_moth"
+   ],
+   [
+    "bilge_rat",
+    "lantern_moth"
+   ]
+  ]
+ },
+ "budget": {
+  "fight": [
+   2,
+   6
+  ],
+  "elite": [
+   1,
+   1
+  ]
+ },
+ "maxEnemies": 3,
+ "events": [
+  "flooded_shrine",
+  "peddler",
+  "sunken_forge"
+ ],
+ "background": "asset:bg_undertow"
+}

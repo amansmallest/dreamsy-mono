@@ -1,0 +1,11 @@
+{
+  "name": "Fresh Start",
+  "desc": "Reopen the bakery",
+  "order": 9,
+  "when": {
+    "prestiges": 1
+  },
+  "reward": {
+    "mult": 1.05
+  }
+}

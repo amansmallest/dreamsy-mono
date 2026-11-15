@@ -1,0 +1,17 @@
+{
+ "name": "Tree",
+ "tile": "T",
+ "hp": 4,
+ "tool": "axe",
+ "tier": 0,
+ "drops": [
+  {
+   "item": "wood",
+   "count": [
+    2,
+    3
+   ]
+  }
+ ],
+ "respawn": 180
+}

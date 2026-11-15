@@ -1,0 +1,27 @@
+{
+  "idle": {
+    "frames": [
+      "asset:moss_idle"
+    ],
+    "fps": 2
+  },
+  "run": {
+    "frames": [
+      "asset:moss_run1",
+      "asset:moss_run2"
+    ],
+    "fps": 10
+  },
+  "jump": {
+    "frames": [
+      "asset:moss_jump"
+    ],
+    "fps": 1
+  },
+  "fall": {
+    "frames": [
+      "asset:moss_jump"
+    ],
+    "fps": 1
+  }
+}

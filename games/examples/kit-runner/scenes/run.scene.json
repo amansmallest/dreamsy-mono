@@ -1,0 +1,162 @@
+{
+  "format": "0",
+  "root": "root",
+  "entities": {
+    "root": {
+      "type": "Node2D",
+      "name": "Run",
+      "children": [
+        "run_camera",
+        "bg",
+        "track",
+        "hud_dist",
+        "hud_coins",
+        "hud_power",
+        "msg_text",
+        "title_text"
+      ],
+      "scripts": [
+        "scripts/client/run.luau"
+      ]
+    },
+    "bg": {
+      "type": "Sprite2D",
+      "props": {
+        "texture": "asset:bg_meadow",
+        "size": [
+          720,
+          1280
+        ],
+        "position": [
+          360,
+          640
+        ],
+        "z_index": -10
+      }
+    },
+    "track": {
+      "type": "Node2D",
+      "props": {
+        "z_index": 0
+      }
+    },
+    "hud_dist": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top",
+        "offset": [
+          0,
+          30
+        ],
+        "size": [
+          400,
+          70
+        ],
+        "font_size": 56,
+        "align": "center",
+        "color": "#ffffff",
+        "font": "rounded",
+        "outline": "#23202e",
+        "outline_size": 5,
+        "text": ""
+      }
+    },
+    "hud_coins": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          24,
+          40
+        ],
+        "size": [
+          200,
+          56
+        ],
+        "font_size": 40,
+        "align": "left",
+        "color": "#ffd23f",
+        "font": "rounded",
+        "outline": "#23202e",
+        "outline_size": 4,
+        "text": ""
+      }
+    },
+    "hud_power": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top",
+        "offset": [
+          0,
+          104
+        ],
+        "size": [
+          600,
+          44
+        ],
+        "font_size": 28,
+        "align": "center",
+        "color": "#ffffff",
+        "font": "rounded",
+        "outline": "#23202e",
+        "outline_size": 3,
+        "text": ""
+      }
+    },
+    "msg_text": {
+      "type": "UIText",
+      "props": {
+        "anchor": "center",
+        "offset": [
+          0,
+          -330
+        ],
+        "size": [
+          680,
+          140
+        ],
+        "font_size": 46,
+        "align": "center",
+        "color": "#ffd23f",
+        "font": "rounded",
+        "outline": "#23202e",
+        "outline_size": 5,
+        "text": "",
+        "z_index": 950
+      }
+    },
+    "title_text": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top",
+        "offset": [
+          0,
+          120
+        ],
+        "size": [
+          700,
+          120
+        ],
+        "font_size": 92,
+        "align": "center",
+        "color": "#ffffff",
+        "font": "rounded",
+        "outline": "#3f5bd9",
+        "outline_size": 8,
+        "text": "PEBBLE DASH",
+        "z_index": 950
+      }
+    },
+    "run_camera": {
+      "type": "Camera2D",
+      "props": {
+        "position": [
+          360,
+          640
+        ],
+        "zoom": 1,
+        "smoothing": 0
+      }
+    }
+  }
+}

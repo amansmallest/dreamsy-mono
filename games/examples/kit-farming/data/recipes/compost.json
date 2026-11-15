@@ -1,0 +1,14 @@
+{
+ "name": "Compost",
+ "icon": "asset:compost",
+ "inputs": {
+  "hay": 2,
+  "lettuce": 1
+ },
+ "data": {
+  "fertilizer": {
+   "quality": 1
+  }
+ },
+ "category": "fertilizer"
+}

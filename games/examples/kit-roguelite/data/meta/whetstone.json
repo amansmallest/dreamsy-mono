@@ -1,0 +1,22 @@
+{
+  "name": "Whetstone +10% dmg",
+  "branch": "body",
+  "maxRank": 2,
+  "cost": [
+    {
+      "embers": 25
+    },
+    {
+      "embers": 55
+    }
+  ],
+  "requires": [
+    "vigor"
+  ],
+  "mods": [
+    {
+      "stat": "damage",
+      "pct": 0.1
+    }
+  ]
+}

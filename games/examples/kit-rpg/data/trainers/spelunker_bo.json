@@ -1,0 +1,24 @@
+{
+  "name": "Spelunker Bo",
+  "party": [
+    {
+      "creature": "duskmole",
+      "level": 6
+    }
+  ],
+  "ai": "smart",
+  "reward": 220,
+  "intro": [
+    "Who's there?! Oh, a challenger."
+  ],
+  "defeat": [
+    "My lamp went out..."
+  ],
+  "after": [
+    "The trial hall is just north. Good luck."
+  ],
+  "battle": {
+    "sky": "#333c57",
+    "ground": "#566c86"
+  }
+}

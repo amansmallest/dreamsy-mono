@@ -1,0 +1,9 @@
+{
+ "name": "Clover Fox",
+ "rarity": "epic",
+ "bonus": {
+  "power": 0.5,
+  "coins": 0.25
+ },
+ "icon": "asset:pet_clover_fox"
+}

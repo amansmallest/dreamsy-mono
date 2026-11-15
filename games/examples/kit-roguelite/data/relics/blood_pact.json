@@ -1,0 +1,19 @@
+{
+  "name": "Blood Pact",
+  "rarity": "rare",
+  "icon": "asset:i_heart",
+  "tags": [
+    "blood"
+  ],
+  "description": "+40% damage, -6 max HP.",
+  "mods": [
+    {
+      "stat": "damage",
+      "pct": 0.4
+    },
+    {
+      "stat": "hp",
+      "add": -6
+    }
+  ]
+}

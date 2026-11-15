@@ -1,0 +1,149 @@
+{
+  "speaker": "Elder Moss",
+  "start": "start",
+  "nodes": {
+    "start": {
+      "branches": [
+        {
+          "if": {
+            "flag": "trial_1"
+          },
+          "goto": "final"
+        },
+        {
+          "if": {
+            "quest": "lost_charm",
+            "state": "active",
+            "item": "moon_charm"
+          },
+          "goto": "charm_back"
+        },
+        {
+          "if": {
+            "quest": "first_steps",
+            "step": "report"
+          },
+          "goto": "report"
+        },
+        {
+          "if": {
+            "flag": "got_starter"
+          },
+          "goto": "again"
+        }
+      ],
+      "lines": [
+        "Ah, {player}! The stars fell last night, and creatures woke all over Dawnmere.",
+        "A Keeper needs a partner. Choose one of these three."
+      ],
+      "choices": [
+        {
+          "text": "Sunnip (Sun)",
+          "effects": [
+            {
+              "give_creature": "sunnip",
+              "level": 5
+            }
+          ],
+          "goto": "picked"
+        },
+        {
+          "text": "Mothlet (Moon)",
+          "effects": [
+            {
+              "give_creature": "mothlet",
+              "level": 5
+            }
+          ],
+          "goto": "picked"
+        },
+        {
+          "text": "Glimmet (Star)",
+          "effects": [
+            {
+              "give_creature": "glimmet",
+              "level": 5
+            }
+          ],
+          "goto": "picked"
+        }
+      ]
+    },
+    "picked": {
+      "lines": [
+        "A fine choice! Here are some Star Jars.",
+        "Weaken a wild creature in the tall grass, then throw a jar."
+      ],
+      "effects": [
+        {
+          "set_flag": "got_starter"
+        },
+        {
+          "give_item": "star_jar",
+          "count": 5
+        },
+        {
+          "start_quest": "first_steps"
+        }
+      ]
+    },
+    "report": {
+      "lines": [
+        "You caught one already? Splendid!"
+      ],
+      "effects": [
+        {
+          "set_flag": "reported_catch"
+        }
+      ],
+      "next": "charm_ask"
+    },
+    "charm_ask": {
+      "lines": [
+        "Might I ask a favor? I dropped my Moon Charm in Hollow Cave.",
+        "It lies past Glimmer Path, to the north."
+      ],
+      "effects": [
+        {
+          "start_quest": "lost_charm"
+        }
+      ]
+    },
+    "again": {
+      "branches": [
+        {
+          "if": {
+            "quest": "lost_charm",
+            "state": "active"
+          },
+          "goto": "charm_hint"
+        }
+      ],
+      "lines": [
+        "The Starfall Trial waits beyond Hollow Cave. Rest at the Lodge first!"
+      ]
+    },
+    "charm_hint": {
+      "lines": [
+        "My Moon Charm should be somewhere deep in Hollow Cave."
+      ]
+    },
+    "charm_back": {
+      "lines": [
+        "My Moon Charm! Thank you, {player}.",
+        "Take these. They'll serve you in the trial."
+      ],
+      "effects": [
+        {
+          "set_flag": "charm_returned"
+        }
+      ]
+    },
+    "final": {
+      "lines": [
+        "The Starfall Sigil! You are a true Keeper now, {player}.",
+        "The sky is wide. Go find every creature that fell from it!"
+      ]
+    }
+  }
+}

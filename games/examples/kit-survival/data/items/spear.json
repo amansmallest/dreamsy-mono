@@ -1,0 +1,11 @@
+{
+ "name": "Spear",
+ "icon": "asset:spear",
+ "category": "tool",
+ "stack": 1,
+ "data": {
+  "weapon": {
+   "damage": 3
+  }
+ }
+}

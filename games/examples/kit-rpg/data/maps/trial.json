@@ -1,0 +1,54 @@
+{
+  "name": "Starfall Trial",
+  "scene": "scenes/trial.scene.json",
+  "music": "trial",
+  "layers": [
+    {
+      "data": "file:data/levels/trial.txt",
+      "tileset": "data/tilesets/world.json"
+    }
+  ],
+  "battle": {
+    "sky": "#29366f",
+    "ground": "#3b5dc9"
+  },
+  "spawns": {
+    "entry": [
+      7,
+      11,
+      "up"
+    ]
+  },
+  "warps": [
+    {
+      "at": [
+        7,
+        12
+      ],
+      "to": "cave",
+      "spawn": "north"
+    }
+  ],
+  "npcs": [
+    {
+      "id": "warden",
+      "name": "Warden Vela",
+      "at": [
+        7,
+        3
+      ],
+      "facing": "down",
+      "sprite": "asset:npc_warden",
+      "trainer": "warden_vela"
+    }
+  ],
+  "triggers": [
+    {
+      "at": [
+        7,
+        10
+      ],
+      "dialog": "trial_door"
+    }
+  ]
+}

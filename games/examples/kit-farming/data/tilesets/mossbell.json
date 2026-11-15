@@ -1,0 +1,57 @@
+{
+ "tiles": {
+  "g": {
+   "color": "#8fcf6a"
+  },
+  "G": {
+   "color": "#84c463"
+  },
+  "s": {
+   "color": "#c6cf86",
+   "tags": [
+    "soil"
+   ]
+  },
+  "S": {
+   "color": "#bec77e",
+   "tags": [
+    "soil"
+   ]
+  },
+  "t": {
+   "color": "#a8774c"
+  },
+  "w": {
+   "color": "#6e4a2e"
+  },
+  "p": {
+   "color": "#e8d3a2"
+  },
+  "q": {
+   "color": "#e2cb96"
+  },
+  "T": {
+   "sprite": "asset:tree",
+   "color": "#ffffff",
+   "solid": true
+  },
+  "f": {
+   "sprite": "asset:fence",
+   "solid": true
+  },
+  "W": {
+   "color": "#5fa8e0",
+   "solid": true
+  },
+  "V": {
+   "color": "#78b8ea",
+   "solid": true
+  },
+  "B": {
+   "solid": true
+  },
+  "*": {
+   "sprite": "asset:flowers"
+  }
+ }
+}

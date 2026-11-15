@@ -1,0 +1,24 @@
+{
+ "name": "Hollow Brute",
+ "sprite": "asset:brute",
+ "hp": 16,
+ "cost": 6,
+ "minLevel": 3,
+ "max": 1,
+ "behavior": "chase",
+ "params": {
+  "speed": 55
+ },
+ "contact": {
+  "amount": 18,
+  "knockback": 260
+ },
+ "size": 1.0,
+ "breakDamage": 10,
+ "drops": [
+  {
+   "item": "ore",
+   "count": 4
+  }
+ ]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "Sweet Deal",
+  "desc": "Ovens cost 10% less, forever",
+  "order": 16,
+  "icon": "asset:icon_whisk",
+  "cost": {
+    "amount": 25,
+    "currency": "whisks"
+  },
+  "effect": {
+    "kind": "cost",
+    "value": 0.9
+  }
+}

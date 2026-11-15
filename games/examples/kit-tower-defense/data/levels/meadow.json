@@ -1,0 +1,24 @@
+{
+  "id": "meadow",
+  "name": "Mossy Meadow",
+  "map": {
+    "grid": "file:data/levels/meadow.txt",
+    "tile_size": 64,
+    "legend": {
+      "path": "#",
+      "spawns": "ST",
+      "exits": "E",
+      "build": "o"
+    }
+  },
+  "waves": "meadow",
+  "money": 200,
+  "lives": 20,
+  "interest": {
+    "rate": 0.03,
+    "cap": 20
+  },
+  "sell_ratio": 0.7,
+  "between": 8,
+  "early_bonus": 2
+}

@@ -1,0 +1,78 @@
+{
+  "map_scene": "scenes/world.scene.json",
+  "worlds": [
+    {
+      "id": "greenhollow",
+      "name": "Greenhollow",
+      "levels": [
+        {
+          "id": "1-1",
+          "name": "Sprout Meadow",
+          "short": "1-1",
+          "scene": "scenes/level_1_1.scene.json",
+          "map_pos": [
+            110,
+            250
+          ],
+          "coins": 27,
+          "gems": 3
+        },
+        {
+          "id": "1-2",
+          "name": "Hollow Log",
+          "short": "1-2",
+          "scene": "scenes/level_1_2.scene.json",
+          "map_pos": [
+            210,
+            190
+          ],
+          "coins": 26,
+          "gems": 3
+        }
+      ]
+    },
+    {
+      "id": "thornreach",
+      "name": "Thornreach",
+      "levels": [
+        {
+          "id": "2-1",
+          "name": "Thorn Cliffs",
+          "short": "2-1",
+          "scene": "scenes/level_2_1.scene.json",
+          "map_pos": [
+            330,
+            240
+          ],
+          "coins": 11,
+          "gems": 3
+        },
+        {
+          "id": "2-2",
+          "name": "Bramble Keep",
+          "short": "2-2",
+          "scene": "scenes/level_2_2.scene.json",
+          "map_pos": [
+            440,
+            170
+          ],
+          "coins": 18,
+          "gems": 3
+        },
+        {
+          "id": "2-B",
+          "name": "Toad's Throne",
+          "short": "2-B",
+          "scene": "scenes/level_2_b.scene.json",
+          "map_pos": [
+            560,
+            220
+          ],
+          "coins": 7,
+          "gems": 0,
+          "boss": true
+        }
+      ]
+    }
+  ]
+}

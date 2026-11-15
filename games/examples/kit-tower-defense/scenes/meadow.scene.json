@@ -1,0 +1,63 @@
+{
+  "format": "0",
+  "root": "meadow_world",
+  "entities": {
+    "meadow_world": {
+      "type": "Node2D",
+      "children": [
+        "meadow_cam",
+        "meadow_bg",
+        "meadow_map",
+        "meadow_layer"
+      ],
+      "scripts": [
+        "scripts/client/level.luau"
+      ]
+    },
+    "meadow_bg": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          360,
+          640
+        ],
+        "size": [
+          720,
+          1280
+        ],
+        "z_index": -10,
+        "modulate": "#7fb24f"
+      }
+    },
+    "meadow_map": {
+      "type": "TileMap2D",
+      "props": {
+        "position": [
+          8,
+          112
+        ],
+        "tile_size": 64,
+        "tileset": "data/tilesets/garden.json",
+        "data": "file:data/levels/meadow.txt",
+        "collision": false
+      }
+    },
+    "meadow_layer": {
+      "type": "Node2D",
+      "props": {
+        "z_index": 5
+      }
+    },
+    "meadow_cam": {
+      "type": "Camera2D",
+      "props": {
+        "position": [
+          360,
+          640
+        ],
+        "zoom": 1,
+        "current": true
+      }
+    }
+  }
+}

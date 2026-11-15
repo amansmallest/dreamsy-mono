@@ -1,0 +1,113 @@
+{
+  "format": "0",
+  "root": "win",
+  "entities": {
+    "win": {
+      "type": "Node2D",
+      "name": "Win",
+      "scripts": [
+        "scripts/client/win.luau"
+      ],
+      "children": [
+        "win_camera",
+        "win_ground",
+        "win_hero",
+        "win_title",
+        "win_stats",
+        "again_button"
+      ]
+    },
+    "win_camera": {
+      "type": "Camera2D",
+      "props": {
+        "position": [
+          320,
+          180
+        ],
+        "zoom": 2
+      }
+    },
+    "win_ground": {
+      "type": "TileMap2D",
+      "name": "Ground",
+      "props": {
+        "position": [
+          0,
+          256
+        ],
+        "tile_size": 16,
+        "tileset": "data/tilesets/world.json",
+        "z_index": -1,
+        "data": "..o.o.o.o.o.o.o.o..F...F...F...o.o.o.o..\nGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG\nDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD\nDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD\nDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD\nDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD\nDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
+      }
+    },
+    "win_hero": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          352,
+          265
+        ],
+        "size": [
+          12,
+          14
+        ],
+        "texture": "asset:hero"
+      }
+    },
+    "win_title": {
+      "type": "UIText",
+      "props": {
+        "anchor": "center",
+        "offset": [
+          0,
+          -170
+        ],
+        "size": [
+          900,
+          90
+        ],
+        "text": "YOU WIN!",
+        "font_size": 72,
+        "color": "#a7f070",
+        "align": "center"
+      }
+    },
+    "win_stats": {
+      "type": "UIText",
+      "props": {
+        "anchor": "center",
+        "offset": [
+          0,
+          -95
+        ],
+        "size": [
+          900,
+          40
+        ],
+        "text": "",
+        "font_size": 28,
+        "color": "#f4f4f4",
+        "align": "center"
+      }
+    },
+    "again_button": {
+      "type": "UIButton",
+      "props": {
+        "anchor": "center",
+        "offset": [
+          0,
+          0
+        ],
+        "size": [
+          300,
+          72
+        ],
+        "text": "PLAY AGAIN",
+        "font_size": 32,
+        "background": "#41a6f6ff",
+        "color": "#1a1c2c"
+      }
+    }
+  }
+}

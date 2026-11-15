@@ -1,0 +1,9 @@
+{
+ "name": "Bell Shard",
+ "rarity": "boss",
+ "icon": "asset:rl_bell_shard",
+ "text": "+1 Energy each turn.",
+ "mods": {
+  "max_energy": 1
+ }
+}

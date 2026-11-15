@@ -1,0 +1,11 @@
+{
+ "name": "Forge Heart",
+ "cost": 1,
+ "type": "power",
+ "rarity": "uncommon",
+ "effects": [
+  "apply strength 2 self"
+ ],
+ "character": "wick",
+ "art": "asset:art_sun"
+}

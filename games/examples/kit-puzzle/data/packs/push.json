@@ -1,0 +1,14 @@
+{
+  "name": "Push",
+  "order": 1,
+  "mechanic": "push",
+  "description": "Shove every crate home",
+  "icon": "asset:crate",
+  "levels": [
+    "data/levels/push_01.txt",
+    "data/levels/push_02.txt",
+    "data/levels/push_03.txt",
+    { "generate": { "count": 7, "seed": 11, "params": { "w": 7, "h": 7, "boxes": 2 },
+      "curve": [ { "at": 0, "params": { "pushes": 4 } }, { "at": 1, "params": { "pushes": 9 } } ] } }
+  ]
+}

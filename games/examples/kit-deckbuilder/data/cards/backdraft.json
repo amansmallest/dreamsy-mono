@@ -1,0 +1,12 @@
+{
+ "name": "Backdraft",
+ "cost": 1,
+ "type": "attack",
+ "rarity": "common",
+ "effects": [
+  "damage 5",
+  "apply vulnerable 1"
+ ],
+ "character": "wick",
+ "art": "asset:art_flame"
+}

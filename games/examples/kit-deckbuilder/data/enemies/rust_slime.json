@@ -1,0 +1,32 @@
+{
+ "name": "Rust Slime",
+ "hp": [
+  20,
+  24
+ ],
+ "tier": "normal",
+ "act": "undertow",
+ "cost": 2,
+ "minRow": 3,
+ "sprite": "asset:en_rust_slime",
+ "moves": {
+  "spit": {
+   "effects": [
+    "damage 6",
+    "add ash discard 1"
+   ]
+  },
+  "ooze": {
+   "effects": [
+    "damage 10"
+   ]
+  }
+ },
+ "pattern": {
+  "kind": "cycle",
+  "moves": [
+   "spit",
+   "ooze"
+  ]
+ }
+}

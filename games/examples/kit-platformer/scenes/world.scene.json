@@ -1,0 +1,87 @@
+{
+  "format": "0",
+  "root": "map",
+  "entities": {
+    "map": {
+      "type": "Node2D",
+      "name": "World map",
+      "children": [
+        "map_sky",
+        "map_hills",
+        "map_cam",
+        "map_title"
+      ],
+      "scripts": [
+        "scripts/client/map.luau"
+      ]
+    },
+    "map_sky": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          340,
+          200
+        ],
+        "size": [
+          1400,
+          900
+        ],
+        "modulate": "#6cc0f0",
+        "z_index": -30
+      }
+    },
+    "map_hills": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          340,
+          330
+        ],
+        "size": [
+          1024,
+          320
+        ],
+        "texture": "asset:hills",
+        "z_index": -20
+      }
+    },
+    "map_cam": {
+      "type": "Camera2D",
+      "props": {
+        "zoom": 2,
+        "position": [
+          330,
+          210
+        ],
+        "limit_min": [
+          0,
+          20
+        ],
+        "limit_max": [
+          680,
+          420
+        ]
+      }
+    },
+    "map_title": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top_right",
+        "offset": [
+          -110,
+          18
+        ],
+        "size": [
+          500,
+          50
+        ],
+        "text": "MOSSLING",
+        "font_size": 40,
+        "color": "#ffd34a",
+        "align": "right",
+        "outline": "#1b1b2f",
+        "outline_size": 4
+      }
+    }
+  }
+}

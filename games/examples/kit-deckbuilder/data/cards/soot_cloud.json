@@ -1,0 +1,12 @@
+{
+ "name": "Soot Cloud",
+ "cost": 1,
+ "type": "skill",
+ "rarity": "common",
+ "effects": [
+  "block 3",
+  "apply weak 1 all"
+ ],
+ "character": "wick",
+ "art": "asset:art_mantle"
+}

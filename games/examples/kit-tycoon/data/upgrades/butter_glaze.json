@@ -1,0 +1,19 @@
+{
+  "name": "Butter Glaze",
+  "desc": "Muffins ×3",
+  "order": 1,
+  "icon": "asset:gen_muffin_tin",
+  "cost": {
+    "amount": 300
+  },
+  "effect": {
+    "kind": "output",
+    "target": "muffin_tin",
+    "value": 3
+  },
+  "requires": {
+    "owned": {
+      "muffin_tin": 25
+    }
+  }
+}

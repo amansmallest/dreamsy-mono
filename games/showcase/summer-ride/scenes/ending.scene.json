@@ -1,0 +1,138 @@
+{
+  "format": "0",
+  "root": "end_root",
+  "entities": {
+    "end_root": {
+      "type": "Node2D",
+      "scripts": [
+        "scripts/client/ending.luau"
+      ],
+      "children": [
+        "end_bg",
+        "end_train",
+        "end_cam",
+        "end_panel",
+        "end_title",
+        "end_body",
+        "again_button"
+      ]
+    },
+    "end_bg": {
+      "type": "Node2D"
+    },
+    "end_train": {
+      "type": "Sprite2D",
+      "props": {
+        "texture": "asset:train",
+        "size": [
+          128,
+          30
+        ],
+        "position": [
+          214,
+          157
+        ],
+        "z_index": -65
+      },
+      "children": [
+        "end_pals"
+      ]
+    },
+    "end_pals": {
+      "type": "Sprite2D",
+      "props": {
+        "texture": "asset:window_pals",
+        "size": [
+          24,
+          14
+        ],
+        "position": [
+          12,
+          -4
+        ],
+        "z_index": 1
+      }
+    },
+    "end_cam": {
+      "type": "Camera2D",
+      "props": {
+        "position": [
+          214,
+          120
+        ],
+        "zoom": 3
+      }
+    },
+    "end_panel": {
+      "type": "UIPanel",
+      "props": {
+        "anchor": "top",
+        "offset": [
+          0,
+          30
+        ],
+        "size": [
+          900,
+          250
+        ],
+        "background": "#2a3170cc"
+      }
+    },
+    "end_title": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top",
+        "offset": [
+          0,
+          44
+        ],
+        "size": [
+          880,
+          70
+        ],
+        "font_size": 56,
+        "align": "center",
+        "color": "#e8c27a",
+        "text": "You made it!",
+        "z_index": 2
+      }
+    },
+    "end_body": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top",
+        "offset": [
+          0,
+          122
+        ],
+        "size": [
+          860,
+          150
+        ],
+        "font_size": 28,
+        "align": "center",
+        "color": "#f2ece6",
+        "text": "",
+        "z_index": 2
+      }
+    },
+    "again_button": {
+      "type": "UIButton",
+      "props": {
+        "anchor": "bottom",
+        "offset": [
+          0,
+          -40
+        ],
+        "size": [
+          320,
+          76
+        ],
+        "font_size": 34,
+        "text": "Ride again",
+        "background": "#c9685aee",
+        "color": "#f2ece6"
+      }
+    }
+  }
+}

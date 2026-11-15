@@ -1,0 +1,98 @@
+{
+  "format": "0",
+  "root": "level_2",
+  "entities": {
+    "level_2": {
+      "type": "Node2D",
+      "name": "Level 2",
+      "children": [
+        "camera_2",
+        "map_2",
+        "player_2",
+        "hud_2"
+      ]
+    },
+    "camera_2": {
+      "type": "Camera2D",
+      "props": {
+        "zoom": 2,
+        "position": [
+          320,
+          160
+        ]
+      },
+      "tags": [
+        "camera"
+      ]
+    },
+    "map_2": {
+      "type": "TileMap2D",
+      "name": "Level map",
+      "props": {
+        "tile_size": 16,
+        "tileset": "data/tilesets/world.json",
+        "data": "file:data/levels/level_2.txt"
+      },
+      "scripts": [
+        "scripts/client/level.luau"
+      ]
+    },
+    "player_2": {
+      "type": "Body2D",
+      "name": "Hero",
+      "props": {
+        "position": [
+          56,
+          265
+        ],
+        "body": "dynamic",
+        "size": [
+          12,
+          14
+        ],
+        "lock_rotation": true,
+        "friction": 0,
+        "z_index": 5
+      },
+      "scripts": [
+        "scripts/client/player.luau"
+      ],
+      "tags": [
+        "player"
+      ],
+      "children": [
+        "player_2_sprite"
+      ]
+    },
+    "player_2_sprite": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          12,
+          14
+        ],
+        "texture": "asset:hero"
+      }
+    },
+    "hud_2": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          16,
+          12
+        ],
+        "size": [
+          700,
+          40
+        ],
+        "text": "",
+        "font_size": 24,
+        "color": "#f4f4f4"
+      },
+      "tags": [
+        "hud"
+      ]
+    }
+  }
+}

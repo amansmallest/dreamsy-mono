@@ -1,0 +1,777 @@
+{
+  "format": "0",
+  "root": "race",
+  "entities": {
+    "race": {
+      "type": "Node2D",
+      "scripts": [
+        "scripts/client/race.luau"
+      ],
+      "children": [
+        "track_layer",
+        "race_cam",
+        "hud",
+        "results"
+      ]
+    },
+    "track_layer": {
+      "type": "Node2D"
+    },
+    "race_cam": {
+      "type": "Camera2D",
+      "props": {
+        "current": true
+      }
+    },
+    "hud": {
+      "type": "Folder",
+      "children": [
+        "hud_star",
+        "hud_points_sh",
+        "hud_points",
+        "hud_pos_sh",
+        "hud_pos",
+        "hud_lap_sh",
+        "hud_lap",
+        "hud_cur_sh",
+        "hud_cur",
+        "hud_best_sh",
+        "hud_best",
+        "hud_speed_sh",
+        "hud_speed",
+        "hud_boost_label",
+        "hud_boost_1",
+        "hud_boost_2",
+        "hud_boost_3",
+        "hud_boost_4",
+        "hud_boost_5",
+        "hud_boost_6",
+        "hud_boost_7",
+        "hud_boost_8",
+        "hud_boost_9",
+        "hud_boost_10",
+        "countdown_text_sh",
+        "countdown_text",
+        "popup_text_sh",
+        "popup_text",
+        "wrong_text_sh",
+        "wrong_text"
+      ]
+    },
+    "hud_star": {
+      "type": "UIPanel",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          20,
+          18
+        ],
+        "size": [
+          36,
+          36
+        ],
+        "background": "#00000000",
+        "image": "asset:star_icon"
+      }
+    },
+    "hud_points_sh": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          69,
+          19
+        ],
+        "size": [
+          360,
+          44
+        ],
+        "text": "0 PTS",
+        "font_size": 32,
+        "color": "#3b3338"
+      }
+    },
+    "hud_points": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          66,
+          16
+        ],
+        "size": [
+          360,
+          44
+        ],
+        "text": "0 PTS",
+        "font_size": 32,
+        "color": "#ffd84a",
+        "z_index": 1
+      }
+    },
+    "hud_pos_sh": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          23,
+          65
+        ],
+        "size": [
+          360,
+          64
+        ],
+        "text": "6TH / 6",
+        "font_size": 50,
+        "color": "#3b3338"
+      }
+    },
+    "hud_pos": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          20,
+          62
+        ],
+        "size": [
+          360,
+          64
+        ],
+        "text": "6TH / 6",
+        "font_size": 50,
+        "color": "#f4f4f0",
+        "z_index": 1
+      }
+    },
+    "hud_lap_sh": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top_right",
+        "offset": [
+          -97,
+          17
+        ],
+        "size": [
+          360,
+          44
+        ],
+        "text": "LAP 1/3",
+        "font_size": 34,
+        "color": "#3b3338",
+        "align": "right"
+      }
+    },
+    "hud_lap": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top_right",
+        "offset": [
+          -100,
+          14
+        ],
+        "size": [
+          360,
+          44
+        ],
+        "text": "LAP 1/3",
+        "font_size": 34,
+        "color": "#ffd84a",
+        "align": "right",
+        "z_index": 1
+      }
+    },
+    "hud_cur_sh": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top_right",
+        "offset": [
+          -97,
+          61
+        ],
+        "size": [
+          400,
+          36
+        ],
+        "text": "CURRENT 00:00.00",
+        "font_size": 24,
+        "color": "#3b3338",
+        "align": "right"
+      }
+    },
+    "hud_cur": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top_right",
+        "offset": [
+          -100,
+          58
+        ],
+        "size": [
+          400,
+          36
+        ],
+        "text": "CURRENT 00:00.00",
+        "font_size": 24,
+        "color": "#f4f4f0",
+        "align": "right",
+        "z_index": 1
+      }
+    },
+    "hud_best_sh": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top_right",
+        "offset": [
+          -97,
+          93
+        ],
+        "size": [
+          400,
+          36
+        ],
+        "text": "BEST --:--.--",
+        "font_size": 24,
+        "color": "#3b3338",
+        "align": "right"
+      }
+    },
+    "hud_best": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top_right",
+        "offset": [
+          -100,
+          90
+        ],
+        "size": [
+          400,
+          36
+        ],
+        "text": "BEST --:--.--",
+        "font_size": 24,
+        "color": "#d9c598",
+        "align": "right",
+        "z_index": 1
+      }
+    },
+    "hud_speed_sh": {
+      "type": "UIText",
+      "props": {
+        "anchor": "bottom",
+        "offset": [
+          3,
+          -53
+        ],
+        "size": [
+          300,
+          44
+        ],
+        "text": "0 KM/H",
+        "font_size": 34,
+        "color": "#3b3338",
+        "align": "center"
+      }
+    },
+    "hud_speed": {
+      "type": "UIText",
+      "props": {
+        "anchor": "bottom",
+        "offset": [
+          0,
+          -56
+        ],
+        "size": [
+          300,
+          44
+        ],
+        "text": "0 KM/H",
+        "font_size": 34,
+        "color": "#f4f4f0",
+        "align": "center",
+        "z_index": 1
+      }
+    },
+    "hud_boost_label": {
+      "type": "UIText",
+      "props": {
+        "anchor": "bottom",
+        "offset": [
+          -230,
+          -16
+        ],
+        "size": [
+          120,
+          30
+        ],
+        "text": "BOOST",
+        "font_size": 20,
+        "color": "#ffd84a",
+        "align": "right"
+      }
+    },
+    "hud_boost_1": {
+      "type": "UIPanel",
+      "props": {
+        "anchor": "bottom",
+        "offset": [
+          -135,
+          -20
+        ],
+        "size": [
+          26,
+          20
+        ],
+        "background": "#ffd84a"
+      }
+    },
+    "hud_boost_2": {
+      "type": "UIPanel",
+      "props": {
+        "anchor": "bottom",
+        "offset": [
+          -105,
+          -20
+        ],
+        "size": [
+          26,
+          20
+        ],
+        "background": "#ffd84a"
+      }
+    },
+    "hud_boost_3": {
+      "type": "UIPanel",
+      "props": {
+        "anchor": "bottom",
+        "offset": [
+          -75,
+          -20
+        ],
+        "size": [
+          26,
+          20
+        ],
+        "background": "#ffd84a"
+      }
+    },
+    "hud_boost_4": {
+      "type": "UIPanel",
+      "props": {
+        "anchor": "bottom",
+        "offset": [
+          -45,
+          -20
+        ],
+        "size": [
+          26,
+          20
+        ],
+        "background": "#ffd84a"
+      }
+    },
+    "hud_boost_5": {
+      "type": "UIPanel",
+      "props": {
+        "anchor": "bottom",
+        "offset": [
+          -15,
+          -20
+        ],
+        "size": [
+          26,
+          20
+        ],
+        "background": "#ffd84a"
+      }
+    },
+    "hud_boost_6": {
+      "type": "UIPanel",
+      "props": {
+        "anchor": "bottom",
+        "offset": [
+          15,
+          -20
+        ],
+        "size": [
+          26,
+          20
+        ],
+        "background": "#ffd84a"
+      }
+    },
+    "hud_boost_7": {
+      "type": "UIPanel",
+      "props": {
+        "anchor": "bottom",
+        "offset": [
+          45,
+          -20
+        ],
+        "size": [
+          26,
+          20
+        ],
+        "background": "#ffd84a"
+      }
+    },
+    "hud_boost_8": {
+      "type": "UIPanel",
+      "props": {
+        "anchor": "bottom",
+        "offset": [
+          75,
+          -20
+        ],
+        "size": [
+          26,
+          20
+        ],
+        "background": "#ffd84a"
+      }
+    },
+    "hud_boost_9": {
+      "type": "UIPanel",
+      "props": {
+        "anchor": "bottom",
+        "offset": [
+          105,
+          -20
+        ],
+        "size": [
+          26,
+          20
+        ],
+        "background": "#ffd84a"
+      }
+    },
+    "hud_boost_10": {
+      "type": "UIPanel",
+      "props": {
+        "anchor": "bottom",
+        "offset": [
+          135,
+          -20
+        ],
+        "size": [
+          26,
+          20
+        ],
+        "background": "#ffd84a"
+      }
+    },
+    "countdown_text_sh": {
+      "type": "UIText",
+      "props": {
+        "anchor": "center",
+        "offset": [
+          6,
+          -164
+        ],
+        "size": [
+          600,
+          180
+        ],
+        "text": "",
+        "font_size": 150,
+        "color": "#3b3338",
+        "align": "center",
+        "z_index": 10
+      }
+    },
+    "countdown_text": {
+      "type": "UIText",
+      "props": {
+        "anchor": "center",
+        "offset": [
+          0,
+          -170
+        ],
+        "size": [
+          600,
+          180
+        ],
+        "text": "",
+        "font_size": 150,
+        "color": "#ffd84a",
+        "align": "center",
+        "z_index": 11
+      }
+    },
+    "popup_text_sh": {
+      "type": "UIText",
+      "props": {
+        "anchor": "center",
+        "offset": [
+          3,
+          -177
+        ],
+        "size": [
+          900,
+          60
+        ],
+        "text": "",
+        "font_size": 40,
+        "color": "#3b3338",
+        "align": "center",
+        "z_index": 10
+      }
+    },
+    "popup_text": {
+      "type": "UIText",
+      "props": {
+        "anchor": "center",
+        "offset": [
+          0,
+          -180
+        ],
+        "size": [
+          900,
+          60
+        ],
+        "text": "",
+        "font_size": 40,
+        "color": "#f4f4f0",
+        "align": "center",
+        "z_index": 11
+      }
+    },
+    "wrong_text_sh": {
+      "type": "UIText",
+      "props": {
+        "anchor": "center",
+        "offset": [
+          3,
+          -97
+        ],
+        "size": [
+          700,
+          70
+        ],
+        "text": "WRONG WAY!",
+        "font_size": 56,
+        "color": "#3b3338",
+        "align": "center",
+        "z_index": 10
+      }
+    },
+    "wrong_text": {
+      "type": "UIText",
+      "props": {
+        "anchor": "center",
+        "offset": [
+          0,
+          -100
+        ],
+        "size": [
+          700,
+          70
+        ],
+        "text": "WRONG WAY!",
+        "font_size": 56,
+        "color": "#d8403a",
+        "align": "center",
+        "z_index": 11
+      }
+    },
+    "results": {
+      "type": "Folder",
+      "children": [
+        "res_dim",
+        "res_bg",
+        "res_title",
+        "res_place",
+        "res_time",
+        "res_best",
+        "res_points",
+        "res_msg",
+        "btn_again",
+        "btn_menu"
+      ]
+    },
+    "res_dim": {
+      "type": "UIPanel",
+      "props": {
+        "anchor": "center",
+        "offset": [
+          0,
+          0
+        ],
+        "size": [
+          2400,
+          1400
+        ],
+        "background": "#3b333888",
+        "z_index": 20
+      }
+    },
+    "res_bg": {
+      "type": "UIPanel",
+      "props": {
+        "anchor": "center",
+        "offset": [
+          0,
+          0
+        ],
+        "size": [
+          760,
+          500
+        ],
+        "background": "#3b3338f0",
+        "z_index": 21
+      }
+    },
+    "res_title": {
+      "type": "UIText",
+      "props": {
+        "anchor": "center",
+        "offset": [
+          0,
+          -195
+        ],
+        "size": [
+          700,
+          56
+        ],
+        "text": "RACE RESULTS",
+        "font_size": 44,
+        "color": "#ffd84a",
+        "align": "center",
+        "z_index": 22
+      }
+    },
+    "res_place": {
+      "type": "UIText",
+      "props": {
+        "anchor": "center",
+        "offset": [
+          0,
+          -115
+        ],
+        "size": [
+          700,
+          90
+        ],
+        "text": "1ST PLACE",
+        "font_size": 76,
+        "color": "#f4f4f0",
+        "align": "center",
+        "z_index": 22
+      }
+    },
+    "res_time": {
+      "type": "UIText",
+      "props": {
+        "anchor": "center",
+        "offset": [
+          0,
+          -35
+        ],
+        "size": [
+          700,
+          40
+        ],
+        "text": "TIME",
+        "font_size": 30,
+        "color": "#f4f4f0",
+        "align": "center",
+        "z_index": 22
+      }
+    },
+    "res_best": {
+      "type": "UIText",
+      "props": {
+        "anchor": "center",
+        "offset": [
+          0,
+          10
+        ],
+        "size": [
+          700,
+          40
+        ],
+        "text": "BEST LAP",
+        "font_size": 30,
+        "color": "#d9c598",
+        "align": "center",
+        "z_index": 22
+      }
+    },
+    "res_points": {
+      "type": "UIText",
+      "props": {
+        "anchor": "center",
+        "offset": [
+          0,
+          55
+        ],
+        "size": [
+          700,
+          40
+        ],
+        "text": "POINTS",
+        "font_size": 28,
+        "color": "#ffd84a",
+        "align": "center",
+        "z_index": 22
+      }
+    },
+    "res_msg": {
+      "type": "UIText",
+      "props": {
+        "anchor": "center",
+        "offset": [
+          0,
+          100
+        ],
+        "size": [
+          700,
+          40
+        ],
+        "text": "",
+        "font_size": 24,
+        "color": "#3fb04a",
+        "align": "center",
+        "z_index": 22
+      }
+    },
+    "btn_again": {
+      "type": "UIButton",
+      "props": {
+        "anchor": "center",
+        "offset": [
+          -160,
+          180
+        ],
+        "size": [
+          280,
+          70
+        ],
+        "text": "PLAY AGAIN",
+        "font_size": 30,
+        "color": "#f4f4f0",
+        "background": "#d8403a",
+        "z_index": 23
+      }
+    },
+    "btn_menu": {
+      "type": "UIButton",
+      "props": {
+        "anchor": "center",
+        "offset": [
+          160,
+          180
+        ],
+        "size": [
+          280,
+          70
+        ],
+        "text": "TITLE",
+        "font_size": 30,
+        "color": "#f4f4f0",
+        "background": "#3a6fd8",
+        "z_index": 23
+      }
+    }
+  }
+}

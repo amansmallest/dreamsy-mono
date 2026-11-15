@@ -1,0 +1,12 @@
+{
+ "name": "Steady Flame",
+ "cost": 1,
+ "type": "skill",
+ "rarity": "common",
+ "effects": [
+  "block 5",
+  "draw 1"
+ ],
+ "character": "wick",
+ "art": "asset:art_sun"
+}

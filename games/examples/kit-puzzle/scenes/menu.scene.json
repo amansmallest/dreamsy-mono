@@ -1,0 +1,57 @@
+{
+  "format": "0",
+  "root": "menu_root",
+  "entities": {
+    "menu_root": {
+      "type": "Node2D",
+      "children": [
+        "menu_camera",
+        "menu_paper",
+        "menu_rule"
+      ],
+      "scripts": [
+        "scripts/client/menu.luau"
+      ]
+    },
+    "menu_paper": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          360,
+          640
+        ],
+        "size": [
+          760,
+          1320
+        ],
+        "modulate": "#fdf5df",
+        "z_index": -20
+      }
+    },
+    "menu_rule": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          360,
+          214
+        ],
+        "size": [
+          672,
+          6
+        ],
+        "modulate": "#111111",
+        "z_index": -19
+      }
+    },
+    "menu_camera": {
+      "type": "Camera2D",
+      "props": {
+        "position": [
+          360,
+          640
+        ],
+        "current": true
+      }
+    }
+  }
+}

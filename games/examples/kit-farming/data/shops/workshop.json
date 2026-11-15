@@ -1,0 +1,32 @@
+{
+ "name": "Bram's Workshop",
+ "hours": [
+  480,
+  1080
+ ],
+ "stock": [
+  {
+   "item": "wood",
+   "price": 8
+  },
+  {
+   "item": "stone",
+   "price": 10
+  },
+  {
+   "upgrade": "copper_can"
+  },
+  {
+   "upgrade": "comfy_bed"
+  },
+  {
+   "upgrade": "big_coop"
+  },
+  {
+   "upgrade": "goat_barn"
+  },
+  {
+   "animal": "goat"
+  }
+ ]
+}

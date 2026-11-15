@@ -1,0 +1,17 @@
+{
+ "pattern": "spiral",
+ "count": 4,
+ "spin": -140,
+ "rate": 11,
+ "speed": 150,
+ "bullet": {
+  "sprite": "asset:bullet_violet",
+  "size": [
+   24,
+   24
+  ],
+  "radius": 7,
+  "accel": 50,
+  "maxSpeed": 300
+ }
+}

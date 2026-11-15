@@ -1,0 +1,20 @@
+{
+  "name": "Puddle Hopper",
+  "behaviour": "hopper",
+  "sprite": "asset:frog",
+  "size": [
+    14,
+    13
+  ],
+  "draw_size": [
+    16,
+    14
+  ],
+  "hop": {
+    "interval": 1.4,
+    "height": 40,
+    "speed": 70,
+    "toward_player": true
+  },
+  "id": "frog"
+}

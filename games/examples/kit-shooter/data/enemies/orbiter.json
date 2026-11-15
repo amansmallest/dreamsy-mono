@@ -1,0 +1,23 @@
+{
+ "name": "Orbiter",
+ "sprite": "asset:spitter",
+ "size": [
+  64,
+  64
+ ],
+ "hp": 12,
+ "score": 400,
+ "path": {
+  "kind": "swoop",
+  "speed": 190,
+  "turn": 45,
+  "angle": 70
+ },
+ "emitters": [
+  "ring_small"
+ ],
+ "drops": {
+  "power": 0.2,
+  "coins": 2
+ }
+}

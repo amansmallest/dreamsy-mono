@@ -1,0 +1,88 @@
+{
+  "id": "drum",
+  "name": "Mushroom Drum",
+  "cost": 90,
+  "range": 1.6,
+  "rate": 0,
+  "damage": 0,
+  "damage_type": "physical",
+  "ground": false,
+  "air": false,
+  "aura": {
+    "range": 1.6,
+    "rate": 0.2,
+    "damage": 0.15
+  },
+  "sprite": "asset:tower_drum",
+  "icon": "asset:tower_drum",
+  "upgrades": [
+    {
+      "name": "Louder Beat",
+      "desc": "Aura +30% rate",
+      "cost": 70,
+      "set": {
+        "aura.rate": 0.3
+      }
+    },
+    {
+      "name": "Wide Rhythm",
+      "desc": "Aura range 2.2",
+      "cost": 80,
+      "set": {
+        "aura.range": 2.2,
+        "range": 2.2
+      }
+    }
+  ],
+  "branches": [
+    {
+      "id": "a",
+      "name": "War Drum",
+      "sprite": "asset:tower_drum_a",
+      "icon": "asset:tower_drum_a",
+      "tiers": [
+        {
+          "name": "War Drum",
+          "desc": "Aura +35% damage",
+          "cost": 150,
+          "set": {
+            "aura.damage": 0.35
+          }
+        },
+        {
+          "name": "Battle Hymn",
+          "desc": "Aura +50% damage, +15% range",
+          "cost": 240,
+          "set": {
+            "aura.damage": 0.5,
+            "aura.range_bonus": 0.15
+          }
+        }
+      ]
+    },
+    {
+      "id": "b",
+      "name": "Spore Bank",
+      "sprite": "asset:tower_drum_b",
+      "icon": "asset:tower_drum_b",
+      "tiers": [
+        {
+          "name": "Spore Bank",
+          "desc": "+25 seeds every wave",
+          "cost": 130,
+          "set": {
+            "income": 25
+          }
+        },
+        {
+          "name": "Spore Vault",
+          "desc": "+60 seeds every wave",
+          "cost": 220,
+          "set": {
+            "income": 60
+          }
+        }
+      ]
+    }
+  ]
+}

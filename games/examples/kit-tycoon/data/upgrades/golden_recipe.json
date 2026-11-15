@@ -1,0 +1,14 @@
+{
+  "name": "Golden Recipe",
+  "desc": "Everything ×2, forever",
+  "order": 12,
+  "icon": "asset:icon_whisk",
+  "cost": {
+    "amount": 10,
+    "currency": "whisks"
+  },
+  "effect": {
+    "kind": "output",
+    "value": 2
+  }
+}

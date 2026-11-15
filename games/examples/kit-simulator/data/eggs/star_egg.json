@@ -1,0 +1,15 @@
+{
+ "name": "Star Egg",
+ "order": 3,
+ "cost": {
+  "coins": 300000
+ },
+ "zone": "peak",
+ "icon": "asset:egg_star",
+ "pets": {
+  "ember_pup": 60,
+  "comet_cat": 28,
+  "moon_owl": 11,
+  "star_drake": 1
+ }
+}

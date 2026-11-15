@@ -1,0 +1,8 @@
+{
+ "name": "Door",
+ "icon": "asset:door",
+ "category": "build",
+ "data": {
+  "place": "door"
+ }
+}

@@ -1,0 +1,7 @@
+{
+ "name": "Wood",
+ "icon": "asset:wood",
+ "category": "material",
+ "value": 2,
+ "stack": 999
+}

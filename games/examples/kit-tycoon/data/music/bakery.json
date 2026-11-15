@@ -1,0 +1,1 @@
+{"bpm": 104, "steps": 16, "loop": true, "channels": [{"wave": "triangle", "volume": 0.3, "notes": "C4 - E4 - G4 - E4 - F4 - A4 - G4 - E4 - D4 - F4 - A4 - F4 - E4 - G4 - C5 - - -"}, {"wave": "square", "duty": 0.25, "volume": 0.12, "notes": "C3 . . . G2 . . . F2 . . . G2 . . . D3 . . . A2 . . . G2 . . . C3 . . ."}], "order": [0, 1]}

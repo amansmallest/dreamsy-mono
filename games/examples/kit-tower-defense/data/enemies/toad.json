@@ -1,0 +1,18 @@
+{
+  "id": "toad",
+  "name": "Mender Toad",
+  "hp": 90,
+  "speed": 0.75,
+  "resist": {
+    "explosive": 0.3
+  },
+  "heal": {
+    "amount": 8,
+    "radius": 1.5,
+    "interval": 2.5
+  },
+  "bounty": 12,
+  "sprite": "asset:enemy_toad",
+  "size": 0.65,
+  "color": "#3d8b6e"
+}

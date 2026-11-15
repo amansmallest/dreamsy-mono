@@ -1,0 +1,162 @@
+{
+ "name": "Ice Belt",
+ "order": 2,
+ "mode": "shmup",
+ "background": "asset:bg_ice",
+ "scroll": 120,
+ "music": "nebula",
+ "speckColor": "#cfefff",
+ "events": [
+  {
+   "t": 0.5,
+   "text": "ICE BELT"
+  },
+  {
+   "t": 2,
+   "enemy": "weaver",
+   "xs": [
+    0.2,
+    0.8
+   ],
+   "count": 5,
+   "gap": 0.5
+  },
+  {
+   "t": 6,
+   "enemy": "orbiter",
+   "xs": [
+    0.1,
+    0.6
+   ]
+  },
+  {
+   "t": 10,
+   "enemy": "diver",
+   "xs": [
+    0.2,
+    0.4,
+    0.6,
+    0.8
+   ]
+  },
+  {
+   "t": 12,
+   "enemy": "diver",
+   "xs": [
+    0.3,
+    0.5,
+    0.7
+   ]
+  },
+  {
+   "t": 15,
+   "enemy": "gunship",
+   "xs": [
+    0.25,
+    0.75
+   ]
+  },
+  {
+   "t": 21,
+   "enemy": "drone",
+   "x": 0.9,
+   "count": 8,
+   "gap": 0.3,
+   "dx": -75
+  },
+  {
+   "t": 25,
+   "enemy": "orbiter",
+   "xs": [
+    0.1,
+    0.5,
+    0.85
+   ]
+  },
+  {
+   "t": 30,
+   "pickup": "power",
+   "x": 0.5
+  },
+  {
+   "t": 32,
+   "enemy": "gunship",
+   "x": 0.5
+  },
+  {
+   "t": 34,
+   "enemy": "weaver",
+   "xs": [
+    0.15,
+    0.85
+   ],
+   "count": 6,
+   "gap": 0.45
+  },
+  {
+   "t": 40,
+   "enemy": "diver",
+   "xs": [
+    0.15,
+    0.35,
+    0.55,
+    0.75,
+    0.9
+   ]
+  },
+  {
+   "t": 44,
+   "enemy": "drone",
+   "xs": [
+    0.2,
+    0.5,
+    0.8
+   ],
+   "count": 5,
+   "gap": 0.4
+  },
+  {
+   "t": 50,
+   "enemy": "gunship",
+   "xs": [
+    0.2,
+    0.5,
+    0.8
+   ]
+  },
+  {
+   "t": 57,
+   "enemy": "orbiter",
+   "xs": [
+    0.2,
+    0.7
+   ],
+   "count": 2,
+   "gap": 1.2
+  },
+  {
+   "t": 63,
+   "enemy": "weaver",
+   "x": 0.5,
+   "count": 8,
+   "gap": 0.4
+  },
+  {
+   "t": 68,
+   "enemy": "gunship",
+   "xs": [
+    0.3,
+    0.7
+   ],
+   "waitClear": true
+  },
+  {
+   "t": 75,
+   "boss": "matriarch"
+  }
+ ],
+ "reward": {
+  "credits": 90,
+  "noMiss": 60
+ }
+}

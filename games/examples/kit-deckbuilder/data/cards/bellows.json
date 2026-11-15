@@ -1,0 +1,15 @@
+{
+ "name": "Bellows",
+ "cost": 1,
+ "type": "skill",
+ "rarity": "uncommon",
+ "effects": [
+  "energy 2"
+ ],
+ "exhaust": true,
+ "upgrade": {
+  "cost": 0
+ },
+ "character": "wick",
+ "art": "asset:art_sun"
+}

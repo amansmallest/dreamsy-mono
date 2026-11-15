@@ -1,0 +1,19 @@
+{
+  "name": "Phoenix Feather",
+  "rarity": "rare",
+  "icon": "asset:i_flame",
+  "tags": [
+    "fire"
+  ],
+  "description": "Below 30% HP: heal 30% (once a room).",
+  "triggers": [
+    {
+      "on": "lowHp",
+      "effects": [
+        {
+          "healPct": 0.3
+        }
+      ]
+    }
+  ]
+}

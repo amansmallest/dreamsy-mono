@@ -1,0 +1,8 @@
+{
+ "kind": "image",
+ "file": "pickup_life.svg",
+ "source": {
+  "model": "claude-opus-5-5",
+  "prompt": "hand-written SVG"
+ }
+}

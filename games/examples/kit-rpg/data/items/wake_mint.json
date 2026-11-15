@@ -1,0 +1,8 @@
+{
+  "name": "Wake Mint",
+  "kind": "cure",
+  "cure": true,
+  "price": 120,
+  "icon": "asset:item_mint",
+  "description": "Cures any status."
+}

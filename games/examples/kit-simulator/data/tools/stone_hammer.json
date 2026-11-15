@@ -1,0 +1,8 @@
+{
+ "name": "Stone Hammer",
+ "order": 2,
+ "cost": 50,
+ "power": 3,
+ "speed": 1,
+ "icon": "asset:tool_stone"
+}

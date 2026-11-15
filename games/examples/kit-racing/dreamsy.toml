@@ -1,0 +1,26 @@
+format = "0"
+name = "Sprout Speedway"
+description = "Toy cars race through a backyard garden: a 3-track Sprout Cup, time trials against your own ghost, and a garage of upgradable cars. Built on the racing kit."
+dimension = "2d"
+orientation = "portrait"
+entry_scene = "scenes/menu.scene.json"
+kits = ["racing"]
+
+[players]
+min = 1
+max = 1
+
+[server]
+mode = "none"
+
+[ui]
+primary = "#e4572e"
+accent = "#ffd23f"
+background = "#23402c"
+text = "#fffbea"
+panel = "rounded"
+font = "bold"
+
+[style]
+preset = "clean"
+palette = ["#23402c", "#4f8a3c", "#7cc35a", "#c79a64", "#e4572e", "#ffd23f", "#3fa7d6", "#fffbea"]

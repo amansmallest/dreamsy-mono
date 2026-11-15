@@ -1,0 +1,91 @@
+{
+  "tileSize": 64,
+  "width": 1.5,
+  "tileset": "data/tilesets/garden.json",
+  "checkpoints": 5,
+  "name": "Pea Patch Loop",
+  "order": 1,
+  "laps": 3,
+  "line": [
+    [
+      3,
+      4
+    ],
+    [
+      8,
+      3
+    ],
+    [
+      10,
+      5
+    ],
+    [
+      10,
+      11
+    ],
+    [
+      8,
+      14
+    ],
+    [
+      10,
+      18
+    ],
+    [
+      10,
+      23
+    ],
+    [
+      8,
+      25
+    ],
+    [
+      4,
+      25
+    ],
+    [
+      2,
+      22
+    ],
+    [
+      3,
+      16
+    ],
+    [
+      2,
+      10
+    ],
+    [
+      2,
+      6
+    ]
+  ],
+  "hazards": [
+    {
+      "kind": "boost",
+      "at": 0.3,
+      "offset": 0
+    },
+    {
+      "kind": "oil",
+      "at": 0.52,
+      "offset": 0.8
+    },
+    {
+      "kind": "item",
+      "at": 0.75,
+      "offset": -0.6
+    },
+    {
+      "kind": "item",
+      "at": 0.75,
+      "offset": 0.6
+    }
+  ],
+  "medals": {
+    "gold": 39,
+    "silver": 43,
+    "bronze": 48
+  },
+  "start": 3
+}

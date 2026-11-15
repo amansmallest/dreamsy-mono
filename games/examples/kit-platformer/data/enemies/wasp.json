@@ -1,0 +1,21 @@
+{
+  "name": "Buzzer",
+  "behaviour": "flyer",
+  "sprite": "asset:wasp",
+  "size": [
+    14,
+    10
+  ],
+  "draw_size": [
+    16,
+    11
+  ],
+  "speed": 40,
+  "fly": {
+    "pattern": "sine",
+    "amplitude": 20,
+    "period": 1.8,
+    "range": 40
+  },
+  "id": "wasp"
+}

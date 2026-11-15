@@ -1,0 +1,102 @@
+# Lanternlight, chapter 1: arrival, the dark lamp, the boathouse (point-and-click).
+@chapter ch1 "The Dark Lamp"
+@label start
+@music tide
+@bg harbor fade
+> The ferry noses through the fog toward Saltreach. The lighthouse stands black against the night sky.
+> Its lamp, which should sweep the water every twelve seconds, is out.
+@show ott neutral right
+Ott: Mind the gap, keeper. This island doesn't forgive wet boots.
+Ott: Forty years I've rowed this crossing. Never once seen the light dark.
+* "Thanks for bringing me out in this, Ott." -> ch1_thanks {aff ott 1}
+* "Why is the light out?" -> ch1_why
+* Say nothing and step onto the jetty. -> ch1_jetty {aff ott -1}
+
+@label ch1_thanks
+Ott: Hah. Manners. You'll not last a winter with those.
+Ott (sad): But thank you. Not many say it.
+@goto ch1_jetty
+
+@label ch1_why
+Ott (angry): How should I know? I'm a ferryman, not a lamp-polisher.
+Ott: Ask the girl. She's been up there all night, cursing at the brass.
+@goto ch1_jetty
+
+@label ch1_jetty
+@sfx door
+> The jetty boards are slick. Somewhere above, a door bangs open and a lantern bobs down the cliff path.
+@show mira worried left
+Mira: You're the relief keeper? Oh, thank the tides.
+Mira: I'm Mira. Apprentice. Second year. The lamp died at midnight and I cannot get it to take.
+Mira (worried): The supply boat is due before dawn. If it can't see the Teeth, it'll find them the hard way.
+* "Show me the lamp. We'll fix it together." -> ch1_together {aff mira 1}
+* "You've been at it all night? Go and rest; I've got this." -> ch1_together {aff mira 1} {aff ott 1}
+* "An apprentice who can't light a lamp. Wonderful." -> ch1_together {aff mira -2}
+
+@label ch1_together
+@if aff mira >= 1
+  Mira (happy): Right. Yes. This way. Mind the seventh step, it wobbles.
+@else
+  Mira: ...This way. The seventh step wobbles. Try not to fall down it.
+@endif
+@hide ott
+> Ott mutters something about tides and turns his boat for the far cottage.
+
+@label ch1_lamproom
+@bg lamproom fade
+@show mira worried left
+> The lamp room smells of brass polish and paraffin. The great lens throws your lantern back at you a hundred times.
+Mira: Look at the burner. The wick is gone. Not burned down. Gone.
+> You lean in. The stub of the old wick ends in a clean, straight edge.
+@clue cut_wick
+Mira: Someone cut it. Who would cut a lighthouse wick?
+* "Someone who wanted the light out. Do you keep spares?" -> ch1_spares
+* "Maybe you trimmed it too short and won't admit it." -> ch1_accuse {aff mira -1}
+
+@label ch1_accuse
+Mira (worried): I've trimmed that wick every night for two years. I know what a burned wick looks like.
+Mira: That is not a burned wick.
+@goto ch1_spares
+
+@label ch1_spares
+Mira: Spare wicks are in the boathouse toolbox. But the key went missing weeks ago and Ott never bothered to cut a new one.
+Mira: And a dry wick won't light in this damp. It needs oil first.
+@if aff mira >= 1
+  Mira (happy): You go. I'll clean the lens. Shout if anything bites.
+@else
+  Mira: I'll stay with the lens. Try not to drop anything in the harbour.
+@endif
+@hide all
+@autosave
+@music mystery
+@explore boathouse
+
+# examine script called from the ledger hotspot; @return goes back to the room
+@label bh_ledger
+> The ferry ledger. Ott's square handwriting logs every crossing for forty years: date, time, fuel.
+> Last night's page shows no crossing after six. But this morning's fuel reading is three hours short.
+@clue ledger_gap
+@return
+
+@label ch1_out
+@sfx door
+@bg lamproom fade
+@music tide
+@show mira worried left
+Mira: You found one? And oiled! Quick, give it here.
+@take oiled_wick
+> Mira threads the wick with fast, sure fingers. You strike the match.
+@sfx lamp
+@flash #fff4c0
+> The flame catches, climbs, and the lens drinks it up. A beam of white light walks out across the water.
+@set lamp_lit
+Mira (happy): It's turning. It's turning!
+@if aff mira >= 1
+  Mira (happy): I could kiss you. I won't. But I could.
+  @aff mira 1
+@else
+  Mira: ...Thank you. Really.
+@endif
+> Far out on the water, a small light blinks twice in answer and swings away from the Teeth. The supply boat is safe.
+> But somebody on this island put the light out on purpose. And there are only three of you here.
+@goto ch2_start

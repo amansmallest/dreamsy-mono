@@ -1,0 +1,8 @@
+{
+ "name": "Comet Cat",
+ "rarity": "rare",
+ "bonus": {
+  "coins": 0.8
+ },
+ "icon": "asset:pet_comet_cat"
+}

@@ -1,0 +1,16 @@
+{
+  "name": "Shellbug",
+  "behaviour": "patroller",
+  "sprite": "asset:beetle",
+  "size": [
+    14,
+    8
+  ],
+  "draw_size": [
+    16,
+    9
+  ],
+  "speed": 32,
+  "score": 100,
+  "id": "beetle"
+}

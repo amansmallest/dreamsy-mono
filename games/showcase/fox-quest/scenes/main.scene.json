@@ -1,0 +1,3077 @@
+{
+  "format": "0",
+  "root": "world",
+  "entities": {
+    "world": {
+      "type": "Node2D",
+      "children": [
+        "background",
+        "terrain",
+        "platforms",
+        "spike_pits",
+        "gems",
+        "beetles",
+        "flag",
+        "signs",
+        "player",
+        "camera",
+        "hud"
+      ]
+    },
+    "background": {
+      "type": "Folder",
+      "name": "Background",
+      "children": [
+        "bg_sky",
+        "bg_sun",
+        "bg_hill_1",
+        "bg_hill_2",
+        "bg_hill_3",
+        "bg_hill_4",
+        "bg_hill_5",
+        "bg_hill_6",
+        "bg_cloud_1",
+        "bg_cloud_2",
+        "bg_cloud_3",
+        "bg_cloud_4",
+        "bg_cloud_5",
+        "bg_cloud_6",
+        "bg_cloud_7"
+      ]
+    },
+    "bg_sky": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          2160,
+          0
+        ],
+        "size": [
+          7200,
+          1400
+        ],
+        "modulate": "#7ec8ff",
+        "z_index": -20
+      }
+    },
+    "bg_sun": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          2400,
+          -40
+        ],
+        "size": [
+          48,
+          48
+        ],
+        "modulate": "#fff07a",
+        "z_index": -19
+      }
+    },
+    "bg_hill_1": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          300,
+          168
+        ],
+        "size": [
+          192,
+          80
+        ],
+        "modulate": "#ffffff",
+        "z_index": -18,
+        "texture": "asset:hill"
+      }
+    },
+    "bg_hill_2": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          1100,
+          176
+        ],
+        "size": [
+          256,
+          64
+        ],
+        "modulate": "#ffffff",
+        "z_index": -18,
+        "texture": "asset:hill"
+      }
+    },
+    "bg_hill_3": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          1900,
+          160
+        ],
+        "size": [
+          160,
+          96
+        ],
+        "modulate": "#ffffff",
+        "z_index": -18,
+        "texture": "asset:hill"
+      }
+    },
+    "bg_hill_4": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          2700,
+          176
+        ],
+        "size": [
+          256,
+          64
+        ],
+        "modulate": "#ffffff",
+        "z_index": -18,
+        "texture": "asset:hill"
+      }
+    },
+    "bg_hill_5": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          3500,
+          168
+        ],
+        "size": [
+          192,
+          80
+        ],
+        "modulate": "#ffffff",
+        "z_index": -18,
+        "texture": "asset:hill"
+      }
+    },
+    "bg_hill_6": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          4300,
+          160
+        ],
+        "size": [
+          224,
+          96
+        ],
+        "modulate": "#ffffff",
+        "z_index": -18,
+        "texture": "asset:hill"
+      }
+    },
+    "bg_cloud_1": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          160,
+          48
+        ],
+        "size": [
+          64,
+          16
+        ],
+        "modulate": "#ffffff",
+        "z_index": -17,
+        "texture": "asset:cloud"
+      }
+    },
+    "bg_cloud_2": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          720,
+          16
+        ],
+        "size": [
+          48,
+          16
+        ],
+        "modulate": "#ffffff",
+        "z_index": -17,
+        "texture": "asset:cloud"
+      }
+    },
+    "bg_cloud_3": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          1312,
+          64
+        ],
+        "size": [
+          80,
+          16
+        ],
+        "modulate": "#ffffff",
+        "z_index": -17,
+        "texture": "asset:cloud"
+      }
+    },
+    "bg_cloud_4": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          2016,
+          32
+        ],
+        "size": [
+          64,
+          16
+        ],
+        "modulate": "#ffffff",
+        "z_index": -17,
+        "texture": "asset:cloud"
+      }
+    },
+    "bg_cloud_5": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          2912,
+          48
+        ],
+        "size": [
+          48,
+          16
+        ],
+        "modulate": "#ffffff",
+        "z_index": -17,
+        "texture": "asset:cloud"
+      }
+    },
+    "bg_cloud_6": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          3808,
+          16
+        ],
+        "size": [
+          80,
+          16
+        ],
+        "modulate": "#ffffff",
+        "z_index": -17,
+        "texture": "asset:cloud"
+      }
+    },
+    "bg_cloud_7": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          4416,
+          56
+        ],
+        "size": [
+          64,
+          16
+        ],
+        "modulate": "#ffffff",
+        "z_index": -17,
+        "texture": "asset:cloud"
+      }
+    },
+    "terrain": {
+      "type": "Folder",
+      "name": "Terrain",
+      "children": [
+        "bedrock",
+        "wall_left",
+        "wall_right",
+        "ground_1",
+        "ground_2",
+        "ground_3",
+        "ground_4",
+        "ground_5",
+        "ground_6",
+        "ground_7",
+        "ground_8"
+      ]
+    },
+    "bedrock": {
+      "type": "Body2D",
+      "props": {
+        "position": [
+          2160,
+          372
+        ],
+        "size": [
+          4800,
+          200
+        ],
+        "body": "static"
+      },
+      "children": [
+        "bedrock_art"
+      ]
+    },
+    "bedrock_art": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          4800,
+          200
+        ],
+        "modulate": "#6b3a1a",
+        "z_index": -1
+      }
+    },
+    "wall_left": {
+      "type": "Body2D",
+      "props": {
+        "position": [
+          -208,
+          64
+        ],
+        "size": [
+          32,
+          416
+        ],
+        "body": "static"
+      },
+      "children": [
+        "wall_left_art"
+      ]
+    },
+    "wall_left_art": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          32,
+          416
+        ],
+        "modulate": "#8a6a5a"
+      }
+    },
+    "wall_right": {
+      "type": "Body2D",
+      "props": {
+        "position": [
+          4528,
+          64
+        ],
+        "size": [
+          32,
+          416
+        ],
+        "body": "static"
+      },
+      "children": [
+        "wall_right_art"
+      ]
+    },
+    "wall_right_art": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          32,
+          416
+        ],
+        "modulate": "#8a6a5a"
+      }
+    },
+    "ground_1": {
+      "type": "Body2D",
+      "props": {
+        "position": [
+          144,
+          240
+        ],
+        "size": [
+          672,
+          64
+        ],
+        "body": "static",
+        "friction": 0.2
+      },
+      "tags": [
+        "ground"
+      ],
+      "children": [
+        "ground_1_dirt",
+        "ground_1_grass"
+      ]
+    },
+    "ground_1_dirt": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          672,
+          64
+        ],
+        "modulate": "#ffffff",
+        "texture": "asset:dirt"
+      }
+    },
+    "ground_1_grass": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          0,
+          -27
+        ],
+        "size": [
+          672,
+          10
+        ],
+        "modulate": "#ffffff",
+        "texture": "asset:grass"
+      }
+    },
+    "ground_2": {
+      "type": "Body2D",
+      "props": {
+        "position": [
+          800,
+          240
+        ],
+        "size": [
+          448,
+          64
+        ],
+        "body": "static",
+        "friction": 0.2
+      },
+      "tags": [
+        "ground"
+      ],
+      "children": [
+        "ground_2_dirt",
+        "ground_2_grass"
+      ]
+    },
+    "ground_2_dirt": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          448,
+          64
+        ],
+        "modulate": "#ffffff",
+        "texture": "asset:dirt"
+      }
+    },
+    "ground_2_grass": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          0,
+          -27
+        ],
+        "size": [
+          448,
+          10
+        ],
+        "modulate": "#ffffff",
+        "texture": "asset:grass"
+      }
+    },
+    "ground_3": {
+      "type": "Body2D",
+      "props": {
+        "position": [
+          1352,
+          240
+        ],
+        "size": [
+          496,
+          64
+        ],
+        "body": "static",
+        "friction": 0.2
+      },
+      "tags": [
+        "ground"
+      ],
+      "children": [
+        "ground_3_dirt",
+        "ground_3_grass"
+      ]
+    },
+    "ground_3_dirt": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          496,
+          64
+        ],
+        "modulate": "#ffffff",
+        "texture": "asset:dirt"
+      }
+    },
+    "ground_3_grass": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          0,
+          -27
+        ],
+        "size": [
+          496,
+          10
+        ],
+        "modulate": "#ffffff",
+        "texture": "asset:grass"
+      }
+    },
+    "ground_4": {
+      "type": "Body2D",
+      "props": {
+        "position": [
+          1920,
+          240
+        ],
+        "size": [
+          320,
+          64
+        ],
+        "body": "static",
+        "friction": 0.2
+      },
+      "tags": [
+        "ground"
+      ],
+      "children": [
+        "ground_4_dirt",
+        "ground_4_grass"
+      ]
+    },
+    "ground_4_dirt": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          320,
+          64
+        ],
+        "modulate": "#ffffff",
+        "texture": "asset:dirt"
+      }
+    },
+    "ground_4_grass": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          0,
+          -27
+        ],
+        "size": [
+          320,
+          10
+        ],
+        "modulate": "#ffffff",
+        "texture": "asset:grass"
+      }
+    },
+    "ground_5": {
+      "type": "Body2D",
+      "props": {
+        "position": [
+          2528,
+          240
+        ],
+        "size": [
+          448,
+          64
+        ],
+        "body": "static",
+        "friction": 0.2
+      },
+      "tags": [
+        "ground"
+      ],
+      "children": [
+        "ground_5_dirt",
+        "ground_5_grass"
+      ]
+    },
+    "ground_5_dirt": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          448,
+          64
+        ],
+        "modulate": "#ffffff",
+        "texture": "asset:dirt"
+      }
+    },
+    "ground_5_grass": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          0,
+          -27
+        ],
+        "size": [
+          448,
+          10
+        ],
+        "modulate": "#ffffff",
+        "texture": "asset:grass"
+      }
+    },
+    "ground_6": {
+      "type": "Body2D",
+      "props": {
+        "position": [
+          3024,
+          240
+        ],
+        "size": [
+          352,
+          64
+        ],
+        "body": "static",
+        "friction": 0.2
+      },
+      "tags": [
+        "ground"
+      ],
+      "children": [
+        "ground_6_dirt",
+        "ground_6_grass"
+      ]
+    },
+    "ground_6_dirt": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          352,
+          64
+        ],
+        "modulate": "#ffffff",
+        "texture": "asset:dirt"
+      }
+    },
+    "ground_6_grass": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          0,
+          -27
+        ],
+        "size": [
+          352,
+          10
+        ],
+        "modulate": "#ffffff",
+        "texture": "asset:grass"
+      }
+    },
+    "ground_7": {
+      "type": "Body2D",
+      "props": {
+        "position": [
+          3680,
+          240
+        ],
+        "size": [
+          320,
+          64
+        ],
+        "body": "static",
+        "friction": 0.2
+      },
+      "tags": [
+        "ground"
+      ],
+      "children": [
+        "ground_7_dirt",
+        "ground_7_grass"
+      ]
+    },
+    "ground_7_dirt": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          320,
+          64
+        ],
+        "modulate": "#ffffff",
+        "texture": "asset:dirt"
+      }
+    },
+    "ground_7_grass": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          0,
+          -27
+        ],
+        "size": [
+          320,
+          10
+        ],
+        "modulate": "#ffffff",
+        "texture": "asset:grass"
+      }
+    },
+    "ground_8": {
+      "type": "Body2D",
+      "props": {
+        "position": [
+          4272,
+          240
+        ],
+        "size": [
+          480,
+          64
+        ],
+        "body": "static",
+        "friction": 0.2
+      },
+      "tags": [
+        "ground"
+      ],
+      "children": [
+        "ground_8_dirt",
+        "ground_8_grass"
+      ]
+    },
+    "ground_8_dirt": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          480,
+          64
+        ],
+        "modulate": "#ffffff",
+        "texture": "asset:dirt"
+      }
+    },
+    "ground_8_grass": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          0,
+          -27
+        ],
+        "size": [
+          480,
+          10
+        ],
+        "modulate": "#ffffff",
+        "texture": "asset:grass"
+      }
+    },
+    "platforms": {
+      "type": "Folder",
+      "name": "Platforms",
+      "children": [
+        "plat_1",
+        "plat_2",
+        "plat_3",
+        "plat_4",
+        "plat_5",
+        "plat_6",
+        "plat_7",
+        "plat_8",
+        "plat_9",
+        "plat_10",
+        "plat_11",
+        "plat_12",
+        "plat_13",
+        "plat_14"
+      ]
+    },
+    "plat_1": {
+      "type": "Body2D",
+      "props": {
+        "position": [
+          352,
+          144
+        ],
+        "size": [
+          64,
+          16
+        ],
+        "body": "static",
+        "friction": 0.2
+      },
+      "tags": [
+        "platform"
+      ],
+      "children": [
+        "plat_1_art"
+      ]
+    },
+    "plat_1_art": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          64,
+          16
+        ],
+        "modulate": "#ffffff",
+        "texture": "asset:platform"
+      }
+    },
+    "plat_2": {
+      "type": "Body2D",
+      "props": {
+        "position": [
+          528,
+          144
+        ],
+        "size": [
+          64,
+          16
+        ],
+        "body": "static",
+        "friction": 0.2
+      },
+      "tags": [
+        "platform"
+      ],
+      "children": [
+        "plat_2_art"
+      ]
+    },
+    "plat_2_art": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          64,
+          16
+        ],
+        "modulate": "#ffffff",
+        "texture": "asset:platform"
+      }
+    },
+    "plat_3": {
+      "type": "Body2D",
+      "props": {
+        "position": [
+          1680,
+          160
+        ],
+        "size": [
+          48,
+          16
+        ],
+        "body": "static",
+        "friction": 0.2
+      },
+      "tags": [
+        "platform"
+      ],
+      "children": [
+        "plat_3_art"
+      ]
+    },
+    "plat_3_art": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          48,
+          16
+        ],
+        "modulate": "#ffffff",
+        "texture": "asset:platform"
+      }
+    },
+    "plat_4": {
+      "type": "Body2D",
+      "props": {
+        "position": [
+          1984,
+          144
+        ],
+        "size": [
+          64,
+          16
+        ],
+        "body": "static",
+        "friction": 0.2
+      },
+      "tags": [
+        "platform"
+      ],
+      "children": [
+        "plat_4_art"
+      ]
+    },
+    "plat_4_art": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          64,
+          16
+        ],
+        "modulate": "#ffffff",
+        "texture": "asset:platform"
+      }
+    },
+    "plat_5": {
+      "type": "Body2D",
+      "props": {
+        "position": [
+          2080,
+          104
+        ],
+        "size": [
+          48,
+          16
+        ],
+        "body": "static",
+        "friction": 0.2
+      },
+      "tags": [
+        "platform"
+      ],
+      "children": [
+        "plat_5_art"
+      ]
+    },
+    "plat_5_art": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          48,
+          16
+        ],
+        "modulate": "#ffffff",
+        "texture": "asset:platform"
+      }
+    },
+    "plat_6": {
+      "type": "Body2D",
+      "props": {
+        "position": [
+          2152,
+          152
+        ],
+        "size": [
+          48,
+          16
+        ],
+        "body": "static",
+        "friction": 0.2
+      },
+      "tags": [
+        "platform"
+      ],
+      "children": [
+        "plat_6_art"
+      ]
+    },
+    "plat_6_art": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          48,
+          16
+        ],
+        "modulate": "#ffffff",
+        "texture": "asset:platform"
+      }
+    },
+    "plat_7": {
+      "type": "Body2D",
+      "props": {
+        "position": [
+          2240,
+          128
+        ],
+        "size": [
+          48,
+          16
+        ],
+        "body": "static",
+        "friction": 0.2
+      },
+      "tags": [
+        "platform"
+      ],
+      "children": [
+        "plat_7_art"
+      ]
+    },
+    "plat_7_art": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          48,
+          16
+        ],
+        "modulate": "#ffffff",
+        "texture": "asset:platform"
+      }
+    },
+    "plat_8": {
+      "type": "Body2D",
+      "props": {
+        "position": [
+          2528,
+          136
+        ],
+        "size": [
+          96,
+          16
+        ],
+        "body": "static",
+        "friction": 0.2
+      },
+      "tags": [
+        "platform"
+      ],
+      "children": [
+        "plat_8_art"
+      ]
+    },
+    "plat_8_art": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          96,
+          16
+        ],
+        "modulate": "#ffffff",
+        "texture": "asset:platform"
+      }
+    },
+    "plat_9": {
+      "type": "Body2D",
+      "props": {
+        "position": [
+          3264,
+          160
+        ],
+        "size": [
+          48,
+          16
+        ],
+        "body": "static",
+        "friction": 0.2
+      },
+      "tags": [
+        "platform"
+      ],
+      "children": [
+        "plat_9_art"
+      ]
+    },
+    "plat_9_art": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          48,
+          16
+        ],
+        "modulate": "#ffffff",
+        "texture": "asset:platform"
+      }
+    },
+    "plat_10": {
+      "type": "Body2D",
+      "props": {
+        "position": [
+          3360,
+          124
+        ],
+        "size": [
+          48,
+          16
+        ],
+        "body": "static",
+        "friction": 0.2
+      },
+      "tags": [
+        "platform"
+      ],
+      "children": [
+        "plat_10_art"
+      ]
+    },
+    "plat_10_art": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          48,
+          16
+        ],
+        "modulate": "#ffffff",
+        "texture": "asset:platform"
+      }
+    },
+    "plat_11": {
+      "type": "Body2D",
+      "props": {
+        "position": [
+          3456,
+          152
+        ],
+        "size": [
+          48,
+          16
+        ],
+        "body": "static",
+        "friction": 0.2
+      },
+      "tags": [
+        "platform"
+      ],
+      "children": [
+        "plat_11_art"
+      ]
+    },
+    "plat_11_art": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          48,
+          16
+        ],
+        "modulate": "#ffffff",
+        "texture": "asset:platform"
+      }
+    },
+    "plat_12": {
+      "type": "Body2D",
+      "props": {
+        "position": [
+          3904,
+          160
+        ],
+        "size": [
+          48,
+          16
+        ],
+        "body": "static",
+        "friction": 0.2
+      },
+      "tags": [
+        "platform"
+      ],
+      "children": [
+        "plat_12_art"
+      ]
+    },
+    "plat_12_art": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          48,
+          16
+        ],
+        "modulate": "#ffffff",
+        "texture": "asset:platform"
+      }
+    },
+    "plat_13": {
+      "type": "Body2D",
+      "props": {
+        "position": [
+          3984,
+          120
+        ],
+        "size": [
+          48,
+          16
+        ],
+        "body": "static",
+        "friction": 0.2
+      },
+      "tags": [
+        "platform"
+      ],
+      "children": [
+        "plat_13_art"
+      ]
+    },
+    "plat_13_art": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          48,
+          16
+        ],
+        "modulate": "#ffffff",
+        "texture": "asset:platform"
+      }
+    },
+    "plat_14": {
+      "type": "Body2D",
+      "props": {
+        "position": [
+          4200,
+          136
+        ],
+        "size": [
+          64,
+          16
+        ],
+        "body": "static",
+        "friction": 0.2
+      },
+      "tags": [
+        "platform"
+      ],
+      "children": [
+        "plat_14_art"
+      ]
+    },
+    "plat_14_art": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          64,
+          16
+        ],
+        "modulate": "#ffffff",
+        "texture": "asset:platform"
+      }
+    },
+    "spike_pits": {
+      "type": "Folder",
+      "name": "Spike Pits",
+      "children": [
+        "spike_1",
+        "spike_2",
+        "spike_3",
+        "spike_4",
+        "spike_5",
+        "spike_6",
+        "spike_7"
+      ]
+    },
+    "spike_1": {
+      "type": "Area2D",
+      "props": {
+        "position": [
+          528,
+          260
+        ],
+        "size": [
+          96,
+          24
+        ]
+      },
+      "tags": [
+        "spike"
+      ]
+    },
+    "spike_2": {
+      "type": "Area2D",
+      "props": {
+        "position": [
+          1064,
+          260
+        ],
+        "size": [
+          80,
+          24
+        ]
+      },
+      "tags": [
+        "spike"
+      ]
+    },
+    "spike_3": {
+      "type": "Area2D",
+      "props": {
+        "position": [
+          1680,
+          260
+        ],
+        "size": [
+          160,
+          24
+        ]
+      },
+      "tags": [
+        "spike"
+      ]
+    },
+    "spike_4": {
+      "type": "Area2D",
+      "props": {
+        "position": [
+          2192,
+          260
+        ],
+        "size": [
+          224,
+          24
+        ]
+      },
+      "tags": [
+        "spike"
+      ]
+    },
+    "spike_5": {
+      "type": "Area2D",
+      "props": {
+        "position": [
+          2800,
+          260
+        ],
+        "size": [
+          96,
+          24
+        ]
+      },
+      "tags": [
+        "spike"
+      ]
+    },
+    "spike_6": {
+      "type": "Area2D",
+      "props": {
+        "position": [
+          3360,
+          260
+        ],
+        "size": [
+          320,
+          24
+        ]
+      },
+      "tags": [
+        "spike"
+      ]
+    },
+    "spike_7": {
+      "type": "Area2D",
+      "props": {
+        "position": [
+          3936,
+          260
+        ],
+        "size": [
+          192,
+          24
+        ]
+      },
+      "tags": [
+        "spike"
+      ]
+    },
+    "gems": {
+      "type": "Folder",
+      "name": "Gems",
+      "children": [
+        "gem_1",
+        "gem_2",
+        "gem_3",
+        "gem_4",
+        "gem_5",
+        "gem_6",
+        "gem_7",
+        "gem_8",
+        "gem_9",
+        "gem_10",
+        "gem_11",
+        "gem_12",
+        "gem_13",
+        "gem_14",
+        "gem_15",
+        "gem_16",
+        "gem_17",
+        "gem_18"
+      ]
+    },
+    "gem_1": {
+      "type": "Area2D",
+      "props": {
+        "position": [
+          200,
+          180
+        ],
+        "size": [
+          12,
+          12
+        ]
+      },
+      "tags": [
+        "gem"
+      ],
+      "children": [
+        "gem_1_art"
+      ]
+    },
+    "gem_1_art": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          12,
+          12
+        ],
+        "rotation": 0,
+        "modulate": "#ffffff",
+        "texture": "asset:gem"
+      }
+    },
+    "gem_2": {
+      "type": "Area2D",
+      "props": {
+        "position": [
+          352,
+          120
+        ],
+        "size": [
+          12,
+          12
+        ]
+      },
+      "tags": [
+        "gem"
+      ],
+      "children": [
+        "gem_2_art"
+      ]
+    },
+    "gem_2_art": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          12,
+          12
+        ],
+        "rotation": 0,
+        "modulate": "#ffffff",
+        "texture": "asset:gem"
+      }
+    },
+    "gem_3": {
+      "type": "Area2D",
+      "props": {
+        "position": [
+          528,
+          120
+        ],
+        "size": [
+          12,
+          12
+        ]
+      },
+      "tags": [
+        "gem"
+      ],
+      "children": [
+        "gem_3_art"
+      ]
+    },
+    "gem_3_art": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          12,
+          12
+        ],
+        "rotation": 0,
+        "modulate": "#ffffff",
+        "texture": "asset:gem"
+      }
+    },
+    "gem_4": {
+      "type": "Area2D",
+      "props": {
+        "position": [
+          800,
+          180
+        ],
+        "size": [
+          12,
+          12
+        ]
+      },
+      "tags": [
+        "gem"
+      ],
+      "children": [
+        "gem_4_art"
+      ]
+    },
+    "gem_4_art": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          12,
+          12
+        ],
+        "rotation": 0,
+        "modulate": "#ffffff",
+        "texture": "asset:gem"
+      }
+    },
+    "gem_5": {
+      "type": "Area2D",
+      "props": {
+        "position": [
+          1064,
+          150
+        ],
+        "size": [
+          12,
+          12
+        ]
+      },
+      "tags": [
+        "gem"
+      ],
+      "children": [
+        "gem_5_art"
+      ]
+    },
+    "gem_5_art": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          12,
+          12
+        ],
+        "rotation": 0,
+        "modulate": "#ffffff",
+        "texture": "asset:gem"
+      }
+    },
+    "gem_6": {
+      "type": "Area2D",
+      "props": {
+        "position": [
+          1400,
+          180
+        ],
+        "size": [
+          12,
+          12
+        ]
+      },
+      "tags": [
+        "gem"
+      ],
+      "children": [
+        "gem_6_art"
+      ]
+    },
+    "gem_6_art": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          12,
+          12
+        ],
+        "rotation": 0,
+        "modulate": "#ffffff",
+        "texture": "asset:gem"
+      }
+    },
+    "gem_7": {
+      "type": "Area2D",
+      "props": {
+        "position": [
+          1680,
+          136
+        ],
+        "size": [
+          12,
+          12
+        ]
+      },
+      "tags": [
+        "gem"
+      ],
+      "children": [
+        "gem_7_art"
+      ]
+    },
+    "gem_7_art": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          12,
+          12
+        ],
+        "rotation": 0,
+        "modulate": "#ffffff",
+        "texture": "asset:gem"
+      }
+    },
+    "gem_8": {
+      "type": "Area2D",
+      "props": {
+        "position": [
+          1984,
+          120
+        ],
+        "size": [
+          12,
+          12
+        ]
+      },
+      "tags": [
+        "gem"
+      ],
+      "children": [
+        "gem_8_art"
+      ]
+    },
+    "gem_8_art": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          12,
+          12
+        ],
+        "rotation": 0,
+        "modulate": "#ffffff",
+        "texture": "asset:gem"
+      }
+    },
+    "gem_9": {
+      "type": "Area2D",
+      "props": {
+        "position": [
+          2080,
+          80
+        ],
+        "size": [
+          12,
+          12
+        ]
+      },
+      "tags": [
+        "gem"
+      ],
+      "children": [
+        "gem_9_art"
+      ]
+    },
+    "gem_9_art": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          12,
+          12
+        ],
+        "rotation": 0,
+        "modulate": "#ffffff",
+        "texture": "asset:gem"
+      }
+    },
+    "gem_10": {
+      "type": "Area2D",
+      "props": {
+        "position": [
+          2240,
+          104
+        ],
+        "size": [
+          12,
+          12
+        ]
+      },
+      "tags": [
+        "gem"
+      ],
+      "children": [
+        "gem_10_art"
+      ]
+    },
+    "gem_10_art": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          12,
+          12
+        ],
+        "rotation": 0,
+        "modulate": "#ffffff",
+        "texture": "asset:gem"
+      }
+    },
+    "gem_11": {
+      "type": "Area2D",
+      "props": {
+        "position": [
+          2528,
+          112
+        ],
+        "size": [
+          12,
+          12
+        ]
+      },
+      "tags": [
+        "gem"
+      ],
+      "children": [
+        "gem_11_art"
+      ]
+    },
+    "gem_11_art": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          12,
+          12
+        ],
+        "rotation": 0,
+        "modulate": "#ffffff",
+        "texture": "asset:gem"
+      }
+    },
+    "gem_12": {
+      "type": "Area2D",
+      "props": {
+        "position": [
+          2800,
+          150
+        ],
+        "size": [
+          12,
+          12
+        ]
+      },
+      "tags": [
+        "gem"
+      ],
+      "children": [
+        "gem_12_art"
+      ]
+    },
+    "gem_12_art": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          12,
+          12
+        ],
+        "rotation": 0,
+        "modulate": "#ffffff",
+        "texture": "asset:gem"
+      }
+    },
+    "gem_13": {
+      "type": "Area2D",
+      "props": {
+        "position": [
+          3360,
+          100
+        ],
+        "size": [
+          12,
+          12
+        ]
+      },
+      "tags": [
+        "gem"
+      ],
+      "children": [
+        "gem_13_art"
+      ]
+    },
+    "gem_13_art": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          12,
+          12
+        ],
+        "rotation": 0,
+        "modulate": "#ffffff",
+        "texture": "asset:gem"
+      }
+    },
+    "gem_14": {
+      "type": "Area2D",
+      "props": {
+        "position": [
+          3456,
+          128
+        ],
+        "size": [
+          12,
+          12
+        ]
+      },
+      "tags": [
+        "gem"
+      ],
+      "children": [
+        "gem_14_art"
+      ]
+    },
+    "gem_14_art": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          12,
+          12
+        ],
+        "rotation": 0,
+        "modulate": "#ffffff",
+        "texture": "asset:gem"
+      }
+    },
+    "gem_15": {
+      "type": "Area2D",
+      "props": {
+        "position": [
+          3680,
+          180
+        ],
+        "size": [
+          12,
+          12
+        ]
+      },
+      "tags": [
+        "gem"
+      ],
+      "children": [
+        "gem_15_art"
+      ]
+    },
+    "gem_15_art": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          12,
+          12
+        ],
+        "rotation": 0,
+        "modulate": "#ffffff",
+        "texture": "asset:gem"
+      }
+    },
+    "gem_16": {
+      "type": "Area2D",
+      "props": {
+        "position": [
+          3984,
+          96
+        ],
+        "size": [
+          12,
+          12
+        ]
+      },
+      "tags": [
+        "gem"
+      ],
+      "children": [
+        "gem_16_art"
+      ]
+    },
+    "gem_16_art": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          12,
+          12
+        ],
+        "rotation": 0,
+        "modulate": "#ffffff",
+        "texture": "asset:gem"
+      }
+    },
+    "gem_17": {
+      "type": "Area2D",
+      "props": {
+        "position": [
+          4200,
+          112
+        ],
+        "size": [
+          12,
+          12
+        ]
+      },
+      "tags": [
+        "gem"
+      ],
+      "children": [
+        "gem_17_art"
+      ]
+    },
+    "gem_17_art": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          12,
+          12
+        ],
+        "rotation": 0,
+        "modulate": "#ffffff",
+        "texture": "asset:gem"
+      }
+    },
+    "gem_18": {
+      "type": "Area2D",
+      "props": {
+        "position": [
+          4320,
+          180
+        ],
+        "size": [
+          12,
+          12
+        ]
+      },
+      "tags": [
+        "gem"
+      ],
+      "children": [
+        "gem_18_art"
+      ]
+    },
+    "gem_18_art": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          12,
+          12
+        ],
+        "rotation": 0,
+        "modulate": "#ffffff",
+        "texture": "asset:gem"
+      }
+    },
+    "beetles": {
+      "type": "Folder",
+      "name": "Beetles",
+      "children": [
+        "beetle_1",
+        "beetle_2",
+        "beetle_3",
+        "beetle_4",
+        "beetle_5",
+        "beetle_6",
+        "beetle_7",
+        "beetle_8"
+      ]
+    },
+    "beetle_1": {
+      "type": "Area2D",
+      "props": {
+        "position": [
+          820,
+          201
+        ],
+        "size": [
+          20,
+          14
+        ]
+      },
+      "tags": [
+        "beetle",
+        "enemy"
+      ],
+      "children": [
+        "beetle_1_art"
+      ]
+    },
+    "beetle_1_art": {
+      "type": "Node2D",
+      "props": {
+        "scale": [
+          -1,
+          1
+        ]
+      },
+      "children": [
+        "beetle_1_shell",
+        "beetle_1_head"
+      ]
+    },
+    "beetle_1_shell": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          0,
+          0
+        ],
+        "size": [
+          20,
+          12
+        ],
+        "modulate": "#ffffff",
+        "texture": "asset:beetle_1"
+      }
+    },
+    "beetle_1_head": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          9,
+          2
+        ],
+        "size": [
+          6,
+          6
+        ],
+        "modulate": "#2b2b3a",
+        "visible": false
+      }
+    },
+    "beetle_2": {
+      "type": "Area2D",
+      "props": {
+        "position": [
+          1300,
+          201
+        ],
+        "size": [
+          20,
+          14
+        ]
+      },
+      "tags": [
+        "beetle",
+        "enemy"
+      ],
+      "children": [
+        "beetle_2_art"
+      ]
+    },
+    "beetle_2_art": {
+      "type": "Node2D",
+      "props": {
+        "scale": [
+          -1,
+          1
+        ]
+      },
+      "children": [
+        "beetle_2_shell",
+        "beetle_2_head"
+      ]
+    },
+    "beetle_2_shell": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          0,
+          0
+        ],
+        "size": [
+          20,
+          12
+        ],
+        "modulate": "#ffffff",
+        "texture": "asset:beetle_1"
+      }
+    },
+    "beetle_2_head": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          9,
+          2
+        ],
+        "size": [
+          6,
+          6
+        ],
+        "modulate": "#2b2b3a",
+        "visible": false
+      }
+    },
+    "beetle_3": {
+      "type": "Area2D",
+      "props": {
+        "position": [
+          1900,
+          201
+        ],
+        "size": [
+          20,
+          14
+        ]
+      },
+      "tags": [
+        "beetle",
+        "enemy"
+      ],
+      "children": [
+        "beetle_3_art"
+      ]
+    },
+    "beetle_3_art": {
+      "type": "Node2D",
+      "props": {
+        "scale": [
+          -1,
+          1
+        ]
+      },
+      "children": [
+        "beetle_3_shell",
+        "beetle_3_head"
+      ]
+    },
+    "beetle_3_shell": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          0,
+          0
+        ],
+        "size": [
+          20,
+          12
+        ],
+        "modulate": "#ffffff",
+        "texture": "asset:beetle_1"
+      }
+    },
+    "beetle_3_head": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          9,
+          2
+        ],
+        "size": [
+          6,
+          6
+        ],
+        "modulate": "#2b2b3a",
+        "visible": false
+      }
+    },
+    "beetle_4": {
+      "type": "Area2D",
+      "props": {
+        "position": [
+          2450,
+          201
+        ],
+        "size": [
+          20,
+          14
+        ]
+      },
+      "tags": [
+        "beetle",
+        "enemy"
+      ],
+      "children": [
+        "beetle_4_art"
+      ]
+    },
+    "beetle_4_art": {
+      "type": "Node2D",
+      "props": {
+        "scale": [
+          -1,
+          1
+        ]
+      },
+      "children": [
+        "beetle_4_shell",
+        "beetle_4_head"
+      ]
+    },
+    "beetle_4_shell": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          0,
+          0
+        ],
+        "size": [
+          20,
+          12
+        ],
+        "modulate": "#ffffff",
+        "texture": "asset:beetle_1"
+      }
+    },
+    "beetle_4_head": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          9,
+          2
+        ],
+        "size": [
+          6,
+          6
+        ],
+        "modulate": "#2b2b3a",
+        "visible": false
+      }
+    },
+    "beetle_5": {
+      "type": "Area2D",
+      "props": {
+        "position": [
+          2650,
+          201
+        ],
+        "size": [
+          20,
+          14
+        ]
+      },
+      "tags": [
+        "beetle",
+        "enemy"
+      ],
+      "children": [
+        "beetle_5_art"
+      ]
+    },
+    "beetle_5_art": {
+      "type": "Node2D",
+      "props": {
+        "scale": [
+          -1,
+          1
+        ]
+      },
+      "children": [
+        "beetle_5_shell",
+        "beetle_5_head"
+      ]
+    },
+    "beetle_5_shell": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          0,
+          0
+        ],
+        "size": [
+          20,
+          12
+        ],
+        "modulate": "#ffffff",
+        "texture": "asset:beetle_1"
+      }
+    },
+    "beetle_5_head": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          9,
+          2
+        ],
+        "size": [
+          6,
+          6
+        ],
+        "modulate": "#2b2b3a",
+        "visible": false
+      }
+    },
+    "beetle_6": {
+      "type": "Area2D",
+      "props": {
+        "position": [
+          2950,
+          201
+        ],
+        "size": [
+          20,
+          14
+        ]
+      },
+      "tags": [
+        "beetle",
+        "enemy"
+      ],
+      "children": [
+        "beetle_6_art"
+      ]
+    },
+    "beetle_6_art": {
+      "type": "Node2D",
+      "props": {
+        "scale": [
+          -1,
+          1
+        ]
+      },
+      "children": [
+        "beetle_6_shell",
+        "beetle_6_head"
+      ]
+    },
+    "beetle_6_shell": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          0,
+          0
+        ],
+        "size": [
+          20,
+          12
+        ],
+        "modulate": "#ffffff",
+        "texture": "asset:beetle_1"
+      }
+    },
+    "beetle_6_head": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          9,
+          2
+        ],
+        "size": [
+          6,
+          6
+        ],
+        "modulate": "#2b2b3a",
+        "visible": false
+      }
+    },
+    "beetle_7": {
+      "type": "Area2D",
+      "props": {
+        "position": [
+          3700,
+          201
+        ],
+        "size": [
+          20,
+          14
+        ]
+      },
+      "tags": [
+        "beetle",
+        "enemy"
+      ],
+      "children": [
+        "beetle_7_art"
+      ]
+    },
+    "beetle_7_art": {
+      "type": "Node2D",
+      "props": {
+        "scale": [
+          -1,
+          1
+        ]
+      },
+      "children": [
+        "beetle_7_shell",
+        "beetle_7_head"
+      ]
+    },
+    "beetle_7_shell": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          0,
+          0
+        ],
+        "size": [
+          20,
+          12
+        ],
+        "modulate": "#ffffff",
+        "texture": "asset:beetle_1"
+      }
+    },
+    "beetle_7_head": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          9,
+          2
+        ],
+        "size": [
+          6,
+          6
+        ],
+        "modulate": "#2b2b3a",
+        "visible": false
+      }
+    },
+    "beetle_8": {
+      "type": "Area2D",
+      "props": {
+        "position": [
+          4150,
+          201
+        ],
+        "size": [
+          20,
+          14
+        ]
+      },
+      "tags": [
+        "beetle",
+        "enemy"
+      ],
+      "children": [
+        "beetle_8_art"
+      ]
+    },
+    "beetle_8_art": {
+      "type": "Node2D",
+      "props": {
+        "scale": [
+          -1,
+          1
+        ]
+      },
+      "children": [
+        "beetle_8_shell",
+        "beetle_8_head"
+      ]
+    },
+    "beetle_8_shell": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          0,
+          0
+        ],
+        "size": [
+          20,
+          12
+        ],
+        "modulate": "#ffffff",
+        "texture": "asset:beetle_1"
+      }
+    },
+    "beetle_8_head": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          9,
+          2
+        ],
+        "size": [
+          6,
+          6
+        ],
+        "modulate": "#2b2b3a",
+        "visible": false
+      }
+    },
+    "flag": {
+      "type": "Area2D",
+      "name": "Goal Flag",
+      "props": {
+        "position": [
+          4400,
+          176
+        ],
+        "size": [
+          24,
+          64
+        ]
+      },
+      "tags": [
+        "goal"
+      ],
+      "children": [
+        "flag_pole",
+        "flag_cloth",
+        "flag_star",
+        "flag_base"
+      ]
+    },
+    "flag_pole": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          -8,
+          0
+        ],
+        "size": [
+          4,
+          64
+        ],
+        "modulate": "#f0f0f0"
+      }
+    },
+    "flag_cloth": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          4,
+          -24
+        ],
+        "size": [
+          20,
+          14
+        ],
+        "modulate": "#ffffff",
+        "texture": "asset:flag_cloth"
+      }
+    },
+    "flag_star": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          4,
+          -24
+        ],
+        "size": [
+          5,
+          5
+        ],
+        "rotation": 45,
+        "modulate": "#ffe14a",
+        "visible": false
+      }
+    },
+    "flag_base": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          -8,
+          30
+        ],
+        "size": [
+          12,
+          4
+        ],
+        "modulate": "#8a94a6"
+      }
+    },
+    "signs": {
+      "type": "Folder",
+      "name": "Signs",
+      "children": [
+        "sign_level_1",
+        "sign_level_2",
+        "sign_level_3",
+        "sign_goal"
+      ]
+    },
+    "sign_level_1": {
+      "type": "Text2D",
+      "props": {
+        "position": [
+          96,
+          112
+        ],
+        "text": "LEVEL 1",
+        "font_size": 16,
+        "color": "#2b2b5a"
+      }
+    },
+    "sign_level_2": {
+      "type": "Text2D",
+      "props": {
+        "position": [
+          1520,
+          112
+        ],
+        "text": "LEVEL 2",
+        "font_size": 16,
+        "color": "#2b2b5a"
+      }
+    },
+    "sign_level_3": {
+      "type": "Text2D",
+      "props": {
+        "position": [
+          3140,
+          112
+        ],
+        "text": "LEVEL 3",
+        "font_size": 16,
+        "color": "#2b2b5a"
+      }
+    },
+    "sign_goal": {
+      "type": "Text2D",
+      "props": {
+        "position": [
+          4400,
+          112
+        ],
+        "text": "GOAL!",
+        "font_size": 16,
+        "color": "#ff3355"
+      }
+    },
+    "player": {
+      "type": "Body2D",
+      "name": "Fox",
+      "props": {
+        "position": [
+          48,
+          190
+        ],
+        "size": [
+          14,
+          24
+        ],
+        "body": "dynamic",
+        "shape": "rect",
+        "friction": 0,
+        "gravity_scale": 0,
+        "lock_rotation": true,
+        "z_index": 10
+      },
+      "scripts": [
+        "scripts/client/game.luau"
+      ],
+      "tags": [
+        "player"
+      ],
+      "children": [
+        "player_art"
+      ]
+    },
+    "player_art": {
+      "type": "Node2D",
+      "children": [
+        "fox_tail",
+        "fox_tail_tip",
+        "fox_leg_back",
+        "fox_leg_front",
+        "fox_body",
+        "fox_belly",
+        "fox_ear",
+        "fox_head",
+        "fox_snout",
+        "fox_nose",
+        "fox_eye",
+        "fox_scarf",
+        "fox_hat_brim",
+        "fox_hat_top"
+      ]
+    },
+    "fox_tail": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          -11,
+          3
+        ],
+        "size": [
+          10,
+          6
+        ],
+        "modulate": "#ff8c1a",
+        "visible": false
+      }
+    },
+    "fox_tail_tip": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          -17,
+          2
+        ],
+        "size": [
+          4,
+          6
+        ],
+        "modulate": "#fff3d6",
+        "visible": false
+      }
+    },
+    "fox_leg_back": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          -4,
+          10
+        ],
+        "size": [
+          4,
+          4
+        ],
+        "modulate": "#6b3a1a",
+        "visible": false
+      }
+    },
+    "fox_leg_front": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          4,
+          10
+        ],
+        "size": [
+          4,
+          4
+        ],
+        "modulate": "#6b3a1a",
+        "visible": false
+      }
+    },
+    "fox_body": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          0,
+          0
+        ],
+        "size": [
+          24,
+          24
+        ],
+        "modulate": "#ffffff",
+        "texture": "asset:fox_idle"
+      }
+    },
+    "fox_belly": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          2,
+          5
+        ],
+        "size": [
+          6,
+          8
+        ],
+        "modulate": "#fff3d6",
+        "visible": false
+      }
+    },
+    "fox_ear": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          -2,
+          -13
+        ],
+        "size": [
+          4,
+          5
+        ],
+        "modulate": "#ff8c1a",
+        "visible": false
+      }
+    },
+    "fox_head": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          2,
+          -6
+        ],
+        "size": [
+          14,
+          10
+        ],
+        "modulate": "#ff8c1a",
+        "visible": false
+      }
+    },
+    "fox_snout": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          10,
+          -4
+        ],
+        "size": [
+          4,
+          4
+        ],
+        "modulate": "#fff3d6",
+        "visible": false
+      }
+    },
+    "fox_nose": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          12,
+          -5
+        ],
+        "size": [
+          2,
+          2
+        ],
+        "modulate": "#2b2b3a",
+        "visible": false
+      }
+    },
+    "fox_eye": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          5,
+          -7
+        ],
+        "size": [
+          2,
+          3
+        ],
+        "modulate": "#2b2b3a",
+        "visible": false
+      }
+    },
+    "fox_scarf": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          1,
+          -1
+        ],
+        "size": [
+          12,
+          3
+        ],
+        "modulate": "#2fbf71",
+        "visible": false
+      }
+    },
+    "fox_hat_brim": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          3,
+          -11
+        ],
+        "size": [
+          18,
+          3
+        ],
+        "modulate": "#8b5a2b",
+        "visible": false
+      }
+    },
+    "fox_hat_top": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          3,
+          -15
+        ],
+        "size": [
+          10,
+          5
+        ],
+        "modulate": "#a8743d",
+        "visible": false
+      }
+    },
+    "camera": {
+      "type": "Camera2D",
+      "props": {
+        "position": [
+          48,
+          190
+        ],
+        "zoom": 2,
+        "follow": "player",
+        "current": true
+      }
+    },
+    "hud": {
+      "type": "Folder",
+      "name": "HUD",
+      "children": [
+        "hud_lives",
+        "hud_gems",
+        "hud_level",
+        "game_over_screen",
+        "win_screen"
+      ]
+    },
+    "hud_lives": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          16,
+          12
+        ],
+        "size": [
+          260,
+          44
+        ],
+        "font_size": 30,
+        "text": "LIVES 3",
+        "color": "#ffffff",
+        "z_index": 10
+      }
+    },
+    "hud_gems": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          16,
+          52
+        ],
+        "size": [
+          260,
+          44
+        ],
+        "font_size": 30,
+        "text": "GEMS 0/18",
+        "color": "#7ff7ff",
+        "z_index": 10
+      }
+    },
+    "hud_level": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top",
+        "offset": [
+          0,
+          12
+        ],
+        "size": [
+          240,
+          44
+        ],
+        "font_size": 30,
+        "align": "center",
+        "text": "LEVEL 1/3",
+        "color": "#ffe14a",
+        "z_index": 10
+      }
+    },
+    "game_over_screen": {
+      "type": "UIPanel",
+      "props": {
+        "anchor": "center",
+        "size": [
+          520,
+          320
+        ],
+        "background": "#2b1840e6",
+        "visible": false,
+        "z_index": 100
+      },
+      "children": [
+        "game_over_title",
+        "game_over_detail",
+        "retry_button"
+      ]
+    },
+    "game_over_title": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top",
+        "offset": [
+          0,
+          30
+        ],
+        "size": [
+          480,
+          70
+        ],
+        "font_size": 56,
+        "align": "center",
+        "text": "GAME OVER",
+        "color": "#ff5f7a"
+      }
+    },
+    "game_over_detail": {
+      "type": "UIText",
+      "props": {
+        "anchor": "center",
+        "offset": [
+          0,
+          0
+        ],
+        "size": [
+          480,
+          80
+        ],
+        "font_size": 28,
+        "align": "center",
+        "text": "",
+        "color": "#ffffff"
+      }
+    },
+    "retry_button": {
+      "type": "UIButton",
+      "props": {
+        "anchor": "bottom",
+        "offset": [
+          0,
+          -30
+        ],
+        "size": [
+          260,
+          70
+        ],
+        "font_size": 32,
+        "text": "TRY AGAIN",
+        "color": "#ffffff",
+        "background": "#ff8c1aff"
+      }
+    },
+    "win_screen": {
+      "type": "UIPanel",
+      "props": {
+        "anchor": "center",
+        "size": [
+          520,
+          320
+        ],
+        "background": "#14405ae6",
+        "visible": false,
+        "z_index": 100
+      },
+      "children": [
+        "win_title",
+        "win_detail",
+        "play_again_button"
+      ]
+    },
+    "win_title": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top",
+        "offset": [
+          0,
+          30
+        ],
+        "size": [
+          480,
+          70
+        ],
+        "font_size": 56,
+        "align": "center",
+        "text": "YOU WIN!",
+        "color": "#ffe14a"
+      }
+    },
+    "win_detail": {
+      "type": "UIText",
+      "props": {
+        "anchor": "center",
+        "offset": [
+          0,
+          0
+        ],
+        "size": [
+          480,
+          80
+        ],
+        "font_size": 28,
+        "align": "center",
+        "text": "",
+        "color": "#ffffff"
+      }
+    },
+    "play_again_button": {
+      "type": "UIButton",
+      "props": {
+        "anchor": "bottom",
+        "offset": [
+          0,
+          -30
+        ],
+        "size": [
+          260,
+          70
+        ],
+        "font_size": 32,
+        "text": "PLAY AGAIN",
+        "color": "#ffffff",
+        "background": "#2fbf71ff"
+      }
+    }
+  }
+}

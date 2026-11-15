@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="1280" viewBox="0 0 720 1280">
+<defs><linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4b3a33"/><stop offset="1" stop-color="#4b3a33"/></linearGradient></defs>
+<rect width="720" height="1280" fill="url(#s)"/>
+<rect width="720" height="1280" fill="#4b3a33"/>
+<g stroke="#2a2233" stroke-width="4" opacity="0.55"><path d="M0 0 V1280"/><path d="M80 0 V1280"/><path d="M160 0 V1280"/><path d="M240 0 V1280"/><path d="M320 0 V1280"/><path d="M400 0 V1280"/><path d="M480 0 V1280"/><path d="M560 0 V1280"/><path d="M640 0 V1280"/></g>
+<path d="M0 780 H720 V1280 H0 Z" fill="#6b5244"/>
+<g stroke="#2a2233" stroke-width="3" opacity="0.4"><path d="M0 820 H720"/><path d="M0 870 H720"/><path d="M0 920 H720"/><path d="M0 970 H720"/><path d="M0 1020 H720"/><path d="M0 1070 H720"/><path d="M0 1120 H720"/><path d="M0 1170 H720"/><path d="M0 1220 H720"/><path d="M0 1270 H720"/></g>
+<rect x="40" y="120" width="300" height="24" fill="#8a5a3c" stroke="#2a2233" stroke-width="5"/>
+<path d="M60 70 h60 v50 h-60 Z M150 90 h40 v30 h-40 Z M230 60 h80 v60 h-80 Z" fill="#9fb4c8" stroke="#2a2233" stroke-width="4"/>
+<path d="M420 100 h260 v120 h-260 Z" fill="#1d2440" stroke="#2a2233" stroke-width="8"/><path d="M550 100 V220" stroke="#2a2233" stroke-width="6"/></svg>

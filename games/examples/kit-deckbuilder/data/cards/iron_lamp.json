@@ -1,0 +1,12 @@
+{
+ "name": "Iron Lamp",
+ "cost": 2,
+ "type": "attack",
+ "rarity": "common",
+ "effects": [
+  "damage 12",
+  "apply weak 1"
+ ],
+ "character": "wick",
+ "art": "asset:art_strike"
+}

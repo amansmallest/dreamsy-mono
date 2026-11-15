@@ -1,0 +1,16 @@
+{
+  "format": "0",
+  "root": "dungeon_root",
+  "entities": {
+    "dungeon_root": { "type": "Node2D", "name": "Dungeon", "children": ["camera_main", "map", "pickups", "player", "hud_panel", "hud_text", "status_text", "msg_text"], "scripts": ["scripts/client/run.luau"] },
+    "camera_main": { "type": "Camera2D", "props": { "zoom": 3, "smoothing": 0.6, "follow": "player" } },
+    "map": { "type": "TileMap2D", "name": "Floor", "props": { "tile_size": 16, "tileset": "data/tilesets/dungeon.json", "data": "#", "layer": "world", "z_index": 0 } },
+    "pickups": { "type": "Node2D", "name": "Pickups", "props": { "z_index": 2 } },
+    "player": { "type": "Body2D", "name": "Hero", "props": { "position": [24, 24], "body": "dynamic", "gravity_scale": 0, "lock_rotation": true, "friction": 0, "shape": "circle", "size": [10, 10], "layer": "player", "mask": "world", "z_index": 5 }, "children": ["player_sprite"], "tags": ["player"] },
+    "player_sprite": { "type": "Sprite2D", "props": { "texture": "asset:hero", "size": [12, 12] } },
+    "hud_panel": { "type": "UIPanel", "props": { "anchor": "top", "offset": [0, 16], "size": [680, 112], "background": "#1a1c2ccc" } },
+    "hud_text": { "type": "UIText", "props": { "anchor": "top", "offset": [0, 26], "size": [660, 48], "font_size": 34, "align": "center", "color": "#f4f4f4", "font": "pixel", "outline": "#1a1c2c", "outline_size": 3 } },
+    "status_text": { "type": "UIText", "props": { "anchor": "top", "offset": [0, 76], "size": [660, 40], "font_size": 24, "align": "center", "color": "#ffcd75", "font": "pixel" } },
+    "msg_text": { "type": "UIText", "props": { "anchor": "center", "offset": [0, -200], "size": [680, 120], "font_size": 40, "align": "center", "color": "#ffcd75", "font": "pixel", "outline": "#1a1c2c", "outline_size": 4 } }
+  }
+}

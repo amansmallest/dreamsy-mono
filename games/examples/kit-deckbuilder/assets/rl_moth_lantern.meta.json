@@ -1,0 +1,8 @@
+{
+ "kind": "image",
+ "file": "rl_moth_lantern.svg",
+ "source": {
+  "model": "claude-opus-5-5",
+  "prompt": "hand-written SVG"
+ }
+}

@@ -1,0 +1,23 @@
+{
+ "title": "First Haul",
+ "autoStart": true,
+ "steps": [
+  {
+   "id": "s1",
+   "text": "Collect 25 pebbles",
+   "objectives": [
+    {
+     "id": "o",
+     "event": "sim_collected",
+     "count": 25
+    }
+   ]
+  }
+ ],
+ "rewards": [
+  {
+   "earn": "coins",
+   "amount": 40
+  }
+ ]
+}

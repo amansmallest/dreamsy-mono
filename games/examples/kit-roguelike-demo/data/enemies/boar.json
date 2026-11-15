@@ -1,0 +1,30 @@
+{
+  "id": "boar",
+  "name": "Boar",
+  "sprite": "asset:boar",
+  "size": 11,
+  "cost": 3,
+  "hp": 7,
+  "minLevel": 2,
+  "behavior": "charge",
+  "params": {
+    "range": 90,
+    "windup": 0.55,
+    "speed": 190,
+    "duration": 0.45,
+    "cooldown": 1.4,
+    "walk": 22
+  },
+  "contact": {
+    "amount": 2,
+    "knockback": 220,
+    "status": {
+      "name": "stun",
+      "chance": 0.3,
+      "duration": 0.5
+    }
+  },
+  "armor": 1,
+  "knockbackResist": 0.5,
+  "loot": "rich"
+}

@@ -1,0 +1,18 @@
+{
+ "stages": [
+  1,
+  2,
+  1
+ ],
+ "regrow": 2,
+ "price": 25,
+ "seed": {
+  "price": 45,
+  "icon": "asset:peas_seeds"
+ },
+ "name": "Snap Peas",
+ "seasons": [
+  "spring"
+ ],
+ "icon": "asset:peas"
+}

@@ -1,0 +1,9 @@
+{
+  "name": "Pebble",
+  "order": 1,
+  "cost": {
+    "coins": 0
+  },
+  "tint": "#ffffff",
+  "description": "Plucky and round."
+}

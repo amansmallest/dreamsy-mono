@@ -1,0 +1,32 @@
+{
+  "id": "slime",
+  "name": "Slime",
+  "sprite": "asset:slime",
+  "size": 10,
+  "cost": 1,
+  "hp": 4,
+  "behavior": "chase",
+  "params": {
+    "speed": 34,
+    "aggro": 110,
+    "idle": "wander",
+    "radius": 30,
+    "pause": [
+      0.6,
+      1.4
+    ]
+  },
+  "contact": {
+    "amount": 1,
+    "knockback": 120,
+    "status": {
+      "name": "poison",
+      "chance": 0.35,
+      "duration": 3
+    }
+  },
+  "resist": {
+    "poison": 1
+  },
+  "loot": "common"
+}

@@ -1,0 +1,8 @@
+{
+  "name": "Star Tap",
+  "type": "star",
+  "category": "physical",
+  "power": 40,
+  "accuracy": 100,
+  "pp": 30
+}

@@ -1,0 +1,34 @@
+{
+  "idle": {
+    "frames": [
+      "asset:fox_idle_1",
+      "asset:fox_idle_2"
+    ],
+    "fps": 3
+  },
+  "run": {
+    "frames": [
+      "asset:fox_run_1",
+      "asset:fox_idle_1",
+      "asset:fox_run_2",
+      "asset:fox_idle_1"
+    ],
+    "fps": 12
+  },
+  "jump": {
+    "frames": [
+      "asset:fox_jump"
+    ],
+    "fps": 1
+  },
+  "hurt": {
+    "frames": [
+      "asset:fox_jump",
+      "asset:fox_idle_1",
+      "asset:fox_jump"
+    ],
+    "fps": 10,
+    "loop": false,
+    "next": "idle"
+  }
+}

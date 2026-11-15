@@ -1,0 +1,27 @@
+{
+ "bpm": 96,
+ "steps": 32,
+ "loop": true,
+ "channels": [
+  {
+   "wave": "triangle",
+   "volume": 0.35,
+   "notes": "C5 - E5 - G5 - E5 - D5 - - - C5 - D5 - E5 - - - G5 - A5 - G5 - E5 - D5 - C5 - - - . . . . A4 - C5 - D5 - C5 - A4 - G4 - - - A4 - C5 - E5 - D5 - C5 - - -"
+  },
+  {
+   "wave": "square",
+   "duty": 0.25,
+   "volume": 0.15,
+   "notes": "C3 - - - G3 - - - C3 - - - G3 - - - F3 - - - C4 - - - G3 - - - D3 - - - A2 - - - E3 - - - F3 - - - C3 - - - G2 - - - D3 - - - G3 - - - C3 - - -"
+  },
+  {
+   "wave": "noise",
+   "volume": 0.06,
+   "notes": "C2 . C7 . . . C7 . C2 . C7 . . . C7 . C2 . C7 . . . C7 . C2 . C7 . . . C7 . C2 . C7 . . . C7 . C2 . C7 . . . C7 . C2 . C7 . . . C7 . C2 . C7 . . . C7 ."
+  }
+ ],
+ "order": [
+  0,
+  1
+ ]
+}

@@ -1,0 +1,653 @@
+{
+  "format": "0",
+  "root": "world",
+  "entities": {
+    "world": {
+      "type": "Node2D",
+      "children": [
+        "sky",
+        "hills",
+        "fireflies",
+        "map",
+        "wall_l",
+        "wall_r",
+        "sign",
+        "player",
+        "slime",
+        "slime_2",
+        "sparkle",
+        "cam",
+        "hud",
+        "coin_1",
+        "coin_2",
+        "coin_3",
+        "coin_4",
+        "coin_5",
+        "coin_6",
+        "coin_7"
+      ]
+    },
+    "sky": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          240,
+          160
+        ],
+        "size": [
+          480,
+          320
+        ],
+        "modulate": "#29366f",
+        "z_index": -20
+      }
+    },
+    "hills": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          240,
+          250
+        ],
+        "size": [
+          480,
+          70
+        ],
+        "modulate": "#257179",
+        "z_index": -19
+      }
+    },
+    "fireflies": {
+      "type": "Particles2D",
+      "props": {
+        "position": [
+          240,
+          150
+        ],
+        "emission_size": [
+          480,
+          220
+        ],
+        "rate": 8,
+        "lifetime": 4,
+        "speed": 6,
+        "spread": 360,
+        "start_color": "#ffcd75",
+        "end_color": "#ffcd7500",
+        "start_size": 2,
+        "end_size": 1,
+        "shape": "square",
+        "z_index": -15
+      }
+    },
+    "map": {
+      "type": "TileMap2D",
+      "props": {
+        "tileset": "data/tilesets/world.json",
+        "data": "file:data/levels/level.txt",
+        "tile_size": 16,
+        "layer": "world"
+      }
+    },
+    "wall_l": {
+      "type": "Body2D",
+      "props": {
+        "position": [
+          -8,
+          160
+        ],
+        "size": [
+          16,
+          640
+        ],
+        "layer": "world"
+      }
+    },
+    "wall_r": {
+      "type": "Body2D",
+      "props": {
+        "position": [
+          488,
+          160
+        ],
+        "size": [
+          16,
+          640
+        ],
+        "layer": "world"
+      }
+    },
+    "sign": {
+      "type": "Text2D",
+      "props": {
+        "position": [
+          104,
+          236
+        ],
+        "text": "COLLECT\nTHE COINS!",
+        "font_size": 7,
+        "font": "pixel",
+        "color": "#ffcd75",
+        "outline": "#1a1c2c",
+        "outline_size": 1,
+        "shadow": "#1a1c2c",
+        "shadow_offset": [
+          1,
+          1
+        ]
+      }
+    },
+    "player": {
+      "type": "Body2D",
+      "props": {
+        "position": [
+          56,
+          250
+        ],
+        "size": [
+          10,
+          13
+        ],
+        "body": "dynamic",
+        "lock_rotation": true,
+        "friction": 0,
+        "layer": "player",
+        "mask": "world,pickup,enemy"
+      },
+      "tags": [
+        "player"
+      ],
+      "scripts": [
+        "scripts/client/player.luau"
+      ],
+      "children": [
+        "player_sprite",
+        "dust"
+      ]
+    },
+    "player_sprite": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          16,
+          16
+        ],
+        "position": [
+          0,
+          -1.5
+        ],
+        "anims": "data/anims/fox.json",
+        "anim": "idle",
+        "auto_flip": true
+      }
+    },
+    "dust": {
+      "type": "Particles2D",
+      "props": {
+        "position": [
+          0,
+          6
+        ],
+        "emitting": false,
+        "rate": 14,
+        "lifetime": 0.45,
+        "direction": -90,
+        "spread": 120,
+        "speed": 22,
+        "gravity": [
+          0,
+          40
+        ],
+        "start_color": "#f4f4f4cc",
+        "end_color": "#94b0c200",
+        "start_size": 3,
+        "end_size": 1,
+        "z_index": -1
+      }
+    },
+    "slime": {
+      "type": "Body2D",
+      "props": {
+        "position": [
+          300,
+          260
+        ],
+        "size": [
+          14,
+          9
+        ],
+        "body": "dynamic",
+        "lock_rotation": true,
+        "friction": 0,
+        "layer": "enemy",
+        "mask": "world,player"
+      },
+      "tags": [
+        "enemy"
+      ],
+      "scripts": [
+        "scripts/client/slime.luau"
+      ],
+      "children": [
+        "slime_sprite"
+      ]
+    },
+    "slime_sprite": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          16,
+          16
+        ],
+        "position": [
+          0,
+          -3.5
+        ],
+        "anims": "data/anims/slime.json",
+        "anim": "wobble",
+        "auto_flip": true
+      }
+    },
+    "slime_2": {
+      "type": "Body2D",
+      "props": {
+        "position": [
+          380,
+          260
+        ],
+        "size": [
+          14,
+          9
+        ],
+        "body": "dynamic",
+        "lock_rotation": true,
+        "friction": 0,
+        "layer": "enemy",
+        "mask": "world,player"
+      },
+      "tags": [
+        "enemy"
+      ],
+      "scripts": [
+        "scripts/client/slime.luau"
+      ],
+      "children": [
+        "slime_2_sprite"
+      ]
+    },
+    "slime_2_sprite": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          16,
+          16
+        ],
+        "position": [
+          0,
+          -3.5
+        ],
+        "anims": "data/anims/slime.json",
+        "anim": "wobble",
+        "auto_flip": true,
+        "modulate": "#ffcd75"
+      }
+    },
+    "sparkle": {
+      "type": "Particles2D",
+      "props": {
+        "emitting": false,
+        "lifetime": 0.6,
+        "speed": 70,
+        "spread": 360,
+        "damping": 3,
+        "gravity": [
+          0,
+          60
+        ],
+        "start_color": "#ffcd75",
+        "end_color": "#ef7d5700",
+        "start_size": 3,
+        "end_size": 1,
+        "texture": "asset:spark",
+        "z_index": 5
+      }
+    },
+    "cam": {
+      "type": "Camera2D",
+      "props": {
+        "follow": "player",
+        "zoom": 3,
+        "smoothing": 0.6,
+        "deadzone": [
+          24,
+          40
+        ],
+        "limit_min": [
+          0,
+          0
+        ],
+        "limit_max": [
+          480,
+          384
+        ]
+      }
+    },
+    "hud": {
+      "type": "UIPanel",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          16,
+          16
+        ],
+        "size": [
+          592,
+          112
+        ],
+        "background": "#1a1c2ccc"
+      },
+      "children": [
+        "hud_title",
+        "hud_coins",
+        "hud_runs"
+      ]
+    },
+    "hud_title": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top",
+        "offset": [
+          0,
+          10
+        ],
+        "size": [
+          560,
+          40
+        ],
+        "text": "DREAMSY ENGINE V3",
+        "font_size": 24,
+        "align": "center",
+        "color": "#73eff7",
+        "outline": "#29366f",
+        "outline_size": 3
+      }
+    },
+    "hud_coins": {
+      "type": "UIText",
+      "props": {
+        "anchor": "bottom_left",
+        "offset": [
+          20,
+          -10
+        ],
+        "size": [
+          260,
+          44
+        ],
+        "text": "COINS 0/7",
+        "font_size": 22,
+        "color": "#ffcd75",
+        "outline": "#1a1c2c",
+        "outline_size": 2
+      }
+    },
+    "hud_runs": {
+      "type": "UIText",
+      "props": {
+        "anchor": "bottom_right",
+        "offset": [
+          -20,
+          -10
+        ],
+        "size": [
+          300,
+          44
+        ],
+        "text": "RUN 1",
+        "font_size": 22,
+        "align": "right",
+        "color": "#a7f070",
+        "outline": "#1a1c2c",
+        "outline_size": 2
+      }
+    },
+    "coin_1": {
+      "type": "Area2D",
+      "props": {
+        "position": [
+          88,
+          192
+        ],
+        "size": [
+          10,
+          10
+        ],
+        "layer": "pickup",
+        "mask": "player"
+      },
+      "tags": [
+        "coin"
+      ],
+      "scripts": [
+        "scripts/client/coin.luau"
+      ],
+      "children": [
+        "coin_1_sprite"
+      ]
+    },
+    "coin_1_sprite": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          8,
+          8
+        ],
+        "texture": "asset:coin"
+      }
+    },
+    "coin_2": {
+      "type": "Area2D",
+      "props": {
+        "position": [
+          184,
+          160
+        ],
+        "size": [
+          10,
+          10
+        ],
+        "layer": "pickup",
+        "mask": "player"
+      },
+      "tags": [
+        "coin"
+      ],
+      "scripts": [
+        "scripts/client/coin.luau"
+      ],
+      "children": [
+        "coin_2_sprite"
+      ]
+    },
+    "coin_2_sprite": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          8,
+          8
+        ],
+        "texture": "asset:coin"
+      }
+    },
+    "coin_3": {
+      "type": "Area2D",
+      "props": {
+        "position": [
+          328,
+          128
+        ],
+        "size": [
+          10,
+          10
+        ],
+        "layer": "pickup",
+        "mask": "player"
+      },
+      "tags": [
+        "coin"
+      ],
+      "scripts": [
+        "scripts/client/coin.luau"
+      ],
+      "children": [
+        "coin_3_sprite"
+      ]
+    },
+    "coin_3_sprite": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          8,
+          8
+        ],
+        "texture": "asset:coin"
+      }
+    },
+    "coin_4": {
+      "type": "Area2D",
+      "props": {
+        "position": [
+          384,
+          192
+        ],
+        "size": [
+          10,
+          10
+        ],
+        "layer": "pickup",
+        "mask": "player"
+      },
+      "tags": [
+        "coin"
+      ],
+      "scripts": [
+        "scripts/client/coin.luau"
+      ],
+      "children": [
+        "coin_4_sprite"
+      ]
+    },
+    "coin_4_sprite": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          8,
+          8
+        ],
+        "texture": "asset:coin"
+      }
+    },
+    "coin_5": {
+      "type": "Area2D",
+      "props": {
+        "position": [
+          128,
+          252
+        ],
+        "size": [
+          10,
+          10
+        ],
+        "layer": "pickup",
+        "mask": "player"
+      },
+      "tags": [
+        "coin"
+      ],
+      "scripts": [
+        "scripts/client/coin.luau"
+      ],
+      "children": [
+        "coin_5_sprite"
+      ]
+    },
+    "coin_5_sprite": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          8,
+          8
+        ],
+        "texture": "asset:coin"
+      }
+    },
+    "coin_6": {
+      "type": "Area2D",
+      "props": {
+        "position": [
+          256,
+          252
+        ],
+        "size": [
+          10,
+          10
+        ],
+        "layer": "pickup",
+        "mask": "player"
+      },
+      "tags": [
+        "coin"
+      ],
+      "scripts": [
+        "scripts/client/coin.luau"
+      ],
+      "children": [
+        "coin_6_sprite"
+      ]
+    },
+    "coin_6_sprite": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          8,
+          8
+        ],
+        "texture": "asset:coin"
+      }
+    },
+    "coin_7": {
+      "type": "Area2D",
+      "props": {
+        "position": [
+          432,
+          252
+        ],
+        "size": [
+          10,
+          10
+        ],
+        "layer": "pickup",
+        "mask": "player"
+      },
+      "tags": [
+        "coin"
+      ],
+      "scripts": [
+        "scripts/client/coin.luau"
+      ],
+      "children": [
+        "coin_7_sprite"
+      ]
+    },
+    "coin_7_sprite": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          8,
+          8
+        ],
+        "texture": "asset:coin"
+      }
+    }
+  }
+}

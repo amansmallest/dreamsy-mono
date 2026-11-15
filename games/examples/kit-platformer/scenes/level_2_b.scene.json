@@ -1,0 +1,249 @@
+{
+  "format": "0",
+  "root": "l2_b",
+  "entities": {
+    "l2_b": {
+      "type": "Node2D",
+      "name": "Toad's Throne",
+      "children": [
+        "l2_b_sky",
+        "l2_b_far",
+        "l2_b_clouds",
+        "l2_b_cam",
+        "l2_b_map",
+        "l2_b_player",
+        "l2_b_arena"
+      ]
+    },
+    "l2_b_sky": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          213,
+          120
+        ],
+        "size": [
+          520,
+          320
+        ],
+        "modulate": "#1d2436",
+        "z_index": -30
+      },
+      "tags": [
+        "parallax_0"
+      ]
+    },
+    "l2_b_far": {
+      "type": "Node2D",
+      "props": {
+        "position": [
+          0,
+          0
+        ],
+        "z_index": -20
+      },
+      "tags": [
+        "parallax_20"
+      ],
+      "children": [
+        "l2_b_far_0",
+        "l2_b_far_1",
+        "l2_b_far_2"
+      ]
+    },
+    "l2_b_clouds": {
+      "type": "Node2D",
+      "props": {
+        "position": [
+          0,
+          0
+        ],
+        "z_index": -25,
+        "visible": false
+      },
+      "tags": [
+        "parallax_10"
+      ],
+      "children": [
+        "l2_b_cloud_0",
+        "l2_b_cloud_1",
+        "l2_b_cloud_2",
+        "l2_b_cloud_3"
+      ]
+    },
+    "l2_b_cam": {
+      "type": "Camera2D",
+      "props": {
+        "zoom": 3,
+        "position": [
+          213,
+          120
+        ]
+      }
+    },
+    "l2_b_map": {
+      "type": "TileMap2D",
+      "props": {
+        "tile_size": 16,
+        "tileset": "data/tilesets/bramble.json",
+        "data": "file:data/levels/level_2_b.txt"
+      },
+      "tags": [
+        "level_map"
+      ],
+      "scripts": [
+        "scripts/client/level.luau"
+      ]
+    },
+    "l2_b_player": {
+      "type": "Node2D",
+      "props": {
+        "position": [
+          40,
+          180
+        ],
+        "z_index": 5
+      },
+      "tags": [
+        "player"
+      ],
+      "children": [
+        "l2_b_player_sprite"
+      ]
+    },
+    "l2_b_player_sprite": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          0,
+          -1
+        ],
+        "size": [
+          16,
+          16
+        ],
+        "texture": "asset:moss_idle",
+        "anims": "data/anims/mossling.json",
+        "anim": "idle"
+      }
+    },
+    "l2_b_far_0": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          256,
+          190
+        ],
+        "size": [
+          768,
+          240
+        ],
+        "texture": "asset:cave"
+      }
+    },
+    "l2_b_far_1": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          1023,
+          190
+        ],
+        "size": [
+          768,
+          240
+        ],
+        "texture": "asset:cave"
+      }
+    },
+    "l2_b_far_2": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          1790,
+          190
+        ],
+        "size": [
+          768,
+          240
+        ],
+        "texture": "asset:cave"
+      }
+    },
+    "l2_b_cloud_0": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          60,
+          30
+        ],
+        "size": [
+          48,
+          16
+        ],
+        "texture": "asset:cloud",
+        "modulate": "#ffffffcc"
+      }
+    },
+    "l2_b_cloud_1": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          190,
+          56
+        ],
+        "size": [
+          48,
+          16
+        ],
+        "texture": "asset:cloud",
+        "modulate": "#ffffffcc"
+      }
+    },
+    "l2_b_cloud_2": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          320,
+          30
+        ],
+        "size": [
+          48,
+          16
+        ],
+        "texture": "asset:cloud",
+        "modulate": "#ffffffcc"
+      }
+    },
+    "l2_b_cloud_3": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          450,
+          56
+        ],
+        "size": [
+          48,
+          16
+        ],
+        "texture": "asset:cloud",
+        "modulate": "#ffffffcc"
+      }
+    },
+    "l2_b_arena": {
+      "type": "Area2D",
+      "props": {
+        "position": [
+          720.0,
+          120
+        ],
+        "size": [
+          480,
+          240
+        ]
+      },
+      "tags": [
+        "camera_room"
+      ]
+    }
+  }
+}

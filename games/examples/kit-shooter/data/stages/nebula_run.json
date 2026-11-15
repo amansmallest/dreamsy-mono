@@ -1,0 +1,139 @@
+{
+ "name": "Nebula Run",
+ "order": 1,
+ "mode": "shmup",
+ "background": "asset:bg_nebula",
+ "scroll": 90,
+ "music": "nebula",
+ "speckColor": "#ffffff",
+ "events": [
+  {
+   "t": 0.5,
+   "text": "NEBULA RUN"
+  },
+  {
+   "t": 2,
+   "enemy": "drone",
+   "x": 0.2,
+   "count": 4,
+   "gap": 0.45
+  },
+  {
+   "t": 4,
+   "enemy": "drone",
+   "x": 0.8,
+   "count": 4,
+   "gap": 0.45
+  },
+  {
+   "t": 7,
+   "enemy": "weaver",
+   "xs": [
+    0.3,
+    0.7
+   ],
+   "count": 3,
+   "gap": 0.7
+  },
+  {
+   "t": 11,
+   "enemy": "gunship",
+   "x": 0.5
+  },
+  {
+   "t": 16,
+   "enemy": "drone",
+   "xs": [
+    0.15,
+    0.85
+   ],
+   "count": 5,
+   "gap": 0.4
+  },
+  {
+   "t": 20,
+   "enemy": "diver",
+   "xs": [
+    0.25,
+    0.5,
+    0.75
+   ]
+  },
+  {
+   "t": 22,
+   "enemy": "diver",
+   "xs": [
+    0.35,
+    0.65
+   ]
+  },
+  {
+   "t": 25,
+   "enemy": "weaver",
+   "x": 0.5,
+   "count": 6,
+   "gap": 0.5
+  },
+  {
+   "t": 30,
+   "enemy": "gunship",
+   "xs": [
+    0.28,
+    0.72
+   ]
+  },
+  {
+   "t": 37,
+   "enemy": "drone",
+   "x": 0.1,
+   "count": 8,
+   "gap": 0.3,
+   "dx": 70
+  },
+  {
+   "t": 42,
+   "enemy": "diver",
+   "xs": [
+    0.2,
+    0.4,
+    0.6,
+    0.8
+   ]
+  },
+  {
+   "t": 46,
+   "enemy": "orbiter",
+   "x": 0.15
+  },
+  {
+   "t": 48,
+   "enemy": "orbiter",
+   "x": 0.55
+  },
+  {
+   "t": 53,
+   "enemy": "weaver",
+   "xs": [
+    0.25,
+    0.75
+   ],
+   "count": 5,
+   "gap": 0.5
+  },
+  {
+   "t": 58,
+   "enemy": "gunship",
+   "x": 0.5,
+   "waitClear": true
+  },
+  {
+   "t": 64,
+   "boss": "warden"
+  }
+ ],
+ "reward": {
+  "credits": 60,
+  "noMiss": 40
+ },
+ "next": "ice_belt"
+}

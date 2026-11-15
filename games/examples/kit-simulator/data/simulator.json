@@ -1,0 +1,21 @@
+{
+ "currency": "coins",
+ "currencyName": "Coins",
+ "currencyIcon": "asset:coin",
+ "petSlots": 3,
+ "maxPets": 80,
+ "offline": {
+  "rate": 0.25,
+  "capHours": 4,
+  "minSeconds": 120
+ },
+ "rebirth": {
+  "threshold": 60000,
+  "exponent": 0.4,
+  "scale": 1,
+  "bonus": 0.25,
+  "zone": "canyon",
+  "slotsPerRebirth": 1,
+  "maxSlots": 6
+ }
+}

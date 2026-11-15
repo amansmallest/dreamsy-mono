@@ -1,0 +1,30 @@
+{
+ "name": "Crystal Creek",
+ "order": 2,
+ "color": "#bfe6f2",
+ "desc": "Crystals grow along the water.",
+ "icon": "asset:zone_creek",
+ "nodes": [
+  {
+   "id": "crystal",
+   "hp": 40,
+   "reward": 16,
+   "size": 1,
+   "weight": 1.0,
+   "sprite": "asset:node_crystal",
+   "color": "#d6f6ff"
+  },
+  {
+   "id": "bluegem",
+   "hp": 110,
+   "reward": 50,
+   "size": 1,
+   "weight": 0.35,
+   "sprite": "asset:node_bluegem",
+   "color": "#b9c8ff"
+  }
+ ],
+ "unlock": {
+  "coins": 1200
+ }
+}

@@ -1,0 +1,8 @@
+{
+ "name": "Bed",
+ "icon": "asset:bed",
+ "category": "build",
+ "data": {
+  "place": "bed"
+ }
+}

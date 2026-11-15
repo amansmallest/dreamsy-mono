@@ -1,0 +1,15 @@
+{
+  "name": "Warm Up",
+  "type": "sun",
+  "category": "status",
+  "pp": 20,
+  "target": "self",
+  "effects": [
+    {
+      "type": "stat",
+      "stat": "atk",
+      "stages": 1,
+      "target": "self"
+    }
+  ]
+}

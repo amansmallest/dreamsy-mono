@@ -1,0 +1,64 @@
+{
+  "id": "ogre",
+  "name": "Ogre Chief",
+  "sprite": "asset:ogre",
+  "size": 18,
+  "cost": 99,
+  "hp": 40,
+  "boss": true,
+  "behavior": "boss",
+  "phases": [
+    {
+      "hp": 1.0,
+      "pattern": [
+        {
+          "behavior": "chase",
+          "time": 2.5,
+          "speed": 28,
+          "aggro": 400
+        },
+        {
+          "action": "ring",
+          "count": 8,
+          "wait": 0.8
+        }
+      ]
+    },
+    {
+      "hp": 0.5,
+      "pattern": [
+        {
+          "action": "summon",
+          "kind": "bat",
+          "wait": 0.6
+        },
+        {
+          "behavior": "charge",
+          "time": 2,
+          "range": 160,
+          "speed": 170,
+          "windup": 0.5
+        },
+        {
+          "action": "ring",
+          "count": 12,
+          "wait": 0.6
+        },
+        {
+          "action": "slam",
+          "wait": 0.8
+        }
+      ]
+    }
+  ],
+  "contact": {
+    "amount": 2,
+    "knockback": 260
+  },
+  "armor": 1,
+  "knockbackResist": 0.9,
+  "resist": {
+    "fire": 0.25
+  },
+  "loot": "boss"
+}

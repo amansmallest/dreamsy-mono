@@ -1,0 +1,20 @@
+{
+  "name": "LODGE MART",
+  "items": [
+    "tonic",
+    "star_jar",
+    "wake_mint",
+    {
+      "item": "super_tonic",
+      "if": {
+        "flag": "beat_ranger_kit"
+      }
+    },
+    {
+      "item": "bright_jar",
+      "if": {
+        "flag": "trial_1"
+      }
+    }
+  ]
+}

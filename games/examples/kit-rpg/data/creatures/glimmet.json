@@ -1,0 +1,46 @@
+{
+  "name": "Glimmet",
+  "types": [
+    "star"
+  ],
+  "base": {
+    "hp": 45,
+    "atk": 50,
+    "def": 45,
+    "mag": 50,
+    "res": 45,
+    "spd": 55
+  },
+  "learnset": [
+    {
+      "level": 1,
+      "move": "star_tap"
+    },
+    {
+      "level": 1,
+      "move": "twinkle"
+    },
+    {
+      "level": 6,
+      "move": "shooting_star"
+    },
+    {
+      "level": 12,
+      "move": "comet_rush"
+    }
+  ],
+  "catch_rate": 170,
+  "xp_yield": 55,
+  "xp_curve": "medium",
+  "sprites": {
+    "front": "asset:glimmet",
+    "icon": "asset:glimmet"
+  },
+  "description": "A fallen star fragment that learned to hop.",
+  "evolution": [
+    {
+      "into": "stellion",
+      "level": 12
+    }
+  ]
+}

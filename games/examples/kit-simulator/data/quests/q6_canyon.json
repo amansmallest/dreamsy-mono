@@ -1,0 +1,27 @@
+{
+ "title": "Into the Canyon",
+ "autoStart": true,
+ "steps": [
+  {
+   "id": "s1",
+   "text": "Unlock Ember Canyon",
+   "objectives": [
+    {
+     "id": "o",
+     "condition": {
+      "zone": "canyon"
+     }
+    }
+   ]
+  }
+ ],
+ "rewards": [
+  {
+   "hatch": "creek_egg"
+  }
+ ],
+ "requires": {
+  "quest": "q5_creek",
+  "is": "done"
+ }
+}

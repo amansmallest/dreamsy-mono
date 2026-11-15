@@ -1,0 +1,8 @@
+{
+ "name": "Star Hammer",
+ "order": 6,
+ "cost": 2500000,
+ "power": 700,
+ "speed": 3,
+ "icon": "asset:tool_star"
+}

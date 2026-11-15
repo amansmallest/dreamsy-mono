@@ -1,0 +1,22 @@
+{
+ "name": "Berry bush",
+ "tile": "B",
+ "hp": 1,
+ "drops": [
+  {
+   "item": "berries",
+   "count": [
+    2,
+    3
+   ]
+  },
+  {
+   "item": "fiber",
+   "count": [
+    1,
+    2
+   ]
+  }
+ ],
+ "respawn": 120
+}

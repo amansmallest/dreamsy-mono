@@ -1,0 +1,23 @@
+{
+  "bpm": 140,
+  "steps": 16,
+  "channels": [
+    {
+      "wave": "saw",
+      "volume": 0.3,
+      "notes": "D2 D2 . D2 F2 . D2 . G2 . F2 . E2 . C2 ."
+    },
+    {
+      "wave": "square",
+      "duty": 0.5,
+      "volume": 0.16,
+      "notes": "D4 - F4 - A4 - D5 - C5 - A4 - Bb4 - A4 -"
+    },
+    {
+      "wave": "noise",
+      "volume": 0.14,
+      "notes": "C2 . C6 . C2 C2 C6 . C2 . C6 . C2 C2 C6 C6"
+    }
+  ],
+  "loop": true
+}

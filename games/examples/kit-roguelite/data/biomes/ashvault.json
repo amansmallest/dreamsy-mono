@@ -1,0 +1,32 @@
+{
+  "name": "Ash Vault",
+  "order": 3,
+  "floors": 1,
+  "steps": 8,
+  "enemies": [
+    "boar",
+    "spitter",
+    "golem",
+    "hive"
+  ],
+  "elites": [
+    "golem",
+    "hive",
+    "boar"
+  ],
+  "boss": "ashking",
+  "arena": {
+    "kind": "dungeon",
+    "rooms": 3,
+    "corridor": 3
+  },
+  "tiles": {
+    "wall": "E",
+    "floor": "e"
+  },
+  "music": "boss",
+  "tint": "#2e1a17",
+  "weights": {
+    "elite": 14
+  }
+}

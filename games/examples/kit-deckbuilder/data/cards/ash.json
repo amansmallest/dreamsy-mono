@@ -1,0 +1,11 @@
+{
+ "name": "Ash",
+ "cost": -1,
+ "type": "status",
+ "rarity": "special",
+ "character": "none",
+ "effects": [],
+ "ethereal": true,
+ "text": "Unplayable. Ethereal.",
+ "art": "asset:art_mantle"
+}

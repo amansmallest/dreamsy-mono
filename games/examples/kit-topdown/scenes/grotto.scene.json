@@ -1,0 +1,99 @@
+{
+  "format": "0",
+  "root": "dg",
+  "entities": {
+    "dg": {
+      "type": "Node2D",
+      "name": "grotto",
+      "children": [
+        "dg_bg",
+        "dg_cam",
+        "dg_floor",
+        "dg_objects",
+        "dg_hero"
+      ]
+    },
+    "dg_bg": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          360,
+          312
+        ],
+        "size": [
+          1520,
+          1824
+        ],
+        "modulate": "#141a24",
+        "z_index": -10
+      }
+    },
+    "dg_cam": {
+      "type": "Camera2D",
+      "props": {
+        "zoom": 3,
+        "position": [
+          120,
+          104
+        ]
+      }
+    },
+    "dg_floor": {
+      "type": "TileMap2D",
+      "props": {
+        "tile_size": 16,
+        "tileset": "data/tilesets/floors.json",
+        "data": "file:data/levels/grotto_floor.txt",
+        "collision": false,
+        "z_index": 0
+      },
+      "tags": [
+        "area_map"
+      ]
+    },
+    "dg_objects": {
+      "type": "TileMap2D",
+      "props": {
+        "tile_size": 16,
+        "tileset": "data/tilesets/grotto.json",
+        "data": "file:data/levels/grotto.txt",
+        "collision": false,
+        "z_index": 1
+      },
+      "tags": [
+        "area_map"
+      ],
+      "scripts": [
+        "scripts/client/area.luau"
+      ]
+    },
+    "dg_hero": {
+      "type": "Node2D",
+      "props": {
+        "position": [
+          120,
+          120
+        ],
+        "z_index": 5
+      },
+      "tags": [
+        "player"
+      ],
+      "children": [
+        "dg_hero_sprite"
+      ]
+    },
+    "dg_hero_sprite": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          16,
+          16
+        ],
+        "texture": "asset:hero_down1",
+        "anims": "data/anims/tamsin.json",
+        "anim": "down"
+      }
+    }
+  }
+}

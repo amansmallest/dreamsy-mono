@@ -1,0 +1,18 @@
+{
+ "name": "Mite",
+ "sprite": "asset:mite",
+ "size": [
+  56,
+  56
+ ],
+ "hp": 3,
+ "score": 100,
+ "cost": 1,
+ "behavior": "chase",
+ "speed": 120,
+ "aggro": 4000,
+ "leash": 99999,
+ "drops": {
+  "coins": 1
+ }
+}

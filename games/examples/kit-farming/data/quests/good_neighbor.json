@@ -1,0 +1,27 @@
+{
+ "title": "Good Neighbor",
+ "autoStart": true,
+ "steps": [
+  {
+   "id": "g",
+   "text": "Give 5 gifts",
+   "objectives": [
+    {
+     "id": "x",
+     "event": "gift_given",
+     "perEvent": true,
+     "count": 5
+    }
+   ]
+  }
+ ],
+ "rewards": [
+  {
+   "earn": "gold",
+   "amount": 400
+  },
+  {
+   "toast": "Quest done: Good Neighbor (+400g)"
+  }
+ ]
+}

@@ -1,0 +1,12 @@
+{
+ "name": "Kindle Strike",
+ "cost": 1,
+ "type": "attack",
+ "rarity": "common",
+ "effects": [
+  "damage 7",
+  "if killed then energy 1"
+ ],
+ "character": "wick",
+ "art": "asset:art_strike"
+}

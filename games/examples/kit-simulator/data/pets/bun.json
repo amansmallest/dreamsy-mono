@@ -1,0 +1,8 @@
+{
+ "name": "Bun",
+ "rarity": "common",
+ "bonus": {
+  "power": 0.1
+ },
+ "icon": "asset:pet_bun"
+}

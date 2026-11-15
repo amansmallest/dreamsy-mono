@@ -1,0 +1,35 @@
+{
+  "id": "chest",
+  "rolls": 2,
+  "rarities": {
+    "common": 75,
+    "rare": 22,
+    "legendary": 3
+  },
+  "entries": [
+    {
+      "item": "coin",
+      "rarity": "common",
+      "count": [
+        3,
+        8
+      ]
+    },
+    {
+      "item": "potion",
+      "rarity": "common"
+    },
+    {
+      "item": "gem",
+      "rarity": "rare"
+    },
+    {
+      "item": "heart",
+      "rarity": "legendary"
+    }
+  ],
+  "pity": {
+    "rarity": "rare",
+    "after": 4
+  }
+}

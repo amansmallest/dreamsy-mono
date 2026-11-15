@@ -1,0 +1,114 @@
+{
+  "format": "0",
+  "root": "title",
+  "entities": {
+    "title": {
+      "type": "Node2D",
+      "name": "Title",
+      "children": [
+        "title_camera",
+        "title_ground",
+        "title_hero",
+        "title_text",
+        "title_sub",
+        "start_button"
+      ]
+    },
+    "title_camera": {
+      "type": "Camera2D",
+      "props": {
+        "position": [
+          320,
+          180
+        ],
+        "zoom": 2
+      }
+    },
+    "title_ground": {
+      "type": "TileMap2D",
+      "name": "Ground",
+      "props": {
+        "position": [
+          0,
+          256
+        ],
+        "tile_size": 16,
+        "tileset": "data/tilesets/world.json",
+        "z_index": -1,
+        "data": "....o.o.o..............^^.......F......\nGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG\nDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD\nDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD\nDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD\nDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD\nDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
+      }
+    },
+    "title_hero": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          96,
+          265
+        ],
+        "size": [
+          12,
+          14
+        ],
+        "texture": "asset:hero"
+      }
+    },
+    "title_text": {
+      "type": "UIText",
+      "props": {
+        "anchor": "center",
+        "offset": [
+          0,
+          -170
+        ],
+        "size": [
+          900,
+          90
+        ],
+        "text": "TILE QUEST",
+        "font_size": 72,
+        "color": "#ffcd75",
+        "align": "center"
+      }
+    },
+    "title_sub": {
+      "type": "UIText",
+      "props": {
+        "anchor": "center",
+        "offset": [
+          0,
+          -95
+        ],
+        "size": [
+          900,
+          40
+        ],
+        "text": "dodge spikes \u00b7 bump bricks \u00b7 reach the flag",
+        "font_size": 24,
+        "color": "#94b0c2",
+        "align": "center"
+      }
+    },
+    "start_button": {
+      "type": "UIButton",
+      "name": "Start",
+      "props": {
+        "anchor": "center",
+        "offset": [
+          0,
+          0
+        ],
+        "size": [
+          260,
+          72
+        ],
+        "text": "START",
+        "font_size": 32,
+        "background": "#38b764ff",
+        "color": "#1a1c2c"
+      },
+      "scripts": [
+        "scripts/client/title.luau"
+      ]
+    }
+  }
+}

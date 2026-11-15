@@ -1,0 +1,25 @@
+{
+ "name": "Shipwreck",
+ "tile": "Y",
+ "foundTile": "y",
+ "biomes": [
+  "beach"
+ ],
+ "count": 1,
+ "minDist": 6,
+ "loot": [
+  {
+   "item": "iron_bar",
+   "count": 1
+  },
+  {
+   "item": "berries",
+   "count": 3
+  },
+  {
+   "item": "rope",
+   "count": 1
+  }
+ ],
+ "message": "A washed-up crate"
+}

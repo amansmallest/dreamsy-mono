@@ -1,0 +1,9 @@
+{
+ "wave": "sine",
+ "freq": 440,
+ "slide": -1,
+ "attack": 0.1,
+ "sustain": 0.2,
+ "decay": 0.6,
+ "volume": 0.4
+}

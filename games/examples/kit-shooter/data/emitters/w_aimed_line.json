@@ -1,0 +1,15 @@
+{
+ "pattern": "line",
+ "count": 5,
+ "speed": 220,
+ "speedStep": 45,
+ "rate": 1.2,
+ "bullet": {
+  "sprite": "asset:bullet_amber",
+  "size": [
+   20,
+   20
+  ],
+  "radius": 5
+ }
+}

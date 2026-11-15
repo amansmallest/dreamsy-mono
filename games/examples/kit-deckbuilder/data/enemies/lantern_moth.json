@@ -1,0 +1,32 @@
+{
+ "name": "Lantern Moth",
+ "hp": [
+  9,
+  12
+ ],
+ "tier": "normal",
+ "act": "undertow",
+ "cost": 1,
+ "sprite": "asset:en_lantern_moth",
+ "first": "dust",
+ "moves": {
+  "dust": {
+   "effects": [
+    "apply weak 1"
+   ]
+  },
+  "flutter": {
+   "effects": [
+    "damage 5"
+   ]
+  }
+ },
+ "pattern": {
+  "kind": "random",
+  "weights": {
+   "dust": 1,
+   "flutter": 2
+  },
+  "noRepeat": 1
+ }
+}

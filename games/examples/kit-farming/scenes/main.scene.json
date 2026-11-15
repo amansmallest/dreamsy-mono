@@ -1,0 +1,269 @@
+{
+ "format": "0",
+ "root": "world",
+ "entities": {
+  "grass_bg": {
+   "type": "Sprite2D",
+   "props": {
+    "position": [
+     480.0,
+     936.0
+    ],
+    "size": [
+     1160,
+     2072
+    ],
+    "modulate": "#8fcf6a",
+    "z_index": -30
+   }
+  },
+  "map": {
+   "type": "TileMap2D",
+   "props": {
+    "tile_size": 48,
+    "tileset": "data/tilesets/mossbell.json",
+    "data": "file:data/levels/mossbell.txt",
+    "z_index": -10,
+    "layer": "world"
+   }
+  },
+  "farmhouse": {
+   "type": "Sprite2D",
+   "props": {
+    "position": [
+     192.0,
+     354.0
+    ],
+    "size": [
+     200,
+     150
+    ],
+    "texture": "asset:farmhouse",
+    "z_index": 1
+   },
+   "tags": [
+    "farm_bed"
+   ]
+  },
+  "coop": {
+   "type": "Sprite2D",
+   "props": {
+    "position": [
+     768.0,
+     354.0
+    ],
+    "size": [
+     200,
+     150
+    ],
+    "texture": "asset:coop",
+    "z_index": 1
+   },
+   "tags": [
+    "farm_coop"
+   ]
+  },
+  "bin": {
+   "type": "Sprite2D",
+   "props": {
+    "position": [
+     360,
+     414
+    ],
+    "size": [
+     84,
+     64
+    ],
+    "texture": "asset:bin",
+    "z_index": 1
+   },
+   "tags": [
+    "farm_bin"
+   ]
+  },
+  "bench": {
+   "type": "Sprite2D",
+   "props": {
+    "position": [
+     528,
+     360
+    ],
+    "size": [
+     84,
+     64
+    ],
+    "texture": "asset:bench",
+    "z_index": 1
+   },
+   "tags": [
+    "farm_craft"
+   ]
+  },
+  "store": {
+   "type": "Sprite2D",
+   "name": "store",
+   "props": {
+    "position": [
+     192.0,
+     1074.0
+    ],
+    "size": [
+     200,
+     150
+    ],
+    "texture": "asset:store",
+    "z_index": 1
+   },
+   "tags": [
+    "farm_shop"
+   ]
+  },
+  "workshop": {
+   "type": "Sprite2D",
+   "name": "workshop",
+   "props": {
+    "position": [
+     768.0,
+     1074.0
+    ],
+    "size": [
+     200,
+     150
+    ],
+    "texture": "asset:workshop",
+    "z_index": 1
+   },
+   "tags": [
+    "farm_shop"
+   ]
+  },
+  "museum": {
+   "type": "Sprite2D",
+   "props": {
+    "position": [
+     192.0,
+     1554.0
+    ],
+    "size": [
+     200,
+     150
+    ],
+    "texture": "asset:museum",
+    "z_index": 1
+   },
+   "tags": [
+    "farm_museum"
+   ]
+  },
+  "cottage": {
+   "type": "Sprite2D",
+   "props": {
+    "position": [
+     768.0,
+     1554.0
+    ],
+    "size": [
+     200,
+     150
+    ],
+    "texture": "asset:cottage",
+    "z_index": 1
+   }
+  },
+  "maypole": {
+   "type": "Sprite2D",
+   "props": {
+    "position": [
+     480,
+     1272
+    ],
+    "size": [
+     72,
+     144
+    ],
+    "texture": "asset:maypole",
+    "z_index": 1
+   },
+   "tags": [
+    "farm_festival"
+   ]
+  },
+  "player_sprite": {
+   "type": "Sprite2D",
+   "props": {
+    "position": [
+     0,
+     -14
+    ],
+    "size": [
+     60,
+     60
+    ],
+    "texture": "asset:farmer",
+    "auto_flip": false
+   }
+  },
+  "player": {
+   "type": "Body2D",
+   "props": {
+    "position": [
+     240,
+     464
+    ],
+    "body": "dynamic",
+    "shape": "circle",
+    "size": [
+     30,
+     30
+    ],
+    "gravity_scale": 0,
+    "lock_rotation": true,
+    "friction": 0,
+    "layer": "player",
+    "mask": "world"
+   },
+   "tags": [
+    "player"
+   ],
+   "children": [
+    "player_sprite"
+   ]
+  },
+  "cam": {
+   "type": "Camera2D",
+   "props": {
+    "follow": "player",
+    "smoothing": 0.6,
+    "limit_min": [
+     0,
+     0
+    ],
+    "limit_max": [
+     960,
+     1872
+    ]
+   }
+  },
+  "world": {
+   "type": "Node2D",
+   "children": [
+    "grass_bg",
+    "map",
+    "farmhouse",
+    "coop",
+    "bin",
+    "bench",
+    "store",
+    "workshop",
+    "museum",
+    "cottage",
+    "maypole",
+    "player",
+    "cam"
+   ],
+   "scripts": [
+    "scripts/client/play.luau"
+   ]
+  }
+ }
+}

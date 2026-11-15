@@ -1,0 +1,13 @@
+{
+  "name": "Donut Dream",
+  "desc": "Own a Donut Fryer",
+  "order": 5,
+  "when": {
+    "owned": {
+      "donut_fryer": 1
+    }
+  },
+  "reward": {
+    "mult": 1.05
+  }
+}

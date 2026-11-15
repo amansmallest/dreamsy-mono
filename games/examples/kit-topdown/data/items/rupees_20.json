@@ -1,0 +1,7 @@
+{
+  "name": "20 Gleams",
+  "kind": "rupee",
+  "amount": 20,
+  "sprite": "asset:rupee",
+  "id": "rupees_20"
+}

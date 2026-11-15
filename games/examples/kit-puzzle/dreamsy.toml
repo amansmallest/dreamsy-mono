@@ -1,0 +1,26 @@
+format = "0"
+name = "Paper Grid"
+description = "Three puzzle packs on cream paper: push crates, link pipes, pop gems. Stars unlock the next pack; a new flow puzzle every day. Built on the puzzle kit."
+dimension = "2d"
+orientation = "portrait"
+entry_scene = "scenes/menu.scene.json"
+kits = ["puzzle"]
+
+[players]
+min = 1
+max = 1
+
+[server]
+mode = "none"
+
+[ui]
+primary = "#111111"
+accent = "#f2a541"
+background = "#111111"
+text = "#fdf5df"
+panel = "sharp"
+font = "bold"
+
+[style]
+preset = "clean"
+palette = ["#fdf5df", "#efe4c6", "#111111", "#e4572e", "#2e5eaa", "#f2a541", "#3a7d44", "#7b3f8c"]

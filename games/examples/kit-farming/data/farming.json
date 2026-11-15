@@ -1,0 +1,191 @@
+{
+ "startGold": 300,
+ "startItems": {
+  "radish_seeds": 12,
+  "hay": 4
+ },
+ "seasons": [
+  {
+   "id": "spring",
+   "name": "Spring",
+   "days": 20
+  }
+ ],
+ "dayLength": 240,
+ "dayStart": 360,
+ "dayEnd": 1560,
+ "weather": {
+  "spring": {
+   "sunny": 0.72,
+   "rain": 0.28
+  }
+ },
+ "weatherFixed": {
+  "spring_1": "sunny",
+  "spring_2": "sunny"
+ },
+ "energy": {
+  "max": 120,
+  "costs": {
+   "till": 2,
+   "water": 1,
+   "plant": 0,
+   "harvest": 0
+  }
+ },
+ "villagerSpeed": 3,
+ "locations": {
+  "farm_gate": {
+   "x": 480,
+   "y": 984,
+   "links": [
+    "path_mid"
+   ]
+  },
+  "path_mid": {
+   "x": 480,
+   "y": 1176,
+   "links": [
+    "farm_gate",
+    "square",
+    "store_door",
+    "workshop_door"
+   ]
+  },
+  "square": {
+   "x": 480,
+   "y": 1368,
+   "links": [
+    "path_mid",
+    "path_low",
+    "square_w",
+    "square_e"
+   ]
+  },
+  "square_w": {
+   "x": 312,
+   "y": 1320,
+   "links": [
+    "square"
+   ]
+  },
+  "square_e": {
+   "x": 648,
+   "y": 1320,
+   "links": [
+    "square"
+   ]
+  },
+  "path_low": {
+   "x": 480,
+   "y": 1656,
+   "links": [
+    "square",
+    "museum_door",
+    "cottage_door",
+    "pond"
+   ]
+  },
+  "store_door": {
+   "x": 192,
+   "y": 1176,
+   "links": [
+    "path_mid",
+    "store_in"
+   ]
+  },
+  "store_in": {
+   "x": 192,
+   "y": 1128,
+   "hidden": true,
+   "links": [
+    "store_door"
+   ]
+  },
+  "workshop_door": {
+   "x": 768,
+   "y": 1176,
+   "links": [
+    "path_mid",
+    "workshop_in"
+   ]
+  },
+  "workshop_in": {
+   "x": 768,
+   "y": 1128,
+   "hidden": true,
+   "links": [
+    "workshop_door"
+   ]
+  },
+  "museum_door": {
+   "x": 192,
+   "y": 1656,
+   "links": [
+    "path_low",
+    "museum_in"
+   ]
+  },
+  "museum_in": {
+   "x": 192,
+   "y": 1608,
+   "hidden": true,
+   "links": [
+    "museum_door"
+   ]
+  },
+  "cottage_door": {
+   "x": 768,
+   "y": 1656,
+   "links": [
+    "path_low",
+    "cottage_in"
+   ]
+  },
+  "cottage_in": {
+   "x": 768,
+   "y": 1608,
+   "hidden": true,
+   "links": [
+    "cottage_door"
+   ]
+  },
+  "pond": {
+   "x": 456,
+   "y": 1752,
+   "links": [
+    "path_low"
+   ]
+  }
+ },
+ "bagSlots": 24,
+ "animals": {
+  "pet": 15,
+  "unfed": -20,
+  "buildings": {
+   "coop": {
+    "capacity": 4
+   },
+   "barn": {
+    "capacity": 0
+   }
+  }
+ },
+ "art": {
+  "sprout": "asset:sprout",
+  "growing": "asset:growing",
+  "dead": "asset:withered",
+  "ready": "asset:growing"
+ },
+ "balance": {
+  "buy": [
+   "upgrade:copper_can",
+   "animal:hen",
+   "animal:hen",
+   "upgrade:comfy_bed",
+   "upgrade:goat_barn",
+   "animal:goat",
+   "upgrade:big_coop"
+  ]
+ }
+}

@@ -1,0 +1,8 @@
+{
+  "kind": "image",
+  "file": "moss_run1.svg",
+  "source": {
+    "model": "claude-opus-5-5",
+    "prompt": "hand-written pixel art SVG: mossling run 1"
+  }
+}

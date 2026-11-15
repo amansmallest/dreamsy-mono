@@ -1,0 +1,8 @@
+{
+ "name": "Furnace",
+ "icon": "asset:furnace",
+ "category": "build",
+ "data": {
+  "place": "furnace"
+ }
+}

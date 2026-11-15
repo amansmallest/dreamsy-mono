@@ -1,0 +1,7 @@
+{
+ "name": "Workbench",
+ "tile": "K",
+ "kind": "station",
+ "radius": 2,
+ "hp": 30
+}

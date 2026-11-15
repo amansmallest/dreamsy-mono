@@ -1,0 +1,27 @@
+{
+  "name": "Wildfire",
+  "description": "2 fire relics: x1.2 damage. 3: +20% attack speed.",
+  "tags": {
+    "fire": 0
+  },
+  "tiers": [
+    {
+      "count": 2,
+      "mods": [
+        {
+          "stat": "damage",
+          "mul": 1.2
+        }
+      ]
+    },
+    {
+      "count": 3,
+      "mods": [
+        {
+          "stat": "fireRate",
+          "pct": 0.2
+        }
+      ]
+    }
+  ]
+}

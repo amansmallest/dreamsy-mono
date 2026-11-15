@@ -1,0 +1,13 @@
+{
+ "name": "Crude Pick",
+ "icon": "asset:crude_pick",
+ "category": "tool",
+ "stack": 1,
+ "data": {
+  "tool": {
+   "kind": "pick",
+   "tier": 1,
+   "power": 1
+  }
+ }
+}

@@ -1,0 +1,36 @@
+{
+ "name": "Clock Sentry",
+ "hp": [
+  24,
+  28
+ ],
+ "tier": "normal",
+ "act": "undertow",
+ "cost": 3,
+ "minRow": 5,
+ "sprite": "asset:en_clock_sentry",
+ "start": [
+  "apply artifact 1 self"
+ ],
+ "moves": {
+  "tick": {
+   "effects": [
+    "damage 9"
+   ]
+  },
+  "tock": {
+   "effects": [
+    "block 8",
+    "apply strength 2 self"
+   ]
+  }
+ },
+ "pattern": {
+  "kind": "cycle",
+  "moves": [
+   "tock",
+   "tick",
+   "tick"
+  ]
+ }
+}

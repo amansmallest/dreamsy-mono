@@ -1,0 +1,19 @@
+format = "0"
+name = "Block Tower"
+description = "Race your friends to the top of the tower."
+dimension = "3d"
+entry_scene = "scenes/main.scene.json"
+
+[players]
+min = 1
+max = 8
+
+[server]
+mode = "rooms"
+tick_rate = 30
+
+[avatar]
+enabled = true
+
+[style]
+preset = "blocky"

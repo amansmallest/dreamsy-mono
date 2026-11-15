@@ -1,0 +1,12 @@
+{
+  "name": "Mend Flask",
+  "icon": "asset:i_flask",
+  "charge": 3,
+  "action": "heal",
+  "effects": [
+    {
+      "healPct": 0.35
+    }
+  ],
+  "description": "Heal 35%."
+}

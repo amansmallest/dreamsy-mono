@@ -1,0 +1,12 @@
+{
+ "name": "Flare",
+ "cost": 2,
+ "type": "attack",
+ "rarity": "basic",
+ "effects": [
+  "damage 8",
+  "apply vulnerable 2"
+ ],
+ "character": "wick",
+ "art": "asset:art_flame"
+}

@@ -1,0 +1,50 @@
+{
+  "tiles": {
+    "=": {
+      "color": "#c79a64"
+    },
+    "c": {
+      "sprite": "asset:tile_curb"
+    },
+    ",": {
+      "color": "#7cc35a",
+      "tags": [
+        "offroad"
+      ]
+    },
+    "#": {
+      "sprite": "asset:tile_hedge",
+      "solid": true
+    },
+    "F": {
+      "sprite": "asset:tile_finish",
+      "tags": [
+        "finish"
+      ]
+    },
+    ">": {
+      "sprite": "asset:tile_boost",
+      "tags": [
+        "boost"
+      ]
+    },
+    "o": {
+      "sprite": "asset:tile_mud",
+      "tags": [
+        "oil"
+      ]
+    },
+    "^": {
+      "sprite": "asset:tile_ramp",
+      "tags": [
+        "ramp"
+      ]
+    },
+    "?": {
+      "sprite": "asset:tile_item",
+      "tags": [
+        "item"
+      ]
+    }
+  }
+}

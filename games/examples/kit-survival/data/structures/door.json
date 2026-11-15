@@ -1,0 +1,7 @@
+{
+ "name": "Door",
+ "tile": "D",
+ "kind": "door",
+ "adjacent": "wall",
+ "hp": 20
+}

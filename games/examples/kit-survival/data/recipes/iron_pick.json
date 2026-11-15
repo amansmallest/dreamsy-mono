@@ -1,0 +1,9 @@
+{
+ "needs": {
+  "iron_bar": 3,
+  "wood": 4,
+  "rope": 2
+ },
+ "station": "workbench",
+ "category": "tools"
+}

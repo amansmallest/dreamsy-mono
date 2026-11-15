@@ -1,0 +1,16 @@
+{
+  "name": "Ember Bombs",
+  "kind": "bomb",
+  "sprite": "asset:bomb",
+  "ammo": 8,
+  "max": 15,
+  "fuse": 1.4,
+  "radius": 26,
+  "damage": 4,
+  "breaks": [
+    "cracked",
+    "bush"
+  ],
+  "message": "ITEM button: blast cracked walls",
+  "id": "bombs"
+}

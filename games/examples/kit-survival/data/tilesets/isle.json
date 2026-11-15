@@ -1,0 +1,78 @@
+{
+ "tiles": {
+  "~": {
+   "color": "#2f6fa8",
+   "solid": true
+  },
+  "g": {
+   "color": "#7fb069"
+  },
+  "f": {
+   "color": "#4e7d55"
+  },
+  "s": {
+   "color": "#d8c48a"
+  },
+  "T": {
+   "sprite": "asset:tree",
+   "solid": true
+  },
+  "R": {
+   "sprite": "asset:rock",
+   "solid": true
+  },
+  "I": {
+   "sprite": "asset:iron",
+   "solid": true
+  },
+  "B": {
+   "sprite": "asset:bush",
+   "solid": true
+  },
+  "O": {
+   "sprite": "asset:spring"
+  },
+  "K": {
+   "sprite": "asset:workbench",
+   "solid": true
+  },
+  "F": {
+   "sprite": "asset:campfire",
+   "solid": true
+  },
+  "W": {
+   "sprite": "asset:wall",
+   "solid": true
+  },
+  "D": {
+   "sprite": "asset:door"
+  },
+  "Z": {
+   "sprite": "asset:bed"
+  },
+  "H": {
+   "sprite": "asset:chest",
+   "solid": true
+  },
+  "N": {
+   "sprite": "asset:furnace",
+   "solid": true
+  },
+  "X": {
+   "sprite": "asset:ruins",
+   "solid": true
+  },
+  "x": {
+   "sprite": "asset:ruins_open",
+   "solid": true
+  },
+  "Y": {
+   "sprite": "asset:wreck",
+   "solid": true
+  },
+  "y": {
+   "sprite": "asset:wreck_open",
+   "solid": true
+  }
+ }
+}

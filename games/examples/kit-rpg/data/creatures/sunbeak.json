@@ -1,0 +1,40 @@
+{
+  "name": "Sunbeak",
+  "types": [
+    "sun"
+  ],
+  "base": {
+    "hp": 45,
+    "atk": 60,
+    "def": 40,
+    "mag": 40,
+    "res": 40,
+    "spd": 75
+  },
+  "learnset": [
+    {
+      "level": 1,
+      "move": "flare_tap"
+    },
+    {
+      "level": 3,
+      "move": "warm_up"
+    },
+    {
+      "level": 5,
+      "move": "scorch"
+    },
+    {
+      "level": 9,
+      "move": "sunbeam"
+    }
+  ],
+  "catch_rate": 200,
+  "xp_yield": 50,
+  "xp_curve": "medium",
+  "sprites": {
+    "front": "asset:sunbeak",
+    "icon": "asset:sunbeak"
+  },
+  "description": "Wakes at dawn and sings until the dew is gone."
+}

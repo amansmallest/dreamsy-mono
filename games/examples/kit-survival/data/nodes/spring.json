@@ -1,0 +1,13 @@
+{
+ "name": "Spring",
+ "tile": "O",
+ "hp": 1,
+ "solid": false,
+ "drops": [
+  {
+   "item": "water",
+   "count": 1
+  }
+ ],
+ "respawn": 45
+}

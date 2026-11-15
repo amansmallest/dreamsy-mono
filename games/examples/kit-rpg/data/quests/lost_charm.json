@@ -1,0 +1,39 @@
+{
+  "name": "The Lost Charm",
+  "description": "Elder Moss lost his Moon Charm in Hollow Cave.",
+  "steps": [
+    {
+      "id": "find",
+      "text": "Find the Moon Charm in Hollow Cave",
+      "objectives": [
+        {
+          "type": "item",
+          "item": "moon_charm",
+          "text": "Moon Charm"
+        }
+      ]
+    },
+    {
+      "id": "return",
+      "text": "Return the charm to Elder Moss",
+      "objectives": [
+        {
+          "type": "flag",
+          "flag": "charm_returned"
+        },
+        {
+          "type": "item",
+          "item": "moon_charm",
+          "consume": true
+        }
+      ]
+    }
+  ],
+  "rewards": {
+    "money": 200,
+    "items": {
+      "super_tonic": 2,
+      "bright_jar": 1
+    }
+  }
+}

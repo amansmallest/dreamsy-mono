@@ -1,0 +1,10 @@
+{
+ "name": "Brass Compass",
+ "rarity": "common",
+ "icon": "asset:rl_brass_compass",
+ "text": "Start each combat with 8 Block.",
+ "on": "battle_start",
+ "effects": [
+  "block 8"
+ ]
+}

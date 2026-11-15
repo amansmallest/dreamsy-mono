@@ -1,0 +1,17 @@
+{
+ "stages": [
+  2,
+  2,
+  3
+ ],
+ "price": 120,
+ "seed": {
+  "price": 50,
+  "icon": "asset:sunflower_seeds"
+ },
+ "name": "Sunflower",
+ "seasons": [
+  "spring"
+ ],
+ "icon": "asset:sunflower"
+}

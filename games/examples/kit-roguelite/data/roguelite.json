@@ -1,0 +1,49 @@
+{
+  "metaCurrency": "embers",
+  "metaName": "Embers",
+  "heat": [
+    {
+      "name": "Kindled",
+      "description": "Enemies +25% HP",
+      "mods": [
+        {
+          "stat": "enemyHp",
+          "pct": 0.25
+        }
+      ]
+    },
+    {
+      "name": "Scorched",
+      "description": "Enemies hit 30% harder",
+      "mods": [
+        {
+          "stat": "enemyDamage",
+          "pct": 0.3
+        }
+      ]
+    },
+    {
+      "name": "Inferno",
+      "description": "Shops cost more, -10 max HP",
+      "mods": [
+        {
+          "stat": "shopDiscount",
+          "add": -0.25
+        },
+        {
+          "stat": "hp",
+          "add": -10
+        }
+      ]
+    }
+  ],
+  "scaling": {
+    "hpPerFloor": 0.35,
+    "damagePerFloor": 0.2,
+    "budgetBase": 3,
+    "budgetPerFloor": 2
+  },
+  "sim": {
+    "exposure": 0.3
+  }
+}

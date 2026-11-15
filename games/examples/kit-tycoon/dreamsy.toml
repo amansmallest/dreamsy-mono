@@ -1,0 +1,26 @@
+format = "0"
+name = "Crumbtown Bakery"
+description = "Idle bakery tycoon: bake, hire chefs, open eight ovens up to the Sugar Moon, then reopen for Golden Whisks. Built on the tycoon kit."
+dimension = "2d"
+orientation = "portrait"
+entry_scene = "scenes/main.scene.json"
+kits = ["tycoon"]
+
+[players]
+min = 1
+max = 1
+
+[server]
+mode = "none"
+
+[ui]
+primary = "#c0567a"
+accent = "#ffcf3f"
+background = "#5a2e22"
+text = "#fff6ea"
+panel = "rounded"
+font = "rounded"
+
+[style]
+preset = "clean"
+palette = ["#5a2e22", "#7a3e2b", "#fdf0e0", "#ff9cc2", "#ffcf3f", "#7fc8e8", "#c0567a", "#4a2a1f"]

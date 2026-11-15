@@ -1,0 +1,7 @@
+{
+ "name": "Hay",
+ "icon": "asset:hay",
+ "category": "feed",
+ "value": 0,
+ "stack": 999
+}

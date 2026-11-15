@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 196 32" shape-rendering="crispEdges">
+<defs>
+<linearGradient id="ga" gradientUnits="userSpaceOnUse" x1="0" y1="4" x2="0" y2="25"><stop offset="0" stop-color="#f2ece6"/><stop offset="0.57" stop-color="#f2ece6"/><stop offset="0.57" stop-color="#dedacd"/><stop offset="1" stop-color="#dedacd"/></linearGradient>
+<linearGradient id="gb" gradientUnits="userSpaceOnUse" x1="0" y1="4" x2="0" y2="25"><stop offset="0" stop-color="#e8c27a"/><stop offset="0.57" stop-color="#e8c27a"/><stop offset="0.57" stop-color="#c9685a"/><stop offset="1" stop-color="#c9685a"/></linearGradient>
+</defs>
+<g transform="translate(2 3)" fill="#2a3170" stroke="#2a3170" stroke-width="2" stroke-linejoin="miter">
+<path d="M7 4h12v3h-12z M4 7h3v6h-3z M7 13h9v3h-9z M16 16h3v6h-3z M4 22h12v3h-12z M22 4h3v18h-3z M34 4h3v18h-3z M25 22h9v3h-9z M40 4h3v21h-3z M52 4h3v21h-3z M43 7h3v3h-3z M49 7h3v3h-3z M46 10h3v6h-3z M58 4h3v21h-3z M70 4h3v21h-3z M61 7h3v3h-3z M67 7h3v3h-3z M64 10h3v6h-3z M76 4h3v21h-3z M79 4h12v3h-12z M79 13h9v3h-9z M79 22h12v3h-12z M94 4h3v21h-3z M97 4h9v3h-9z M106 7h3v6h-3z M97 13h9v3h-9z M100 16h3v3h-3z M103 19h3v3h-3z M106 22h3v3h-3z M121 4h3v21h-3z M124 4h9v3h-9z M133 7h3v6h-3z M124 13h9v3h-9z M127 16h3v3h-3z M130 19h3v3h-3z M133 22h3v3h-3z M139 4h15v3h-15z M145 7h3v15h-3z M139 22h15v3h-15z M157 4h3v21h-3z M160 4h9v3h-9z M169 7h3v15h-3z M160 22h9v3h-9z M175 4h3v21h-3z M178 4h12v3h-12z M178 13h9v3h-9z M178 22h12v3h-12z"/>
+</g>
+<g stroke="#2a3170" stroke-width="2" stroke-linejoin="miter">
+<path fill="url(#ga)" d="M7 4h12v3h-12z M4 7h3v6h-3z M7 13h9v3h-9z M16 16h3v6h-3z M4 22h12v3h-12z M22 4h3v18h-3z M34 4h3v18h-3z M25 22h9v3h-9z M40 4h3v21h-3z M52 4h3v21h-3z M43 7h3v3h-3z M49 7h3v3h-3z M46 10h3v6h-3z M58 4h3v21h-3z M70 4h3v21h-3z M61 7h3v3h-3z M67 7h3v3h-3z M64 10h3v6h-3z M76 4h3v21h-3z M79 4h12v3h-12z M79 13h9v3h-9z M79 22h12v3h-12z M94 4h3v21h-3z M97 4h9v3h-9z M106 7h3v6h-3z M97 13h9v3h-9z M100 16h3v3h-3z M103 19h3v3h-3z M106 22h3v3h-3z"/>
+<path fill="url(#gb)" d="M121 4h3v21h-3z M124 4h9v3h-9z M133 7h3v6h-3z M124 13h9v3h-9z M127 16h3v3h-3z M130 19h3v3h-3z M133 22h3v3h-3z M139 4h15v3h-15z M145 7h3v15h-3z M139 22h15v3h-15z M157 4h3v21h-3z M160 4h9v3h-9z M169 7h3v15h-3z M160 22h9v3h-9z M175 4h3v21h-3z M178 4h12v3h-12z M178 13h9v3h-9z M178 22h12v3h-12z"/>
+</g>
+<g fill="url(#ga)"><path d="M7 4h12v3h-12z M4 7h3v6h-3z M7 13h9v3h-9z M16 16h3v6h-3z M4 22h12v3h-12z M22 4h3v18h-3z M34 4h3v18h-3z M25 22h9v3h-9z M40 4h3v21h-3z M52 4h3v21h-3z M43 7h3v3h-3z M49 7h3v3h-3z M46 10h3v6h-3z M58 4h3v21h-3z M70 4h3v21h-3z M61 7h3v3h-3z M67 7h3v3h-3z M64 10h3v6h-3z M76 4h3v21h-3z M79 4h12v3h-12z M79 13h9v3h-9z M79 22h12v3h-12z M94 4h3v21h-3z M97 4h9v3h-9z M106 7h3v6h-3z M97 13h9v3h-9z M100 16h3v3h-3z M103 19h3v3h-3z M106 22h3v3h-3z"/></g>
+<g fill="url(#gb)"><path d="M121 4h3v21h-3z M124 4h9v3h-9z M133 7h3v6h-3z M124 13h9v3h-9z M127 16h3v3h-3z M130 19h3v3h-3z M133 22h3v3h-3z M139 4h15v3h-15z M145 7h3v15h-3z M139 22h15v3h-15z M157 4h3v21h-3z M160 4h9v3h-9z M169 7h3v15h-3z M160 22h9v3h-9z M175 4h3v21h-3z M178 4h12v3h-12z M178 13h9v3h-9z M178 22h12v3h-12z"/></g>
+</svg>

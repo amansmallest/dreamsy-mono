@@ -1,0 +1,8 @@
+{
+  "name": "Sunbeam",
+  "type": "sun",
+  "category": "magic",
+  "power": 65,
+  "accuracy": 90,
+  "pp": 15
+}

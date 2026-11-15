@@ -1,0 +1,10 @@
+{
+  "id": "ant",
+  "name": "Scout Ant",
+  "hp": 18,
+  "speed": 1.8,
+  "bounty": 3,
+  "sprite": "asset:enemy_ant",
+  "size": 0.45,
+  "color": "#c0392b"
+}

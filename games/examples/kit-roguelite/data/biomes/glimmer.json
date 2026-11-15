@@ -1,0 +1,31 @@
+{
+  "name": "Glimmer Caves",
+  "order": 2,
+  "floors": 1,
+  "steps": 7,
+  "enemies": [
+    "bat",
+    "spitter",
+    "wisp",
+    "puffcap"
+  ],
+  "elites": [
+    "golem",
+    "spitter"
+  ],
+  "boss": "matron",
+  "arena": {
+    "kind": "caves",
+    "fill": 0.36,
+    "minOpen": 0.5
+  },
+  "tiles": {
+    "wall": "C",
+    "floor": "c"
+  },
+  "music": "depths",
+  "tint": "#1d2238",
+  "weights": {
+    "event": 14
+  }
+}

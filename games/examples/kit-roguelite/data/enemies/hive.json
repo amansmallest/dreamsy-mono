@@ -1,0 +1,16 @@
+{
+  "name": "Ember Hive",
+  "sprite": "asset:hive",
+  "hp": 10,
+  "cost": 4,
+  "minLevel": 3,
+  "behavior": "spawner",
+  "params": {
+    "every": 3.5,
+    "max": 3,
+    "spawn": "bat"
+  },
+  "contact": {
+    "amount": 1
+  }
+}

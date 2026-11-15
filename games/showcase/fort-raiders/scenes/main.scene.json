@@ -1,0 +1,726 @@
+{
+  "format": "0",
+  "root": "world",
+  "entities": {
+    "world": {
+      "type": "Node2D",
+      "children": [
+        "camera",
+        "backdrop",
+        "grid_border",
+        "tiles_layer",
+        "village_layer",
+        "raid_layer",
+        "fx_layer",
+        "hud",
+        "village_ui",
+        "raid_ui",
+        "result_ui",
+        "game_controller"
+      ]
+    },
+    "camera": {
+      "type": "Camera2D",
+      "props": {
+        "position": [
+          620,
+          300
+        ],
+        "zoom": 1,
+        "current": true
+      }
+    },
+    "backdrop": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          288,
+          288
+        ],
+        "size": [
+          4000,
+          4000
+        ],
+        "modulate": "#2f6b2a",
+        "z_index": -10
+      }
+    },
+    "grid_border": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          288,
+          288
+        ],
+        "size": [
+          598,
+          598
+        ],
+        "modulate": "#1a1a2e",
+        "z_index": -5
+      }
+    },
+    "tiles_layer": {
+      "type": "Node2D",
+      "props": {
+        "z_index": 0
+      }
+    },
+    "village_layer": {
+      "type": "Node2D",
+      "props": {
+        "z_index": 1
+      }
+    },
+    "raid_layer": {
+      "type": "Node2D",
+      "props": {
+        "z_index": 1,
+        "visible": false
+      }
+    },
+    "fx_layer": {
+      "type": "Node2D",
+      "props": {
+        "z_index": 10
+      }
+    },
+    "hud": {
+      "type": "Folder",
+      "children": [
+        "hud_gold",
+        "hud_elixir",
+        "hud_army",
+        "hud_trophy",
+        "hud_raid",
+        "hud_hint",
+        "icon_gold",
+        "icon_elixir"
+      ]
+    },
+    "hud_gold": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          692,
+          16
+        ],
+        "size": [
+          380,
+          40
+        ],
+        "font_size": 28,
+        "color": "#ffd23f",
+        "text": "GOLD"
+      }
+    },
+    "hud_elixir": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          692,
+          58
+        ],
+        "size": [
+          380,
+          40
+        ],
+        "font_size": 28,
+        "color": "#e07bff",
+        "text": "ELIXIR"
+      }
+    },
+    "hud_army": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          650,
+          102
+        ],
+        "size": [
+          620,
+          36
+        ],
+        "font_size": 20,
+        "color": "#ffffff",
+        "text": "ARMY"
+      }
+    },
+    "hud_trophy": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          650,
+          138
+        ],
+        "size": [
+          400,
+          36
+        ],
+        "font_size": 26,
+        "color": "#ffffff",
+        "align": "left",
+        "text": "TROPHIES 0"
+      }
+    },
+    "hud_raid": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          650,
+          178
+        ],
+        "size": [
+          620,
+          36
+        ],
+        "font_size": 22,
+        "color": "#ffffff",
+        "align": "left",
+        "text": "",
+        "visible": false
+      }
+    },
+    "hud_hint": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          650,
+          216
+        ],
+        "size": [
+          620,
+          60
+        ],
+        "font_size": 20,
+        "color": "#fff3b0",
+        "align": "left",
+        "text": ""
+      }
+    },
+    "village_ui": {
+      "type": "Folder",
+      "children": [
+        "btn_mine",
+        "btn_pump",
+        "btn_storage",
+        "btn_wall",
+        "btn_cannon",
+        "btn_tower",
+        "btn_barracks",
+        "btn_remove",
+        "btn_train_brawler",
+        "btn_train_archer",
+        "btn_train_giant",
+        "btn_cancel",
+        "btn_raid"
+      ]
+    },
+    "btn_mine": {
+      "type": "UIButton",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          650,
+          290
+        ],
+        "size": [
+          200,
+          66
+        ],
+        "font_size": 19,
+        "text": "Gold Mine",
+        "background": "#7b2cbfee"
+      }
+    },
+    "btn_pump": {
+      "type": "UIButton",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          860,
+          290
+        ],
+        "size": [
+          200,
+          66
+        ],
+        "font_size": 19,
+        "text": "Elixir Pump",
+        "background": "#c98a0aee"
+      }
+    },
+    "btn_storage": {
+      "type": "UIButton",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          1070,
+          290
+        ],
+        "size": [
+          200,
+          66
+        ],
+        "font_size": 19,
+        "text": "Storage",
+        "background": "#c98a0aee"
+      }
+    },
+    "btn_wall": {
+      "type": "UIButton",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          650,
+          364
+        ],
+        "size": [
+          200,
+          66
+        ],
+        "font_size": 19,
+        "text": "Wall",
+        "background": "#c98a0aee"
+      }
+    },
+    "btn_cannon": {
+      "type": "UIButton",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          860,
+          364
+        ],
+        "size": [
+          200,
+          66
+        ],
+        "font_size": 19,
+        "text": "Cannon",
+        "background": "#c98a0aee"
+      }
+    },
+    "btn_tower": {
+      "type": "UIButton",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          1070,
+          364
+        ],
+        "size": [
+          200,
+          66
+        ],
+        "font_size": 19,
+        "text": "Archer Tower",
+        "background": "#c98a0aee"
+      }
+    },
+    "btn_barracks": {
+      "type": "UIButton",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          650,
+          438
+        ],
+        "size": [
+          200,
+          66
+        ],
+        "font_size": 19,
+        "text": "Barracks",
+        "background": "#7b2cbfee"
+      }
+    },
+    "btn_remove": {
+      "type": "UIButton",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          860,
+          438
+        ],
+        "size": [
+          200,
+          66
+        ],
+        "font_size": 19,
+        "text": "Remove",
+        "background": "#555555ee"
+      }
+    },
+    "btn_train_brawler": {
+      "type": "UIButton",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          650,
+          512
+        ],
+        "size": [
+          200,
+          66
+        ],
+        "font_size": 18,
+        "text": "Train Brawler",
+        "background": "#9d4edded"
+      }
+    },
+    "btn_train_archer": {
+      "type": "UIButton",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          860,
+          512
+        ],
+        "size": [
+          200,
+          66
+        ],
+        "font_size": 18,
+        "text": "Train Archer",
+        "background": "#9d4edded"
+      }
+    },
+    "btn_train_giant": {
+      "type": "UIButton",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          1070,
+          512
+        ],
+        "size": [
+          200,
+          66
+        ],
+        "font_size": 18,
+        "text": "Train Giant",
+        "background": "#9d4edded"
+      }
+    },
+    "btn_cancel": {
+      "type": "UIButton",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          1070,
+          438
+        ],
+        "size": [
+          200,
+          66
+        ],
+        "font_size": 19,
+        "text": "Done",
+        "background": "#333333cc"
+      }
+    },
+    "btn_raid": {
+      "type": "UIButton",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          650,
+          590
+        ],
+        "size": [
+          620,
+          80
+        ],
+        "font_size": 36,
+        "text": "RAID!",
+        "background": "#e63946ff"
+      }
+    },
+    "raid_ui": {
+      "type": "Folder",
+      "children": [
+        "btn_sel_brawler",
+        "btn_sel_archer",
+        "btn_sel_giant",
+        "btn_end_raid",
+        "raid_tip"
+      ]
+    },
+    "btn_sel_brawler": {
+      "type": "UIButton",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          650,
+          290
+        ],
+        "size": [
+          200,
+          80
+        ],
+        "font_size": 20,
+        "text": "Brawler",
+        "background": "#7b2cbfee",
+        "visible": false
+      }
+    },
+    "btn_sel_archer": {
+      "type": "UIButton",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          860,
+          290
+        ],
+        "size": [
+          200,
+          80
+        ],
+        "font_size": 20,
+        "text": "Archer",
+        "background": "#7b2cbfee",
+        "visible": false
+      }
+    },
+    "btn_sel_giant": {
+      "type": "UIButton",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          1070,
+          290
+        ],
+        "size": [
+          200,
+          80
+        ],
+        "font_size": 20,
+        "text": "Giant",
+        "background": "#7b2cbfee",
+        "visible": false
+      }
+    },
+    "btn_end_raid": {
+      "type": "UIButton",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          1070,
+          590
+        ],
+        "size": [
+          200,
+          80
+        ],
+        "font_size": 20,
+        "text": "End Raid",
+        "background": "#555555ee",
+        "visible": false
+      }
+    },
+    "raid_tip": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          650,
+          390
+        ],
+        "size": [
+          620,
+          60
+        ],
+        "font_size": 22,
+        "align": "left",
+        "color": "#ffffff",
+        "text": "Pick a troop, then tap the red edge to drop it!",
+        "visible": false
+      }
+    },
+    "result_ui": {
+      "type": "Folder",
+      "children": [
+        "result_panel",
+        "result_title",
+        "result_star_1",
+        "result_star_2",
+        "result_star_3",
+        "result_detail",
+        "result_home"
+      ]
+    },
+    "result_panel": {
+      "type": "UIPanel",
+      "props": {
+        "anchor": "center",
+        "offset": [
+          0,
+          0
+        ],
+        "size": [
+          560,
+          460
+        ],
+        "background": "#1a1a2ef0",
+        "z_index": 10,
+        "visible": false
+      }
+    },
+    "result_title": {
+      "type": "UIText",
+      "props": {
+        "anchor": "center",
+        "offset": [
+          0,
+          -170
+        ],
+        "size": [
+          520,
+          64
+        ],
+        "font_size": 52,
+        "align": "center",
+        "color": "#ffd23f",
+        "text": "VICTORY!",
+        "z_index": 11,
+        "visible": false
+      }
+    },
+    "result_star_1": {
+      "type": "UIPanel",
+      "props": {
+        "anchor": "center",
+        "offset": [
+          -100,
+          -80
+        ],
+        "size": [
+          76,
+          76
+        ],
+        "background": "#444444",
+        "z_index": 11,
+        "visible": false,
+        "image": "asset:icon_star"
+      }
+    },
+    "result_star_2": {
+      "type": "UIPanel",
+      "props": {
+        "anchor": "center",
+        "offset": [
+          0,
+          -80
+        ],
+        "size": [
+          76,
+          76
+        ],
+        "background": "#444444",
+        "z_index": 11,
+        "visible": false,
+        "image": "asset:icon_star"
+      }
+    },
+    "result_star_3": {
+      "type": "UIPanel",
+      "props": {
+        "anchor": "center",
+        "offset": [
+          100,
+          -80
+        ],
+        "size": [
+          76,
+          76
+        ],
+        "background": "#444444",
+        "z_index": 11,
+        "visible": false,
+        "image": "asset:icon_star"
+      }
+    },
+    "result_detail": {
+      "type": "UIText",
+      "props": {
+        "anchor": "center",
+        "offset": [
+          0,
+          40
+        ],
+        "size": [
+          520,
+          130
+        ],
+        "font_size": 26,
+        "align": "center",
+        "color": "#ffffff",
+        "text": "",
+        "z_index": 11,
+        "visible": false
+      }
+    },
+    "result_home": {
+      "type": "UIButton",
+      "props": {
+        "anchor": "center",
+        "offset": [
+          0,
+          165
+        ],
+        "size": [
+          320,
+          76
+        ],
+        "font_size": 30,
+        "text": "Return Home",
+        "background": "#2a9d8fff",
+        "z_index": 11,
+        "visible": false
+      }
+    },
+    "game_controller": {
+      "type": "Node2D",
+      "scripts": [
+        "scripts/client/game.luau"
+      ]
+    },
+    "icon_gold": {
+      "type": "UIPanel",
+      "props": {
+        "offset": [
+          650,
+          16
+        ],
+        "size": [
+          36,
+          36
+        ],
+        "background": "#00000000",
+        "image": "asset:icon_gold"
+      }
+    },
+    "icon_elixir": {
+      "type": "UIPanel",
+      "props": {
+        "offset": [
+          650,
+          58
+        ],
+        "size": [
+          36,
+          36
+        ],
+        "background": "#00000000",
+        "image": "asset:icon_elixir"
+      }
+    }
+  }
+}

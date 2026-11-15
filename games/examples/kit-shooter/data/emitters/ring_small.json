@@ -1,0 +1,15 @@
+{
+ "pattern": "ring",
+ "count": 10,
+ "rate": 0.45,
+ "speed": 160,
+ "delay": 1,
+ "bullet": {
+  "sprite": "asset:bullet_violet",
+  "size": [
+   24,
+   24
+  ],
+  "radius": 7
+ }
+}

@@ -1,0 +1,14 @@
+{
+ "name": "Halo orbs",
+ "kind": "orbital",
+ "sprite": "asset:orb",
+ "levels": [
+  {
+   "orbs": 2,
+   "orbitRadius": 78,
+   "orbitSpeed": 200,
+   "orbDamage": 1,
+   "orbRadius": 16
+  }
+ ]
+}

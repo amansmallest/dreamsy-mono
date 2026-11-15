@@ -1,0 +1,8 @@
+{
+ "name": "Dotti",
+ "rarity": "rare",
+ "bonus": {
+  "coins": 0.3
+ },
+ "icon": "asset:pet_ladybug"
+}

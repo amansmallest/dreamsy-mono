@@ -1,0 +1,22 @@
+{
+ "name": "Old ruins",
+ "tile": "X",
+ "foundTile": "x",
+ "biomes": [
+  "meadow",
+  "pinewood"
+ ],
+ "count": 2,
+ "minDist": 8,
+ "loot": [
+  {
+   "item": "ore",
+   "count": 2
+  },
+  {
+   "item": "rope",
+   "count": 1
+  }
+ ],
+ "message": "You search the ruins"
+}

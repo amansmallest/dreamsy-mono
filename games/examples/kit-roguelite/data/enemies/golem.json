@@ -1,0 +1,19 @@
+{
+  "name": "Shard Golem",
+  "sprite": "asset:golem",
+  "hp": 14,
+  "cost": 4,
+  "minLevel": 2,
+  "size": 13,
+  "behavior": "chase",
+  "params": {
+    "speed": 22,
+    "aggro": 220
+  },
+  "contact": {
+    "amount": 2,
+    "knockback": 220
+  },
+  "armor": 1,
+  "knockbackResist": 0.8
+}

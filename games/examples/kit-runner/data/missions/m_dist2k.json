@@ -1,0 +1,13 @@
+{
+  "text": "Run 2000 m",
+  "stat": "distance",
+  "target": 2000,
+  "scope": "run",
+  "order": 9,
+  "reward": [
+    {
+      "earn": "coins",
+      "amount": 250
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "tiles": {
+    "#": {
+      "sprite": "asset:t_moss_wall",
+      "solid": true
+    },
+    "f": {
+      "sprite": "asset:t_moss_floor"
+    },
+    "C": {
+      "sprite": "asset:t_cave_wall",
+      "solid": true
+    },
+    "c": {
+      "sprite": "asset:t_cave_floor"
+    },
+    "E": {
+      "sprite": "asset:t_ember_wall",
+      "solid": true
+    },
+    "e": {
+      "sprite": "asset:t_ember_floor"
+    }
+  }
+}

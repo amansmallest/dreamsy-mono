@@ -1,0 +1,82 @@
+{
+ "name": "Gloam Warden",
+ "boss": true,
+ "sprite": "asset:boss_warden",
+ "size": [
+  260,
+  174
+ ],
+ "radius": 80,
+ "hp": 300,
+ "score": 20000,
+ "enter": {
+  "y": 280,
+  "speed": 140
+ },
+ "music": "boss",
+ "drops": {
+  "coins": 20
+ },
+ "phases": [
+  {
+   "hp": 1.0,
+   "pattern": [
+    {
+     "action": "fire",
+     "emitter": "w_aimed_line",
+     "for": 2,
+     "wait": 2.4
+    },
+    {
+     "behavior": "patrol",
+     "points": [
+      [
+       -170,
+       0
+      ],
+      [
+       170,
+       0
+      ]
+     ],
+     "relative": true,
+     "speed": 150,
+     "wait": 0.2,
+     "time": 2.6
+    },
+    {
+     "action": "fire",
+     "emitter": "w_ring_curve",
+     "for": 2.6,
+     "wait": 3
+    }
+   ]
+  },
+  {
+   "hp": 0.5,
+   "pattern": [
+    {
+     "action": "fire",
+     "emitter": "w_spiral",
+     "for": 4,
+     "wait": 4.2
+    },
+    {
+     "action": "summon",
+     "enemy": "drone",
+     "count": 2,
+     "wait": 0.8
+    },
+    {
+     "action": "fire",
+     "emitters": [
+      "w_ring_curve",
+      "w_aimed_line"
+     ],
+     "for": 3,
+     "wait": 3.4
+    }
+   ]
+  }
+ ]
+}

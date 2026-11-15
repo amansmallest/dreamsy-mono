@@ -1,0 +1,19 @@
+{
+  "name": "Dusk Bat",
+  "sprite": "asset:bat",
+  "hp": 2,
+  "cost": 1,
+  "behavior": "swoop",
+  "params": {
+    "hover": 40,
+    "speed": 50,
+    "swoopSpeed": 150,
+    "every": 2.4,
+    "range": 160
+  },
+  "contact": {
+    "amount": 1,
+    "knockback": 70
+  },
+  "flying": true
+}

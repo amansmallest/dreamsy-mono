@@ -1,0 +1,10 @@
+{
+ "name": "Dread",
+ "cost": -1,
+ "type": "curse",
+ "rarity": "special",
+ "character": "none",
+ "effects": [],
+ "text": "Unplayable.",
+ "art": "asset:art_curse"
+}

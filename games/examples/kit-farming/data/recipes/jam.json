@@ -1,0 +1,9 @@
+{
+ "name": "Strawberry Jam",
+ "icon": "asset:jam",
+ "inputs": {
+  "strawberry": 3
+ },
+ "value": 330,
+ "category": "artisan"
+}

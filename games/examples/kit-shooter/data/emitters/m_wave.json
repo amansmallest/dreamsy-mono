@@ -1,0 +1,17 @@
+{
+ "pattern": "wave",
+ "count": 5,
+ "spread": 60,
+ "waveAmp": 35,
+ "waveFreq": 0.4,
+ "rate": 6,
+ "speed": 210,
+ "bullet": {
+  "sprite": "asset:bullet_amber",
+  "size": [
+   20,
+   20
+  ],
+  "radius": 5
+ }
+}

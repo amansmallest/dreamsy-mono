@@ -1,0 +1,97 @@
+{
+  "tileSize": 64,
+  "width": 1.5,
+  "tileset": "data/tilesets/garden.json",
+  "checkpoints": 5,
+  "name": "Teapot Turns",
+  "order": 2,
+  "laps": 3,
+  "line": [
+    [
+      3,
+      3
+    ],
+    [
+      11,
+      3
+    ],
+    [
+      12,
+      5
+    ],
+    [
+      11,
+      8
+    ],
+    [
+      6,
+      9
+    ],
+    [
+      6,
+      12
+    ],
+    [
+      11,
+      13
+    ],
+    [
+      12,
+      16
+    ],
+    [
+      11,
+      21
+    ],
+    [
+      7,
+      23
+    ],
+    [
+      3,
+      21
+    ],
+    [
+      3,
+      12
+    ],
+    [
+      2,
+      7
+    ]
+  ],
+  "hazards": [
+    {
+      "kind": "boost",
+      "at": 0.12,
+      "offset": 0
+    },
+    {
+      "kind": "ramp",
+      "at": 0.58,
+      "offset": 0,
+      "size": 1
+    },
+    {
+      "kind": "oil",
+      "at": 0.4,
+      "offset": -0.7
+    },
+    {
+      "kind": "oil",
+      "at": 0.86,
+      "offset": 0.7
+    },
+    {
+      "kind": "item",
+      "at": 0.7,
+      "offset": 0
+    }
+  ],
+  "medals": {
+    "gold": 49,
+    "silver": 54,
+    "bronze": 60
+  },
+  "start": 8
+}

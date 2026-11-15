@@ -1,0 +1,8 @@
+{
+ "needs": {
+  "wood": 2,
+  "stone": 3,
+  "fiber": 1
+ },
+ "category": "tools"
+}

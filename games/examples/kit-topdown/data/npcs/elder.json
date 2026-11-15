@@ -1,0 +1,26 @@
+{
+  "name": "Granny Wick",
+  "sprite": "asset:elder",
+  "gives": "sword",
+  "dialog": [
+    "Tamsin! The Mirewell has gone dark, and the frogs won't sing.",
+    "Something nests in the grotto south-east of the village.",
+    "Take my old driftwood sword. Swing it with ATTACK."
+  ],
+  "dialog_if": [
+    {
+      "flag": "grotto_cleared",
+      "lines": [
+        "The well sings again. You did that, little lantern."
+      ]
+    },
+    {
+      "flag": "gave:elder",
+      "lines": [
+        "Cracked rock? Pell sells bomb bags, if you find bombs first.",
+        "Pits too wide? Look for a hook post."
+      ]
+    }
+  ],
+  "id": "elder"
+}

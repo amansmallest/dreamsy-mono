@@ -1,0 +1,41 @@
+{
+ "speaker": "Odessa",
+ "portrait": "asset:odessa",
+ "start": "a",
+ "nodes": {
+  "a": {
+   "lines": [
+    "I've been keeping a journal about the farm.",
+    "Your farm, I mean."
+   ],
+   "next": "ask"
+  },
+  "ask": {
+   "text": "Will you help me write the valley's new chapter?",
+   "choices": [
+    {
+     "text": "I'd love that.",
+     "next": "yes",
+     "effects": [
+      {
+       "set": "odessa_h4_kind"
+      }
+     ]
+    },
+    {
+     "text": "Maybe another time.",
+     "next": "no"
+    }
+   ]
+  },
+  "yes": {
+   "lines": [
+    "Then chapter one is yours.",
+    "Thank you, dear."
+   ]
+  },
+  "no": {
+   "text": "Oh... okay. Another time, then."
+  }
+ }
+}

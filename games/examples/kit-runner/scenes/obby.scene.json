@@ -1,0 +1,140 @@
+{
+  "format": "0",
+  "root": "obby_root",
+  "entities": {
+    "sky": {
+      "type": "Sprite2D",
+      "props": {
+        "texture": "asset:sky_obby",
+        "size": [
+          720,
+          1280
+        ],
+        "position": [
+          360,
+          640
+        ],
+        "z_index": -100
+      }
+    },
+    "camera_main": {
+      "type": "Camera2D",
+      "props": {
+        "zoom": 1,
+        "position": [
+          360,
+          640
+        ],
+        "smoothing": 0.8,
+        "limit_min": [
+          0,
+          -400
+        ]
+      }
+    },
+    "course": {
+      "type": "Node2D"
+    },
+    "hud_stage": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          24,
+          30
+        ],
+        "size": [
+          460,
+          50
+        ],
+        "font_size": 34,
+        "align": "left",
+        "color": "#ffffff",
+        "font": "rounded",
+        "outline": "#23202e",
+        "outline_size": 4,
+        "text": ""
+      }
+    },
+    "hud_time": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top",
+        "offset": [
+          0,
+          84
+        ],
+        "size": [
+          400,
+          70
+        ],
+        "font_size": 56,
+        "align": "center",
+        "color": "#ffd23f",
+        "font": "rounded",
+        "outline": "#23202e",
+        "outline_size": 5,
+        "text": ""
+      }
+    },
+    "hud_info": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top",
+        "offset": [
+          0,
+          156
+        ],
+        "size": [
+          640,
+          40
+        ],
+        "font_size": 26,
+        "align": "center",
+        "color": "#ffffff",
+        "font": "rounded",
+        "outline": "#23202e",
+        "outline_size": 3,
+        "text": ""
+      }
+    },
+    "obby_root": {
+      "type": "Node2D",
+      "name": "Obby",
+      "children": [
+        "sky",
+        "camera_main",
+        "course",
+        "hud_stage",
+        "hud_time",
+        "hud_info",
+        "obby_msg"
+      ],
+      "scripts": [
+        "scripts/client/obby.luau"
+      ]
+    },
+    "obby_msg": {
+      "type": "UIText",
+      "props": {
+        "anchor": "center",
+        "offset": [
+          0,
+          -260
+        ],
+        "size": [
+          680,
+          140
+        ],
+        "font_size": 50,
+        "align": "center",
+        "color": "#ffffff",
+        "font": "rounded",
+        "outline": "#23202e",
+        "outline_size": 6,
+        "text": "",
+        "z_index": 950
+      }
+    }
+  }
+}

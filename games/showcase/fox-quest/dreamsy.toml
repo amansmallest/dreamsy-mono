@@ -1,0 +1,14 @@
+format = "0"
+name = "Fox Explorer"
+dimension = "2d"
+entry_scene = "scenes/main.scene.json"
+
+[style]
+preset = "pixel"
+
+[server]
+mode = "none"
+
+[players]
+max = 1
+

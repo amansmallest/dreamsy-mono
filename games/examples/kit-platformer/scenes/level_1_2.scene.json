@@ -1,0 +1,232 @@
+{
+  "format": "0",
+  "root": "l1_2",
+  "entities": {
+    "l1_2": {
+      "type": "Node2D",
+      "name": "Hollow Log",
+      "children": [
+        "l1_2_sky",
+        "l1_2_far",
+        "l1_2_clouds",
+        "l1_2_cam",
+        "l1_2_map",
+        "l1_2_player"
+      ]
+    },
+    "l1_2_sky": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          213,
+          120
+        ],
+        "size": [
+          520,
+          320
+        ],
+        "modulate": "#8fd3ff",
+        "z_index": -30
+      },
+      "tags": [
+        "parallax_0"
+      ]
+    },
+    "l1_2_far": {
+      "type": "Node2D",
+      "props": {
+        "position": [
+          0,
+          0
+        ],
+        "z_index": -20
+      },
+      "tags": [
+        "parallax_20"
+      ],
+      "children": [
+        "l1_2_far_0",
+        "l1_2_far_1",
+        "l1_2_far_2"
+      ]
+    },
+    "l1_2_clouds": {
+      "type": "Node2D",
+      "props": {
+        "position": [
+          0,
+          0
+        ],
+        "z_index": -25,
+        "visible": true
+      },
+      "tags": [
+        "parallax_10"
+      ],
+      "children": [
+        "l1_2_cloud_0",
+        "l1_2_cloud_1",
+        "l1_2_cloud_2",
+        "l1_2_cloud_3"
+      ]
+    },
+    "l1_2_cam": {
+      "type": "Camera2D",
+      "props": {
+        "zoom": 3,
+        "position": [
+          213,
+          120
+        ]
+      }
+    },
+    "l1_2_map": {
+      "type": "TileMap2D",
+      "props": {
+        "tile_size": 16,
+        "tileset": "data/tilesets/bramble.json",
+        "data": "file:data/levels/level_1_2.txt"
+      },
+      "tags": [
+        "level_map"
+      ],
+      "scripts": [
+        "scripts/client/level.luau"
+      ]
+    },
+    "l1_2_player": {
+      "type": "Node2D",
+      "props": {
+        "position": [
+          40,
+          180
+        ],
+        "z_index": 5
+      },
+      "tags": [
+        "player"
+      ],
+      "children": [
+        "l1_2_player_sprite"
+      ]
+    },
+    "l1_2_player_sprite": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          0,
+          -1
+        ],
+        "size": [
+          16,
+          16
+        ],
+        "texture": "asset:moss_idle",
+        "anims": "data/anims/mossling.json",
+        "anim": "idle"
+      }
+    },
+    "l1_2_far_0": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          256,
+          190
+        ],
+        "size": [
+          768,
+          240
+        ],
+        "texture": "asset:hills"
+      }
+    },
+    "l1_2_far_1": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          1023,
+          190
+        ],
+        "size": [
+          768,
+          240
+        ],
+        "texture": "asset:hills"
+      }
+    },
+    "l1_2_far_2": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          1790,
+          190
+        ],
+        "size": [
+          768,
+          240
+        ],
+        "texture": "asset:hills"
+      }
+    },
+    "l1_2_cloud_0": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          60,
+          30
+        ],
+        "size": [
+          48,
+          16
+        ],
+        "texture": "asset:cloud",
+        "modulate": "#ffffffcc"
+      }
+    },
+    "l1_2_cloud_1": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          190,
+          56
+        ],
+        "size": [
+          48,
+          16
+        ],
+        "texture": "asset:cloud",
+        "modulate": "#ffffffcc"
+      }
+    },
+    "l1_2_cloud_2": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          320,
+          30
+        ],
+        "size": [
+          48,
+          16
+        ],
+        "texture": "asset:cloud",
+        "modulate": "#ffffffcc"
+      }
+    },
+    "l1_2_cloud_3": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          450,
+          56
+        ],
+        "size": [
+          48,
+          16
+        ],
+        "texture": "asset:cloud",
+        "modulate": "#ffffffcc"
+      }
+    }
+  }
+}

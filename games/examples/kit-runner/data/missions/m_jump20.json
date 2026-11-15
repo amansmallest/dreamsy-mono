@@ -1,0 +1,13 @@
+{
+  "text": "Jump 20 times (total)",
+  "stat": "jumps",
+  "target": 20,
+  "scope": "total",
+  "order": 3,
+  "reward": [
+    {
+      "earn": "coins",
+      "amount": 50
+    }
+  ]
+}

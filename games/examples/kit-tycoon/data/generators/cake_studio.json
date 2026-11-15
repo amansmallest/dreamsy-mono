@@ -1,0 +1,20 @@
+{
+  "name": "Cake Studio",
+  "order": 5,
+  "icon": "asset:gen_cake_studio",
+  "cost": {
+    "base": 250000,
+    "growth": 1.13
+  },
+  "output": 13000,
+  "cycle": 10,
+  "manager": {
+    "name": "Cake Studio Chef",
+    "cost": 3000000
+  },
+  "unlock": {
+    "owned": {
+      "donut_fryer": 10
+    }
+  }
+}

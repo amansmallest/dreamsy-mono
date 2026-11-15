@@ -1,0 +1,13 @@
+{
+ "name": "Iron Pick",
+ "icon": "asset:iron_pick",
+ "category": "tool",
+ "stack": 1,
+ "data": {
+  "tool": {
+   "kind": "pick",
+   "tier": 2,
+   "power": 3
+  }
+ }
+}

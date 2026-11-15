@@ -1,0 +1,114 @@
+{
+ "name": "The Boathouse",
+ "background": "asset:bg_boathouse",
+ "hint": "Fix the lamp. Tap things to look; tap an item, then a thing, to use it.",
+ "hotspots": [
+  {
+   "id": "net",
+   "name": "Old net",
+   "rect": [
+    36,
+    300,
+    240,
+    200
+   ],
+   "sprite": "asset:obj_net",
+   "look": "Something glints in the old net: a small brass key!",
+   "take": "brass_key"
+  },
+  {
+   "id": "door",
+   "name": "Back to the lamp",
+   "rect": [
+    290,
+    290,
+    150,
+    250
+   ],
+   "sprite": "asset:obj_door",
+   "if": "has oiled_wick",
+   "go": "ch1_out"
+  },
+  {
+   "id": "ledger",
+   "name": "Ferry ledger",
+   "rect": [
+    480,
+    290,
+    160,
+    200
+   ],
+   "sprite": "asset:obj_ledger",
+   "look": "@bh_ledger"
+  },
+  {
+   "id": "toolbox",
+   "name": "Toolbox",
+   "rect": [
+    50,
+    640,
+    220,
+    150
+   ],
+   "sprite": "asset:obj_toolbox",
+   "if": "not toolbox_open",
+   "look": "A red toolbox, padlocked shut.",
+   "use": {
+    "brass_key": {
+     "text": [
+      "The key turns with a gritty click.",
+      "Inside: a fresh spool of wick, and a pair of shears with lamp oil still on the blades."
+     ],
+     "effects": [
+      "give wick",
+      "clue shears_oil",
+      "set toolbox_open"
+     ],
+     "consume": true
+    },
+    "*": {
+     "text": "It's padlocked. You need a key."
+    }
+   }
+  },
+  {
+   "id": "toolbox_open",
+   "name": "Open toolbox",
+   "rect": [
+    50,
+    640,
+    220,
+    150
+   ],
+   "sprite": "asset:obj_toolbox",
+   "if": "toolbox_open",
+   "look": "Empty now, except for those oily shears."
+  },
+  {
+   "id": "drum",
+   "name": "Oil drum",
+   "rect": [
+    480,
+    580,
+    170,
+    230
+   ],
+   "sprite": "asset:obj_drum",
+   "look": "Half a drum of lamp oil. You fill a flask.",
+   "take": "oil_flask"
+  },
+  {
+   "id": "prints",
+   "name": "Boot prints",
+   "rect": [
+    230,
+    860,
+    260,
+    120
+   ],
+   "sprite": "asset:obj_prints",
+   "look": "Wet boot prints, big ones, leading from the slipway to the toolbox. Still damp.",
+   "clue": "wet_prints"
+  }
+ ]
+}

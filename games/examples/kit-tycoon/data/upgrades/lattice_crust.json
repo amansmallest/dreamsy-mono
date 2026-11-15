@@ -1,0 +1,19 @@
+{
+  "name": "Lattice Crust",
+  "desc": "Pies ×3",
+  "order": 3,
+  "icon": "asset:gen_pie_stand",
+  "cost": {
+    "amount": 68000
+  },
+  "effect": {
+    "kind": "output",
+    "target": "pie_stand",
+    "value": 3
+  },
+  "requires": {
+    "owned": {
+      "pie_stand": 25
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+ "name": "Spark Storm",
+ "cost": 1,
+ "type": "attack",
+ "rarity": "uncommon",
+ "effects": [
+  "damage 3 x4 random"
+ ],
+ "character": "wick",
+ "art": "asset:art_spark"
+}

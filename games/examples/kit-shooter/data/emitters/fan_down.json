@@ -1,0 +1,17 @@
+{
+ "pattern": "fan",
+ "count": 7,
+ "spread": 70,
+ "angle": 90,
+ "rate": 0.7,
+ "speed": 200,
+ "delay": 0.6,
+ "bullet": {
+  "sprite": "asset:bullet_amber",
+  "size": [
+   20,
+   20
+  ],
+  "radius": 5
+ }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "Vampire Fang",
+  "rarity": "uncommon",
+  "icon": "asset:i_fang",
+  "tags": [
+    "blood"
+  ],
+  "description": "Heal 1 every 3 kills.",
+  "triggers": [
+    {
+      "on": "kill",
+      "every": 3,
+      "effects": [
+        {
+          "heal": 1
+        }
+      ]
+    }
+  ]
+}

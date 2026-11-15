@@ -1,0 +1,46 @@
+{
+  "title": "Apple Pie",
+  "description": "The owl wants to bake a pie.",
+  "giver": "owl",
+  "steps": [
+    {
+      "id": "gather",
+      "text": "Pick 3 apples",
+      "objectives": [
+        {
+          "id": "apples",
+          "text": "Apples",
+          "condition": {
+            "item": "apple",
+            "count": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "deliver",
+      "text": "Bring them to the owl",
+      "objectives": [
+        {
+          "id": "deliver",
+          "event": "delivered"
+        }
+      ]
+    }
+  ],
+  "rewards": [
+    {
+      "earn": "gold",
+      "amount": 30
+    },
+    {
+      "xp": 25
+    },
+    {
+      "give": "potion"
+    },
+    {
+      "toast": "Quest complete: Apple Pie"
+    }
+  ]
+}

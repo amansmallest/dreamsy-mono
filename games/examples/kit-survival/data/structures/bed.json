@@ -1,0 +1,7 @@
+{
+ "name": "Bed",
+ "tile": "Z",
+ "kind": "bed",
+ "limit": 1,
+ "hp": 20
+}

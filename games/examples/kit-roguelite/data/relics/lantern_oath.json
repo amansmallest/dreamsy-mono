@@ -1,0 +1,16 @@
+{
+  "name": "Lantern Oath",
+  "rarity": "starter",
+  "icon": "asset:i_ring",
+  "description": "Heal 2 when a room is cleared.",
+  "triggers": [
+    {
+      "on": "roomClear",
+      "effects": [
+        {
+          "heal": 2
+        }
+      ]
+    }
+  ]
+}

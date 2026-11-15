@@ -1,0 +1,22 @@
+{
+  "id": "bat",
+  "name": "Bat",
+  "sprite": "asset:bat",
+  "size": 9,
+  "cost": 1,
+  "hp": 2,
+  "behavior": "swoop",
+  "params": {
+    "hover": 36,
+    "speed": 55,
+    "swoopSpeed": 150,
+    "every": 2.4,
+    "range": 150
+  },
+  "contact": {
+    "amount": 1,
+    "knockback": 80
+  },
+  "loot": "common",
+  "flying": true
+}

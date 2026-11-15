@@ -1,0 +1,11 @@
+{
+ "name": "Jab",
+ "cost": 1,
+ "type": "attack",
+ "rarity": "basic",
+ "effects": [
+  "damage 6"
+ ],
+ "character": "wick",
+ "art": "asset:art_strike"
+}

@@ -1,0 +1,8 @@
+{
+  "name": "Super Tonic",
+  "kind": "heal",
+  "heal": 60,
+  "price": 300,
+  "icon": "asset:item_tonic",
+  "description": "Restores 60 HP."
+}

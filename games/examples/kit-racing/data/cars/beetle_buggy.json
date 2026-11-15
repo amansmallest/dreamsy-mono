@@ -1,0 +1,14 @@
+{
+  "name": "Beetle Buggy",
+  "order": 1,
+  "sprite": "asset:car_beetle",
+  "price": 0,
+  "blurb": "Sturdy starter. Forgiving grip.",
+  "stats": {
+    "maxSpeed": 470,
+    "accel": 380,
+    "grip": 11,
+    "turn": 3.0,
+    "nitro": 1.8
+  }
+}

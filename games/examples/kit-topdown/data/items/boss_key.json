@@ -1,0 +1,6 @@
+{
+  "name": "Warden Key",
+  "kind": "boss_key",
+  "sprite": "asset:boss_key",
+  "id": "boss_key"
+}

@@ -1,0 +1,12 @@
+{
+ "name": "Big Coop (+4 hens)",
+ "cost": {
+  "gold": 2500
+ },
+ "mods": [
+  {
+   "stat": "coop_capacity",
+   "add": 4
+  }
+ ]
+}

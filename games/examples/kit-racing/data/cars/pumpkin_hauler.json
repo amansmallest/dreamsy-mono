@@ -1,0 +1,20 @@
+{
+  "name": "Pumpkin Hauler",
+  "order": 3,
+  "sprite": "asset:car_pumpkin",
+  "price": 900,
+  "blurb": "Heavy hitter with a long nitro tank.",
+  "unlock": {
+    "level": 3,
+    "track": "driver"
+  },
+  "lockedText": "Reach driver level 3",
+  "stats": {
+    "maxSpeed": 540,
+    "accel": 360,
+    "grip": 9,
+    "turn": 2.7,
+    "nitro": 3.2,
+    "mass": 1.6
+  }
+}

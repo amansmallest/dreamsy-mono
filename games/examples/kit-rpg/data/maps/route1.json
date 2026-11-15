@@ -1,0 +1,110 @@
+{
+  "name": "Glimmer Path",
+  "music": "route",
+  "layers": [
+    {
+      "data": "file:data/levels/route1_ground.txt",
+      "tileset": "data/tilesets/world.json"
+    },
+    {
+      "data": "file:data/levels/route1.txt",
+      "tileset": "data/tilesets/world.json"
+    }
+  ],
+  "spawns": {
+    "south": [
+      8,
+      19,
+      "up"
+    ],
+    "north": [
+      8,
+      1,
+      "down"
+    ]
+  },
+  "warps": [
+    {
+      "at": [
+        8,
+        20
+      ],
+      "to": "town",
+      "spawn": "from_route"
+    },
+    {
+      "at": [
+        8,
+        0
+      ],
+      "to": "cave",
+      "spawn": "south"
+    }
+  ],
+  "encounters": {
+    "grass": {
+      "rate": 0.14,
+      "table": [
+        {
+          "creature": "mothlet",
+          "min": 2,
+          "max": 4,
+          "weight": 40
+        },
+        {
+          "creature": "glimmet",
+          "min": 2,
+          "max": 4,
+          "weight": 35
+        },
+        {
+          "creature": "sunbeak",
+          "min": 3,
+          "max": 4,
+          "weight": 25
+        }
+      ]
+    }
+  },
+  "npcs": [
+    {
+      "id": "ranger_kit_npc",
+      "name": "Ranger Kit",
+      "at": [
+        12,
+        8
+      ],
+      "facing": "left",
+      "sprite": "asset:npc_ranger",
+      "trainer": "ranger_kit",
+      "sight": 4
+    }
+  ],
+  "items": [
+    {
+      "at": [
+        2,
+        2
+      ],
+      "item": "tonic",
+      "count": 2
+    },
+    {
+      "at": [
+        15,
+        18
+      ],
+      "item": "star_jar",
+      "count": 3
+    }
+  ],
+  "signs": [
+    {
+      "at": [
+        12,
+        12
+      ],
+      "text": "GLIMMER PATH \u2014 Hollow Cave ahead. Hop down ledges to save time!"
+    }
+  ]
+}

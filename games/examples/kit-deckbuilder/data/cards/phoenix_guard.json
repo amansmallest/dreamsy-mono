@@ -1,0 +1,13 @@
+{
+ "name": "Phoenix Guard",
+ "cost": 2,
+ "type": "skill",
+ "rarity": "rare",
+ "effects": [
+  "block 15",
+  "heal 5"
+ ],
+ "exhaust": true,
+ "character": "wick",
+ "art": "asset:art_shield"
+}

@@ -1,0 +1,11 @@
+{
+ "name": "Tide Charm",
+ "rarity": "uncommon",
+ "icon": "asset:rl_tide_charm",
+ "text": "Every 3rd Attack you play gives 1 Energy.",
+ "on": "attack_played",
+ "every": 3,
+ "effects": [
+  "energy 1"
+ ]
+}

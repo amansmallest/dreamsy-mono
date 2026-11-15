@@ -1,0 +1,7 @@
+{
+  "name": "Ember Bomb",
+  "icon": "asset:i_bomb",
+  "charge": 2,
+  "action": "bomb",
+  "description": "Blast all nearby foes (6 dmg)."
+}

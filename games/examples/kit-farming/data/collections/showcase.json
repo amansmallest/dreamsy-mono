@@ -1,0 +1,41 @@
+{
+ "name": "Harvest Showcase",
+ "items": [
+  "radish",
+  "peas",
+  "carrot",
+  "lettuce",
+  "strawberry",
+  "sunflower",
+  "potato",
+  "moonmelon"
+ ],
+ "rewards": {
+  "3": [
+   {
+    "earn": "gold",
+    "amount": 300
+   },
+   {
+    "toast": "Odessa: a fine start! (+300g)"
+   }
+  ],
+  "6": [
+   {
+    "set": "moonmelon_unlocked"
+   },
+   {
+    "toast": "Odessa gives you Moonmelon seeds to sell!"
+   }
+  ],
+  "all": [
+   {
+    "earn": "gold",
+    "amount": 3000
+   },
+   {
+    "unlock": "master_farmer"
+   }
+  ]
+ }
+}

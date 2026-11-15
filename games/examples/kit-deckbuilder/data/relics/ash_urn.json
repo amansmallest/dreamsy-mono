@@ -1,0 +1,11 @@
+{
+ "name": "Ash Urn",
+ "rarity": "rare",
+ "icon": "asset:rl_ash_urn",
+ "text": "When an enemy dies, gain 1 Energy and draw 1.",
+ "on": "enemy_killed",
+ "effects": [
+  "energy 1",
+  "draw 1"
+ ]
+}

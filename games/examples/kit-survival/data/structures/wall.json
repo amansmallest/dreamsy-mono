@@ -1,0 +1,6 @@
+{
+ "name": "Wall",
+ "tile": "W",
+ "kind": "wall",
+ "hp": 24
+}

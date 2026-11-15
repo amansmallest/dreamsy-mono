@@ -1,0 +1,10 @@
+{
+ "night": 3,
+ "budget": 8,
+ "enemies": [
+  "shade",
+  "hound"
+ ],
+ "boss": "brute",
+ "spawnEvery": 3
+}

@@ -1,0 +1,6 @@
+{
+ "name": "Oil flask",
+ "icon": "asset:icon_flask",
+ "description": "Lamp oil from the boathouse drum.",
+ "stack": 1
+}

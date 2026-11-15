@@ -1,0 +1,26 @@
+format = "0"
+name = "Starling Drift"
+description = "A pocket vertical shmup: two stages through a neon nebula and an ice belt, bullet-hell bosses, a hangar shop between stages and a twin-stick arena. Built on the shooter kit."
+dimension = "2d"
+orientation = "portrait"
+entry_scene = "scenes/title.scene.json"
+kits = ["shooter"]
+
+[players]
+min = 1
+max = 1
+
+[server]
+mode = "none"
+
+[ui]
+primary = "#5b4bd6"
+accent = "#ffd34d"
+background = "#151a3d"
+text = "#f4f1ff"
+panel = "rounded"
+font = "bold"
+
+[style]
+preset = "clean"
+palette = ["#0b1020", "#151a3d", "#5b4bd6", "#7fd8ff", "#ff6b8a", "#ffd34d", "#b6f27a", "#f4f1ff"]

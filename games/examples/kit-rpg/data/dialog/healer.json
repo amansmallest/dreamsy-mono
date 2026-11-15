@@ -1,0 +1,31 @@
+{
+  "speaker": "Healer Juno",
+  "start": "start",
+  "nodes": {
+    "start": {
+      "lines": [
+        "Welcome to the Lodge! Shall I restore your team?"
+      ],
+      "choices": [
+        {
+          "text": "Yes, please",
+          "effects": [
+            {
+              "heal": true
+            }
+          ],
+          "goto": "done"
+        },
+        {
+          "text": "No thanks",
+          "goto": "end"
+        }
+      ]
+    },
+    "done": {
+      "lines": [
+        "All better! Come back any time."
+      ]
+    }
+  }
+}

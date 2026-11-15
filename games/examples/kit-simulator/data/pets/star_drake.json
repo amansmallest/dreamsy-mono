@@ -1,0 +1,10 @@
+{
+ "name": "Star Drake",
+ "rarity": "mythic",
+ "bonus": {
+  "power": 2.5,
+  "coins": 1.5,
+  "speed": 0.5
+ },
+ "icon": "asset:pet_star_drake"
+}

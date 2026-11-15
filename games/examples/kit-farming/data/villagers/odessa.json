@@ -1,0 +1,71 @@
+{
+ "name": "Odessa",
+ "sprite": "asset:odessa",
+ "portrait": "asset:odessa",
+ "size": 64,
+ "home": "museum_in",
+ "birthday": {
+  "season": "spring",
+  "day": 3
+ },
+ "loves": [
+  "moonmelon",
+  "sunflower"
+ ],
+ "likes": [
+  "category:crop",
+  "jam"
+ ],
+ "dislikes": [
+  "hay"
+ ],
+ "hates": [
+  "egg"
+ ],
+ "schedule": {
+  "default": [
+   [
+    360,
+    "museum_in"
+   ],
+   [
+    540,
+    "museum_door"
+   ],
+   [
+    780,
+    "square"
+   ],
+   [
+    1080,
+    "museum_in"
+   ]
+  ],
+  "rain": [
+   [
+    360,
+    "museum_in"
+   ]
+  ]
+ },
+ "lines": {
+  "default": [
+   "Every vegetable tells the story of a season.",
+   "Bring me your best harvest for the Showcase!",
+   "History is just compost for the future."
+  ],
+  "hearts_2": [
+   "Your donations are the talk of the museum."
+  ]
+ },
+ "heartEvents": [
+  {
+   "hearts": 2,
+   "dialog": "odessa_h2"
+  },
+  {
+   "hearts": 4,
+   "dialog": "odessa_h4"
+  }
+ ]
+}

@@ -1,0 +1,15 @@
+{
+  "name": "Sugar Rush",
+  "desc": "Instant 90s of income",
+  "icon": "asset:event_golden",
+  "reward": {
+    "income_seconds": 90
+  },
+  "duration": 0,
+  "lifetime": 10,
+  "every": [
+    120,
+    200
+  ],
+  "weight": 1
+}

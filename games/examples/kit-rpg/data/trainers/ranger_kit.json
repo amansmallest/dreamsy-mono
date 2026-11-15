@@ -1,0 +1,25 @@
+{
+  "name": "Ranger Kit",
+  "party": [
+    {
+      "creature": "sunbeak",
+      "level": 4
+    },
+    {
+      "creature": "mothlet",
+      "level": 4
+    }
+  ],
+  "ai": "random",
+  "reward": 160,
+  "intro": [
+    "Hey! You walked into my sight line.",
+    "That means we battle!"
+  ],
+  "defeat": [
+    "Wow, you're good!"
+  ],
+  "after": [
+    "The cave up north is full of Duskmoles. Bring Tonics!"
+  ]
+}

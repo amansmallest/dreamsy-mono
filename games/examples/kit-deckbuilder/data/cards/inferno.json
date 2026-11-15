@@ -1,0 +1,16 @@
+{
+ "name": "Inferno",
+ "cost": "X",
+ "type": "power",
+ "rarity": "rare",
+ "effects": [
+  "apply ember X+1 self"
+ ],
+ "upgrade": {
+  "effects": [
+   "apply ember X+2 self"
+  ]
+ },
+ "character": "wick",
+ "art": "asset:art_flame"
+}

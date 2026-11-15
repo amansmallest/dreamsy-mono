@@ -1,0 +1,15 @@
+{
+ "name": "Lumen",
+ "order": 3,
+ "sprite": "asset:ship_lumen",
+ "size": [
+  76,
+  76
+ ],
+ "weapon": "lance",
+ "speed": 380,
+ "hitbox": 6,
+ "unlock": {
+  "clear": "ice_belt"
+ }
+}

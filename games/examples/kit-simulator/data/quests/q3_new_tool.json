@@ -1,0 +1,30 @@
+{
+ "title": "Better Tools",
+ "autoStart": true,
+ "steps": [
+  {
+   "id": "s1",
+   "text": "Buy a new tool",
+   "objectives": [
+    {
+     "id": "o",
+     "event": "sim_bought",
+     "match": {
+      "kind": "tools"
+     },
+     "count": 1
+    }
+   ]
+  }
+ ],
+ "rewards": [
+  {
+   "earn": "coins",
+   "amount": 250
+  }
+ ],
+ "requires": {
+  "quest": "q2_seller",
+  "is": "done"
+ }
+}

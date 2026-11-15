@@ -1,0 +1,17 @@
+{
+  "bpm": 80,
+  "steps": 16,
+  "channels": [
+    {
+      "wave": "triangle",
+      "volume": 0.38,
+      "notes": "A2 - - - E3 - - - A2 - - - F3 - E3 - A2 - - - E3 - - - G2 - - - D3 - - -"
+    },
+    {
+      "wave": "sine",
+      "volume": 0.18,
+      "notes": ". . . . C5 - . . . . . . B4 - . . . . . . A4 - . . . . . . E5 - - -"
+    }
+  ],
+  "loop": true
+}

@@ -1,0 +1,8 @@
+{
+ "wave": "noise",
+ "freq": 1200,
+ "slide": -2,
+ "sustain": 0.05,
+ "decay": 0.7,
+ "volume": 0.6
+}

@@ -1,0 +1,16 @@
+{
+  "name": "Golden Muffin",
+  "desc": "Everything ×3 for 30s",
+  "icon": "asset:event_golden",
+  "effect": {
+    "kind": "output",
+    "value": 3
+  },
+  "duration": 30,
+  "lifetime": 10,
+  "every": [
+    120,
+    200
+  ],
+  "weight": 2
+}

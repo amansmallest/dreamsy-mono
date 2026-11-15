@@ -1,0 +1,99 @@
+{
+  "format": "0",
+  "root": "ow",
+  "entities": {
+    "ow": {
+      "type": "Node2D",
+      "name": "overworld",
+      "children": [
+        "ow_bg",
+        "ow_cam",
+        "ow_floor",
+        "ow_objects",
+        "ow_hero"
+      ]
+    },
+    "ow_bg": {
+      "type": "Sprite2D",
+      "props": {
+        "position": [
+          240,
+          208
+        ],
+        "size": [
+          1280,
+          1616
+        ],
+        "modulate": "#141a24",
+        "z_index": -10
+      }
+    },
+    "ow_cam": {
+      "type": "Camera2D",
+      "props": {
+        "zoom": 3,
+        "position": [
+          120,
+          104
+        ]
+      }
+    },
+    "ow_floor": {
+      "type": "TileMap2D",
+      "props": {
+        "tile_size": 16,
+        "tileset": "data/tilesets/floors.json",
+        "data": "file:data/levels/overworld_floor.txt",
+        "collision": false,
+        "z_index": 0
+      },
+      "tags": [
+        "area_map"
+      ]
+    },
+    "ow_objects": {
+      "type": "TileMap2D",
+      "props": {
+        "tile_size": 16,
+        "tileset": "data/tilesets/overworld.json",
+        "data": "file:data/levels/overworld.txt",
+        "collision": false,
+        "z_index": 1
+      },
+      "tags": [
+        "area_map"
+      ],
+      "scripts": [
+        "scripts/client/area.luau"
+      ]
+    },
+    "ow_hero": {
+      "type": "Node2D",
+      "props": {
+        "position": [
+          120,
+          120
+        ],
+        "z_index": 5
+      },
+      "tags": [
+        "player"
+      ],
+      "children": [
+        "ow_hero_sprite"
+      ]
+    },
+    "ow_hero_sprite": {
+      "type": "Sprite2D",
+      "props": {
+        "size": [
+          16,
+          16
+        ],
+        "texture": "asset:hero_down1",
+        "anims": "data/anims/tamsin.json",
+        "anim": "down"
+      }
+    }
+  }
+}

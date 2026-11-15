@@ -1,0 +1,9 @@
+{
+ "format": "0",
+ "root": "title_root",
+ "entities": {
+  "title_root": { "type": "Node2D", "children": ["title_bg", "title_ship"], "scripts": ["scripts/client/title.luau"] },
+  "title_bg": { "type": "Sprite2D", "props": { "position": [360, 640], "size": [720, 1280], "texture": "asset:bg_nebula", "z_index": -100 } },
+  "title_ship": { "type": "Sprite2D", "props": { "position": [360, 520], "size": [160, 160], "texture": "asset:ship_starling", "z_index": 5 } }
+ }
+}

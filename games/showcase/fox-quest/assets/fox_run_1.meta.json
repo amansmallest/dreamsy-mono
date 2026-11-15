@@ -1,0 +1,8 @@
+{
+  "kind": "image",
+  "file": "fox_run_1.svg",
+  "source": {
+    "model": "claude-sonnet-5-5",
+    "prompt": "drawn as SVG"
+  }
+}

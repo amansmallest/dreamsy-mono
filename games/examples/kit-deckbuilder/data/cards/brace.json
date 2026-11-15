@@ -1,0 +1,11 @@
+{
+ "name": "Brace",
+ "cost": 1,
+ "type": "skill",
+ "rarity": "basic",
+ "effects": [
+  "block 5"
+ ],
+ "character": "wick",
+ "art": "asset:art_shield"
+}

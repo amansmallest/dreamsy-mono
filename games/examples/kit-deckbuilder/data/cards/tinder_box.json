@@ -1,0 +1,11 @@
+{
+ "name": "Tinder Box",
+ "cost": 1,
+ "type": "power",
+ "rarity": "uncommon",
+ "effects": [
+  "apply ember 2 self"
+ ],
+ "character": "wick",
+ "art": "asset:art_flame"
+}

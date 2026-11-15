@@ -1,0 +1,6 @@
+{
+  "name": "Heart Container",
+  "kind": "heart_container",
+  "sprite": "asset:heart_container",
+  "id": "heart_container"
+}

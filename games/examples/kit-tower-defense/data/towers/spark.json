@@ -1,0 +1,101 @@
+{
+  "id": "spark",
+  "name": "Firefly Lantern",
+  "cost": 110,
+  "range": 2.3,
+  "rate": 0.8,
+  "damage": 12,
+  "damage_type": "lightning",
+  "ground": true,
+  "air": true,
+  "chain": {
+    "count": 3,
+    "range": 1.6,
+    "falloff": 0.75
+  },
+  "sprite": "asset:tower_spark",
+  "icon": "asset:tower_spark",
+  "projectile": {
+    "color": "#ffe66d",
+    "beam": true
+  },
+  "upgrades": [
+    {
+      "name": "Brighter Glow",
+      "desc": "+6 damage",
+      "cost": 90,
+      "add": {
+        "damage": 6
+      }
+    },
+    {
+      "name": "Quick Flicker",
+      "desc": "x1.25 rate",
+      "cost": 100,
+      "mul": {
+        "rate": 1.25
+      }
+    }
+  ],
+  "branches": [
+    {
+      "id": "a",
+      "name": "Storm Jar",
+      "sprite": "asset:tower_spark_a",
+      "icon": "asset:tower_spark_a",
+      "tiers": [
+        {
+          "name": "Storm Jar",
+          "desc": "+3 chain jumps",
+          "cost": 170,
+          "add": {
+            "chain.count": 3
+          },
+          "set": {
+            "chain.falloff": 0.85
+          }
+        },
+        {
+          "name": "Thunder Jar",
+          "desc": "+3 jumps, +8 damage",
+          "cost": 260,
+          "add": {
+            "chain.count": 3,
+            "damage": 8
+          }
+        }
+      ]
+    },
+    {
+      "id": "b",
+      "name": "Ember Swarm",
+      "sprite": "asset:tower_spark_b",
+      "icon": "asset:tower_spark_b",
+      "tiers": [
+        {
+          "name": "Ember Swarm",
+          "desc": "Burns targets",
+          "cost": 150,
+          "set": {
+            "dot": {
+              "dps": 12,
+              "duration": 3,
+              "type": "fire"
+            }
+          }
+        },
+        {
+          "name": "Wildfire",
+          "desc": "Hotter burn, x1.3 damage",
+          "cost": 240,
+          "set": {
+            "dot.dps": 24
+          },
+          "mul": {
+            "damage": 1.3
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "name": "Rainbow Sugar",
+  "desc": "Candy ×3",
+  "order": 6,
+  "icon": "asset:gen_candy_lab",
+  "cost": {
+    "amount": 230000000
+  },
+  "effect": {
+    "kind": "output",
+    "target": "candy_lab",
+    "value": 3
+  },
+  "requires": {
+    "owned": {
+      "candy_lab": 25
+    }
+  }
+}

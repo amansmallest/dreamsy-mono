@@ -1,0 +1,110 @@
+{
+ "title": "Lanternlight",
+ "start": "start",
+ "characters": {
+  "mira": {
+   "name": "Mira",
+   "color": "#2f7f86",
+   "default": "neutral",
+   "position": "left",
+   "expressions": {
+    "neutral": "asset:mira_neutral",
+    "happy": "asset:mira_happy",
+    "worried": "asset:mira_worried"
+   },
+   "affection": {
+    "min": -5,
+    "max": 10
+   }
+  },
+  "ott": {
+   "name": "Ott",
+   "color": "#3d5a80",
+   "default": "neutral",
+   "position": "right",
+   "expressions": {
+    "neutral": "asset:ott_neutral",
+    "angry": "asset:ott_angry",
+    "sad": "asset:ott_sad"
+   },
+   "affection": {
+    "min": -5,
+    "max": 10
+   }
+  },
+  "juniper": {
+   "name": "Juniper",
+   "color": "#5f8f4e",
+   "default": "neutral",
+   "position": "right",
+   "expressions": {
+    "neutral": "asset:juniper_neutral",
+    "smile": "asset:juniper_smile",
+    "thinking": "asset:juniper_thinking"
+   },
+   "affection": {
+    "min": -5,
+    "max": 10
+   }
+  }
+ },
+ "cgs": {
+  "relit": {
+   "title": "The Light Returns",
+   "image": "asset:cg_relit"
+  }
+ },
+ "endings": {
+  "keeper": {
+   "title": "Keeper's Light",
+   "order": 1,
+   "text": "Saltreach Light burns every night now, kept by three stubborn people and one reformed ferryman."
+  },
+  "fog": {
+   "title": "Fog Over Saltreach",
+   "order": 2,
+   "text": "The lamp turns, but nobody on the island quite trusts you. The fog keeps its secrets."
+  }
+ },
+ "clues": {
+  "cut_wick": {
+   "name": "Cut wick",
+   "text": "The lamp's wick was snipped clean, not burned down."
+  },
+  "shears_oil": {
+   "name": "Oily shears",
+   "text": "Boathouse shears with fresh lamp oil on the blades."
+  },
+  "wet_prints": {
+   "name": "Big wet boot prints",
+   "text": "Fresh prints from the slipway to the toolbox. Large boots."
+  },
+  "ledger_gap": {
+   "name": "Ledger gap",
+   "text": "No ferry crossing logged at midnight, yet three hours of fuel are gone."
+  },
+  "lantern_boat": {
+   "name": "Lantern on the water",
+   "text": "Juniper saw a single lantern rowing toward the island at midnight."
+  },
+  "ott_alibi": {
+   "name": "Ott's alibi",
+   "text": "Ott says he was asleep by ten and never left his cottage."
+  }
+ },
+ "combine": [
+  {
+   "items": [
+    "wick",
+    "oil_flask"
+   ],
+   "result": "oiled_wick",
+   "text": "You soak the new wick in oil. It'll take a flame now."
+  }
+ ],
+ "cantUse": "That doesn't seem to help.",
+ "ui": {
+  "cps": 50,
+  "narration": "#d9d2ee"
+ }
+}

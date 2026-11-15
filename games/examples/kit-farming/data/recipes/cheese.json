@@ -1,0 +1,12 @@
+{
+ "name": "Goat Cheese",
+ "icon": "asset:cheese",
+ "inputs": {
+  "goat_milk": 2
+ },
+ "value": 340,
+ "category": "artisan",
+ "unlock": {
+  "flag": "goat_barn"
+ }
+}

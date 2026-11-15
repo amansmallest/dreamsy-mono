@@ -1,0 +1,16 @@
+{
+  "tiles": {
+    "G": {
+      "sprite": "asset:tile_grass",
+      "solid": true
+    },
+    "D": {
+      "sprite": "asset:tile_dirt",
+      "solid": true
+    },
+    "S": {
+      "sprite": "asset:tile_stone",
+      "solid": true
+    }
+  }
+}

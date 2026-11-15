@@ -1,0 +1,19 @@
+{
+  "tiles": {
+    "g": {
+      "sprite": "asset:grass"
+    },
+    ",": {
+      "sprite": "asset:path"
+    },
+    "_": {
+      "sprite": "asset:stone_floor"
+    },
+    "p": {
+      "sprite": "asset:plate",
+      "tags": [
+        "plate"
+      ]
+    }
+  }
+}

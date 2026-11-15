@@ -1,0 +1,26 @@
+format = "0"
+name = "Pebble Pals"
+description = "Tap rocks, fill your bag, sell your haul, hatch critter pals and rebirth your way up to Starfall Peak. Built on the simulator kit."
+dimension = "2d"
+orientation = "portrait"
+entry_scene = "scenes/main.scene.json"
+kits = ["simulator"]
+
+[players]
+min = 1
+max = 1
+
+[server]
+mode = "none"
+
+[ui]
+primary = "#4f8fd6"
+accent = "#ffcf3f"
+background = "#3a2f4a"
+text = "#fffaf0"
+panel = "rounded"
+font = "rounded"
+
+[style]
+preset = "clean"
+palette = ["#3a2f4a", "#4f8fd6", "#ffcf3f", "#bfe39a", "#5fa86b", "#e84a4a", "#fffaf0", "#c49a6c"]

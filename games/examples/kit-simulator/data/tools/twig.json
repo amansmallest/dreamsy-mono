@@ -1,0 +1,8 @@
+{
+ "name": "Twig",
+ "order": 1,
+ "cost": 0,
+ "power": 1,
+ "speed": 0,
+ "icon": "asset:tool_twig"
+}

@@ -1,0 +1,9 @@
+{
+ "name": "Moon Owl",
+ "rarity": "epic",
+ "bonus": {
+  "power": 1.2,
+  "capacity": 0.5
+ },
+ "icon": "asset:pet_moon_owl"
+}

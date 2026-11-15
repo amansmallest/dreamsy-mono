@@ -1,0 +1,21 @@
+{
+  "name": "Bristle Boar",
+  "sprite": "asset:boar",
+  "hp": 7,
+  "cost": 3,
+  "behavior": "charge",
+  "params": {
+    "range": 100,
+    "windup": 0.6,
+    "speed": 190,
+    "duration": 0.45,
+    "cooldown": 1.5,
+    "walk": 22
+  },
+  "contact": {
+    "amount": 2,
+    "knockback": 200
+  },
+  "armor": 1,
+  "knockbackResist": 0.5
+}

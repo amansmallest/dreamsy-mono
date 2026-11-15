@@ -1,0 +1,8 @@
+{
+  "name": "Bright Jar",
+  "kind": "capture",
+  "power": 1.8,
+  "price": 400,
+  "icon": "asset:item_superjar",
+  "description": "A stronger jar. Better odds."
+}

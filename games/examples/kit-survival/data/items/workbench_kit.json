@@ -1,0 +1,8 @@
+{
+ "name": "Workbench",
+ "icon": "asset:workbench",
+ "category": "build",
+ "data": {
+  "place": "workbench"
+ }
+}

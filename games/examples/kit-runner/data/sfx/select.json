@@ -1,0 +1,8 @@
+{
+  "wave": "square",
+  "duty": 0.25,
+  "freq": 660,
+  "sustain": 0.02,
+  "decay": 0.08,
+  "volume": 0.3
+}

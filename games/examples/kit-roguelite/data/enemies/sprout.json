@@ -1,0 +1,16 @@
+{
+  "name": "Sproutling",
+  "sprite": "asset:sprout",
+  "hp": 4,
+  "cost": 1,
+  "behavior": "chase",
+  "params": {
+    "speed": 34,
+    "aggro": 200,
+    "idle": "wander"
+  },
+  "contact": {
+    "amount": 1,
+    "knockback": 90
+  }
+}

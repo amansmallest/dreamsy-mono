@@ -1,0 +1,9 @@
+{
+ "needs": {
+  "wood": 3,
+  "stone": 2,
+  "rope": 1
+ },
+ "station": "workbench",
+ "category": "tools"
+}

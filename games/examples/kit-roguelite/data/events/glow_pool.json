@@ -1,0 +1,28 @@
+{
+  "title": "Glowing Pool",
+  "text": "Warm light ripples below.",
+  "minFloor": 2,
+  "choices": [
+    {
+      "text": "Drink: heal 40%",
+      "effects": [
+        {
+          "healPct": 0.4
+        }
+      ]
+    },
+    {
+      "text": "Dive in: rare relic, -10 HP",
+      "cost": {
+        "hp": 10
+      },
+      "effects": [
+        {
+          "relic": {
+            "rare": 1
+          }
+        }
+      ]
+    }
+  ]
+}

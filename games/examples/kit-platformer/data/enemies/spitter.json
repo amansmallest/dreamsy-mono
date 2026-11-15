@@ -1,0 +1,26 @@
+{
+  "name": "Spitbulb",
+  "behaviour": "shooter",
+  "sprite": "asset:spitter",
+  "faces": "left",
+  "size": [
+    14,
+    14
+  ],
+  "draw_size": [
+    16,
+    15
+  ],
+  "speed": 0,
+  "shoot": {
+    "interval": 2.2,
+    "speed": 120,
+    "range": 220,
+    "sprite": "asset:spit",
+    "size": [
+      8,
+      8
+    ]
+  },
+  "id": "spitter"
+}

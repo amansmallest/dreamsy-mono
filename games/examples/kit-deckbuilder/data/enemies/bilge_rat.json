@@ -1,0 +1,31 @@
+{
+ "name": "Bilge Rat",
+ "hp": [
+  11,
+  14
+ ],
+ "tier": "normal",
+ "act": "undertow",
+ "cost": 1,
+ "sprite": "asset:en_bilge_rat",
+ "moves": {
+  "bite": {
+   "effects": [
+    "damage 6"
+   ]
+  },
+  "gnaw": {
+   "effects": [
+    "damage 3 x2"
+   ]
+  }
+ },
+ "pattern": {
+  "kind": "random",
+  "weights": {
+   "bite": 2,
+   "gnaw": 1
+  },
+  "noRepeat": 2
+ }
+}

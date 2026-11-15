@@ -1,0 +1,8 @@
+{
+  "name": "Scholar",
+  "description": "Reach level 3.",
+  "icon": "asset:star",
+  "condition": {
+    "level": 3
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "start": {
+    "map": "town",
+    "spawn": "start"
+  },
+  "world_scene": "scenes/world.scene.json",
+  "player_name": "Nova",
+  "money": 500,
+  "items": {
+    "tonic": 2
+  },
+  "zoom": 3,
+  "player": {
+    "sprite": {
+      "down": "asset:hero_down",
+      "up": "asset:hero_up",
+      "right": "asset:hero_right"
+    },
+    "size": [
+      12,
+      16
+    ],
+    "offset_y": -3
+  },
+  "item_sprite": "asset:item_jar",
+  "dialog_speed": 50,
+  "lose_money_percent": 25,
+  "ui": {
+    "primary": "#3b5dc9",
+    "accent": "#ffcd75",
+    "background": "#1a1c2c",
+    "text": "#f4f4f4"
+  },
+  "battle": {
+    "sky": "#73eff7",
+    "ground": "#a7f070",
+    "platform": "asset:battle_pad",
+    "music": "battle",
+    "trainer_music": "battle",
+    "text_seconds": 1.1,
+    "sprite_size": 240
+  },
+  "sfx": {
+    "select": "select",
+    "item": "item",
+    "heal": "heal",
+    "hit": "hit",
+    "attack": "attack",
+    "faint": "faint",
+    "level": "level",
+    "throw": "throw",
+    "shake": "shake",
+    "caught": "caught",
+    "bump": "bump",
+    "door": "door",
+    "alert": "alert",
+    "send": "send",
+    "quest": "quest",
+    "buy": "item",
+    "hop": "hop",
+    "run": "door"
+  }
+}

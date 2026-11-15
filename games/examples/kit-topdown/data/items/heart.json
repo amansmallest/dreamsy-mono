@@ -1,0 +1,7 @@
+{
+  "name": "Heart",
+  "kind": "heart",
+  "amount": 2,
+  "sprite": "asset:heart_pickup",
+  "id": "heart"
+}

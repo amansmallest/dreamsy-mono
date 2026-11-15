@@ -1,0 +1,11 @@
+{
+ "name": "Ash Mantle",
+ "cost": 1,
+ "type": "power",
+ "rarity": "uncommon",
+ "effects": [
+  "apply metallicize 3 self"
+ ],
+ "character": "wick",
+ "art": "asset:art_mantle"
+}

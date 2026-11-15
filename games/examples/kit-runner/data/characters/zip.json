@@ -1,0 +1,19 @@
+{
+  "name": "Zip",
+  "order": 2,
+  "cost": {
+    "coins": 400
+  },
+  "tint": "#7fe3ff",
+  "description": "Magnet & 2x last 3 s longer.",
+  "mods": [
+    {
+      "stat": "magnetTime",
+      "add": 3
+    },
+    {
+      "stat": "doubleTime",
+      "add": 3
+    }
+  ]
+}

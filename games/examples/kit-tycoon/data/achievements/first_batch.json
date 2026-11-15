@@ -1,0 +1,13 @@
+{
+  "name": "First Batch",
+  "desc": "Buy a Muffin Tin",
+  "order": 1,
+  "when": {
+    "owned": {
+      "muffin_tin": 1
+    }
+  },
+  "reward": {
+    "mult": 1.05
+  }
+}

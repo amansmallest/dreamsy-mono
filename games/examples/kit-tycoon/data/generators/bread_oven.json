@@ -1,0 +1,20 @@
+{
+  "name": "Bread Oven",
+  "order": 2,
+  "icon": "asset:gen_bread_oven",
+  "cost": {
+    "base": 75,
+    "growth": 1.145
+  },
+  "output": 12,
+  "cycle": 2,
+  "manager": {
+    "name": "Bread Oven Chef",
+    "cost": 900
+  },
+  "unlock": {
+    "owned": {
+      "muffin_tin": 10
+    }
+  }
+}

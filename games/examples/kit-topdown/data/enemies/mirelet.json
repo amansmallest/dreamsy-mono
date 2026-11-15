@@ -1,0 +1,17 @@
+{
+  "name": "Mirelet",
+  "behaviour": "wanderer",
+  "sprite": "asset:mirelet",
+  "size": [
+    12,
+    10
+  ],
+  "draw_size": [
+    16,
+    16
+  ],
+  "hp": 2,
+  "speed": 22,
+  "damage": 1,
+  "id": "mirelet"
+}

@@ -1,0 +1,19 @@
+format = "0"
+name = "Bramble Watch"
+description = "Garden critters guard the seed vault from beetle swarms. A 3-level tower-defense campaign with stars, unlocks and an endless mode — the golden example for the tower-defense kit."
+dimension = "2d"
+orientation = "portrait"
+entry_scene = "scenes/title.scene.json"
+kits = ["tower-defense"]
+
+[ui]
+primary = "#3a86ff"
+accent = "#ffd166"
+background = "#1d2b1d"
+text = "#ffffff"
+panel = "rounded"
+font = "rounded"
+
+[style]
+preset = "clean"
+palette = ["#7fb24f", "#c99e67", "#3f7d3a", "#ffd166", "#ef476f", "#3a86ff", "#26301f"]

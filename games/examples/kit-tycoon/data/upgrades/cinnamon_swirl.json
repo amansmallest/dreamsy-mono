@@ -1,0 +1,26 @@
+{
+  "name": "Cinnamon Swirl",
+  "desc": "Bread & pies bake 2× faster",
+  "order": 12,
+  "icon": "asset:gen_bread_oven",
+  "cost": {
+    "amount": 30000
+  },
+  "effects": [
+    {
+      "kind": "speed",
+      "target": "bread_oven",
+      "value": 2
+    },
+    {
+      "kind": "speed",
+      "target": "pie_stand",
+      "value": 2
+    }
+  ],
+  "requires": {
+    "owned": {
+      "bread_oven": 50
+    }
+  }
+}

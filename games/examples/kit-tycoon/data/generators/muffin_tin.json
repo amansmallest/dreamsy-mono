@@ -1,0 +1,15 @@
+{
+  "name": "Muffin Tin",
+  "order": 1,
+  "icon": "asset:gen_muffin_tin",
+  "cost": {
+    "base": 5,
+    "growth": 1.07
+  },
+  "output": 1,
+  "cycle": 1,
+  "manager": {
+    "name": "Muffin Tin Chef",
+    "cost": 60
+  }
+}

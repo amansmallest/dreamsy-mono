@@ -1,0 +1,8 @@
+{
+  "name": "Carved stone",
+  "dialog": [
+    "Locked doors drink small keys.",
+    "The great door wants the Warden Key."
+  ],
+  "id": "sign_grotto"
+}

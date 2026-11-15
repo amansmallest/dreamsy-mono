@@ -1,0 +1,19 @@
+{
+  "name": "Sourdough Starter",
+  "desc": "Bread ×3",
+  "order": 2,
+  "icon": "asset:gen_bread_oven",
+  "cost": {
+    "amount": 4500
+  },
+  "effect": {
+    "kind": "output",
+    "target": "bread_oven",
+    "value": 3
+  },
+  "requires": {
+    "owned": {
+      "bread_oven": 25
+    }
+  }
+}

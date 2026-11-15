@@ -1,0 +1,20 @@
+{
+  "name": "Donut Fryer",
+  "order": 4,
+  "icon": "asset:gen_donut_fryer",
+  "cost": {
+    "base": 17000,
+    "growth": 1.135
+  },
+  "output": 1300,
+  "cycle": 6,
+  "manager": {
+    "name": "Donut Fryer Chef",
+    "cost": 200000
+  },
+  "unlock": {
+    "owned": {
+      "pie_stand": 10
+    }
+  }
+}

@@ -1,0 +1,87 @@
+{
+ "name": "Pip",
+ "sprite": "asset:pip",
+ "portrait": "asset:pip",
+ "size": 64,
+ "home": "cottage_in",
+ "birthday": {
+  "season": "spring",
+  "day": 12
+ },
+ "loves": [
+  "golden_egg",
+  "strawberry"
+ ],
+ "likes": [
+  "radish",
+  "carrot"
+ ],
+ "dislikes": [
+  "potato"
+ ],
+ "hates": [
+  "lettuce"
+ ],
+ "schedule": {
+  "default": [
+   [
+    480,
+    "cottage_door"
+   ],
+   [
+    600,
+    "square"
+   ],
+   [
+    720,
+    "farm_gate"
+   ],
+   [
+    900,
+    "pond"
+   ],
+   [
+    1080,
+    "cottage_door"
+   ],
+   [
+    1200,
+    "cottage_in"
+   ]
+  ],
+  "rain": [
+   [
+    360,
+    "cottage_in"
+   ],
+   [
+    840,
+    "cottage_door"
+   ],
+   [
+    960,
+    "cottage_in"
+   ]
+  ]
+ },
+ "lines": {
+  "default": [
+   "Can I pet your hens? Pleeease?",
+   "I saw a frog THIS big at the pond!",
+   "When I grow up I'm gonna farm moonmelons."
+  ],
+  "hearts_2": [
+   "You're my favorite grown-up. Don't tell Bram."
+  ]
+ },
+ "heartEvents": [
+  {
+   "hearts": 2,
+   "dialog": "pip_h2"
+  },
+  {
+   "hearts": 4,
+   "dialog": "pip_h4"
+  }
+ ]
+}

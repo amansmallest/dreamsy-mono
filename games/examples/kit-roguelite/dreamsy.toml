@@ -1,0 +1,30 @@
+format = "0"
+name = "Lanternfall"
+description = "Roguelite showcase for the roguelite kit: pick a door, clear seeded arenas, stack relic synergies, beat two bosses, spend Embers on the meta tree, climb Heat levels, try the daily run."
+dimension = "2d"
+orientation = "portrait"
+entry_scene = "scenes/main.scene.json"
+kits = ["roguelite"]
+
+[players]
+min = 1
+max = 1
+
+[server]
+mode = "none"
+
+[physics]
+layers = ["player", "enemy", "world"]
+
+[style]
+preset = "pixel"
+grid = 16
+palette = ["#1b1a2e", "#f4efe6", "#c8433a", "#e98a3b", "#f4cf5c", "#5fae58", "#2f6f45", "#4aa3df", "#2b4f8a", "#8e5ac8", "#5a3482", "#9aa6b8", "#5d6779", "#7a4b32", "#4a2d22", "#3a3550"]
+
+[ui]
+primary = "#5a3482"
+accent = "#f4cf5c"
+background = "#1b1a2e"
+text = "#f4efe6"
+panel = "pixel"
+font = "pixel"

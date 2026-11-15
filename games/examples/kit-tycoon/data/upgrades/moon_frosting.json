@@ -1,0 +1,19 @@
+{
+  "name": "Moon Frosting",
+  "desc": "Sugar Moons ×3",
+  "order": 8,
+  "icon": "asset:gen_sugar_moon",
+  "cost": {
+    "amount": 51000000000
+  },
+  "effect": {
+    "kind": "output",
+    "target": "sugar_moon",
+    "value": 3
+  },
+  "requires": {
+    "owned": {
+      "sugar_moon": 25
+    }
+  }
+}

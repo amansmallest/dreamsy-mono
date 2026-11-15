@@ -1,0 +1,13 @@
+{
+  "text": "Play 10 runs",
+  "stat": "runs",
+  "target": 10,
+  "scope": "total",
+  "order": 8,
+  "reward": [
+    {
+      "earn": "coins",
+      "amount": 100
+    }
+  ]
+}

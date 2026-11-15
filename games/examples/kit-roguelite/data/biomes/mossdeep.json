@@ -1,0 +1,25 @@
+{
+  "name": "Mossdeep",
+  "order": 1,
+  "floors": 1,
+  "steps": 6,
+  "enemies": [
+    "sprout",
+    "bat",
+    "puffcap"
+  ],
+  "elites": [
+    "boar",
+    "sprout"
+  ],
+  "arena": {
+    "kind": "open",
+    "pillars": 5
+  },
+  "tiles": {
+    "wall": "#",
+    "floor": "f"
+  },
+  "music": "depths",
+  "tint": "#22331f"
+}

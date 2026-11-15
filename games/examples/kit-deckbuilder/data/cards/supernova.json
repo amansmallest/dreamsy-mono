@@ -1,0 +1,12 @@
+{
+ "name": "Supernova",
+ "cost": 3,
+ "type": "attack",
+ "rarity": "rare",
+ "effects": [
+  "damage 20 all"
+ ],
+ "exhaust": true,
+ "character": "wick",
+ "art": "asset:art_sun"
+}

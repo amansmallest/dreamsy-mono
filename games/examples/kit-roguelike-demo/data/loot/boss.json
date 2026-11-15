@@ -1,0 +1,26 @@
+{
+  "id": "boss",
+  "rolls": 1,
+  "guaranteed": [
+    {
+      "item": "heart"
+    },
+    {
+      "item": "coin",
+      "count": [
+        10,
+        20
+      ]
+    }
+  ],
+  "entries": [
+    {
+      "item": "gem",
+      "weight": 1,
+      "count": [
+        1,
+        3
+      ]
+    }
+  ]
+}

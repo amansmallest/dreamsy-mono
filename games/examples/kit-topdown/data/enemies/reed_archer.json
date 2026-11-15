@@ -1,0 +1,27 @@
+{
+  "name": "Reed Archer",
+  "behaviour": "archer",
+  "sprite": "asset:reed_archer",
+  "size": [
+    12,
+    12
+  ],
+  "draw_size": [
+    16,
+    16
+  ],
+  "hp": 2,
+  "speed": 20,
+  "shoot": {
+    "interval": 1.8,
+    "speed": 100,
+    "range": 130,
+    "keep": 40,
+    "sprite": "asset:dart",
+    "size": [
+      8,
+      3
+    ]
+  },
+  "id": "reed_archer"
+}

@@ -1,0 +1,20 @@
+{
+  "name": "Pie Stand",
+  "order": 3,
+  "icon": "asset:gen_pie_stand",
+  "cost": {
+    "base": 1100,
+    "growth": 1.14
+  },
+  "output": 140,
+  "cycle": 4,
+  "manager": {
+    "name": "Pie Stand Chef",
+    "cost": 13000
+  },
+  "unlock": {
+    "owned": {
+      "bread_oven": 10
+    }
+  }
+}

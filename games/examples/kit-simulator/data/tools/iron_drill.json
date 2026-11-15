@@ -1,0 +1,8 @@
+{
+ "name": "Iron Drill",
+ "order": 4,
+ "cost": 7000,
+ "power": 45,
+ "speed": 2,
+ "icon": "asset:tool_drill"
+}

@@ -1,0 +1,17 @@
+{
+  "name": "Golden Purse",
+  "rarity": "common",
+  "icon": "asset:i_coin",
+  "tags": [
+    "gold"
+  ],
+  "stack": true,
+  "maxStack": 2,
+  "description": "+30% gold. Stacks.",
+  "mods": [
+    {
+      "stat": "goldMult",
+      "pct": 0.3
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+ "statuses": {
+  "ember": {
+   "text": "At the end of your turn, deal this much damage to ALL enemies.",
+   "turnEnd": [
+    "damage $stacks all"
+   ],
+   "icon": "asset:st_ember"
+  }
+ }
+}

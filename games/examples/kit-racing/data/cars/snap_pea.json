@@ -1,0 +1,15 @@
+{
+  "name": "Snap Pea",
+  "order": 2,
+  "sprite": "asset:car_pea",
+  "price": 600,
+  "blurb": "Light and twitchy. Loves corners.",
+  "stats": {
+    "maxSpeed": 500,
+    "accel": 470,
+    "grip": 12,
+    "turn": 3.4,
+    "nitro": 2.0,
+    "mass": 0.8
+  }
+}

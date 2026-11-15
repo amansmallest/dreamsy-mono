@@ -1,0 +1,16 @@
+{
+ "name": "Hen",
+ "building": "coop",
+ "price": 500,
+ "product": "egg",
+ "productName": "Egg",
+ "productPrice": 50,
+ "productIcon": "asset:egg",
+ "largeProduct": "golden_egg",
+ "largeProductName": "Golden Egg",
+ "largeProductPrice": 120,
+ "largeProductIcon": "asset:golden_egg",
+ "feed": "hay",
+ "sprite": "asset:hen",
+ "matureDays": 1
+}

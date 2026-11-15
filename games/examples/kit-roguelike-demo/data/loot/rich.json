@@ -1,0 +1,26 @@
+{
+  "id": "rich",
+  "rolls": [
+    1,
+    2
+  ],
+  "entries": [
+    {
+      "item": "coin",
+      "weight": 6,
+      "count": [
+        2,
+        5
+      ]
+    },
+    {
+      "item": "potion",
+      "weight": 2
+    },
+    {
+      "item": "gem",
+      "weight": 1,
+      "rarity": "rare"
+    }
+  ]
+}

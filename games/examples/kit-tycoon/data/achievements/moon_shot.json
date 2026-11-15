@@ -1,0 +1,13 @@
+{
+  "name": "Moon Shot",
+  "desc": "Own a Sugar Moon",
+  "order": 8,
+  "when": {
+    "owned": {
+      "sugar_moon": 1
+    }
+  },
+  "reward": {
+    "mult": 1.05
+  }
+}

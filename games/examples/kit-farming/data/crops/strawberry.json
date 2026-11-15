@@ -1,0 +1,19 @@
+{
+ "stages": [
+  2,
+  2,
+  2,
+  2
+ ],
+ "regrow": 3,
+ "price": 90,
+ "seed": {
+  "price": 100,
+  "icon": "asset:strawberry_seeds"
+ },
+ "name": "Strawberry",
+ "seasons": [
+  "spring"
+ ],
+ "icon": "asset:strawberry"
+}

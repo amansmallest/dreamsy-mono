@@ -1,0 +1,58 @@
+{
+  "start_towers": [
+    "thorn",
+    "acorn"
+  ],
+  "locked_branches": [
+    "thorn.b",
+    "acorn.b",
+    "frost.b",
+    "spark.b",
+    "drum.b"
+  ],
+  "stars": {
+    "two": 0.5,
+    "three": 0.9
+  },
+  "levels": [
+    {
+      "level": "meadow",
+      "unlock": {
+        "towers": [
+          "frost"
+        ],
+        "branches": [
+          "thorn.b",
+          "acorn.b"
+        ]
+      }
+    },
+    {
+      "level": "creek",
+      "unlock": {
+        "towers": [
+          "spark",
+          "drum"
+        ],
+        "branches": [
+          "frost.b",
+          "drum.b"
+        ]
+      }
+    },
+    {
+      "level": "stump",
+      "requires_stars": 3,
+      "unlock": {
+        "branches": [
+          "spark.b"
+        ]
+      }
+    }
+  ],
+  "endless": {
+    "level": "stump",
+    "waves": "endless",
+    "requires": "stump"
+  }
+}

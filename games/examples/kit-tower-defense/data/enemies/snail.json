@@ -1,0 +1,14 @@
+{
+  "id": "snail",
+  "name": "Shellback Snail",
+  "hp": 70,
+  "speed": 0.55,
+  "armor": 3,
+  "resist": {
+    "magic": -0.3
+  },
+  "bounty": 9,
+  "sprite": "asset:enemy_snail",
+  "size": 0.6,
+  "color": "#b08d57"
+}

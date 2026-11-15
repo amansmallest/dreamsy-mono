@@ -1,0 +1,19 @@
+{
+ "stages": [
+  3,
+  3,
+  3,
+  3
+ ],
+ "price": 450,
+ "seed": {
+  "price": 180,
+  "icon": "asset:moonmelon_seeds"
+ },
+ "xp": 40,
+ "name": "Moonmelon",
+ "seasons": [
+  "spring"
+ ],
+ "icon": "asset:moonmelon"
+}

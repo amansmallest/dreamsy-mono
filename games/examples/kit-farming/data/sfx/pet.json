@@ -1,0 +1,8 @@
+{
+ "wave": "sine",
+ "freq": 520,
+ "vibrato": 3,
+ "vibrato_speed": 12,
+ "sustain": 0.08,
+ "decay": 0.15
+}

@@ -1,0 +1,24 @@
+{
+  "id": "endless",
+  "scaling": {
+    "hp": 0.0
+  },
+  "waves": [],
+  "endless": {
+    "pool": [
+      "beetle",
+      "ant",
+      "snail",
+      "moth",
+      "slime",
+      "toad"
+    ],
+    "boss": "stag",
+    "boss_every": 10,
+    "hp_growth": 1.08,
+    "count_base": 6,
+    "count_growth": 1.2,
+    "interval": 0.8,
+    "bonus": 40
+  }
+}

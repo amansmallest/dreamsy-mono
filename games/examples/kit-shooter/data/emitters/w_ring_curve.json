@@ -1,0 +1,16 @@
+{
+ "pattern": "ring",
+ "count": 16,
+ "rate": 1.1,
+ "speed": 170,
+ "spinPerVolley": 11,
+ "bullet": {
+  "sprite": "asset:bullet_cyan",
+  "size": [
+   22,
+   22
+  ],
+  "radius": 6,
+  "turn": 28
+ }
+}

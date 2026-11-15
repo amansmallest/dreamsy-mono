@@ -1,0 +1,14 @@
+{
+  "name": "Frost Lens",
+  "rarity": "common",
+  "icon": "asset:i_frost",
+  "tags": [
+    "frost"
+  ],
+  "description": "Hits may slow.",
+  "onHit": {
+    "name": "slow",
+    "chance": 0.3,
+    "duration": 1.5
+  }
+}

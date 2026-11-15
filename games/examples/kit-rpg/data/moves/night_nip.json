@@ -1,0 +1,8 @@
+{
+  "name": "Night Nip",
+  "type": "moon",
+  "category": "physical",
+  "power": 40,
+  "accuracy": 100,
+  "pp": 30
+}

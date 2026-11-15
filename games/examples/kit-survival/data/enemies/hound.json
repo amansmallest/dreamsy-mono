@@ -1,0 +1,22 @@
+{
+ "name": "Gloomhound",
+ "sprite": "asset:hound",
+ "hp": 5,
+ "cost": 2,
+ "minLevel": 2,
+ "behavior": "chase",
+ "params": {
+  "speed": 105
+ },
+ "contact": {
+  "amount": 10,
+  "knockback": 180
+ },
+ "size": 0.75,
+ "drops": [
+  {
+   "item": "fiber",
+   "count": 2
+  }
+ ]
+}

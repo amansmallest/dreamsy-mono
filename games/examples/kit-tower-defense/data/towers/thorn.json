@@ -1,0 +1,104 @@
+{
+  "id": "thorn",
+  "name": "Thorn Shooter",
+  "cost": 50,
+  "range": 2.4,
+  "rate": 1.2,
+  "damage": 6,
+  "damage_type": "physical",
+  "ground": true,
+  "air": true,
+  "sprite": "asset:tower_thorn",
+  "icon": "asset:tower_thorn",
+  "projectile": {
+    "color": "#c9e265",
+    "speed": 12,
+    "size": 0.14
+  },
+  "upgrades": [
+    {
+      "name": "Sharp Thorns",
+      "desc": "+3 damage",
+      "cost": 45,
+      "add": {
+        "damage": 3
+      }
+    },
+    {
+      "name": "Long Vines",
+      "desc": "+0.4 range, +15% rate",
+      "cost": 60,
+      "add": {
+        "range": 0.4
+      },
+      "mul": {
+        "rate": 1.15
+      }
+    }
+  ],
+  "branches": [
+    {
+      "id": "a",
+      "name": "Briar Sniper",
+      "sprite": "asset:tower_thorn_a",
+      "icon": "asset:tower_thorn_a",
+      "tiers": [
+        {
+          "name": "Briar Sniper",
+          "desc": "Huge hits, long range, pierces armor",
+          "cost": 120,
+          "mul": {
+            "damage": 2.4,
+            "rate": 0.6
+          },
+          "add": {
+            "range": 1.2
+          },
+          "set": {
+            "armor_pierce": 5
+          }
+        },
+        {
+          "name": "Kingsbane",
+          "desc": "x1.6 damage, x2 vs bosses",
+          "cost": 200,
+          "mul": {
+            "damage": 1.6
+          },
+          "set": {
+            "bonus": {
+              "boss": 2
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "b",
+      "name": "Bramble Volley",
+      "sprite": "asset:tower_thorn_b",
+      "icon": "asset:tower_thorn_b",
+      "tiers": [
+        {
+          "name": "Bramble Volley",
+          "desc": "x1.8 fire rate",
+          "cost": 110,
+          "mul": {
+            "rate": 1.8
+          }
+        },
+        {
+          "name": "Thornstorm",
+          "desc": "x1.5 rate, +3 damage",
+          "cost": 190,
+          "mul": {
+            "rate": 1.5
+          },
+          "add": {
+            "damage": 3
+          }
+        }
+      ]
+    }
+  ]
+}

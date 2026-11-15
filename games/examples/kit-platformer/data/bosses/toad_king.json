@@ -1,0 +1,91 @@
+{
+  "id": "toad_king",
+  "name": "Thornback, Toad of the Throne",
+  "sprite": "asset:toad_king",
+  "faces": "left",
+  "hp": 6,
+  "size": [
+    36,
+    24
+  ],
+  "draw_size": [
+    40,
+    27
+  ],
+  "damage": 1,
+  "iframes": 0.9,
+  "phases": [
+    {
+      "until": 0.5,
+      "steps": [
+        {
+          "do": "walk",
+          "toward": "player",
+          "speed": 50,
+          "time": 1.5
+        },
+        {
+          "do": "wait",
+          "time": 0.4
+        },
+        {
+          "do": "jump",
+          "height": 60,
+          "toward": "player"
+        },
+        {
+          "do": "wait",
+          "time": 0.6
+        },
+        {
+          "do": "shoot",
+          "count": 3,
+          "spread": 40,
+          "speed": 120,
+          "sprite": "asset:spit"
+        },
+        {
+          "do": "wait",
+          "time": 0.8
+        }
+      ]
+    },
+    {
+      "until": 0,
+      "speed_mult": 1.4,
+      "steps": [
+        {
+          "do": "charge",
+          "speed": 200,
+          "windup": 0.5
+        },
+        {
+          "do": "wait",
+          "time": 0.7
+        },
+        {
+          "do": "jump",
+          "height": 80,
+          "toward": "player"
+        },
+        {
+          "do": "shoot",
+          "volleys": 2,
+          "count": 5,
+          "spread": 70,
+          "speed": 130,
+          "sprite": "asset:spit"
+        },
+        {
+          "do": "summon",
+          "enemy": "frog",
+          "count": 1
+        },
+        {
+          "do": "wait",
+          "time": 0.6
+        }
+      ]
+    }
+  ]
+}

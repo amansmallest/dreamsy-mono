@@ -1,0 +1,17 @@
+CCCCCCCC=CCCCCCCC
+CCCCCCCcccCCCCCCC
+CccccccccccccmmmC
+CcmmmmcccccccmmmC
+CcmmmmccCCccccccC
+CccmmcccCCccmmmcC
+CCcccccccccccmmcC
+CCCCccccCCCCcccCC
+CcccccmmmmmcccccC
+CcCCccmmmmmccCCcC
+CcCCccmmmmmccCCcC
+CccccccccccccccCC
+CmmmmcccCCcccmmmC
+CmmmmcccCCcccmmmC
+CcccccccccccccccC
+CCCCCCCcccCCCCCCC
+CCCCCCCC=CCCCCCCC

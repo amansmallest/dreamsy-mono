@@ -1,0 +1,8 @@
+{
+ "kind": "image",
+ "file": "pet_clover_fox.svg",
+ "source": {
+  "model": "claude-opus-5-5",
+  "prompt": "hand-written SVG"
+ }
+}

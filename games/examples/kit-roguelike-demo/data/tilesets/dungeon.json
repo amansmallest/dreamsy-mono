@@ -1,0 +1,30 @@
+{
+  "tiles": {
+    "#": {
+      "sprite": "asset:tile_wall",
+      "solid": true
+    },
+    "f": {
+      "sprite": "asset:tile_floor"
+    },
+    ">": {
+      "sprite": "asset:tile_stairs",
+      "tags": [
+        "stairs"
+      ]
+    },
+    "+": {
+      "sprite": "asset:tile_door",
+      "solid": true,
+      "tags": [
+        "door"
+      ]
+    },
+    "k": {
+      "sprite": "asset:tile_floor",
+      "tags": [
+        "key"
+      ]
+    }
+  }
+}

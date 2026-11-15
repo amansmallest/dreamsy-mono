@@ -1,0 +1,31 @@
+{
+ "name": "Starfall Peak",
+ "order": 4,
+ "color": "#c9c3f0",
+ "desc": "Fallen stars. Bring your best pick.",
+ "icon": "asset:zone_peak",
+ "nodes": [
+  {
+   "id": "star",
+   "hp": 4500,
+   "reward": 1600,
+   "size": 3,
+   "weight": 1.0,
+   "sprite": "asset:node_star",
+   "color": "#fff6c2"
+  },
+  {
+   "id": "comet",
+   "hp": 11000,
+   "reward": 4400,
+   "size": 3,
+   "weight": 0.35,
+   "sprite": "asset:node_comet",
+   "color": "#efd9ff"
+  }
+ ],
+ "unlock": {
+  "coins": 1000000,
+  "rebirths": 2
+ }
+}

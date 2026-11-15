@@ -1,0 +1,13 @@
+{
+  "text": "Grab 3 power-ups in one run",
+  "stat": "powerups",
+  "target": 3,
+  "scope": "run",
+  "order": 4,
+  "reward": [
+    {
+      "earn": "coins",
+      "amount": 80
+    }
+  ]
+}

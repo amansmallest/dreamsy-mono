@@ -45,6 +45,21 @@ export const dreamsyApiBackend: AuthBackend = {
     );
   },
 
+  async startEmailSignIn(email) {
+    const { expiresInSeconds } = await request<{ ok: true; expiresInSeconds: number }>('/v1/auth/email/start', {
+      method: 'POST',
+      body: { email },
+      auth: false,
+    });
+    return { expiresInSeconds };
+  },
+
+  async signInWithEmailCode(email, code) {
+    return store(
+      await request<AuthResponse>('/v1/auth/email/verify', { method: 'POST', body: { email, code }, auth: false }),
+    );
+  },
+
   async signInAsGuest() {
     return store(await request<AuthResponse>('/v1/auth/guest', { method: 'POST', auth: false }));
   },

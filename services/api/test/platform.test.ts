@@ -105,11 +105,11 @@ async function startGeneration(token: string, name = "My game") {
 }
 
 /** Create + build (+ publish) a game. */
-async function makeGame(token: string, name: string, opts: { extra?: string; publish?: boolean; description?: string; thumbnail?: Uint8Array } = {}) {
+async function makeGame(token: string, name: string, opts: { extra?: string; publish?: boolean; description?: string; thumbnail?: Uint8Array; toml?: string } = {}) {
   const { gameId, genId } = await startGeneration(token, name);
   if (opts.description) await call("PATCH", `/v1/games/${gameId}`, { token, json: { description: opts.description } });
   const done = await call("POST", `/v1/worker/generations/${genId}/complete`, {
-    ...W, form: resultForm("w1", makePackage(manifest(name, opts.extra)), { thumbnail: opts.thumbnail }),
+    ...W, form: resultForm("w1", makePackage(opts.toml ?? manifest(name, opts.extra)), { thumbnail: opts.thumbnail }),
   });
   expect(done.status).toBe(201);
   if (opts.publish !== false) expect((await call("POST", `/v1/games/${gameId}/publish`, { token, json: {} })).status).toBe(200);
@@ -523,5 +523,101 @@ describe("email code sign-in (own, via mailer)", () => {
     for (let i = 0; i < 5; i++) expect((await call("POST", "/v1/auth/email/verify", { json: { email: "new@example.com", code: wrong } })).status).toBe(400);
     expect((await call("POST", "/v1/auth/email/verify", { json: { email: "new@example.com", code } })).status).toBe(400);
     expect((await call("POST", "/v1/auth/email/start", { json: { email: "bad" } })).status).toBe(400);
+  });
+});
+
+describe("multiplayer marker", () => {
+  /** A rooms game with `[players] min..max` (§3.1, §4.5). */
+  const mpManifest = (name: string, min: number, max: number) =>
+    manifest(name).replace('mode = "none"', 'mode = "rooms"') + `[players]\nmin = ${min}\nmax = ${max}\n`;
+
+  it("records [players] on commit (and on revert) and exposes it on versions", async () => {
+    const alice = await guest();
+    const solo = await makeGame(alice.token, "Solo", { publish: false });
+    const duel = await makeGame(alice.token, "Duel", { toml: mpManifest("Duel", 2, 8), publish: false });
+    const rows = await db.select().from(schema.gameVersions);
+    const by = (id: string) => rows.find((r) => r.gameId === id)!;
+    expect([by(solo).playersMin, by(solo).playersMax]).toEqual([1, 1]);
+    expect([by(duel).playersMin, by(duel).playersMax]).toEqual([2, 8]);
+    expect((await call("GET", `/v1/games/${duel}/versions/1`, { token: alice.token })).data.version.players).toEqual({ min: 2, max: 8 });
+
+    const rev = await call("POST", `/v1/games/${duel}/revert`, { token: alice.token, json: { version: 1 } });
+    expect(rev.status).toBe(201);
+    expect(rev.data.version.players).toEqual({ min: 2, max: 8 });
+  });
+
+  it("every game view carries players + multiplayer (published version, else latest for owners)", async () => {
+    const alice = await guest();
+    const bob = await guest();
+    const solo = await makeGame(alice.token, "Solo");
+    const duel = await makeGame(alice.token, "Duel", { toml: mpManifest("Duel", 1, 2) });
+    const draft = await makeGame(alice.token, "Party", { toml: mpManifest("Party", 2, 8), publish: false });
+    const MP = { players: { min: 1, max: 2 }, multiplayer: true };
+    const SOLO = { players: { min: 1, max: 1 }, multiplayer: false };
+
+    // owner views (latest when unpublished)
+    expect((await call("GET", `/v1/games/${draft}`, { token: alice.token })).data.game)
+      .toMatchObject({ players: { min: 2, max: 8 }, multiplayer: true });
+    const mine = (await call("GET", "/v1/me/games", { token: alice.token })).data.games;
+    expect(mine.find((g: any) => g.id === solo)).toMatchObject(SOLO);
+    expect(mine.find((g: any) => g.id === duel)).toMatchObject(MP);
+    // empty game: no version yet
+    const { data: empty } = await call("POST", "/v1/games", { token: alice.token, json: { name: "Empty" } });
+    expect(empty.game).toMatchObject(SOLO);
+
+    // public view, feed, search, discover, public link, profile
+    expect((await call("GET", `/v1/games/${duel}`, { token: bob.token })).data.game).toMatchObject(MP);
+    expect((await feed(bob.token, "new")).data.games.find((g: any) => g.id === duel)).toMatchObject(MP);
+    expect((await call("GET", "/v1/search?q=Duel", { token: bob.token })).data.games[0]).toMatchObject({ id: duel, ...MP });
+    expect((await call("GET", "/v1/games", { token: bob.token })).data.games.find((g: any) => g.id === solo)).toMatchObject(SOLO);
+    expect((await call("GET", `/v1/public/games/${duel}`)).data.game).toMatchObject(MP);
+    expect((await call("GET", `/v1/users/${alice.id}/games`, { token: bob.token })).data.games.find((g: any) => g.id === duel))
+      .toMatchObject(MP);
+
+    // group-shared draft (members see the latest build)
+    const grp = await call("POST", "/v1/groups", { token: alice.token, json: { name: "Fam" } });
+    await call("POST", "/v1/groups/join", { token: bob.token, json: { code: grp.data.inviteCode } });
+    expect((await call("POST", `/v1/groups/${grp.data.group.id}/games`, { token: alice.token, json: { gameId: draft } })).status).toBeLessThan(300);
+    expect((await call("GET", `/v1/games/${draft}`, { token: bob.token })).data.game).toMatchObject({ players: { min: 2, max: 8 }, multiplayer: true });
+    const shared = (await call("GET", `/v1/groups/${grp.data.group.id}/games`, { token: bob.token })).data.games;
+    expect(shared.find((g: any) => g.id === draft)).toMatchObject({ multiplayer: true, players: { min: 2, max: 8 } });
+  });
+
+  it("the published version decides: a solo v2 doesn't change the listing until published", async () => {
+    const alice = await guest();
+    const bob = await guest();
+    const duel = await makeGame(alice.token, "Duel", { toml: mpManifest("Duel", 1, 4) });
+    const { genId } = await (async () => {
+      const gen = await call("POST", `/v1/games/${duel}/generations`, { token: alice.token, json: { prompt: "solo now" } });
+      await call("POST", "/v1/worker/claim", { ...W, json: { workerId: "w1" } });
+      return { genId: gen.data.generation.id as string };
+    })();
+    await call("POST", `/v1/worker/generations/${genId}/complete`, { ...W, form: resultForm("w1", makePackage(manifest("Duel"))) });
+    expect((await call("GET", `/v1/games/${duel}`, { token: bob.token })).data.game.players).toEqual({ min: 1, max: 4 });
+    expect((await call("GET", `/v1/games/${duel}`, { token: alice.token })).data.game.multiplayer).toBe(true); // published v1
+    await call("POST", `/v1/games/${duel}/publish`, { token: alice.token, json: { version: 2 } });
+    expect((await call("GET", `/v1/games/${duel}`, { token: bob.token })).data.game.multiplayer).toBe(false);
+  });
+
+  it("?multiplayer=1 filters feed, search and discover", async () => {
+    const alice = await guest();
+    const solo = await makeGame(alice.token, "Solo Run");
+    const duel = await makeGame(alice.token, "Duel Run", { toml: mpManifest("Duel Run", 1, 2) });
+    const party = await makeGame(alice.token, "Party Run", { toml: mpManifest("Party Run", 2, 8) });
+    await makeGame(alice.token, "Draft Run", { toml: mpManifest("Draft Run", 1, 2), publish: false });
+
+    for (const tab of ["new", "trending", "top"]) {
+      expect(ids((await feed(alice.token, tab, "&multiplayer=1")).data.games).sort()).toEqual([duel, party].sort());
+      expect(ids((await feed(alice.token, tab)).data.games)).toContain(solo);
+    }
+    expect(ids((await feed(alice.token, "new", "&multiplayer=0")).data.games)).toHaveLength(3);
+    const p1 = await feed(alice.token, "new", "&multiplayer=1&limit=1");
+    const p2 = await feed(alice.token, "new", `&multiplayer=1&limit=1&cursor=${p1.data.next}`);
+    expect([...ids(p1.data.games), ...ids(p2.data.games)]).toEqual([party, duel]);
+
+    expect(ids((await call("GET", "/v1/search?q=Run&multiplayer=1", { token: alice.token })).data.games).sort()).toEqual([duel, party].sort());
+    expect(ids((await call("GET", "/v1/search?q=Run", { token: alice.token })).data.games)).toHaveLength(3);
+    expect(ids((await call("GET", "/v1/games?multiplayer=true", { token: alice.token })).data.games).sort()).toEqual([duel, party].sort());
+    expect(ids((await call("GET", "/v1/games", { token: alice.token })).data.games)).toHaveLength(3);
   });
 });

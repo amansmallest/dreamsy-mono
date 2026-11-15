@@ -31,7 +31,7 @@ dreamsy/
   third_party/luau/     vendored Luau 0.747 (compiled to WASM for engine-web)
   format/               game package spec, JSON schemas, validator, diff ops
   services/api/         platform API: accounts, games, versions, uploads, generation jobs
-  services/gameserver/  multiplayer orchestrator + Node game servers running engine-web/core
+  services/gameserver/  multiplayer room server (v1: rooms, quick match, relay; §4.5) → later Node game servers on engine-web/core
   harness/              cloud generation: Claude agent loop + sandboxed engine
   pipelines/assets/     2D/3D asset generation
   apps/mobile/          iPhone app, React Native/Expo (create + play)
@@ -273,7 +273,50 @@ apps/mobile, apps/web ► services/api ◄── harness workers (claim jobs, up
   object storage. Owns users, games, immutable package versions, reference uploads, generation
   jobs (Postgres queue, leased to workers), event streams (SSE), quotas.
 - **harness** — stateless workers that pull jobs from the API.
-- **services/gameserver** — slice 2.
+- **services/gameserver** — the room server (§4.5): Node + `ws`, one process, in-memory rooms. Prod: `gameserver`
+  container on the same box; Caddy routes `api.dreamsy.dev/rooms*` (WebSocket) to it, everything else to the API.
+
+### 4.5 Multiplayer v1 — rooms, 1v1 red vs blue, family play (2026-11-15)
+
+Goal: "1v1 true red vs true blue, and a game can have many players, so I can share games with family".
+
+**Decision: server-relayed state sync now, server-authoritative simulation later.** Every device runs the whole package
+(client + server scripts, as single-player does today) and simulates its own world and avatar. The room server is
+authoritative for everything *about* the match — membership, teams, host, shared state, score totals, the result — and
+relays avatar samples (15 Hz) and remote events. Remote avatars are visual puppets interpolated 100 ms in the past.
+Why not run the game on the server yet: `engine-web/core` does run in Node, but one VM runs client and server scripts
+together, entity props have no replication layer, and phones need instant local movement (that means client prediction +
+reconciliation for a server-simulated avatar). Relay gives zero-latency controls on phones, works for every existing game
+and kit with a few lines (`room.replicate`, `room.finish`), and costs ~nothing on the server (no simulation). Trade-offs,
+accepted for family/friends play: clients are trusted for their own position and claims (a modified client can cheat), no
+physical interaction between players (puppets have no bodies), shared objects need a host decision (`room.isHost`).
+
+- **Rooms**: 6-char codes (no 0/O/1/I/L); `party` rooms up to `[players] max` (≤ 8), teams balanced red/blue (players can
+  switch in the lobby), host starts when everyone is ready (`[players] min`); late joiners drop into the running match.
+  **Quick match**: a per-game queue pairs two players into a `duel` room (first red, second blue) that starts at once;
+  rematch = both press Rematch. A duel ends as a forfeit when one side leaves. Host = first player, moves on leave.
+- **Auth**: the API's HS256 user token in the first message (`{t:"hello", token, name?}`), verified with the same
+  `JWT_SECRET`; the web player gets a guest token (`POST /v1/auth/guest`) when signed out, so share links work for family
+  without accounts. Player ids are per connection (two tabs of one account = two players). Display name: typed in the
+  lobby, else the API handle (`GET /v1/me`).
+- **Limits**: 8 KB/message (socket closes > 16 KB), 40 msg/s sustained + 80 burst (excess dropped with `rate_limited`;
+  > 400 drops → close 4008), event args ≤ 4 KB, state values ≤ 2 KB, ≤ 64 state keys, 20 s heartbeat.
+- **Protocol** (`engine-web/net/protocol.ts`, JSON over one WebSocket): client `hello · create · join · quick · cancel ·
+  ready · team · start · leave · ping` and in a match `st (avatar sample) · ev (event → host | others | player id) · kv ·
+  score · end`; server `welcome · room · queued · start · left · error · pong` and `st (+ server ts) · ev · kv · score ·
+  ended`.
+- **Engine**: `core/net.ts` (NetSession: Luau `players` / `remoteEvent` / `room` on a `NetLink`), `net/client.ts`
+  (RoomClient over WebSocket), `net/interp.ts` (clock sync + snapshot interpolation), `net/loopback.ts` (in-memory room for
+  tests/harness), `net/lobby.ts` (engine-owned lobby, HUD chips, winner card). Dev page: games with `server.mode = "rooms"`
+  and `players.max > 1` open the lobby first (`?room=<code>` joins, `?solo=1` skips, tools never see it); the room server
+  URL is derived from the API (`https://api.x` → `wss://api.x/rooms`, local `:8787` → `:8790`) or `?rooms=`.
+  Share link: `https://play.dreamsy.dev/?public=<gameId>&room=<code>` (published games; dev: the current URL + `room`).
+- **Luau API**: `format/LUAU_API.md` "Players & avatar" + "Networking (multiplayer)". Example: `games/examples/mp-duel`
+  (Orb Duel: host spawns orbs, first claim wins, first to 5); the racing kit races versus in a room (KIT.md "Versus").
+- **v2**: server-authoritative simulation (engine core per room in Node, input upload + prediction/reconciliation,
+  replicated entity props — the §4.2 design), reconnect/resume to the same seat, cross-device physical contact,
+  spectators, persistent matchmaking (skill, regions), several gameserver processes (rooms pinned by code), match
+  results to the API (`runs`/leaderboards from rooms), moderation of display names.
 
 ## 5. Generation
 
@@ -358,9 +401,11 @@ unless marked **public**.
 
 ### 11.2 Feed, stats, thumbnails
 - Every published game has stats: `plays`, `likes`, `remixes`, `trendingScore`.
-- `GET /v1/feed?tab=trending|new|top|following&cursor=&limit=` → `{ games: FeedGame[], next }`.
-  `FeedGame = { id, name, description, orientation, thumbnailUrl, creator: {id, handle}, stats: {plays, likes, remixes}, publishedAt, remixOf: {gameId, name} | null }`.
-- `GET /v1/search?q=&cursor=` → same shape (name/description/creator handle, ILIKE is fine for v1).
+- `GET /v1/feed?tab=trending|new|top|following&cursor=&limit=&multiplayer=1` → `{ games: FeedGame[], next }`.
+  `FeedGame = { id, name, description, orientation, thumbnailUrl, players: {min, max}, multiplayer, creator: {id, handle}, stats: {plays, likes, remixes}, publishedAt, remixOf: {gameId, name} | null }`.
+  `players` = the published version's `[players]` (`game_versions.players_min/max`, set on commit); `multiplayer` = max > 1;
+  every game view has both (owner/group views: published, else latest). `?multiplayer=1` on feed/search/`GET /v1/games` filters.
+- `GET /v1/search?q=&cursor=&multiplayer=1` → same shape (name/description/creator handle, ILIKE is fine for v1).
 - Trending score = `(plays_7d + 3·likes_7d + 5·remixes_7d) / (hoursSincePublish + 2)^1.2`, recomputed on write or by a cheap periodic query — keep it simple.
 - `POST /v1/games/:id/plays {version}` → counts a play (dedupe one per user per game per hour).
 - `PUT /v1/games/:id/like` / `DELETE /v1/games/:id/like`; game views include `viewer: {liked, ownedPasses?}`.
@@ -434,3 +479,64 @@ not re-implement core systems per game.
    area reachable in order; no softlocks), tilemap walkability between warps, kit-provided headless
    simulations (e.g. battle balance across the level curve). Failures go back to the director.
 5. Rounds continue milestone by milestone (checkpoint per round) until the plan is done.
+
+## 13. Leaderboards, ghosts, groups (spec, 2026-11-15)
+
+Step 1 of competitive/social play. Real-time rooms (1v1 red/blue, up to 8 players) come after, on the §4.2 server.
+
+### 13.1 Model
+- **Board**: per game, named (default `"fastest"`), `order = "asc"` (lower is better: times) or `"desc"` (scores).
+  A player's **best** per (game, board) is what ranks; every submit is a **run**. Runs keep the game `version`.
+- **Scopes**: `public` (everyone), `group:<groupId>` (members of a family/friends group), `me` (my runs).
+- **Ghost**: optional recording of a run: the tracked entity's position + flip + animation frame sampled at 10 Hz in
+  *game time*, plus the scene id: `{ v: 1, hz: 10, scene, frames: [[x, y, flipX(0|1), frame], ...] }` (≤ 5 min ≈
+  3000 frames; ≤ 256 KB JSON). Stored only for a player's best run per board (older ghosts dropped).
+- Times are measured by the engine in game time (paused time and time-scale excluded); client-reported for now
+  (server-authoritative later with rooms). API rejects absurd values (< 1 s or > 6 h for asc boards).
+
+### 13.2 Luau API (`leaderboard`, client scripts)
+```luau
+leaderboard.start(board?: string, opts?: { track: Entity? })   -- begin a timed run; ghost tracks opts.track or the entity tagged "player"
+leaderboard.finish(board?: string)                               -- stop timer, submit time (+ ghost); shows the results card
+leaderboard.submit(board: string, value: number, opts?: { order: "asc"|"desc" })  -- explicit score/time submit (no ghost)
+leaderboard.cancel(board?: string)                               -- abandon (death/restart) without submitting
+leaderboard.elapsed(board?: string): number                      -- seconds of the running timer (for a HUD)
+leaderboard.raceGhost(which: "best" | "pb" | runId)              -- spawn a translucent replay of that ghost in the current scene
+leaderboard.result  -- Signal(rank: number, best: number, isPersonalBest: boolean) after a submit resolves
+-- implemented extras: finish() returns the time; leaderboard.running(board?): boolean; raceGhost(which, board?);
+-- submit order defaults to "desc"; cancel() with no board cancels every running timer. Board names ^[a-z0-9_]{1,40}$ (API).
+-- result `best` = the board record (#1 value), as the API returns it.
+-- Ghost `frame` = index into the tracked sprite's anim-set textures (deduplicated, file order); 0 without anims.
+```
+Engine-owned UI: a results card after `finish` (your time, rank, PB, top 5 public + your group, "Race the #1 ghost",
+"Play again") and a **Leaderboard** entry in the platform pause menu. Host interface `LeaderboardHost` (like
+`StoreHost`): `MemoryLeaderboardHost` for Node/playtests/dev, API-backed in the dev page / app WebView.
+
+### 13.3 API
+```
+POST /v1/games/:id/runs                    {board, order?, version, value, ghost?} → {run, rank, best, personalBest}
+GET  /v1/games/:id/leaderboards/:board     ?scope=public|me|group:<id>&limit=20 → {board, order, entries:[{rank, user, value, runId, hasGhost, version, at}], me?: {rank, value, runId}}
+GET  /v1/runs/:runId/ghost                 → ghost JSON (public if the game is visible to the caller)
+POST /v1/groups {name}                     → {group, inviteCode}        GET /v1/me/groups
+POST /v1/groups/join {code}                → {group}                     GET /v1/groups/:id (members)
+POST /v1/groups/:id/leave                  DELETE /v1/groups/:id (owner)
+POST /v1/groups/:id/games {gameId}         share a game (even a draft) with the group; GET /v1/groups/:id/games
+GET  /v1/games/:id/leaderboards            → {boards:[{board, order, players, best, updatedAt}]}   (boards with runs; dashboard picker)
+POST /v1/groups/:id/invite-code            → {inviteCode}   (owner; rotates, old links stop working)
+DELETE /v1/groups/:id/games/:gameId        unshare (sharer, game owner or group owner)
+```
+Implementation notes (services/api `routes/leaderboards.ts`, `routes/groups.ts`, migration `0009_leaderboards_groups`):
+- Board names `^[a-z0-9_]{1,40}$`; the first submit fixes a board's order (a different `order` later → 409). Values:
+  asc 1 s…6 h, desc |v| ≤ 1e12. `version` ≤ the game's latest. ≤ 30 submits/min/user (in-process) → 429.
+- `rank` on submit: a PB → rank of the new best (ties: earlier best first); otherwise where this run would place
+  among the other players' bests. `best` = the board's #1 value. Ghost blobs live at `ghosts/<runId>.json`; when a
+  new PB lands the previous best's ghost is deleted. Ghost shape is validated (`v: 1`, `frames` of 4 numbers) → 400; > 256 KB → 413.
+- `scope=me` lists my runs (best first; `rank` = position among them). `group:<id>` requires membership (404).
+- Groups: invite codes are 8 chars from `A–Z 2–9` minus look-alikes, case-insensitive. Joining is idempotent; a full
+  group → 409. The owner leaving hands the group to the longest-standing member; the last member out deletes it.
+  Only your own game (drafts too) or a published game can be shared.
+- Shared-draft visibility: `GET /v1/games/:id` (returns the owner-style view + `shared: true`), version / package /
+  thumbnail / assets / plays / likes and leaderboards accept members of any group the game is shared with
+  (`canAccessGame` / `canAccessVersion` in services.ts). Store purchases still need the published version.
+Groups: ≤ 50 members, invite code is 8 chars (rotatable by owner). Group members can play games shared to the group
+even when unpublished (draft visibility check extends to "shared with one of my groups").

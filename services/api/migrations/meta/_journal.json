@@ -64,6 +64,20 @@
       "when": 1794776841609,
       "tag": "0008_generation_provider",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794778340944,
+      "tag": "0009_leaderboards_groups",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794780894497,
+      "tag": "0010_version_players",
+      "breakpoints": true
     }
   ]
 }

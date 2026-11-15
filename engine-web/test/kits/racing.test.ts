@@ -3,7 +3,7 @@ import { join, resolve } from "node:path";
 import { readdirSync, readFileSync } from "node:fs";
 import { Package } from "@dreamsy/format";
 import { describe, expect, it } from "vitest";
-import { Game, MemorySaveHost } from "../../core/index.js";
+import { Game, MemoryLeaderboardHost, MemorySaveHost } from "../../core/index.js";
 import { simulate } from "../../tools/playtest.js";
 
 const EXAMPLE = resolve(__dirname, "../../../games/examples/kit-racing");
@@ -295,7 +295,8 @@ describe("racing kit: example (Sprout Speedway)", () => {
       end)
     `;
     const save = new MemorySaveHost();
-    const g = await Game.load(await examplePkg({ "scripts/client/__drive.luau": driver }), { save, budgetMs: 2000 });
+    const lb = new MemoryLeaderboardHost();
+    const g = await Game.load(await examplePkg({ "scripts/client/__drive.luau": driver }), { save, leaderboard: lb, budgetMs: 2000 });
     const done = () => g.logs.filter((l) => l.text.startsWith("RACE_DONE")).length;
     for (let i = 0; i < 60 * 60 * 8 && done() < 3; i++) g.step();
     for (let i = 0; i < 60 * 80; i++) g.step(); // time trial (3 laps) after the cup
@@ -306,5 +307,9 @@ describe("racing kit: example (Sprout Speedway)", () => {
     const ghost = JSON.stringify(save.data).includes("racing_ghost_pea_patch");
     expect(ghost).toBe(true); // the autopilot time trial recorded + saved its best-lap ghost
     expect(JSON.stringify(save.data)).toContain("garage");
+    // platform leaderboard: every finished race (3 cup races + the time trial) submitted a time on its track board
+    expect(lb.submitted.length).toBe(4);
+    expect(lb.submitted.every((r) => /^track_[a-z_]+$/.test(r.board) && r.order === "asc" && r.value > 5 && (r.ghost?.frames.length ?? 0) > 10)).toBe(true);
+    expect(lb.submitted[3]!.board).toBe("track_pea_patch");
   }, 120000);
 });

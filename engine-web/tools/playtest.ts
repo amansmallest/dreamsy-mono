@@ -133,7 +133,7 @@ export async function simulate(pkg: Package, timeline: TimelineStep[], seconds: 
       const p = a?.get("position") as number[] | undefined;
       if (p) trace.push({ t: Math.round(t), x: Math.round(p[0]!), y: Math.round(p[1]!) });
     }
-    while (game.storeBusy) await new Promise((r) => setTimeout(r, 0)); // let store.prompt() resolve
+    while (game.storeBusy || game.leaderboardBusy) await new Promise((r) => setTimeout(r, 0)); // let store.prompt() / leaderboard submits resolve
     const d = game.dialogs.current;
     if (d) {
       const key = `${d.id}:${d.index}`;

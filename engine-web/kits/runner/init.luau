@@ -76,6 +76,8 @@ function R.finish(sim)
 	S.core.flags.set("runner_best", d.best)
 	S.core.events.emit("run_finished", { distance = sum.distance, coins = sum.coins, best = sum.newBest })
 	S.core.save.save()
+	-- platform leaderboard (desc): metres per run; S.config.board = false opts out
+	if leaderboard and S.config.board ~= false then leaderboard.submit(S.config.board or "distance", sum.distance) end
 	return sum
 end
 
@@ -117,6 +119,8 @@ end
 function R.finishStage(id, o)
 	local best = Meta.finishStage(id, o.time, o:ghostString(), o.deaths)
 	S.core.save.save()
+	-- platform leaderboard (asc): stage clear time
+	if leaderboard and S.config.board ~= false then leaderboard.submit("stage_" .. string.sub((string.gsub(string.lower(tostring(id)), "[^%w_]", "_")), 1, 34), o.time, { order = "asc" }) end
 	return best
 end
 R.stageRecord = Meta.stageRecord

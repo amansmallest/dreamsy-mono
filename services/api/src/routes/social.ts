@@ -6,8 +6,8 @@ import { fail, parseJson, router, type Deps } from "../context.js";
 import { schema } from "../db/client.js";
 import { newId } from "../ids.js";
 import {
-  canSeeGame,
-  canSeeVersion,
+  canAccessGame,
+  canAccessVersion,
   commitVersion,
   decodeCursor,
   encodeCursor,
@@ -22,6 +22,7 @@ import {
   readPackage,
   recomputeTrending,
   storePackage,
+  multiplayerFilter,
   viewGame,
   type Game,
 } from "../services.js";
@@ -63,7 +64,7 @@ export function socialRoutes({ db, storage, config }: Deps) {
       ? and(listed(), inArray(games.ownerId, db.select({ id: follows.followeeId }).from(follows).where(eq(follows.followerId, viewerId))))
       : listed();
     const page = await pageGames(db, {
-      where: and(where, isNotNull(games.publishedAt)),
+      where: and(where, isNotNull(games.publishedAt), multiplayerFilter(c.req.query("multiplayer"))),
       ...sort,
       cursor: c.req.query("cursor"),
       limit: parseLimit(c.req.query("limit")),
@@ -77,7 +78,7 @@ export function socialRoutes({ db, storage, config }: Deps) {
     if (!q) fail(400, "q is required");
     const pattern = `%${q.slice(0, 100).replace(/[\\%_]/g, (m) => `\\${m}`)}%`;
     const page = await pageGames(db, {
-      where: and(listed(), or(
+      where: and(listed(), multiplayerFilter(c.req.query("multiplayer")), or(
         ilike(games.name, pattern),
         ilike(games.description, pattern),
         inArray(games.ownerId, db.select({ id: users.id }).from(users).where(ilike(users.handle, pattern))),
@@ -97,7 +98,7 @@ export function socialRoutes({ db, storage, config }: Deps) {
     const body = await parseJson(c.req.raw, Play);
     const userId = c.get("userId");
     const g = await getGame(db, c.req.param("id"));
-    if (!canSeeVersion(g, userId, body.version)) fail(404, "version not found");
+    if (!(await canAccessVersion(db, g, userId, body.version))) fail(404, "version not found");
     const hour = new Date(Math.floor(Date.now() / 3_600_000) * 3_600_000);
     const updated = await db.transaction(async (tx) => {
       const inserted = await tx.insert(plays).values({ userId, gameId: g.id, version: body.version, hour })
@@ -112,7 +113,7 @@ export function socialRoutes({ db, storage, config }: Deps) {
 
   async function setLike(gameId: string, userId: string, like: boolean) {
     const g = await getGame(db, gameId);
-    if (!canSeeGame(g, userId)) fail(404, "game not found");
+    if (!(await canAccessGame(db, g, userId))) fail(404, "game not found");
     const updated = await db.transaction(async (tx) => {
       const changed = like
         ? await tx.insert(likes).values({ userId, gameId: g.id }).onConflictDoNothing().returning({ g: likes.gameId })

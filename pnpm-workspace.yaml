@@ -1,6 +1,7 @@
 packages:
   - services/api
   - services/live
+  - services/gameserver
   - harness
   - format
   - engine-web

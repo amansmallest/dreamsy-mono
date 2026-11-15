@@ -44,6 +44,12 @@ function RunningStrip({ game }: { game: Game }) {
   );
 }
 
+/** "Multiplayer · up to N" — games whose `[players] max` > 1 (rooms: quick match, codes for family). */
+export function MultiplayerChip({ game }: { game: Pick<Game, 'multiplayer' | 'players'> }) {
+  if (!game.multiplayer || !game.players) return null;
+  return <Chip tone="live" icon="users">Multiplayer · up to {game.players.max}</Chip>;
+}
+
 export function GameCard({ game }: { game: Game }) {
   const running = !!game.activeGeneration && isActive(game.activeGeneration.status);
   const live = game.status === 'published';
@@ -53,6 +59,7 @@ export function GameCard({ game }: { game: Game }) {
         <Thumb url={game.thumbnailUrl} name={game.name} />
         <div className="tile-badges">
           {live ? <Chip tone="ok">Live</Chip> : <Chip>Draft</Chip>}
+          <MultiplayerChip game={game} />
         </div>
         {running && <span className="tile-ring"><BuildRing queued={game.activeGeneration!.status === 'queued'} /></span>}
         {running && <RunningStrip game={game} />}

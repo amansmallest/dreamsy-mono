@@ -6,7 +6,8 @@ export const OP = {
   ONTICK: 9, AFTER: 10, EVERY: 11, CANCEL: 12, RANDOM: 13, TIME: 14,
   CONNECT: 15, DISCONNECT: 16, AXIS: 17, PRESSED: 18, HELD: 19, POINTER: 20,
   TOAST: 21, SCREEN: 22, AVATAR: 23, FROMENTITY: 24, REQUIRE: 25, ERROR: 26, SOUND: 27,
-  LOADSCENE: 28, STORE: 29, AUDIO: 30, SETTINGS: 31, TWEEN: 32, SAVE: 33, DIALOG: 34, CAMERA: 35, FILES: 36, CLOCK: 37, GAMEPROP: 38, ALIVE: 39, UNTICK: 40,
+  LOADSCENE: 28, STORE: 29, AUDIO: 30, SETTINGS: 31, TWEEN: 32, SAVE: 33, DIALOG: 34, CAMERA: 35, FILES: 36, CLOCK: 37, GAMEPROP: 38, ALIVE: 39, UNTICK: 40, LEADERBOARD: 41,
+  NET: 60,
 } as const;
 
 // value tags: 0 plain, 1 vec2, 2 vec3, 3 color(r,g,b,a 0..1), 4 entity handle
@@ -21,6 +22,8 @@ local OP_TOAST, OP_SCREEN, OP_AVATAR, OP_FROMENTITY, OP_REQUIRE, OP_ERROR, OP_SO
 local OP_LOADSCENE, OP_STORE, OP_AUDIO, OP_SETTINGS = ${OP.LOADSCENE}, ${OP.STORE}, ${OP.AUDIO}, ${OP.SETTINGS}
 local OP_TWEEN, OP_SAVE, OP_DIALOG, OP_CAMERA = ${OP.TWEEN}, ${OP.SAVE}, ${OP.DIALOG}, ${OP.CAMERA}
 local OP_FILES, OP_CLOCK, OP_GAMEPROP, OP_ALIVE, OP_UNTICK = ${OP.FILES}, ${OP.CLOCK}, ${OP.GAMEPROP}, ${OP.ALIVE}, ${OP.UNTICK}
+local OP_LEADERBOARD = ${OP.LEADERBOARD}
+local OP_NET = ${OP.NET}
 
 local traceback = debug.traceback
 local freeze = table.freeze
@@ -446,28 +449,59 @@ sound = freeze({
 	play = function(assetId, at) H(OP_SOUND, assetId, encode(at)) end,
 })
 
--- ---------- players ----------
+-- ---------- players + rooms (multiplayer, DREAMSY.MD §4.5) ----------
+-- Offline (no room): one local player, events stay in-process. In a room: players/teams from the room server,
+-- fireServer goes to the room host's device, fireClient/fireAll are relayed, avatars replicate via room.replicate.
+local net = { online = H(OP_NET, "active"), objs = {} }
 local PlayerM = {}
+local localPlayer
+function net.playerOf(id)
+	if id == nil then return nil end
+	local p = net.objs[id]
+	if not p then
+		local info = H(OP_NET, "player", id)
+		p = setmetatable({ id = id, name = if info then info.name else "Player", team = if info then info.team else nil, userId = if info then info.userId else id }, PlayerM)
+		net.objs[id] = p
+	end
+	return p
+end
 PlayerM.__index = function(p, k)
-	if k == "avatar" then return proxy(H(OP_AVATAR)) end
+	if k == "avatar" then return proxy(H(OP_NET, "avatar", rawget(p, "id"))) end
+	if k == "isLocal" then return p == localPlayer end
+	if k == "isHost" then return H(OP_NET, "host") == rawget(p, "id") end
 	return nil
 end
 PlayerM.__tostring = function(p) return "Player(" .. p.name .. ")" end
-local localPlayer = setmetatable({ id = "local", name = "Player" }, PlayerM)
+localPlayer = net.playerOf(H(OP_NET, "self").id)
 local joined, left = localSignal(), localSignal()
+function net.all()
+	local out = {}
+	for i, info in H(OP_NET, "players") do
+		local p = net.playerOf(info.id)
+		p.name = info.name
+		p.team = info.team
+		out[i] = p
+	end
+	return out
+end
 players = freeze({
 	["local"] = localPlayer,
-	all = function() return { localPlayer } end,
+	all = net.all,
+	get = function(id) if H(OP_NET, "player", tostring(id)) then return net.playerOf(tostring(id)) end return nil end,
+	onTeam = function(team)
+		local out = {}
+		for _, p in net.all() do if p.team == team then table.insert(out, p) end end
+		return out
+	end,
 	fromEntity = function(e)
 		if e == nil then return nil end
-		if H(OP_FROMENTITY, handle(e, "entity")) then return localPlayer end
-		return nil
+		return net.playerOf(H(OP_NET, "fromEntity", handle(e, "entity")))
 	end,
 	joined = joined,
 	left = left,
 })
 
--- ---------- networking (in-process for single-player) ----------
+-- ---------- networking ----------
 local remotes = {}
 local queue = {}
 local RemoteEventM = { __index = {} }
@@ -476,9 +510,55 @@ local function deliver(fns, ...)
 		xpcall(fn, function(m) H(OP_ERROR, tostring(m), traceback(tostring(m), 2)) return m end, ...)
 	end
 end
-function RemoteEventM.__index.fireServer(r, ...) table.insert(queue, { r.server, true, pack(...) }) end
-function RemoteEventM.__index.fireClient(r, player, ...) table.insert(queue, { r.client, false, pack(...) }) end
-function RemoteEventM.__index.fireAll(r, ...) table.insert(queue, { r.client, false, pack(...) }) end
+-- wire encoding: Players → {$p=id}, Vec2 → {$v={x,y}}, nil args → {$nil=true}; Entities can't cross the network
+function net.enc(v, d)
+	local t = type_(v)
+	if t == "table" then
+		if d > 16 then error("remoteEvent/room: value is nested too deeply", 0) end
+		local mt = getmetatable(v)
+		if mt == PlayerM then return { ["$p"] = rawget(v, "id") } end
+		if mt == Vec2M then return { ["$v"] = { v.x, v.y } } end
+		if handleOf[v] then error("can't send an Entity over the network: send its position or a Player instead", 0) end
+		local o = {}
+		for k, x in v do o[k] = net.enc(x, d + 1) end
+		return o
+	elseif t == "function" or t == "userdata" or t == "thread" then
+		error("can't send a " .. t .. " over the network", 0)
+	end
+	return v
+end
+function net.dec(v)
+	if type_(v) ~= "table" then return v end
+	if v["$p"] ~= nil then return net.playerOf(v["$p"]) end
+	if v["$v"] ~= nil then return v2(v["$v"][1], v["$v"][2]) end
+	if v["$nil"] ~= nil then return nil end
+	local o = {}
+	for k, x in v do o[k] = net.dec(x) end
+	return o
+end
+function net.send(name, to, ...)
+	local n = select("#", ...)
+	local a = {}
+	for i = 1, n do
+		local x = select(i, ...)
+		local ok, r = pcall(net.enc, x, 0)
+		if not ok then error("remoteEvent \\"" .. name .. "\\": " .. tostring(r), 3) end
+		a[i] = if x == nil then { ["$nil"] = true } else r
+	end
+	H(OP_NET, "send", name, to, a)
+end
+function RemoteEventM.__index.fireServer(r, ...)
+	if net.online and H(OP_NET, "host") ~= localPlayer.id then net.send(r.name, "host", ...) return end
+	table.insert(queue, { r.server, true, pack(...) })
+end
+function RemoteEventM.__index.fireClient(r, player, ...)
+	if net.online and getmetatable(player) == PlayerM and player ~= localPlayer then net.send(r.name, rawget(player, "id"), ...) return end
+	table.insert(queue, { r.client, false, pack(...) })
+end
+function RemoteEventM.__index.fireAll(r, ...)
+	if net.online then net.send(r.name, "others", ...) end
+	table.insert(queue, { r.client, false, pack(...) })
+end
 function RemoteEventM.__index.onServer(r, fn) table.insert(r.server, fn) end
 function RemoteEventM.__index.onClient(r, fn) table.insert(r.client, fn) end
 function remoteEvent(name)
@@ -491,7 +571,13 @@ function remoteEvent(name)
 end
 local RemoteFunctionM = { __index = {} }
 function RemoteFunctionM.__index.invoke(r, ...)
-	if not r.handler then error("remoteFunction \\"" .. r.name .. "\\" has no onInvoke handler", 2) end
+	if not r.handler then
+		if net.online then error("remoteFunction \\"" .. r.name .. "\\": invoke only works on the room host in multiplayer v1 — use a remoteEvent and reply with fireClient", 2) end
+		error("remoteFunction \\"" .. r.name .. "\\" has no onInvoke handler", 2)
+	end
+	if net.online and H(OP_NET, "host") ~= localPlayer.id then
+		error("remoteFunction \\"" .. r.name .. "\\": invoke only works on the room host in multiplayer v1 — use a remoteEvent and reply with fireClient", 2)
+	end
 	return r.handler(localPlayer, ...)
 end
 function RemoteFunctionM.__index.onInvoke(r, fn) r.handler = fn end
@@ -514,6 +600,75 @@ local function flushRemotes()
 			deliver(item[1], unpack(item[3], 1, item[3].n))
 		end
 	end
+end
+
+-- ---------- room (multiplayer session: replication, shared state, scores, match result) ----------
+do
+	local stateChanged, scoreChanged, ended, avatarSpawned = localSignal(), localSignal(), localSignal(), localSignal()
+	local function teamOrPlayer(k) if k == "red" or k == "blue" then return k end return net.playerOf(k) end
+	local function targetKey(t, fn)
+		if getmetatable(t) == PlayerM then return rawget(t, "id") end
+		if t == "red" or t == "blue" then return t end
+		error("room." .. fn .. " expects a Player, \\"red\\" or \\"blue\\"", 3)
+	end
+	H(OP_NET, "bind", function(kind, a, b, c, d)
+		if kind == "ev" then
+			local r = remotes["e:" .. a]
+			if not r then return end
+			local n = if d then #d else 0
+			local args = {}
+			for i = 1, n do args[i] = net.dec(d[i]) end
+			if c then deliver(r.server, net.playerOf(b), unpack(args, 1, n))
+			else deliver(r.client, unpack(args, 1, n)) end
+		elseif kind == "join" then fireLocal(joined, net.playerOf(a))
+		elseif kind == "leave" then fireLocal(left, net.playerOf(a))
+		elseif kind == "kv" then fireLocal(stateChanged, a, net.dec(b))
+		elseif kind == "score" then fireLocal(scoreChanged, teamOrPlayer(a), b)
+		elseif kind == "ended" then
+			fireLocal(ended, { winner = net.playerOf(a.winner), team = a.team, draw = a.draw == true, reason = a.reason, scores = a.scores or {} })
+		elseif kind == "avatar" then fireLocal(avatarSpawned, net.playerOf(a), proxy(b))
+		end
+	end)
+	local fields = freeze({
+		replicate = function(e, opts)
+			if opts ~= nil and type_(opts) ~= "table" then error("room.replicate options must be a table like { tint = false }", 2) end
+			H(OP_NET, "replicate", handle(e, "entity"), not (opts and opts.tint == false))
+		end,
+		state = function(k) return net.dec(H(OP_NET, "state", tostring(k))) end,
+		setState = function(k, v)
+			if type_(k) ~= "string" then error("room.setState expects a key string, e.g. room.setState(\\"round\\", 2)", 2) end
+			local ok, r = pcall(net.enc, v, 0)
+			if not ok then error("room.setState: " .. tostring(r), 2) end
+			H(OP_NET, "setState", k, r)
+		end,
+		addScore = function(t, n)
+			if type_(n) ~= "number" then error("room.addScore expects a number, e.g. room.addScore(player, 1)", 2) end
+			H(OP_NET, "addScore", targetKey(t, "addScore"), n)
+		end,
+		score = function(t) return H(OP_NET, "score", targetKey(t, "score")) end,
+		scores = function() return H(OP_NET, "scores") end,
+		finish = function(w)
+			local key
+			if w == nil or w == "draw" then key = "draw"
+			elseif w == "red" or w == "blue" then key = w
+			elseif getmetatable(w) == PlayerM then key = rawget(w, "id")
+			else error("room.finish expects a Player, \\"red\\", \\"blue\\" or \\"draw\\"", 2) end
+			H(OP_NET, "finish", key)
+		end,
+		teamColor = function(team) return color(H(OP_NET, "teamColor", tostring(team))) end,
+		host = function() return net.playerOf(H(OP_NET, "host")) end,
+		stateChanged = stateChanged, scoreChanged = scoreChanged, ended = ended, avatarSpawned = avatarSpawned,
+	})
+	local PROPS = { code = true, mode = true, max = true, min = true, isHost = true, match = true, seed = true }
+	room = setmetatable({}, {
+		__index = function(_, k)
+			if k == "active" then return net.online end
+			if PROPS[k] then return H(OP_NET, "prop", k) end
+			return fields[k]
+		end,
+		__newindex = function(_, k) error("room." .. tostring(k) .. " is read-only", 2) end,
+		__metatable = "room",
+	})
 end
 
 -- ---------- data (in-memory until DataStore exists) ----------
@@ -623,6 +778,34 @@ store = freeze({
 	purchased = setmetatable({ _h = 0, _name = "storePurchased" }, SignalM),
 })
 
+-- ---------- leaderboards + ghosts (DREAMSY.MD §13) ----------
+local function lbBoard(b, fn, required)
+	if b == nil and not required then return nil end
+	if type_(b) ~= "string" then error("leaderboard." .. fn .. " expects a board name string like \\"fastest\\"", 3) end
+	return b
+end
+leaderboard = freeze({
+	start = function(board, opts)
+		if opts ~= nil and type_(opts) ~= "table" then error("leaderboard.start options must be a table like { track = player }", 2) end
+		local track = opts and opts.track
+		H(OP_LEADERBOARD, "start", lbBoard(board, "start"), if track ~= nil then handle(track, "opts.track") else nil)
+	end,
+	finish = function(board) return H(OP_LEADERBOARD, "finish", lbBoard(board, "finish")) end,
+	submit = function(board, value, opts)
+		if type_(value) ~= "number" then error("leaderboard.submit expects a number value, e.g. leaderboard.submit(\\"score\\", 1200)", 2) end
+		if opts ~= nil and type_(opts) ~= "table" then error("leaderboard.submit options must be a table like { order = \\"asc\\" }", 2) end
+		H(OP_LEADERBOARD, "submit", lbBoard(board, "submit", true), value, opts and opts.order)
+	end,
+	cancel = function(board) H(OP_LEADERBOARD, "cancel", lbBoard(board, "cancel")) end,
+	elapsed = function(board) return H(OP_LEADERBOARD, "elapsed", lbBoard(board, "elapsed")) end,
+	running = function(board) return H(OP_LEADERBOARD, "running", lbBoard(board, "running")) end,
+	raceGhost = function(which, board)
+		if type_(which) ~= "string" then error("leaderboard.raceGhost expects \\"best\\", \\"pb\\" or a run id", 2) end
+		H(OP_LEADERBOARD, "raceGhost", which, lbBoard(board, "raceGhost"))
+	end,
+	result = setmetatable({ _h = 0, _name = "leaderboardResult" }, SignalM),
+})
+
 -- math.random goes through the platform's seeded RNG
 local mrandom = function(m, n)
 	if m == nil then return H(OP_RANDOM) end
@@ -642,7 +825,7 @@ local function makeScript(h, path)
 	return s, req
 end
 
-H(OP_INIT, makeScript, proxy, flushRemotes, function() fireLocal(joined, localPlayer) end, function(fn, ...) return fn(...) end, localPlayer, setScene, doneFire)
+H(OP_INIT, makeScript, proxy, flushRemotes, function() for _, p in net.all() do fireLocal(joined, p) end end, function(fn, ...) return fn(...) end, localPlayer, setScene, doneFire)
 
 -- trim to the contract (after capturing traceback above)
 debug = nil

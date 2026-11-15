@@ -33,7 +33,8 @@ Engine alone: `pnpm -C engine-web dev` → http://localhost:2005 (game picker). 
 - First flagship 1–2h game on a kit (e.g. `pnpm -C harness local --prompt "..." --out /tmp/x --rounds 8`), ~$40–60.
 - UI + taste pass on the app; a dark/gothic taste pack (send refs); Nano Banana backgrounds once Gemini billing is enabled (`GEMINI` key is free tier → 0 image quota).
 - Hackathon: hosted backend + web player (venue Wi-Fi), pre-generated hero games, live tweak/remix demo, QR for judges.
-- Not started: multiplayer (Node game servers on engine core), moderation beyond Haiku pre-check, real payments (Stars are free), TestFlight (Apple Developer + EAS cloud build), macOS/Xcode update.
+- Multiplayer v1 built, not deployed (DREAMSY.MD §4.5): `services/gameserver` (rooms, codes, 1v1 quick match red/blue, relay; `pnpm -C services/gameserver start`, :8790, also in dev.sh + compose + Caddy `/rooms*`), engine lobby/HUD/winner card, Luau `room`/`players`/remote events, `games/examples/mp-duel`, racing kit versus. v2: server-authoritative sim on engine core, reconnect.
+- Not started: moderation beyond Haiku pre-check, real payments (Stars are free), TestFlight (Apple Developer + EAS cloud build), macOS/Xcode update.
 - Network note: this Mac's network has broken IPv6 + slow IPv4 → Node needs `--network-family-autoselection-attempt-timeout=2000` (set in scripts/dev.sh and harness).
 - Nothing is committed to git yet.
 
@@ -47,3 +48,10 @@ Engine alone: `pnpm -C engine-web dev` → http://localhost:2005 (game picker). 
 - Web dashboard on https://dreamsy.dev (+www): static apps/web build served by Caddy from /srv/dreamsy/web; `scripts/deploy.sh` builds + uploads it (requires apps/web/.env.local → prod API).
 - Demo sign-in bypass: `POST /v1/auth/demo {username}` → `{user, token}` with no email code, for usernames ending in `_demo` and the special names in DEMO_USERNAMES (default `demo,judge`); same username = same account; DEMO_LOGIN=0 disables. Dashboard: type a username instead of an email.
 - Email sign-in is OURS now (not Supabase): `POST /v1/auth/email/start {email}` emails a 6-digit code via Resend (RESEND_API_KEY, EMAIL_FROM = noreply@thoughts.engineering), `POST /v1/auth/email/verify {email, code}` → `{user, token}`. 10-min codes, single use, 5 tries, 30 s between sends, 8/hour. Links to an existing user with the same email (old Supabase sign-ins). Supabase is only used for Google OAuth now. Table `email_codes` (migration 0007).
+- Builders: Claude (default) or OpenAI per generation (`provider` on POST /v1/games/:id/generations; migration 0008). `harness/src/openai.ts` adapts the agent loop to the OpenAI Responses API (gpt-6.1-sol builder, gpt-6.1-terra content workers, service_tier priority = fast). Router/critic/lessons stay on Claude. Prod runs two workers: `worker` (Claude, WORKER_CONCURRENCY=5) and `worker-openai` (DREAMSY_PROVIDER=openai, 4). OpenAI $ in the cost meter are estimates (OPENAI_PRICE_*).
+- Leaderboards + ghosts + family groups (DREAMSY §13) live on prod (API migration 0009, engine `leaderboard` Luau API + results card, kits racing/platformer/runner/puzzle wired, web Leaderboard tab + Groups page + /join/:code).
+- Touch controls: fixed, smaller joystick (only the stick takes touches); buttons also appear when a game first reads them at runtime (kits read buttons via config, so the static scan missed e.g. the platformer's jump).
+- Deploy: `./scripts/deploy.sh --keep-workers [--no-engine]` never interrupts running builds. Engine-only: `cd engine-web && npx vite build && rsync -az --delete dist/ dreamsy-ec2:/srv/dreamsy/engine/`. Workers still run the pre-leaderboard harness prompt until restarted when idle.
+- Multiplayer v1 live: room server `gameserver` (wss://api.dreamsy.dev/rooms, DREAMSY §4.5: server-relayed state, devices simulate). Example "Orb Duel" published on @apxrv: https://play.dreamsy.dev/?public=g_01m7gkv3zzcazkvwhd2dm4y1rz.
+- All @apxrv games published (2026-11-15 ~13:57); re-publish after the batch finishes (publish pins a version).
+- Touch controls now show only while the game reads them (InputState.recentlyRead, ~0.75 s grace): hidden on title screens/menus/shops.

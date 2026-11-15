@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { configureApi } from '../api';
 import { dreamsyApiBackend } from './dreamsyApiBackend';
 import { getAppleCredential } from './native';
-import { googleAccessToken, sendEmailCode, verifyEmailCode } from './supabase';
+import { googleAccessToken } from './supabase';
 import type { AuthBackend, Session, User } from './types';
 
 // The one backend in use.
@@ -17,8 +17,8 @@ type AuthState =
 export type AuthContextValue = AuthState & {
   signInWithApple: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
-  /** Step 1 of email sign-in: send a one-time code. */
-  sendEmailCode: (email: string) => Promise<void>;
+  /** Step 1 of email sign-in (services/api): email a 6-digit code. Resolves its lifetime in seconds. */
+  sendEmailCode: (email: string) => Promise<number>;
   /** Step 2: verify the code and sign in. */
   signInWithEmailCode: (email: string, code: string) => Promise<void>;
   continueAsGuest: () => Promise<void>;
@@ -71,8 +71,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInWithGoogle = useCallback(async () => {
     setState(toState(await backend.signInWithSupabase(await googleAccessToken())));
   }, []);
+  const sendEmailCode = useCallback(async (email: string) => (await backend.startEmailSignIn(email)).expiresInSeconds, []);
   const signInWithEmailCode = useCallback(async (email: string, code: string) => {
-    setState(toState(await backend.signInWithSupabase(await verifyEmailCode(email, code))));
+    setState(toState(await backend.signInWithEmailCode(email, code)));
   }, []);
   const continueAsGuest = useCallback(async () => {
     setState(toState(await backend.signInAsGuest()));
@@ -99,7 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       getAccessToken: () => backend.getAccessToken(),
       updateUser,
     }),
-    [state, signInWithApple, signInWithGoogle, signInWithEmailCode, continueAsGuest, signInAsDemo, signOut, updateUser],
+    [state, signInWithApple, signInWithGoogle, sendEmailCode, signInWithEmailCode, continueAsGuest, signInAsDemo, signOut, updateUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

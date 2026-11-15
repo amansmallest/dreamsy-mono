@@ -1,0 +1,24 @@
+{
+  "name": "@dreamsy/gameserver",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "dev": "tsx watch src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@dreamsy/engine": "workspace:^",
+    "jose": "^6.2.17",
+    "ws": "^8.23.0"
+  },
+  "devDependencies": {
+    "@dreamsy/format": "workspace:^",
+    "@types/node": "^26.6.6",
+    "@types/ws": "^8.18.1",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
+  }
+}

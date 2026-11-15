@@ -6,8 +6,14 @@
 # API
 http://api.dreamsy.dev, https://api.dreamsy.dev, http://:80 {
   tls internal
-  reverse_proxy api:8787 {
-    flush_interval -1   # SSE build progress
+  # multiplayer rooms: WebSocket upgrade to the room server (Cloudflare proxies WebSockets)
+  handle /rooms* {
+    reverse_proxy gameserver:8790
+  }
+  handle {
+    reverse_proxy api:8787 {
+      flush_interval -1   # SSE build progress
+    }
   }
 }
 # Engine: the game player for the app's WebView and ?public= share links

@@ -367,35 +367,70 @@ Both start mid-game with `opts.scene` + `opts.sceneParams`, preloaded `opts.save
 ## Players & avatar
 
 ```luau
-players.local : Player                 -- client only
-players.all() : { Player }
-players.fromEntity(e: Entity) : Player?
-players.joined:connect(fn(p: Player))   players.left:connect(fn(p: Player))   -- server
-Player.id, Player.name, Player.avatar : Entity?
+players.local : Player                 -- this device's player (`players["local"]` in code: `local` is a keyword)
+players.all() : { Player }             -- everyone in the room, room order (offline: just players.local)
+players.get(id: string) : Player?      players.onTeam("red" | "blue") : { Player }
+players.fromEntity(e: Entity) : Player?   -- e or an ancestor is my avatar (tag "player" / replicated) or a remote avatar
+players.joined:connect(fn(p: Player))   players.left:connect(fn(p: Player))
+-- joined fires for every player at start (me included), then for late joiners; left when someone disconnects
+Player.id : string    Player.name : string    Player.team : "red" | "blue" | nil (nil offline)
+Player.isLocal : boolean    Player.isHost : boolean    Player.avatar : Entity?   -- remote: its puppet (see room.replicate)
 ```
 
 ## Networking (multiplayer)
 
-Declared in a shared module so both sides see the same names.
+Multiplayer games set `[players] max` (2 = 1v1, ≤ 8) and `[server] mode = "rooms"`. The engine owns the lobby (quick match
+1v1, create room → 6-letter code + share link, join with code, ready/start, play solo), the red/blue team HUD and the winner
+card — games never build that UI. **v1 model (relayed state sync):** every device runs the whole package (client *and*
+server scripts) and simulates its own world; the room server relays avatar samples and events and owns membership, teams,
+the host, shared state, scores and the match result. So: each player moves their own avatar; anything shared (pickups,
+round timer, who scored) is decided on the **room host's** device (`room.isHost`) and announced with remote events.
+Offline (single player, playtests, harness) the same API works: one local player, `room.active = false`, `room.isHost = true`,
+events stay in-process, `room.finish` fires `room.ended` locally.
+
+Remote events — declare them in a shared module so every script sees the same names (letters, digits, `_ . : -`):
 
 ```luau
 local hit = remoteEvent("hit")             -- fire-and-forget
-hit:fireServer(...)        -- client → server
-hit:fireClient(player, ...) hit:fireAll(...)   -- server → client(s)
+hit:fireServer(...)                        -- → the room host's onServer(player = sender, ...) (offline: in-process)
+hit:fireClient(player, ...)                -- → that player's onClient
+hit:fireAll(...)                           -- → every player's onClient, including this device
 hit:onServer(fn(player, ...))   hit:onClient(fn(...))
 
-local buy = remoteFunction("buy")          -- request/response, server-authoritative
-buy:invoke(...) : ...      -- client, yields
-buy:onInvoke(fn(player, ...) -> ...)       -- server
+local buy = remoteFunction("buy")          -- request/response
+buy:invoke(...) : ...                      -- offline / on the host only in multiplayer v1 (use a remoteEvent + fireClient reply)
+buy:onInvoke(fn(player, ...) -> ...)
 ```
+Args: nil, booleans, numbers, strings, Vec2, Players and tables of those (≤ 4 KB JSON); Entities can't be sent (send a
+position or a Player). Events are delivered at the start of the next tick, in order.
 
-Entity props changed on the server replicate to clients automatically. Clients never trust
-themselves for scores, currency or inventory.
+Rooms:
+
+```luau
+room.active : boolean        -- in a multiplayer room
+room.code : string?          room.mode : "duel" | "party" | nil      room.max, room.min : number
+room.isHost : boolean        room.host() : Player     room.match : number (rematches bump it)     room.seed : number
+room.replicate(e: Entity, opts: { tint: boolean? }?)
+  -- send this entity (my avatar) to the others at 15 Hz: position, rotation, flip_h, anim, visible, scene.
+  -- Every other device shows a puppet: a visual copy of ITS OWN replicated avatar (same package) with scripts and
+  -- physics stripped (Body2D/Area2D → Node2D), interpolated 100 ms behind, plus a name tag in the team color.
+  -- tint (default true): plain white sprites become exactly the team color (#ff2a2a red / #2a6bff blue), other sprites
+  -- get a team tint — on my avatar too. Puppets are hidden while their player is in another scene.
+room.avatarSpawned:connect(fn(p: Player, puppet: Entity))   -- decorate / add an Area2D for hits
+room.setState(key: string, value) ; room.state(key) : any ; room.stateChanged:connect(fn(key, value))   -- shared, last write wins
+room.addScore(target: Player | "red" | "blue", n: number) ; room.score(target) : number ; room.scores() : {[string]: number}
+room.scoreChanged:connect(fn(target: Player | "red" | "blue", total: number))   -- server-authoritative totals (shown in the HUD)
+room.finish(winner: Player | "red" | "blue" | "draw")   -- end the match; the first call in the room wins, later ones are ignored
+room.ended:connect(fn(r: { winner: Player?, team: "red"|"blue"|nil, draw: boolean, reason: "finish"|"forfeit", scores }))
+room.teamColor(team) : Color
+```
+A 1v1 whose opponent leaves ends as a forfeit for the one who stayed. Rematch = a fresh game start with the same room.
 
 ## Platform menu, theme, audio
 
 **Platform menu (engine-owned, every game):** a pause button (top-right) opens Pause → Resume,
-Restart, Settings (music / sfx volume, mute, vibration, touch-control size), Controls help, Quit.
+Restart, Leaderboard (games that use `leaderboard`), Settings (music / sfx volume, mute, vibration, touch-control size),
+Controls help, Quit.
 Games do NOT build their own pause/settings/volume UI. They theme it via `dreamsy.toml`:
 
 ```toml
@@ -477,6 +512,36 @@ Gate content with passes (`if store.owns("vip") then ... end`): extra levels, ar
 On start, grant any `store.pending()` consumables (a purchase may have finished while the game was closed).
 Kids play Dreamsy: no random paid rewards (loot boxes), show the price clearly, never block core
 progress behind a purchase.
+
+## Leaderboards & ghosts
+
+Every game with a clear finish or a score gets online leaderboards for free. The engine times runs in **game time**
+(pause and `game.timeScale` respected), records a **ghost** of the player, submits, and shows the results card
+(time, rank, PB badge, top 5, "Race the #1 ghost", "Play again" → `game.restartRequested` / entry scene). The pause
+menu gets a **Leaderboard** entry (top 10). Games never build leaderboard UI or talk to servers.
+
+```luau
+leaderboard.start(board: string?, opts: { track: Entity? }?)   -- begin a timed run (board default "fastest"); calling again restarts it
+leaderboard.finish(board: string?) : number?    -- stop, submit the time (+ ghost), show the results card; returns seconds
+leaderboard.cancel(board: string?)              -- abandon without submitting (game over, back to menu); no board = all runs
+leaderboard.elapsed(board: string?) : number    -- seconds on the running timer (0 if none) — for an in-game HUD clock
+leaderboard.running(board: string?) : boolean
+leaderboard.submit(board: string, value: number, opts: { order: "asc"|"desc" }?)  -- explicit score (default "desc" = higher is better), no ghost
+leaderboard.raceGhost(which: "best" | "pb" | runId, board: string?)  -- spawn a translucent replay of that run's ghost now
+leaderboard.result:connect(fn(rank: number, best: number, isPersonalBest: boolean))  -- after a submit resolves (next tick); best = the board record (#1 value)
+```
+
+- Timed games (race, level, speedrun, puzzle clear): `leaderboard.start("<board>")` when the run really begins (after any
+  countdown), `leaderboard.finish("<board>")` at the goal, `leaderboard.cancel("<board>")` on game over / quit. Deaths with
+  respawn keep the clock running. Platform Restart cancels running timers automatically.
+- Score games (endless runner, arcade): `leaderboard.submit("score", score)` once at game over (not every frame).
+- Boards: lowercase letters, digits and `_` (≤ 40 chars). One board per track/level: `"track_" .. id`, `"level_" .. n`. Times are
+  lower-is-better ("asc"); `submit` defaults to higher-is-better ("desc").
+- The ghost follows `opts.track` or the entity tagged `"player"` (its sprite's position, flip and animation frame, 10 Hz,
+  ≤ 5 min), only in the scene where the run started. Ghost replays draw the player's sprite at 45% alpha with no
+  collisions or scripts, starting when spawned; they disappear on scene change, run end, or when the replay ends.
+  The results card's "Race the #1 ghost" restarts the game and spawns that ghost at your next `leaderboard.start`.
+- A board with no runs, offline play and playtests all work: the engine falls back to a local in-memory leaderboard.
 
 ## Services (server, slice 2+)
 

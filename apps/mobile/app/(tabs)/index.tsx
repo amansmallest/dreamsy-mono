@@ -11,16 +11,18 @@ import { errorMessage, ink, radius } from '@/theme';
 import { Button, Empty, IconButton, PixelSparkle, Pressy, Skeleton, Txt } from '@/ui';
 import { useWallet } from '@/wallet';
 
-const SHELVES: { tab: FeedTab; title: string }[] = [
-  { tab: 'trending', title: 'Trending' },
-  { tab: 'following', title: 'From creators you follow' },
-  { tab: 'top', title: 'Most liked' },
-  { tab: 'new', title: 'Just released' },
+type ShelfKey = FeedTab | 'multiplayer';
+const SHELVES: { key: ShelfKey; tab: FeedTab; title: string; multiplayer?: boolean }[] = [
+  { key: 'trending', tab: 'trending', title: 'Trending' },
+  { key: 'multiplayer', tab: 'trending', title: 'Multiplayer', multiplayer: true },
+  { key: 'following', tab: 'following', title: 'From creators you follow' },
+  { key: 'top', tab: 'top', title: 'Most liked' },
+  { key: 'new', tab: 'new', title: 'Just released' },
 ];
 const PER_SHELF = 12;
 const PAD = 16;
 
-type Shelves = Partial<Record<FeedTab, FeedGame[]>>;
+type Shelves = Partial<Record<ShelfKey, FeedGame[]>>;
 
 /** Home: a game marketplace. Featured banner, then shelves of games that scroll sideways. */
 export default function HomeScreen() {
@@ -32,10 +34,10 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
-    const results = await Promise.allSettled(SHELVES.map((s) => api.feed(s.tab, null, PER_SHELF)));
+    const results = await Promise.allSettled(SHELVES.map((s) => api.feed(s.tab, null, PER_SHELF, { multiplayer: s.multiplayer })));
     const next: Shelves = {};
     results.forEach((r, i) => {
-      if (r.status === 'fulfilled') next[SHELVES[i]!.tab] = r.value.games;
+      if (r.status === 'fulfilled') next[SHELVES[i]!.key] = r.value.games;
     });
     const failed = results.find((r) => r.status === 'rejected');
     setError(failed && Object.keys(next).length === 0 ? errorMessage((failed as PromiseRejectedResult).reason) : null);
@@ -61,7 +63,7 @@ export default function HomeScreen() {
   const trending = shelves?.trending ?? [];
   const featured = trending[0];
   const card = Math.round((width - PAD * 2 - 12 * 2) / 2.6);
-  const nothing = shelves !== null && SHELVES.every((s) => !shelves[s.tab]?.length);
+  const nothing = shelves !== null && SHELVES.every((s) => !shelves[s.key]?.length);
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
@@ -84,6 +86,7 @@ export default function HomeScreen() {
               </Txt>
             </Pressy>
           )}
+          <IconButton icon="people-outline" label="Family & friends" size={36} onPress={() => router.push('/groups')} />
           <IconButton icon="qr-code-outline" label="Scan a game QR code" size={36} onPress={() => router.push('/scan')} />
         </View>
       </View>
@@ -116,9 +119,12 @@ export default function HomeScreen() {
               </View>
             )}
             {SHELVES.map((s) => {
-              const games = s.tab === 'trending' ? trending.slice(1) : shelves[s.tab];
+              const games = s.key === 'trending' ? trending.slice(1) : shelves[s.key];
               if (!games?.length) return null;
-              return <Shelf key={s.tab} title={s.title} tab={s.tab} games={games} card={card} />;
+              return (
+                <Shelf key={s.key} title={s.title} tab={s.tab} multiplayer={s.multiplayer} games={games} card={card}
+                  subtitle={s.multiplayer ? 'Quick match or a room code with family' : undefined} />
+              );
             })}
             <CreateBanner />
           </>
@@ -128,14 +134,30 @@ export default function HomeScreen() {
   );
 }
 
-function Shelf({ title, tab, games, card }: { title: string; tab: FeedTab; games: FeedGame[]; card: number }) {
+function Shelf({ title, subtitle, tab, multiplayer, games, card }: {
+  title: string; subtitle?: string; tab: FeedTab; multiplayer?: boolean; games: FeedGame[]; card: number;
+}) {
   return (
     <View style={styles.shelf}>
       <View style={styles.shelfHead}>
-        <Txt variant="pixel" style={styles.shelfTitle}>
-          {title}
-        </Txt>
-        <Pressable hitSlop={10} onPress={() => router.navigate({ pathname: '/search', params: { sort: tab } })} style={styles.seeAll}>
+        <View style={styles.flexShrink}>
+          <View style={styles.shelfTitleRow}>
+            {multiplayer && <Ionicons name="people" size={17} color={ink.navy} />}
+            <Txt variant="pixel" style={styles.shelfTitle}>
+              {title}
+            </Txt>
+          </View>
+          {subtitle && (
+            <Txt variant="meta" muted numberOfLines={1}>
+              {subtitle}
+            </Txt>
+          )}
+        </View>
+        <Pressable
+          hitSlop={10}
+          onPress={() => router.navigate({ pathname: '/search', params: { sort: tab, multiplayer: multiplayer ? '1' : '0' } })}
+          style={styles.seeAll}
+        >
           <Txt variant="label" color={ink.accent}>
             See all
           </Txt>
@@ -206,6 +228,8 @@ const styles = StyleSheet.create({
   shelf: { marginTop: 26, gap: 12 },
   shelfHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: PAD },
   shelfTitle: { fontSize: 18 },
+  shelfTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  flexShrink: { flexShrink: 1 },
   seeAll: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   shelfRow: { flexDirection: 'row', gap: 12, paddingHorizontal: PAD },
   create: { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: PAD, marginTop: 30, padding: 16, borderRadius: radius.lg, backgroundColor: ink.wash },

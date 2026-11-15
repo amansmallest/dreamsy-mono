@@ -33,9 +33,10 @@ import {
   type Quota,
 } from '@/api';
 import { BuildTurn } from '@/components/BuildCard';
-import { RemixBadge } from '@/components/GameCard';
+import { PlayersBadge, RemixBadge } from '@/components/GameCard';
 import { GamePreview } from '@/components/GamePreview';
 import { PublishSheet } from '@/components/PublishSheet';
+import { ShareWithGroupSheet } from '@/components/ShareWithGroupSheet';
 import { VersionsSheet } from '@/components/VersionsSheet';
 import { useGenerationProgress } from '@/generationProgress';
 import { shareGame } from '@/social';
@@ -92,6 +93,7 @@ export default function GameWorkspaceScreen() {
 
   const [versionsOpen, setVersionsOpen] = useState(false);
   const [publishOpen, setPublishOpen] = useState(false);
+  const [familyOpen, setFamilyOpen] = useState(false);
   const [restoring, setRestoring] = useState<number | null>(null);
 
   const [imageHeaders, setImageHeaders] = useState<Record<string, string> | undefined>(undefined);
@@ -391,18 +393,31 @@ export default function GameWorkspaceScreen() {
             </Pressable>
           ),
           headerRight: () => (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Versions"
-              onPress={() => {
-                setVersionsOpen(true);
-                void loadVersions().catch(() => {});
-              }}
-              hitSlop={8}
-              style={styles.headerIcon}
-            >
-              <Ionicons name="time-outline" size={19} color={ink.navy} />
-            </Pressable>
+            <View style={styles.headerIcons}>
+              {game.latestVersion > 0 && (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Share with family"
+                  onPress={() => setFamilyOpen(true)}
+                  hitSlop={8}
+                  style={styles.headerIcon}
+                >
+                  <Ionicons name="people-outline" size={19} color={ink.navy} />
+                </Pressable>
+              )}
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Versions"
+                onPress={() => {
+                  setVersionsOpen(true);
+                  void loadVersions().catch(() => {});
+                }}
+                hitSlop={8}
+                style={styles.headerIcon}
+              >
+                <Ionicons name="time-outline" size={19} color={ink.navy} />
+              </Pressable>
+            </View>
           ),
         }}
       />
@@ -441,6 +456,7 @@ export default function GameWorkspaceScreen() {
             <View style={styles.status}>
               <View style={[styles.statusDot, live && styles.statusDotLive]} />
               <Txt variant="label">{live ? (upToDate ? `Live · v${game.publishedVersion}` : `Live v${game.publishedVersion} · new v${game.latestVersion}`) : `Draft · v${game.latestVersion}`}</Txt>
+              <PlayersBadge game={game} tone="sky" />
             </View>
             {upToDate ? (
               <InkButton label="Share" icon="share-outline" size="sm" variant="outline" onPress={() => void shareGame(game)} />
@@ -600,6 +616,8 @@ export default function GameWorkspaceScreen() {
           playLatest(v);
         }}
       />
+      <ShareWithGroupSheet visible={familyOpen} game={game} onClose={() => setFamilyOpen(false)} />
+
       <PublishSheet
         visible={publishOpen}
         game={game}
@@ -680,6 +698,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6, maxWidth: 230 },
   headerTitle: { flexShrink: 1 },
+  headerIcons: { flexDirection: 'row', gap: 8 },
   headerIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: ink.wash },
   top: { paddingHorizontal: 12, paddingTop: 6, paddingBottom: 12, gap: 10, backgroundColor: ink.card, borderBottomWidth: hairline, borderBottomColor: ink.border },
   playPill: {

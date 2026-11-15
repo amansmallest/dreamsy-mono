@@ -2,10 +2,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActionSheetIOS, Alert, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
-import { api, ApiError, type FeedGame, type Creator, type Game, type GameStats, type Orientation, type RemixOf } from '@/api';
+import { api, ApiError, type FeedGame, type Creator, type Game, type GameStats, type Orientation, type Players, type RemixOf } from '@/api';
 import { useAuth } from '@/auth';
 import { Avatar } from '@/components/Avatar';
-import { GameCard, RemixBadge } from '@/components/GameCard';
+import { GameCard, PlayersBadge, RemixBadge } from '@/components/GameCard';
+import { LeaderboardSection } from '@/components/LeaderboardSection';
+import { ShareWithGroupSheet } from '@/components/ShareWithGroupSheet';
 import { SpinOffSheet } from '@/components/SpinOffSheet';
 import { Thumbnail } from '@/components/Thumbnail';
 import { compact, REPORT_REASONS, shareGame } from '@/social';
@@ -25,6 +27,8 @@ type Detail = {
   remixOf: RemixOf | null;
   publishedVersion: number | null;
   latestVersion: number | null;
+  players: Players | null;
+  multiplayer: boolean;
 };
 
 /** Game page: cover, name and creator, big Play, actions, stats, about, spin-offs. */
@@ -37,6 +41,7 @@ export default function GameScreen() {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [spinOffOpen, setSpinOffOpen] = useState(spin === '1');
+  const [familyOpen, setFamilyOpen] = useState(false);
   const [spinOffs, setSpinOffs] = useState<FeedGame[]>([]);
   const likeSeq = useRef(0);
 
@@ -61,6 +66,9 @@ export default function GameScreen() {
         remixOf: p?.remixOf ?? g?.remixOf ?? null,
         publishedVersion: g?.publishedVersion ?? p?.publishedVersion ?? null,
         latestVersion: g && 'latestVersion' in g ? (g as Game).latestVersion : null,
+        // Authed view first: for owners / group members it falls back to the latest (playable) build.
+        players: g?.players ?? p?.players ?? null,
+        multiplayer: g?.multiplayer ?? p?.multiplayer ?? false,
       });
       setLiked(!!viewer?.liked);
       setError(null);
@@ -85,11 +93,14 @@ export default function GameScreen() {
 
   const isOwner = !!game && !!user && game.ownerId === user.id;
 
+  // Published version; else the latest draft when we can see it (owner, or shared with one of my groups).
+  const playVersion = game ? game.publishedVersion || game.latestVersion || null : null;
+
   const play = () => {
-    if (!game?.publishedVersion) return;
-    const version = game.publishedVersion;
+    if (!game || !playVersion) return;
+    const version = playVersion;
     // Count it; the API dedupes per user per game per hour. Never blocks playing.
-    if (!isOwner) api.countPlay(game.id, version).catch(() => {});
+    if (!isOwner && game.publishedVersion) api.countPlay(game.id, version).catch(() => {});
     router.push({
       pathname: '/play/[id]',
       params: { id: game.id, version: String(version), orientation: game.orientation },
@@ -127,8 +138,14 @@ export default function GameScreen() {
 
   const menu = () => {
     if (!game) return;
-    const items = ['Share', ...(isOwner ? [] : ['Report'])];
-    pick(game.name, items, (i) => (items[i] === 'Share' ? void shareGame(game) : report()), false, items.indexOf('Report'));
+    const items = [...(game.publishedVersion ? ['Share'] : []), 'Share with family', ...(isOwner ? [] : ['Report'])];
+    pick(
+      game.name,
+      items,
+      (i) => (items[i] === 'Share' ? void shareGame(game) : items[i] === 'Report' ? report() : setFamilyOpen(true)),
+      false,
+      items.indexOf('Report'),
+    );
   };
 
   if (!game) {
@@ -140,7 +157,8 @@ export default function GameScreen() {
     );
   }
 
-  const canPlay = !!game.publishedVersion;
+  const canPlay = !!playVersion;
+  const draft = canPlay && !game.publishedVersion;
   const portrait = game.orientation === 'portrait';
 
   return (
@@ -180,12 +198,23 @@ export default function GameScreen() {
           <RemixBadge name={game.remixOf.name} onPress={() => router.push({ pathname: '/discover/[id]', params: { id: game.remixOf!.gameId } })} />
         )}
 
-        <Button label={canPlay ? 'Play' : 'Not published yet'} icon="play" disabled={!canPlay} onPress={play} style={styles.play} />
+        <PlayersBadge game={game} tone="sky" />
+
+        <Button label={draft ? 'Play draft' : canPlay ? 'Play' : 'Not published yet'} icon="play" disabled={!canPlay} onPress={play} style={styles.play} />
+        {game.multiplayer && (
+          <View style={styles.online}>
+            <Ionicons name="globe-outline" size={14} color={ink.muted} />
+            <Txt variant="meta" muted style={styles.onlineText}>
+              Play online: quick match or a room code with family
+            </Txt>
+          </View>
+        )}
 
         <View style={styles.actions}>
           <Action icon={liked ? 'heart' : 'heart-outline'} color={liked ? ink.danger : ink.navy} label={compact(game.stats.likes)} a11y={liked ? 'Unlike' : 'Like'} onPress={toggleLike} />
           <Action icon="git-branch-outline" label="Spin-off" onPress={() => setSpinOffOpen(true)} />
-          <Action icon="share-outline" label="Share" disabled={!canPlay} onPress={() => void shareGame(game)} />
+          <Action icon="share-outline" label="Share" disabled={!game.publishedVersion} onPress={() => void shareGame(game)} />
+          <Action icon="people-outline" label="Family" onPress={() => setFamilyOpen(true)} />
           {isOwner && <Action icon="create-outline" label="Edit" onPress={() => router.push({ pathname: '/game/[id]', params: { id: game.id } })} />}
         </View>
 
@@ -195,6 +224,8 @@ export default function GameScreen() {
           <Stat label="Spin-offs" value={compact(game.stats.remixes)} />
           <Stat label="Screen" value={portrait ? 'Portrait' : 'Landscape'} />
         </View>
+
+        <LeaderboardSection gameId={game.id} />
 
         {!!game.description && (
           <View style={styles.about}>
@@ -216,6 +247,8 @@ export default function GameScreen() {
           </ScrollView>
         </View>
       )}
+
+      <ShareWithGroupSheet visible={familyOpen} game={game} onClose={() => setFamilyOpen(false)} />
 
       <SpinOffSheet
         visible={spinOffOpen}
@@ -272,6 +305,8 @@ function Stat({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
+  online: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: -4 },
+  onlineText: { flexShrink: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: ink.bg },
   scroll: { backgroundColor: ink.bg },
   content: { paddingBottom: 48 },

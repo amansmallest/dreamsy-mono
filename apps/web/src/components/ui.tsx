@@ -37,7 +37,7 @@ export function Avatar({ handle, size = 'md' }: { handle: string; size?: 'sm' | 
 export function Chip({ children, tone = 'plain', icon }: { children: ReactNode; tone?: 'plain' | 'ink' | 'ok' | 'danger' | 'live'; icon?: IconName }) {
   return (
     <span className={`chip chip-${tone}`}>
-      {(tone === 'live' || tone === 'ok') && <span className="live-dot" />}
+      {(tone === 'live' || tone === 'ok') && !icon && <span className="live-dot" />}
       {icon && <Icon name={icon} size={11} />}
       {children}
     </span>

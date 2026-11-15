@@ -36,3 +36,17 @@ export function assetCategory(id: string): AssetCategory {
   if (TILE.test(s)) return 'tiles';
   return 'other';
 }
+
+/** Leaderboard value: asc boards are times (mm:ss.cc, h:mm:ss.cc past an hour), desc boards are scores. */
+export function boardValue(value: number, order: 'asc' | 'desc'): string {
+  if (order === 'desc') return Number.isInteger(value) ? value.toLocaleString() : value.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  const cs = Math.round(value * 100);
+  const h = Math.floor(cs / 360000);
+  const m = Math.floor((cs % 360000) / 6000);
+  const s = Math.floor((cs % 6000) / 100);
+  const c = cs % 100;
+  const p2 = (n: number) => String(n).padStart(2, '0');
+  return `${h ? `${h}:` : ''}${p2(m)}:${p2(s)}.${p2(c)}`;
+}
+
+export const inviteLink = (code: string) => `https://dreamsy.dev/join/${code}`;

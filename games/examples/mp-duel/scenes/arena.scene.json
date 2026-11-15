@@ -1,0 +1,264 @@
+{
+ "format": "0",
+ "root": "world",
+ "entities": {
+  "world": {
+   "type": "Node2D",
+   "name": "World",
+   "children": [
+    "camera",
+    "floor",
+    "mid",
+    "wall_t",
+    "wall_b",
+    "wall_l",
+    "wall_r",
+    "hero",
+    "title",
+    "info",
+    "clock"
+   ]
+  },
+  "camera": {
+   "type": "Camera2D",
+   "props": {
+    "position": [
+     360,
+     640
+    ],
+    "current": true
+   }
+  },
+  "floor": {
+   "type": "Sprite2D",
+   "props": {
+    "position": [
+     360,
+     650
+    ],
+    "size": [
+     640,
+     880
+    ],
+    "color": "#1d2340",
+    "z_index": -10
+   }
+  },
+  "mid": {
+   "type": "Sprite2D",
+   "props": {
+    "position": [
+     360,
+     650
+    ],
+    "size": [
+     4,
+     880
+    ],
+    "color": "#2b3260",
+    "z_index": -9
+   }
+  },
+  "wall_t": {
+   "type": "Body2D",
+   "props": {
+    "position": [
+     360,
+     202
+    ],
+    "body": "static",
+    "size": [
+     672,
+     16
+    ]
+   },
+   "children": [
+    "wall_t_s"
+   ]
+  },
+  "wall_t_s": {
+   "type": "Sprite2D",
+   "props": {
+    "size": [
+     672,
+     16
+    ],
+    "color": "#3a4270"
+   }
+  },
+  "wall_b": {
+   "type": "Body2D",
+   "props": {
+    "position": [
+     360,
+     1098
+    ],
+    "body": "static",
+    "size": [
+     672,
+     16
+    ]
+   },
+   "children": [
+    "wall_b_s"
+   ]
+  },
+  "wall_b_s": {
+   "type": "Sprite2D",
+   "props": {
+    "size": [
+     672,
+     16
+    ],
+    "color": "#3a4270"
+   }
+  },
+  "wall_l": {
+   "type": "Body2D",
+   "props": {
+    "position": [
+     32,
+     650
+    ],
+    "body": "static",
+    "size": [
+     16,
+     912
+    ]
+   },
+   "children": [
+    "wall_l_s"
+   ]
+  },
+  "wall_l_s": {
+   "type": "Sprite2D",
+   "props": {
+    "size": [
+     16,
+     912
+    ],
+    "color": "#3a4270"
+   }
+  },
+  "wall_r": {
+   "type": "Body2D",
+   "props": {
+    "position": [
+     688,
+     650
+    ],
+    "body": "static",
+    "size": [
+     16,
+     912
+    ]
+   },
+   "children": [
+    "wall_r_s"
+   ]
+  },
+  "wall_r_s": {
+   "type": "Sprite2D",
+   "props": {
+    "size": [
+     16,
+     912
+    ],
+    "color": "#3a4270"
+   }
+  },
+  "hero": {
+   "type": "Body2D",
+   "name": "Hero",
+   "tags": [
+    "player"
+   ],
+   "scripts": [
+    "scripts/client/hero.luau"
+   ],
+   "props": {
+    "position": [
+     160,
+     650
+    ],
+    "body": "dynamic",
+    "size": [
+     40,
+     40
+    ],
+    "gravity_scale": 0,
+    "lock_rotation": true,
+    "friction": 0
+   },
+   "children": [
+    "hero_body",
+    "hero_visor"
+   ]
+  },
+  "hero_body": {
+   "type": "Sprite2D",
+   "props": {
+    "size": [
+     40,
+     40
+    ],
+    "color": "#ffffff"
+   }
+  },
+  "hero_visor": {
+   "type": "Sprite2D",
+   "props": {
+    "position": [
+     0,
+     -6
+    ],
+    "size": [
+     26,
+     9
+    ],
+    "color": "#12142a",
+    "z_index": 1
+   }
+  },
+  "title": {
+   "type": "Text2D",
+   "props": {
+    "position": [
+     360,
+     120
+    ],
+    "text": "ORB DUEL",
+    "font_size": 40,
+    "color": "#ffd34a",
+    "outline": "#000000",
+    "outline_size": 4
+   }
+  },
+  "info": {
+   "type": "Text2D",
+   "props": {
+    "position": [
+     360,
+     168
+    ],
+    "text": "first to 5 orbs",
+    "font_size": 18,
+    "color": "#f5f5f5"
+   }
+  },
+  "clock": {
+   "type": "Text2D",
+   "props": {
+    "position": [
+     360,
+     1140
+    ],
+    "text": "60",
+    "font_size": 28,
+    "color": "#f5f5f5",
+    "outline": "#000000",
+    "outline_size": 3
+   }
+  }
+ }
+}

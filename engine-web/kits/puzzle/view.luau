@@ -17,7 +17,8 @@ local function alive(e) return e ~= nil and pcall(function() return e.id end) en
   opts: origin (Vec2, world top-left of cell 0,0) · cell (px, 96) · gap (px between cells, 0) · skin = { [kind] = spec | fn(item) -> spec }
         spec = { sprite? "asset:x", color? "#hex" | "tint" (palette[item.tint]), size? (fraction of cell, 1; or {w, h}),
                  text? = { size, color, font }, z?, onColor? (color when item.on) , onSprite? }
-        palette? · input? (true) · sfx? (id map; false = silent) · juice? (true) · swipeMin? (0.45 cells) ]]
+        palette? · input? (true) · sfx? (id map; false = silent) · juice? (true) · swipeMin? (0.45 cells)
+        board? (platform leaderboard name; default "level_<pack>_<index>" / "level_daily_<day>" / "level_<id>"; false = none) ]]
 function M.new(session, opts)
 	opts = opts or {}
 	local v = setmetatable({
@@ -35,11 +36,31 @@ end
 
 function View:_sfx(key, o) local id = self.sfxIds[key] if id then juice.sfx(id, o) end end
 
+-- platform leaderboard board for a session (nil: none). Stochastic (score) mechanics aren't timed.
+local function boardFor(session, o)
+	if o.board == false or not leaderboard or session.mech.stochastic then return nil end
+	if o.board then return o.board end
+	local lv = session.level or {}
+	local id = if lv.daily then "daily_" .. tostring(lv.day) elseif lv.pack and lv.index then tostring(lv.pack) .. "_" .. tostring(lv.index) else lv.id or lv.name
+	if id == nil then return nil end
+	return "level_" .. string.sub((string.gsub(string.lower(tostring(id)), "[^%w_]", "_")), 1, 34)
+end
+
 function View:_bind(session)
 	for _, c in self.conns do c.disconnect() end
 	self.conns = {}
+	if self.board then leaderboard.cancel(self.board) end
 	self.session = session
+	-- clear time: level shown → won (Retry restarts the clock, a loss cancels it)
+	self.board = boardFor(session, self.opts)
+	if self.board then leaderboard.start(self.board) end
 	local function on(name, fn) table.insert(self.conns, session:on(name, fn)) end
+	if self.board then
+		local board = self.board
+		on("won", function() if leaderboard.running(board) then leaderboard.finish(board) end end)
+		on("restarted", function() leaderboard.start(board) end)
+		on("lost", function() leaderboard.cancel(board) end)
+	end
 	on("moved", function(d) self:_onMoved(d) end)
 	on("invalid", function(d)
 		self:_sfx("invalid")

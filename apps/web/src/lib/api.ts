@@ -71,6 +71,9 @@ export type Game = {
   hidden?: boolean;
   orientation?: 'portrait' | 'landscape' | null;
   thumbnailUrl: string | null;
+  /** Manifest `[players]` of the published version (else latest); multiplayer = max > 1. */
+  players?: { min: number; max: number };
+  multiplayer?: boolean;
   stats?: { plays: number; likes: number; remixes: number };
   activeGeneration?: Generation | null;
   createdAt: string;
@@ -84,6 +87,7 @@ export type GameVersion = {
   sizeBytes: number;
   manifest: { style?: { preset?: string }; dimension?: string; name?: string } | null;
   summary: string;
+  players?: { min: number; max: number };
   generationId: string | null;
   createdBy: string;
   createdAt: string;
@@ -96,6 +100,23 @@ export type Wallet = { balance: number; currency: 'stars' };
 export type LedgerEntry = { delta: number; balanceAfter: number; kind: string; gameId: string | null; itemId: string | null; createdAt: string };
 export type Upload = { id: string; contentType: string; sizeBytes: number; createdAt: string };
 export type ActivityItem = { generation: Generation; game: { id: string; name: string; thumbnailUrl: string | null } };
+
+// ---------- leaderboards + groups (DREAMSY.MD §13) ----------
+
+export type UserBrief = { id: string; handle: string; avatar: Record<string, number> | null };
+export type BoardOrder = 'asc' | 'desc';
+export type BoardSummary = { board: string; order: BoardOrder; players: number; best: number; updatedAt: string };
+export type LeaderboardEntry = { rank: number; user: UserBrief; value: number; runId: string; hasGhost: boolean; version: number; at: string };
+export type Leaderboard = {
+  board: string;
+  order: BoardOrder;
+  scope: string;
+  entries: LeaderboardEntry[];
+  me?: { rank: number; value: number; runId: string };
+};
+export type Group = { id: string; name: string; ownerId: string; inviteCode: string; memberCount: number; role: 'owner' | 'member' | null; createdAt: string };
+export type GroupMember = { user: UserBrief; role: 'owner' | 'member'; joinedAt: string };
+export type SharedGame = Game & { creator?: UserBrief; sharedBy: UserBrief; sharedAt: string };
 
 export class ApiError extends Error {
   constructor(readonly status: number, message: string, readonly body: Record<string, unknown> | null = null) {
@@ -179,6 +200,23 @@ export const api = {
   revert: (id: string, version: number) => request<{ version: GameVersion }>(`/v1/games/${enc(id)}/revert`, { method: 'POST', body: { version } }),
   assets: (id: string, v: number) => request<{ assets: Asset[] }>(`/v1/games/${enc(id)}/versions/${v}/assets`),
   thumbnailPath: (id: string, v: number) => `/v1/games/${enc(id)}/versions/${v}/thumbnail`,
+
+  // leaderboards
+  boards: (gameId: string) => request<{ boards: BoardSummary[] }>(`/v1/games/${enc(gameId)}/leaderboards`),
+  leaderboard: (gameId: string, board: string, scope = 'public', limit = 20) =>
+    request<Leaderboard>(`/v1/games/${enc(gameId)}/leaderboards/${enc(board)}?scope=${enc(scope)}&limit=${limit}`),
+
+  // groups
+  myGroups: () => request<{ groups: Group[] }>('/v1/me/groups'),
+  createGroup: (name: string) => request<{ group: Group; inviteCode: string }>('/v1/groups', { method: 'POST', body: { name } }),
+  joinGroup: (code: string) => request<{ group: Group }>('/v1/groups/join', { method: 'POST', body: { code } }),
+  group: (id: string) => request<{ group: Group; members: GroupMember[] }>(`/v1/groups/${enc(id)}`),
+  leaveGroup: (id: string) => request<{ ok: true }>(`/v1/groups/${enc(id)}/leave`, { method: 'POST', body: {} }),
+  deleteGroup: (id: string) => request<{ ok: true }>(`/v1/groups/${enc(id)}`, { method: 'DELETE' }),
+  rotateInvite: (id: string) => request<{ inviteCode: string }>(`/v1/groups/${enc(id)}/invite-code`, { method: 'POST', body: {} }),
+  groupGames: (id: string) => request<{ games: SharedGame[] }>(`/v1/groups/${enc(id)}/games`),
+  shareGame: (groupId: string, gameId: string) => request<{ game: Game }>(`/v1/groups/${enc(groupId)}/games`, { method: 'POST', body: { gameId } }),
+  unshareGame: (groupId: string, gameId: string) => request<{ ok: true }>(`/v1/groups/${enc(groupId)}/games/${enc(gameId)}`, { method: 'DELETE' }),
 
   // generations
   generations: (gameId: string) => request<{ generations: Generation[] }>(`/v1/games/${enc(gameId)}/generations`),

@@ -1,0 +1,27 @@
+format = "0"
+name = "Orb Duel"
+description = "1v1, true red vs true blue: grab 5 orbs before your opponent. Quick match, or invite family with a room code."
+dimension = "2d"
+orientation = "portrait"
+entry_scene = "scenes/arena.scene.json"
+
+[players]
+min = 2
+max = 2
+
+[server]
+mode = "rooms"
+tick_rate = 30
+
+[style]
+preset = "pixel"
+grid = 16
+palette = ["#12142a", "#1d2340", "#3a4270", "#ff2a2a", "#2a6bff", "#ffd34a", "#f5f5f5"]
+
+[ui]
+primary = "#ffd34a"
+accent = "#ff2a2a"
+background = "#12142a"
+text = "#f5f5f5"
+panel = "pixel"
+font = "pixel"

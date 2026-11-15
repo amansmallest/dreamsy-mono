@@ -70,6 +70,9 @@ sliding: `slot tile` · lights: `on off` · nonogram: `cell fill cross clue_row 
 Methods: `view:hint()` (pulses hint cells, returns move) · `view:play(move)` · `view:refresh(animate)` · `view:setSession(s)` ·
 `view:cellCenter(x, y)` · `view:cellAt(worldPos)` · `view:size()` · `view:destroy()`. Pieces with ids tween; match3 gems drop in;
 cleared cells pop + sparkle; cascades/specials popup + shake; win → confetti. Gestures: tap / swipe (≥0.45 cell) / drag across cells.
+Platform leaderboard: the view times each level (`leaderboard.start` when bound, `finish` on win; Retry restarts, a loss
+cancels) on board `"level_<pack>_<index>"` / `"level_daily_<day>"` / `"level_<id>"` → engine results card (time, rank, PB).
+`board = "name"` overrides, `board = false` opts out; stochastic (score) mechanics like match3 are not timed.
 Default sfx ids: `move push bump win lose undo hint match special connect select star` (missing ids are silent).
 
 ## UI — `Puzzle.ui` (portrait, themed by `[ui]` via `ui.theme()`, buttons ≥ 112 px)

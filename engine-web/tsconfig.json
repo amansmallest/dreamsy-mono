@@ -11,5 +11,5 @@
     "types": ["node", "vite/client"],
     "noEmit": true
   },
-  "include": ["core", "render", "input", "luau/index.ts", "dev", "tools", "test", "vite.config.ts"]
+  "include": ["core", "net", "render", "input", "luau/index.ts", "dev", "tools", "test", "vite.config.ts"]
 }

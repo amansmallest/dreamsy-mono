@@ -20,7 +20,8 @@
     "daily": {},
     "missionSlots": {},
     "obby": {},
-    "procStages": {}
+    "procStages": {},
+    "board": { "description": "platform leaderboard for endless runs (desc, metres); false = no leaderboard submits" }
   },
   "additionalProperties": false
 }

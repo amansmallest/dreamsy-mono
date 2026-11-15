@@ -91,6 +91,10 @@ racer progress − player progress. Presets: skill (top-speed ×) easy 0.84 · n
 `rec = Racing.ghost.recorder(0.1)` · `rec:add(tSinceLapStart, car)` · `g = rec:finish(lapTime)` (≈ 30 numbers/s, ~6 KB per 60 s lap) ·
 `Racing.ghost.at(g, t) -> x, y, a | nil` · `Racing.ghost.best(trackId)` · `Racing.ghost.submit(trackId, g) -> newRecord` (save key `racing_ghost_<id>`).
 `view.race` does this for you: `ghost = Racing.ghost.best(id), recordGhost = id` (best-lap ghost, replays each lap).
+**Platform leaderboard:** `view.race` also times every race on the engine leaderboard (`leaderboard.start` at GO,
+`leaderboard.finish` when the player crosses the line; elimination cancels): board `"track_<track id>"` (override with
+`board = "..."`, `board = false` to opt out; `h.board`). The engine records the online ghost and shows the results card
+(rank, PB, top 5, "Race the #1 ghost"). The kit's own best-lap ghost above stays as the local, rotating per-lap ghost.
 
 ## Cup — `Racing.cup.new(def, entrantIds)` (`data/cups/<id>.json`)
 `cup:track()` (current) · `cup:record(order | race:results()) -> {id = points}` · `cup:standings() -> { {id, points, wins, place} }` (ties: wins,
@@ -113,6 +117,18 @@ HUD (`Racing.hud.new(race, track)`): LAP n/N · POS 2nd/4 · time · best · spl
 centre, clear of the stick and buttons) · banners (countdown, LAP 2, FINAL LAP, MISSED, SPIN!, WRONG WAY). `h.hud:results(list, {title,
 names, value(row), extra(row), note, buttons})` = podium + table (reuse it for cup standings). Camera leads the car (sees ahead).
 Gameplay freezes on `core.pause` (menus) and `juice.hitstop`. Juice: shake on walls/bumps, sparks, zoom punch on boost, confetti on podium.
+
+## Versus (multiplayer) — 1v1 red vs blue, or up to 8 in a room
+Set `[players] max = 2` (or ≤ 8) and `[server] mode = "rooms"`: the engine shows its lobby (quick match 1v1, room codes to
+invite family/friends) before the game. Inside a room `view.race` switches to **versus** automatically (`versus = false` opts out;
+`h.versus` tells you): no AI rivals, one grid slot per room player in room order (red first), the player's car is replicated with
+`room.replicate` (the other players see it as a team-tinted car with a name tag), and the **first car across the line wins**
+(`room.finish(players.local)`; later finishes are ignored). The engine shows the winner card (RED/BLUE wins, rematch, leave).
+Cars don't bump each other in versus (remote cars are visual only). Solo play of the same game is unchanged (AI rivals).
+```luau
+Racing.view.race({ track = def, tileset = def.tileset, mode = "race", laps = 3, player = G.playerSpec(), rivals = G.rivalSpecs(1) })
+-- in a room: rivals are ignored; room.ended:connect(function(r) ... end) if you want your own after-race flow
+```
 
 ## Balance — `Racing.balance`
 `Racing.balance.laps(track, stats, preset, {laps = 2, dt = 1/30})` → `{laps, best, finished, walls, offroad, missed}` ·

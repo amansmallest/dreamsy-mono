@@ -3,11 +3,14 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { BuildEntry } from '../../components/BuildEntry';
 import { Composer } from '../../components/Composer';
 import { Icon, Sparkle } from '../../components/Icon';
+import { ShareWithGroupModal } from '../../components/ShareWithGroup';
 import { Empty, ErrorNote, Segmented, Spinner } from '../../components/ui';
+import { MultiplayerChip } from '../../components/GameCard';
 import { activeGenerationIdFrom, api, errorMessage, isActive, type Generation } from '../../lib/api';
 import { useGenerationStream } from '../../lib/generation';
 import { invalidate, setCached, useResource } from '../../lib/store';
 import { AssetsPanel, type Edit } from './Assets';
+import { LeaderboardPanel } from './Leaderboard';
 import { PreviewCard } from './PreviewCard';
 import { VersionsList } from './VersionsList';
 
@@ -19,7 +22,8 @@ export function Workspace() {
   const versions = useResource(`versions:${id}`, () => api.versions(id));
   const gens = useResource(`gens:${id}`, () => api.generations(id));
   const [params, setParams] = useSearchParams();
-  const [tab, setTab] = useState<'sprites' | 'versions'>('sprites');
+  const [tab, setTab] = useState<'sprites' | 'versions' | 'leaderboard'>('sprites');
+  const [sharing, setSharing] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [edits, setEdits] = useState<Record<string, Edit>>({});
   const [composerError, setComposerError] = useState<string | null>(null);
@@ -81,7 +85,12 @@ export function Workspace() {
         <div className="ws-title">
           <Link to="/" className="icon-btn sm ghost" aria-label="Back to games"><Icon name="chevronLeft" size={18} /></Link>
           <GameName id={id} name={g.name} />
+          <MultiplayerChip game={g} />
+          <button className="icon-btn sm ghost ws-share" aria-label="Share with group" title="Share with group" onClick={() => setSharing(true)}>
+            <Icon name="users" size={17} />
+          </button>
         </div>
+        <ShareWithGroupModal gameId={id} gameName={g.name} open={sharing} onClose={() => setSharing(false)} />
         <PreviewCard game={g} versions={versions.data?.versions ?? []} version={version} onVersion={selectVersion} building={!!activeGen} />
       </aside>
 
@@ -126,8 +135,11 @@ export function Workspace() {
         <Segmented value={tab} onChange={setTab} options={[
           { value: 'sprites', label: <><Icon name="grid" size={15} /> Sprites</> },
           { value: 'versions', label: <><Icon name="history" size={15} /> Versions</> },
+          { value: 'leaderboard', label: <><Icon name="trophy" size={15} /> Leaderboard</> },
         ]} />
-        {tab === 'sprites' ? (
+        {tab === 'leaderboard' ? (
+          <LeaderboardPanel gameId={id} />
+        ) : tab === 'sprites' ? (
           <AssetsPanel gameId={id} version={version} pixelated={pixelated} activeGen={activeGen} stream={stream} edits={edits}
             expanded={expanded} onToggleExpand={() => setExpanded(!expanded)} onSent={onStarted} />
         ) : (

@@ -5,7 +5,7 @@ import { fail } from "./context.js";
 import type { Storage } from "./storage.js";
 import { inspectPackage, PackageError } from "./package.js";
 
-const { games, gameVersions, generations, generationEvents, uploads, users, likes, plays } = schema;
+const { games, gameVersions, generations, generationEvents, uploads, users, likes, plays, groupGames, groupMembers } = schema;
 
 export type Tx = Parameters<Parameters<DB["transaction"]>[0]>[0];
 export type Q = DB | Tx;
@@ -16,7 +16,7 @@ export type GameVersion = typeof gameVersions.$inferSelect;
 
 // ---------- views (never leak storage keys / worker internals) ----------
 
-type VersionBrief = { orientation: string | null; thumbnailKey: string | null };
+type VersionBrief = { orientation: string | null; thumbnailKey: string | null; playersMin: number; playersMax: number };
 
 /** Per-game data the views need beyond the games row. Load in bulk with `hydrate`. */
 export interface GameExtras {
@@ -39,6 +39,20 @@ function shown(g: Game, x: GameExtras, version: number | null) {
   };
 }
 
+/** Manifest `[players]` of one version (§3.1, §4.5); `multiplayer` = max > 1. No version ⇒ 1/1. */
+function playersShown(x: GameExtras, version: number | null) {
+  const v = version ? x.versions.get(version) : undefined;
+  const players = { min: v?.playersMin ?? 1, max: v?.playersMax ?? 1 };
+  return { players, multiplayer: players.max > 1 };
+}
+
+/** `[players]` from a validated manifest (defaults 1/1; tolerant of older stored manifests). */
+export function playersOf(manifest: unknown): { min: number; max: number } {
+  const p = (manifest as { players?: { min?: unknown; max?: unknown } } | null)?.players;
+  const n = (v: unknown) => (typeof v === "number" && Number.isInteger(v) && v >= 1 ? v : 1);
+  return { min: n(p?.min), max: n(p?.max) };
+}
+
 /** Owner view: everything. Thumbnail/orientation come from the latest version. */
 export const gameView = (g: Game, x: GameExtras) => ({
   id: g.id,
@@ -51,6 +65,8 @@ export const gameView = (g: Game, x: GameExtras) => ({
   publishedAt: g.publishedAt,
   hidden: g.hidden,
   ...shown(g, x, g.latestVersion || null),
+  // Players: the published version, else the latest build (owner / group views).
+  ...playersShown(x, g.publishedVersion ?? (g.latestVersion || null)),
   creator: x.creator,
   stats: statsOf(g),
   remixOf: x.remixOf,
@@ -62,7 +78,7 @@ export const gameView = (g: Game, x: GameExtras) => ({
 /** Public view: strangers only see the published version. */
 export const publicGameView = (g: Game, x: GameExtras) => {
   const { latestVersion: _l, hidden: _h, ...rest } = gameView(g, x);
-  return { ...rest, ...shown(g, x, g.publishedVersion) };
+  return { ...rest, ...shown(g, x, g.publishedVersion), ...playersShown(x, g.publishedVersion) };
 };
 
 /** DREAMSY.MD §11.2 FeedGame. */
@@ -71,6 +87,7 @@ export const feedGameView = (g: Game, x: GameExtras) => ({
   name: g.name,
   description: g.description,
   ...shown(g, x, g.publishedVersion),
+  ...playersShown(x, g.publishedVersion),
   creator: x.creator,
   stats: statsOf(g),
   publishedAt: g.publishedAt,
@@ -102,6 +119,8 @@ export async function hydrate(q: Q, rows: Game[], viewerId: string | null): Prom
         version: gameVersions.version,
         orientation: sql<string | null>`${gameVersions.manifest}->>'orientation'`,
         thumbnailKey: gameVersions.thumbnailKey,
+        playersMin: gameVersions.playersMin,
+        playersMax: gameVersions.playersMax,
       }).from(gameVersions).where(or(...wanted.map(([id, v]) => and(eq(gameVersions.gameId, id), eq(gameVersions.version, v)))))
       : [],
   ]);
@@ -111,7 +130,9 @@ export async function hydrate(q: Q, rows: Game[], viewerId: string | null): Prom
   const versionsBy = new Map<string, Map<number, VersionBrief>>();
   for (const v of versions) {
     if (!versionsBy.has(v.gameId)) versionsBy.set(v.gameId, new Map());
-    versionsBy.get(v.gameId)!.set(v.version, { orientation: v.orientation, thumbnailKey: v.thumbnailKey });
+    versionsBy.get(v.gameId)!.set(v.version, {
+      orientation: v.orientation, thumbnailKey: v.thumbnailKey, playersMin: v.playersMin, playersMax: v.playersMax,
+    });
   }
   return (g) => ({
     creator: creatorBy.get(g.ownerId) ?? { id: g.ownerId, handle: "", avatar: null },
@@ -161,6 +182,7 @@ export const versionView = (v: GameVersion) => ({
   sizeBytes: v.sizeBytes,
   manifest: v.manifest,
   summary: v.summary,
+  players: { min: v.playersMin, max: v.playersMax },
   generationId: v.generationId,
   createdBy: v.createdBy,
   createdAt: v.createdAt,
@@ -210,6 +232,35 @@ export function canSeeVersion(g: Game, userId: string | null, version: number): 
   return g.ownerId === userId || (g.status === "published" && g.publishedVersion === version);
 }
 
+/** True when the game is shared to a group the user belongs to (§13: group members can play shared drafts). */
+export async function sharedWithUser(q: Q, gameId: string, userId: string | null): Promise<boolean> {
+  if (!userId) return false;
+  const [row] = await q.select({ g: groupGames.gameId }).from(groupGames)
+    .innerJoin(groupMembers, eq(groupMembers.groupId, groupGames.groupId))
+    .where(and(eq(groupGames.gameId, gameId), eq(groupMembers.userId, userId)))
+    .limit(1);
+  return !!row;
+}
+
+/** `canSeeGame`, extended to games shared with one of the caller's groups. */
+export async function canAccessGame(q: Q, g: Game, userId: string | null): Promise<boolean> {
+  return canSeeGame(g, userId) || sharedWithUser(q, g.id, userId);
+}
+
+/** `canSeeVersion`, extended: members of a group the game is shared with can load any of its versions. */
+export async function canAccessVersion(q: Q, g: Game, userId: string | null, version: number): Promise<boolean> {
+  return canSeeVersion(g, userId, version) || sharedWithUser(q, g.id, userId);
+}
+
+/** Group members' view of a shared game: like the owner view (latest version playable), minus moderation. */
+export async function viewSharedGames(q: Q, rows: Game[], viewerId: string | null) {
+  const extras = await hydrate(q, rows, viewerId);
+  return rows.map((g) => {
+    const { hidden: _h, ...v } = gameView(g, extras(g));
+    return v;
+  });
+}
+
 export async function getVersion(q: Q, gameId: string, version: number): Promise<GameVersion> {
   const [v] = await q.select().from(gameVersions)
     .where(and(eq(gameVersions.gameId, gameId), eq(gameVersions.version, version)));
@@ -248,6 +299,7 @@ export async function commitVersion(
   meta: { createdBy: string; summary: string; generationId: string | null; thumbnailKey?: string | null },
 ): Promise<GameVersion> {
   const version = game.latestVersion + 1;
+  const players = playersOf(pkg.manifest);
   const [row] = await tx.insert(gameVersions).values({
     gameId: game.id,
     version,
@@ -258,6 +310,8 @@ export async function commitVersion(
     summary: meta.summary,
     generationId: meta.generationId,
     thumbnailKey: meta.thumbnailKey ?? null,
+    playersMin: players.min,
+    playersMax: players.max,
     createdBy: meta.createdBy,
   }).returning();
   await tx.update(games)
@@ -322,6 +376,13 @@ export async function pageGames(
 
 /** Published, not hidden: what feeds, search, profiles and public links may show. */
 export const listed = () => and(eq(games.status, "published"), eq(games.hidden, false));
+
+/** Games whose published version is multiplayer (`[players] max > 1`, §4.5). */
+export const multiplayerOnly = () => sql`exists (select 1 from ${gameVersions} where ${gameVersions.gameId} = ${games.id}
+  and ${gameVersions.version} = ${games.publishedVersion} and ${gameVersions.playersMax} > 1)`;
+
+/** `?multiplayer=1` (or `true`) on list endpoints → the multiplayer filter; anything else → no filter. */
+export const multiplayerFilter = (q: string | undefined) => (q === "1" || q === "true" ? multiplayerOnly() : undefined);
 
 // ---------- generations ----------
 

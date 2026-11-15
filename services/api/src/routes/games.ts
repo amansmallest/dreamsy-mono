@@ -7,17 +7,20 @@ import { ACTIVE_GENERATION } from "../db/schema.js";
 import { newId } from "../ids.js";
 import { blobResponse } from "./uploads.js";
 import {
-  canSeeVersion,
+  canAccessVersion,
   commitVersion,
   getGame,
   getOwnedGame,
   getVersion,
+  multiplayerFilter,
   parseLimit,
+  sharedWithUser,
   readPackage,
   recomputeTrending,
   versionView,
   viewGame,
   viewGames,
+  viewSharedGames,
 } from "../services.js";
 
 const { games, gameVersions } = schema;
@@ -59,12 +62,16 @@ export function gameRoutes({ db, storage, config }: Deps) {
     return c.json({ game: await viewGame(db, game!, c.get("userId")) }, 201);
   });
 
-  /** Discover: published games, newest first. Cursor = `updatedAt` of the last item. */
+  /** Discover: published games, newest first. Cursor = `updatedAt` of the last item. `?multiplayer=1` filters. */
   r.get("/v1/games", async (c) => {
     const limit = parseLimit(c.req.query("limit"));
     const before = c.req.query("before");
     const rows = await db.select().from(games)
-      .where(and(eq(games.status, "published"), eq(games.hidden, false), before ? lt(games.updatedAt, new Date(before)) : undefined))
+      .where(and(
+        eq(games.status, "published"), eq(games.hidden, false),
+        before ? lt(games.updatedAt, new Date(before)) : undefined,
+        multiplayerFilter(c.req.query("multiplayer")),
+      ))
       .orderBy(desc(games.updatedAt))
       .limit(limit);
     return c.json({ games: await viewGames(db, rows, c.get("userId")), next: rows.length === limit ? rows.at(-1)!.updatedAt : null });
@@ -80,7 +87,11 @@ export function gameRoutes({ db, storage, config }: Deps) {
   r.get("/v1/games/:id", async (c) => {
     const g = await getGame(db, c.req.param("id"));
     const userId = c.get("userId");
-    if (g.ownerId !== userId && g.status !== "published") fail(404, "game not found");
+    if (g.ownerId !== userId) {
+      // Group members of a shared game get the latest version (drafts included), §13.
+      if (await sharedWithUser(db, g.id, userId)) return c.json({ game: { ...(await viewSharedGames(db, [g], userId))[0], shared: true } });
+      if (g.status !== "published") fail(404, "game not found");
+    }
     return c.json({ game: await viewGame(db, g, userId) });
   });
 
@@ -127,14 +138,14 @@ export function gameRoutes({ db, storage, config }: Deps) {
   r.get("/v1/games/:id/versions/:version", async (c) => {
     const g = await getGame(db, c.req.param("id"));
     const version = parseVersion(c.req.param("version"));
-    if (!canSeeVersion(g, c.get("userId"), version)) fail(404, "version not found");
+    if (!(await canAccessVersion(db, g, c.get("userId"), version))) fail(404, "version not found");
     return c.json({ version: versionView(await getVersion(db, g.id, version)) });
   });
 
   r.get("/v1/games/:id/versions/:version/package", async (c) => {
     const g = await getGame(db, c.req.param("id"));
     const version = parseVersion(c.req.param("version"));
-    if (!canSeeVersion(g, c.get("userId"), version)) fail(404, "version not found");
+    if (!(await canAccessVersion(db, g, c.get("userId"), version))) fail(404, "version not found");
     const v = await getVersion(db, g.id, version);
     return packageResponse(await readPackage(storage, v), v.packageSha256);
   });
@@ -144,7 +155,7 @@ export function gameRoutes({ db, storage, config }: Deps) {
     const g = await getGame(db, c.req.param("id"));
     const version = parseVersion(c.req.param("version"));
     const userId = (c.get("userId") as string | undefined) ?? null;
-    if (!canSeeVersion(g, userId, version)) fail(404, "thumbnail not found");
+    if (!(await canAccessVersion(db, g, userId, version))) fail(404, "thumbnail not found");
     const v = await getVersion(db, g.id, version);
     if (!v.thumbnailKey) fail(404, "thumbnail not found");
     const res = await blobResponse(storage, v.thumbnailKey, "image/jpeg");

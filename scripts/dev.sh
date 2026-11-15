@@ -59,7 +59,7 @@ else
   printf 'EXPO_PUBLIC_API_URL=%s\nEXPO_PUBLIC_ENGINE_URL=%s\n' "$PROD_API" "$PROD_ENGINE" > apps/mobile/.env.local
   echo "  app → prod ($PROD_API, $PROD_ENGINE)"
 fi
-for port in 8787 2005 3000 8081 8082 19000 19001 19002; do free_port $port; done   # API, engine, dashboard, Expo/Metro
+for port in 8787 8790 2005 3000 8081 8082 19000 19001 19002; do free_port $port; done   # API, rooms, engine, dashboard, Expo/Metro
 pkill -f "harness.*src/main.ts worker" 2>/dev/null && echo "  stopped leftover harness worker" || true
 
 step "Postgres"
@@ -72,6 +72,9 @@ pnpm -s -C services/api db:migrate
 step "API (http://$IP:8787)"
 bg api pnpm -s -C services/api start
 wait_http http://localhost:8787/health
+
+step "Room server (ws://$IP:8790/rooms)"
+bg gameserver env API_URL=http://localhost:8787 pnpm -s -C services/gameserver start
 
 if [ ! -f "$LOGS/.seeded" ] || [ "$RESEED" = 1 ]; then
   step "Publishing showcase games"

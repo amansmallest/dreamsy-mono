@@ -52,8 +52,15 @@ app/                 expo-router routes
   avatar.tsx         edit avatar (modal)
   (tabs)/            Home (feed tabs + search), Create (my games, running builds + ETA),
                      Market (store items across games), Profile (own profile, Stars wallet)
-  discover/[id].tsx  game page: play, like, share, remix, creator, report (DREAMSY.MD §11)
+  discover/[id].tsx  game page: play, like, share, share with family, remix, creator, report (DREAMSY.MD §11);
+                     leaderboards (board picker, Everyone / each of my groups, top 20, me, ghost badge; §13)
   user/[id].tsx      creator profile: follow, published games
+  groups/index.tsx   Family & friends (DREAMSY.MD §13): my groups, start one (share sheet with the invite link),
+                     join by code. Reached from Profile (row + menu) and the people icon on Home
+  groups/[id].tsx    group: invite code + share, members, shared games (Play; drafts too), leave, delete /
+                     new code (owner)
+  join/[code].tsx    invite link dreamsy://join/<code> or https://dreamsy.dev/join/<code> (also from the QR
+                     scanner). Joins when signed in; otherwise the code waits until sign-in + onboarding
   game/[id].tsx      Create workspace: chat + preview, publish, round/ETA card, checkpoint reloads
   play/[id].tsx      full-screen player (params id, version, orientation?); locks to the game's
                      orientation and passes safe-area insets to the engine (`&insets=t,r,b,l`)
@@ -80,10 +87,11 @@ modules/
 
 Screens use `useAuth()` from `@/auth` only.
 
-1. **Email code** (default, `src/auth/supabase.ts`): `signInWithOtp` emails a one-time code,
-   `verifyOtp` turns it into a Supabase session, whose access token goes to `POST /v1/auth/supabase`.
-   Needs `{{ .Token }}` in Supabase's Magic Link email template.
-   **Google**: Supabase OAuth (PKCE) in the system auth sheet, redirecting
+1. **Email code** (default, `src/auth/dreamsyApiBackend.ts`): `POST /v1/auth/email/start {email}` emails a
+   6-digit code (expires in 10 min; resend after 30 s), `POST /v1/auth/email/verify {email, code}` returns
+   `{ user, token }`. No Supabase involved. Typing a username without `@` uses the demo bypass
+   (`/v1/auth/demo`, usernames ending in `_demo`).
+   **Google** (`src/auth/supabase.ts`, hidden unless the Supabase env vars are set): Supabase OAuth (PKCE) in the system auth sheet, redirecting
    to `dreamsy://auth-callback` (`exp://…/--/auth-callback` in Expo Go, so it works there too). The
    Supabase access token goes to `POST /v1/auth/supabase`, which verifies it against the project's
    JWKS and returns `{ user, token }`. **Apple**: native sheet -> `/v1/auth/apple` (dev builds only).

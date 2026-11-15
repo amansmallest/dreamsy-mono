@@ -1,4 +1,7 @@
 // Dev page: ?game=<path under games/> | ?zip=<url> | ?api=<base>&game=<id>&version=<n>[&token=..] | drag-drop a .zip
+// With ?api=&game= the store and leaderboards (runs, ghosts) use the API; otherwise in-memory hosts.
+// Multiplayer games ([server] mode = "rooms", [players] max > 1) open the engine lobby first: ?room=<code> joins a room,
+// ?solo=1 skips the lobby, ?rooms=<ws url> overrides the room server (default: derived from the API base).
 // Embed mode (?embed=1, or inside a react-native-webview): no dev UI; talks to the host app with JSON
 // messages via window.ReactNativeWebView.postMessage:
 //   {type:"ready"} | {type:"error", message} | {type:"quit"} | {type:"purchase", itemId, balance}
@@ -8,6 +11,11 @@ import { Package, parseManifest, parseMusic, parseSfx } from "@dreamsy/format";
 import { Game, GameLoadError, MemorySaveHost, saveKey, type SaveHost, type ScriptError } from "../core/index.js";
 import { GameView, LocalStorageSaveHost, parseInsets, renderOffline } from "../render/index.js";
 import { ApiStoreHost } from "./store.js";
+import type { NetLink } from "../core/net.js";
+import { Lobby } from "../net/lobby.js";
+import { roomsUrl } from "../net/protocol.js";
+import { resolveTheme } from "../render/theme.js";
+import { ApiLeaderboardHost } from "./leaderboard.js";
 
 const $ = (id: string) => document.getElementById(id)!;
 const params = new URLSearchParams(location.search);
@@ -127,7 +135,7 @@ function renderConsole() {
 }
 const esc = (s: string) => s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]!);
 
-async function start(pkg: Package, label: string) {
+async function start(pkg: Package, label: string, net?: NetLink) {
   view?.dispose();
   game?.dispose();
   view = null; game = null;
@@ -140,6 +148,11 @@ async function start(pkg: Package, label: string) {
     ? new ApiStoreHost(api, apiGame, params.get("token") ?? localStorage.getItem("dreamsy_token") ?? "", items, stage,
         (itemId, balance) => post({ type: "purchase", itemId, balance: balance ?? null }))
     : undefined;
+  // leaderboards: the API (runs, boards, ghosts) when ?api=&game= is set, else the in-memory host (core default)
+  const versionParam = Number(params.get("version"));
+  const leaderboard = api && apiGame
+    ? new ApiLeaderboardHost(api, apiGame, params.get("token") ?? localStorage.getItem("dreamsy_token") ?? "", Number.isFinite(versionParam) && params.get("version") ? versionParam : undefined)
+    : undefined;
   const manifest = parseManifest(pkg.text("dreamsy.toml") ?? "").manifest;
   const key = manifest ? saveKey(manifest) : "dreamsy.save.unknown";
   // tools: ?save=0 (in-memory, empty) or window.__dreamsyBoot.save (in-memory, preloaded)
@@ -149,7 +162,7 @@ async function start(pkg: Package, label: string) {
   const save: SaveHost | undefined = boot.save ? new MemorySaveHost(boot.save) : params.get("save") === "0" ? undefined : new LocalStorageSaveHost(key, (data) => post({ type: "save", key, data }));
   try {
     const fixedClock = params.has("clock") ? Number(params.get("clock")) : null;
-    game = await Game.load(pkg, { store, save, clock: fixedClock !== null && Number.isFinite(fixedClock) ? () => fixedClock + (game?.time ?? 0) : undefined, seed: Number(params.get("seed") ?? 1), scene: params.get("scene") ?? undefined, sceneParams: bootParams,
+    game = await Game.load(pkg, { store, leaderboard, save, net, clock: fixedClock !== null && Number.isFinite(fixedClock) ? () => fixedClock + (game?.time ?? 0) : undefined, seed: net ? net.room.seed : Number(params.get("seed") ?? 1), scene: params.get("scene") ?? undefined, sceneParams: bootParams,
       budgetMs: params.has("budget") ? Number(params.get("budget")) : undefined, onLog: (l) => (l.level === "error" ? console.error : console.log)(`[game] ${l.text}`) });
   } catch (e) {
     const msg = e instanceof GameLoadError ? e.message : `failed to start: ${(e as Error).stack ?? e}`;
@@ -220,7 +233,7 @@ if (!embed) window.addEventListener("drop", async (e) => {
 (async () => {
   try {
     const loaded = await fetchPackage();
-    if (loaded) await start(loaded.pkg, loaded.label);
+    if (loaded) { if (!openLobby(loaded.pkg, loaded.label)) await start(loaded.pkg, loaded.label); }
     else if (embed) { showMessage("No game to load."); reportError("no game to load (missing ?game=)"); }
     else await showPicker();
   } catch (e) {
@@ -230,3 +243,51 @@ if (!embed) window.addEventListener("drop", async (e) => {
     reportError(msg);
   }
 })();
+
+// ---------------------------------------------------------------- multiplayer (DREAMSY.MD §4.5)
+// [server] mode = "rooms" and [players] max > 1: the engine-owned lobby first (quick match 1v1, rooms with invite
+// codes, ?room=<code> joins directly); each match start (re)starts the game with the room link. ?solo=1 skips it;
+// tools (?manual=1, boot data) never see it. Room server: ?rooms=<ws url>, else derived from the API base.
+let lobby: Lobby | null = null;
+function openLobby(pkg: Package, label: string): boolean {
+  const manifest = parseManifest(pkg.text("dreamsy.toml") ?? "").manifest;
+  if (!manifest || manifest.server.mode !== "rooms" || manifest.players.max < 2) return false;
+  if (params.get("solo") === "1" || params.get("manual") === "1" || window.__dreamsyBoot) return false;
+  const api = (params.get("api") ?? publicApi).replace(/\/$/, "");
+  const apiGame = publicId ?? params.get("game");
+  const gameKey = publicId ?? (params.get("api") && apiGame ? apiGame : `local:${apiGame ?? label}`);
+  const stop = () => { view?.dispose(); game?.dispose(); view = null; game = null; };
+  message.style.display = "none";
+  picker.style.display = "none";
+  lobby?.dispose();
+  lobby = new Lobby({
+    container: stage, theme: resolveTheme(manifest), gameKey, gameName: manifest.name,
+    max: Math.min(8, manifest.players.max), min: Math.max(1, manifest.players.min),
+    roomsUrl: params.get("rooms") ?? roomsUrl(api),
+    getToken: async () => {
+      const t = params.get("token") ?? localStorage.getItem("dreamsy_token") ?? localStorage.getItem("dreamsy_guest_token");
+      if (t) return t;
+      const res = await fetch(`${api}/v1/auth/guest`, { method: "POST" });
+      if (!res.ok) throw new Error(`guest sign-in failed (${res.status})`);
+      const { token } = (await res.json()) as { token: string };
+      try { localStorage.setItem("dreamsy_guest_token", token); } catch { /* private mode */ }
+      return token;
+    },
+    shareUrl: (code) => {
+      if (publicId || (params.get("api") && apiGame)) {
+        const base = location.hostname.startsWith("play.") ? location.origin + "/" : location.origin + location.pathname;
+        return `${base}?public=${encodeURIComponent(apiGame!)}&room=${code}`;
+      }
+      const u = new URL(location.href);
+      u.searchParams.delete("token");
+      u.searchParams.set("room", code);
+      return u.toString();
+    },
+    initialCode: params.get("room"),
+    onStart: (client) => { stop(); void start(pkg, label, client.link()); },
+    onSolo: () => { lobby = null; void start(pkg, label); },
+    onStop: stop,
+  });
+  post({ type: "ready" });
+  return true;
+}

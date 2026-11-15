@@ -1,5 +1,5 @@
 // Browser input → core InputState: keyboard, on-screen touch controls, pointer/taps.
-import type { Game, Insets } from "../core/index.js";
+import { expandKits, kitSourceText, type Game, type Insets } from "../core/index.js";
 
 export interface InputUsage { move: boolean; buttons: Set<string>; /** reads look_x / look_y (twin-stick aim) */ look?: boolean }
 
@@ -7,6 +7,9 @@ export interface InputUsage { move: boolean; buttons: Set<string>; /** reads loo
 export function detectInputUsage(game: Game): InputUsage {
   let src = "";
   for (const p of game.pkg.paths("scripts/")) src += game.pkg.text(p) ?? "";
+  // Kits read input too (e.g. the platformer kit's jump): scan the kits this game requires (+ their deps).
+  const kits = [...new Set([...src.matchAll(/require\s*\(\s*["']@kit\/([a-z][a-z0-9-]*)/g)].map((m) => m[1]!))];
+  if (kits.length) src += kitSourceText(expandKits(kits));
   const buttons = new Set<string>();
   for (const m of src.matchAll(/input\s*\.\s*(?:pressed|held)\s*\(\s*["'](\w+)["']/g)) buttons.add(m[1]!);
   return { move: /input\s*\.\s*axis\s*\(\s*["']move_/.test(src), buttons, look: /input\s*\.\s*axis\s*\(\s*["']look_/.test(src) };
@@ -81,8 +84,8 @@ export interface TouchLayout {
 export function touchLayout(orientation: "portrait" | "landscape"): TouchLayout {
   return orientation === "portrait"
     ? // portrait: thumbs low on the screen, above the home indicator; bigger targets
-      { stick: 148, knob: 62, stickX: 30, stickY: 40, buttons: [[26, 52, 96], [136, 30, 76], [44, 166, 76]] }
-    : { stick: 124, knob: 54, stickX: 30, stickY: 30, buttons: [[26, 38, 88], [124, 24, 68], [42, 136, 68]] };
+      { stick: 116, knob: 48, stickX: 28, stickY: 40, buttons: [[26, 52, 96], [136, 30, 76], [44, 166, 76]] }
+    : { stick: 100, knob: 42, stickX: 28, stickY: 28, buttons: [[26, 38, 88], [124, 24, 68], [42, 136, 68]] };
 }
 
 /** Virtual joystick (bottom-left) + jump/action buttons (bottom-right). Hidden for tap-only games. */
@@ -97,6 +100,9 @@ export class TouchControls {
   private slots: [HTMLElement, [number, number, number]][] = [];
   private scale = 1;
   private lookStick: LookStick | null = null;
+  private allButtons: [string, HTMLDivElement][] = [];
+  private shown = new Set<string>();
+  private lift = 0;
 
   constructor(container: HTMLElement, private game: Game, usage: InputUsage, orientation: "portrait" | "landscape" = "landscape") {
     this.layout = touchLayout(orientation);
@@ -106,24 +112,27 @@ export class TouchControls {
     if (!usage.move && !usage.look && usage.buttons.size === 0) this.root.style.display = "none"; // tap/pointer-only game
     container.appendChild(this.root);
 
-    // joystick zone: left half (portrait) / 45% (landscape) of the screen, bottom 50-60%
-    const zone = document.createElement("div");
-    Object.assign(zone.style, { position: "absolute", left: "0", bottom: "0", width: orientation === "portrait" ? "50%" : "45%", height: orientation === "portrait" ? "45%" : "60%", pointerEvents: usage.move ? "auto" : "none", touchAction: "none" });
+    // FIXED joystick (bottom-left): it never follows the finger, and only the stick itself (plus a small ring)
+    // takes touches, so on-screen game/platform buttons elsewhere stay tappable.
     this.base = document.createElement("div");
     Object.assign(this.base.style, {
       position: "absolute", width: `${L.stick}px`, height: `${L.stick}px`, borderRadius: "50%", boxSizing: "border-box",
       background: "rgba(255,255,255,0.12)", border: "2px solid rgba(255,255,255,0.35)", display: usage.move ? "block" : "none",
+      pointerEvents: usage.move ? "auto" : "none", touchAction: "none",
     });
+    const ring = document.createElement("div"); // slightly larger hit area than the visible stick
+    Object.assign(ring.style, { position: "absolute", inset: "-22px", borderRadius: "50%" });
+    this.base.appendChild(ring);
     this.knob = document.createElement("div");
     Object.assign(this.knob.style, {
       position: "absolute", width: `${L.knob}px`, height: `${L.knob}px`, borderRadius: "50%", left: `${(L.stick - L.knob) / 2 - 2}px`, top: `${(L.stick - L.knob) / 2 - 2}px`,
-      background: "rgba(255,255,255,0.55)",
+      background: "rgba(255,255,255,0.55)", pointerEvents: "none",
     });
     this.base.appendChild(this.knob);
-    zone.appendChild(this.base);
-    this.root.appendChild(zone);
+    this.root.appendChild(this.base);
     this.homeStick();
 
+    const zone = this.base;
     zone.addEventListener("pointerdown", (ev) => {
       if (this.stickId !== null) return;
       ev.preventDefault();
@@ -131,14 +140,7 @@ export class TouchControls {
       this.stickId = ev.pointerId;
       zone.setPointerCapture(ev.pointerId);
       const r = this.base.getBoundingClientRect();
-      // re-center the stick under the finger if touching outside it
-      const inside = ev.clientX >= r.left && ev.clientX <= r.right && ev.clientY >= r.top && ev.clientY <= r.bottom;
-      this.stickOrigin = inside ? [r.left + r.width / 2, r.top + r.height / 2] : [ev.clientX, ev.clientY];
-      if (!inside) {
-        const zr = zone.getBoundingClientRect();
-        this.base.style.left = `${ev.clientX - zr.left - L.stick / 2}px`;
-        this.base.style.bottom = `${zr.bottom - ev.clientY - L.stick / 2}px`;
-      }
+      this.stickOrigin = [r.left + r.width / 2, r.top + r.height / 2]; // always the stick's centre
       this.moveStick(ev.clientX, ev.clientY);
     });
     zone.addEventListener("pointermove", (ev) => { if (ev.pointerId === this.stickId) this.moveStick(ev.clientX, ev.clientY); });
@@ -148,30 +150,24 @@ export class TouchControls {
       this.game.input.setAxis("move_x", 0);
       this.game.input.setAxis("move_y", 0);
       this.knob.style.transform = "";
-      this.homeStick();
     };
     zone.addEventListener("pointerup", end);
     zone.addEventListener("pointercancel", end);
 
     // look / aim stick (twin-stick games reading input.axis("look_x/look_y")): bottom-right, buttons move above it
     if (usage.look) this.lookStick = new LookStick(this.root, game, L, orientation, () => this.insets, () => this.scale);
-    const lift = usage.look ? L.stick + 40 : 0;
 
-    // buttons (only the ones the game reads)
+    // Buttons: the ones the scan found are shown now; any other one appears the first time the game reads it
+    // (kits read buttons through config tables, e.g. the platformer's `input.pressed(b.jump)`).
     const btns: [string, string, string][] = [["jump", "A", "#3fb950"], ["action", "B", "#f0883e"], ["action2", "C", "#58a6ff"]];
-    let slot = 0;
     for (const [name, label, color] of btns) {
-      if (!usage.buttons.has(name)) continue;
       const b = document.createElement("div");
       b.textContent = label;
       b.dataset.button = name;
-      const p0 = L.buttons[slot++]!;
-      const pos: [number, number, number] = [p0[0], p0[1] + lift, p0[2]];
-      const size = pos[2];
       Object.assign(b.style, {
-        position: "absolute", width: `${size}px`, height: `${size}px`, borderRadius: "50%",
-        background: color, opacity: "0.78", color: "#fff", font: `700 ${Math.round(size * 0.32)}px system-ui, sans-serif`,
-        display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "auto", touchAction: "none", userSelect: "none", webkitUserSelect: "none",
+        position: "absolute", borderRadius: "50%",
+        background: color, opacity: "0.78", color: "#fff",
+        display: "none", alignItems: "center", justifyContent: "center", pointerEvents: "auto", touchAction: "none", userSelect: "none", webkitUserSelect: "none",
         boxShadow: "0 4px 0 rgba(0,0,0,0.3)",
       });
       // larger invisible hit area than the visible button
@@ -193,7 +189,34 @@ export class TouchControls {
       b.addEventListener("pointerup", up);
       b.addEventListener("pointercancel", up);
       this.root.appendChild(b);
-      this.slots.push([b, pos]);
+      this.allButtons.push([name, b]);
+    }
+    for (const n of usage.buttons) this.shown.add(n);
+    this.lift = usage.look ? L.stick + 40 : 0;
+    this.layoutButtons();
+    game.input.onFirstRead = (name) => {
+      if (name === "move_x" || name === "move_y") {
+        if (this.base.style.display === "none") { this.base.style.display = "block"; this.base.style.pointerEvents = "auto"; this.root.style.display = ""; }
+      } else if (this.allButtons.some(([n]) => n === name) && !this.shown.has(name)) {
+        this.shown.add(name);
+        this.root.style.display = "";
+        this.layoutButtons();
+      }
+    };
+    this.place();
+  }
+
+  /** Visible buttons take the layout slots in fixed order (A jump, B action, C action2). */
+  private layoutButtons() {
+    const L = this.layout;
+    this.slots = [];
+    let slot = 0;
+    for (const [name, b] of this.allButtons) {
+      if (!this.shown.has(name) || slot >= L.buttons.length) { b.style.display = "none"; continue; }
+      const p0 = L.buttons[slot++]!;
+      const size = p0[2];
+      Object.assign(b.style, { display: "flex", width: `${size}px`, height: `${size}px`, font: `700 ${Math.round(size * 0.32)}px system-ui, sans-serif`, transformOrigin: "100% 100%", scale: String(this.scale) });
+      this.slots.push([b, [p0[0], p0[1] + this.lift, size]]);
     }
     this.place();
   }
@@ -211,6 +234,29 @@ export class TouchControls {
     }
     if (this.stickId === null) this.homeStick();
     this.lookStick?.home();
+  }
+
+  private activeState = new Map<HTMLElement, boolean>();
+  private setActive(el: HTMLElement, on: boolean) {
+    if (this.activeState.get(el) === on) return;
+    this.activeState.set(el, on);
+    el.style.transition = "opacity 180ms ease";
+    el.style.opacity = on ? "" : "0";
+    el.style.visibility = on ? "" : "hidden";
+  }
+  /**
+   * Per frame: show a control only while the game is actually reading it (gameplay), so title screens,
+   * menus and shops aren't covered by a joystick/buttons. A control being touched stays visible.
+   */
+  syncActive() {
+    const inp = this.game.input;
+    const stickOn = this.stickId !== null || inp.recentlyRead("move_x") || inp.recentlyRead("move_y");
+    this.setActive(this.base, stickOn);
+    for (const [name, b] of this.allButtons) {
+      if (!this.shown.has(name)) continue;
+      this.setActive(b, inp.recentlyRead(name) || inp.rawHeld(name));
+    }
+    if (this.lookStick) this.lookStick.setActive(inp.recentlyRead("look_x") || inp.recentlyRead("look_y"));
   }
 
   private dimmed = false;
@@ -248,7 +294,7 @@ export class TouchControls {
     this.game.input.setAxis("move_y", Math.abs(ay) < 0.2 ? 0 : ay);
   }
 
-  dispose() { this.root.remove(); }
+  dispose() { if (this.game.input.onFirstRead) this.game.input.onFirstRead = null; this.root.remove(); }
 }
 
 /** Right-side aim stick feeding look_x / look_y (released = 0). */
@@ -259,16 +305,19 @@ class LookStick {
   private origin: [number, number] = [0, 0];
 
   constructor(root: HTMLElement, private game: Game, private L: TouchLayout, orientation: "portrait" | "landscape", private insets: () => Insets, private scale: () => number) {
-    const zone = document.createElement("div");
-    Object.assign(zone.style, { position: "absolute", right: "0", bottom: "0", width: orientation === "portrait" ? "50%" : "45%", height: orientation === "portrait" ? "30%" : "45%", pointerEvents: "auto", touchAction: "none" });
+    void orientation;
     this.base = document.createElement("div");
-    Object.assign(this.base.style, { position: "absolute", width: `${L.stick}px`, height: `${L.stick}px`, borderRadius: "50%", boxSizing: "border-box", background: "rgba(255,255,255,0.10)", border: "2px solid rgba(255,120,120,0.45)" });
+    Object.assign(this.base.style, { position: "absolute", width: `${L.stick}px`, height: `${L.stick}px`, borderRadius: "50%", boxSizing: "border-box", background: "rgba(255,255,255,0.10)", border: "2px solid rgba(255,120,120,0.45)", pointerEvents: "auto", touchAction: "none" });
+    const ring = document.createElement("div");
+    Object.assign(ring.style, { position: "absolute", inset: "-22px", borderRadius: "50%" });
+    this.base.appendChild(ring);
+    const zone = this.base;
     this.knob = document.createElement("div");
     Object.assign(this.knob.style, { position: "absolute", width: `${L.knob}px`, height: `${L.knob}px`, borderRadius: "50%", left: `${(L.stick - L.knob) / 2 - 2}px`, top: `${(L.stick - L.knob) / 2 - 2}px`, background: "rgba(255,160,160,0.6)" });
     this.base.dataset.stick = "look";
+    this.knob.style.pointerEvents = "none";
     this.base.appendChild(this.knob);
-    zone.appendChild(this.base);
-    root.appendChild(zone);
+    root.appendChild(this.base);
     this.home();
     zone.addEventListener("pointerdown", (ev) => {
       if (this.id !== null) return;
@@ -289,6 +338,13 @@ class LookStick {
     };
     zone.addEventListener("pointerup", end);
     zone.addEventListener("pointercancel", end);
+  }
+
+  setActive(on: boolean) {
+    if (this.id !== null) on = true;
+    this.base.style.transition = "opacity 180ms ease";
+    this.base.style.opacity = on ? "" : "0";
+    this.base.style.visibility = on ? "" : "hidden";
   }
 
   home() {

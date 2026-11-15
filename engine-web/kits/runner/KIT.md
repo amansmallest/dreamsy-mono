@@ -69,6 +69,8 @@ Missions (`data/missions/*.json`): `{ "text", "stat": distance|coins|jumps|slide
 rewarded at `R.finish` and replaced. Characters (`data/characters/*.json`): a progression tree "characters":
 `{ "name", "cost": { "coins": 400 } (0 = free), "mods": [ {stat: player param, add|pct|mul} ], "tint", "sprite" }`.
 Events: `run_started run_finished mission_completed daily_completed stage_completed`; flag `runner_best`.
+Platform leaderboard: `R.finish` submits the run distance to board `"distance"` (desc; `config.board = "<name>"` renames,
+`false` opts out) and `R.finishStage` submits the obby clear time to `"stage_<id>"` (asc), via `leaderboard.submit`.
 
 ## Obby
 ```luau

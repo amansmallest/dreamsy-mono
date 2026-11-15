@@ -6,7 +6,8 @@
     "./core": "./core/index.ts",
     "./render": "./render/index.ts",
     "./input": "./input/index.ts",
-    "./playtest": "./tools/playtest.ts"
+    "./playtest": "./tools/playtest.ts",
+    "./net": "./net/index.ts"
   },
   "scripts": {
     "dev": "vite --host --port 2005 --strictPort",

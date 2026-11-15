@@ -143,6 +143,11 @@ function Level.start(opts)
 	end
 	Progress.setLast(self.id)
 	self:sync()
+	-- platform leaderboard: level start → complete (deaths/respawns keep the clock running; game over cancels)
+	if opts.board ~= false and leaderboard then
+		self.board = opts.board or ("level_" .. string.sub((string.gsub(string.lower(tostring(self.id)), "[^%w_]", "_")), 1, 34))
+		leaderboard.start(self.board, { track = self.player })
+	end
 	onTick(function(dt) self:tick(dt) end)
 	return self
 end
@@ -368,6 +373,7 @@ function Level:die(cause: string?)
 	if self.lives ~= nil then
 		self.lives -= 1
 		if self.lives < 0 then
+			if self.board then leaderboard.cancel(self.board) end
 			self.events:emit("gameOver")
 			if self.o.on_game_over then
 				self.o.on_game_over(self)
@@ -434,6 +440,7 @@ function Level:complete()
 	self.ctl.frozen = true
 	local st = self:stats()
 	local res = Progress.completeLevel(self.id, st)
+	if self.board and leaderboard.running(self.board) then leaderboard.finish(self.board) end
 	self:play("clear")
 	self.events:emit("complete", st, res)
 	if self.hud then self.hud:showBanner(if res.newBest and not res.first then "NEW BEST " .. U.formatTime(st.time) else "LEVEL CLEAR!", nil) end

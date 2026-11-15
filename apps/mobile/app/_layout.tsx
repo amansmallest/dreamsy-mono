@@ -3,11 +3,12 @@ import { InterTight_700Bold, InterTight_800ExtraBold } from '@expo-google-fonts/
 import { Silkscreen_400Regular } from '@expo-google-fonts/silkscreen';
 import { useFonts } from 'expo-font';
 import * as ScreenOrientation from 'expo-screen-orientation';
-import { Stack } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { AuthProvider, useAuth } from '@/auth';
+import { takePendingJoin } from '@/groups';
 import { font, ink } from '@/theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -38,14 +39,25 @@ function RootNavigator() {
   });
   const ready = status !== 'loading' && (fontsLoaded || !!fontError);
 
+  // Signed in without an avatar = onboarding not finished (handle + avatar).
+  const onboarded = status === 'signedIn' && user.avatar != null;
+
+  // A group invite opened while signed out / onboarding (app/join/[code].tsx): join once in the app.
+  useEffect(() => {
+    if (!ready || !onboarded) return;
+    // Let the stack swap to the signed-in screens first.
+    const t = setTimeout(() => {
+      const code = takePendingJoin();
+      if (code) router.push({ pathname: '/join/[code]', params: { code } });
+    }, 300);
+    return () => clearTimeout(t);
+  }, [ready, onboarded]);
+
   useEffect(() => {
     if (ready) SplashScreen.hideAsync().catch(() => {});
   }, [ready]);
 
   if (!ready) return null;
-
-  // Signed in without an avatar = onboarding not finished (handle + avatar).
-  const onboarded = status === 'signedIn' && user.avatar != null;
 
   return (
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: ink.bg } }}>
@@ -54,6 +66,8 @@ function RootNavigator() {
         <Stack.Screen name="game/[id]" options={pushed} />
         <Stack.Screen name="discover/[id]" options={pushed} />
         <Stack.Screen name="user/[id]" options={pushed} />
+        <Stack.Screen name="groups/index" options={pushed} />
+        <Stack.Screen name="groups/[id]" options={pushed} />
         <Stack.Screen name="avatar" options={{ presentation: 'modal' }} />
         <Stack.Screen name="scan" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
         <Stack.Screen
@@ -68,6 +82,8 @@ function RootNavigator() {
         <Stack.Screen name="sign-in" />
       </Stack.Protected>
       <Stack.Screen name="auth-callback" />
+      {/* Invite links work in any auth state; the screen defers the join until signed in. */}
+      <Stack.Screen name="join/[code]" options={{ animation: 'fade' }} />
     </Stack>
   );
 }

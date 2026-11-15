@@ -115,6 +115,9 @@ export type Game = {
   remixOf?: RemixOf | null;
   creator?: Creator;
   stats?: GameStats;
+  /** Manifest `[players]` of the published version (else latest); multiplayer = max > 1 (§4.5). */
+  players?: Players;
+  multiplayer?: boolean;
   /** If the API includes it: the running build, so the Create list needn't ask per game. */
   activeGeneration?: Generation | null;
 };
@@ -129,6 +132,10 @@ export type Orientation = 'portrait' | 'landscape';
 export type RemixOf = { gameId: string; name?: string; version?: number };
 export type Creator = { id: string; handle: string; avatar?: AvatarParts | null };
 export type GameStats = { plays: number; likes: number; remixes: number };
+export type Players = { min: number; max: number };
+/** Short players label for badges: "2P" for duels, "Up to N" for bigger rooms; null for single-player. */
+export const playersLabel = (g: { multiplayer?: boolean; players?: Players | null } | null | undefined): string | null =>
+  g?.multiplayer && g.players ? (g.players.max === 2 ? '2P' : `Up to ${g.players.max}`) : null;
 export type Viewer = { liked?: boolean; ownedPasses?: string[] };
 
 export type FeedGame = {
@@ -137,6 +144,9 @@ export type FeedGame = {
   description: string;
   orientation: Orientation;
   thumbnailUrl: string | null;
+  /** Optional so older API builds still type-check at runtime. */
+  players?: Players;
+  multiplayer?: boolean;
   creator: Creator;
   stats: GameStats;
   publishedAt: string;
@@ -264,6 +274,49 @@ export type LedgerEntry = {
 
 export type LocalImage = { uri: string; mimeType: string; fileName: string };
 
+// ---------- leaderboards, ghosts, groups (DREAMSY.MD §13) ----------
+
+export type BoardOrder = 'asc' | 'desc';
+/** A board with runs (GET /v1/games/:id/leaderboards). */
+export type BoardSummary = { board: string; order: BoardOrder; players: number; best: number; updatedAt: string };
+/** `public`, `me`, or `group:<id>`. */
+export type BoardScope = 'public' | 'me' | `group:${string}`;
+export type BoardEntry = {
+  rank: number;
+  user: Creator;
+  value: number;
+  runId: string;
+  hasGhost: boolean;
+  version: number;
+  at: string;
+};
+export type Leaderboard = {
+  board: string;
+  order: BoardOrder;
+  scope: string;
+  entries: BoardEntry[];
+  /** My best within the scope (absent if I have no run on this board). */
+  me?: { rank: number; value: number; runId: string };
+};
+
+export type GroupRole = 'owner' | 'member';
+export type Group = {
+  id: string;
+  name: string;
+  ownerId: string;
+  inviteCode: string;
+  memberCount: number;
+  role: GroupRole | null;
+  createdAt: string;
+};
+export type GroupMember = { user: Creator; role: GroupRole; joinedAt: string };
+/** A game shared with a group: the owner-style view (drafts too) + who shared it. */
+export type SharedGame = Game & { sharedBy: Creator; sharedAt: string };
+
+/** Version a group member can play: the published one, else the latest draft (shared drafts). */
+export const playableVersion = (g: { publishedVersion?: number | null; latestVersion?: number | null }): number | null =>
+  g.publishedVersion || g.latestVersion || null;
+
 // ---------- endpoints ----------
 
 const enc = encodeURIComponent;
@@ -318,9 +371,11 @@ export const api = {
 
   updateMe: (body: { handle?: string; bio?: string; avatar?: AvatarParts }) => request<{ user: User }>('/v1/me', { method: 'PATCH', body }),
 
-  feed: (tab: FeedTab, cursor?: string | null, limit = 20) =>
-    request<Page<'games', FeedGame>>(`/v1/feed${qs({ tab, cursor, limit })}`),
-  search: (q: string, cursor?: string | null) => request<Page<'games', FeedGame>>(`/v1/search${qs({ q, cursor })}`),
+  /** `multiplayer` = only games whose published version has `[players] max > 1`. */
+  feed: (tab: FeedTab, cursor?: string | null, limit = 20, opts: { multiplayer?: boolean } = {}) =>
+    request<Page<'games', FeedGame>>(`/v1/feed${qs({ tab, cursor, limit, multiplayer: opts.multiplayer ? 1 : null })}`),
+  search: (q: string, cursor?: string | null, opts: { multiplayer?: boolean } = {}) =>
+    request<Page<'games', FeedGame>>(`/v1/search${qs({ q, cursor, multiplayer: opts.multiplayer ? 1 : null })}`),
   publicGame: (id: string) =>
     request<{ game: FeedGame & { publishedVersion: number } }>(`/v1/public/games/${enc(id)}`, { auth: false }),
 
@@ -343,6 +398,30 @@ export const api = {
 
   marketplace: (sort: MarketSort, cursor?: string | null) =>
     request<Page<'items', MarketItem>>(`/v1/marketplace${qs({ sort, cursor })}`),
+
+  // ---------- leaderboards + groups (§13.3) ----------
+
+  boards: (gameId: string) => request<{ boards: BoardSummary[] }>(`/v1/games/${enc(gameId)}/leaderboards`),
+  leaderboard: (gameId: string, board: string, scope: BoardScope = 'public', limit = 20) =>
+    request<Leaderboard>(`/v1/games/${enc(gameId)}/leaderboards/${enc(board)}${qs({ scope, limit })}`),
+
+  myGroups: () => request<{ groups: Group[] }>('/v1/me/groups'),
+  createGroup: (name: string) =>
+    request<{ group: Group; inviteCode: string }>('/v1/groups', { method: 'POST', body: { name } }),
+  /** Idempotent. 404 = unknown code, 409 = group full. */
+  joinGroup: (code: string) => request<{ group: Group }>('/v1/groups/join', { method: 'POST', body: { code } }),
+  group: (id: string) => request<{ group: Group; members: GroupMember[] }>(`/v1/groups/${enc(id)}`),
+  leaveGroup: (id: string) => request<{ ok: true }>(`/v1/groups/${enc(id)}/leave`, { method: 'POST' }),
+  /** Owner only. */
+  deleteGroup: (id: string) => request<{ ok: true }>(`/v1/groups/${enc(id)}`, { method: 'DELETE' }),
+  /** Owner only: rotates the code; old links stop working. */
+  newInviteCode: (id: string) => request<{ inviteCode: string }>(`/v1/groups/${enc(id)}/invite-code`, { method: 'POST' }),
+  groupGames: (id: string) => request<{ games: SharedGame[] }>(`/v1/groups/${enc(id)}/games`),
+  /** Your own game (drafts too) or any published game. Idempotent. */
+  shareWithGroup: (groupId: string, gameId: string) =>
+    request<{ game: Game }>(`/v1/groups/${enc(groupId)}/games`, { method: 'POST', body: { gameId } }),
+  unshareFromGroup: (groupId: string, gameId: string) =>
+    request<{ ok: true }>(`/v1/groups/${enc(groupId)}/games/${enc(gameId)}`, { method: 'DELETE' }),
 };
 
 /**

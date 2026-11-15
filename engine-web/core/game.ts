@@ -14,7 +14,9 @@ import { Physics2D, initRapier2D } from "./physics2d.js";
 import { OP, PRELUDE, TAG } from "./prelude.js";
 import { Random } from "./random.js";
 import { MemoryStoreHost, type StoreHost, type StorePurchase } from "./store.js";
+import { DEFAULT_BOARD, GhostRecorder, ghostAt, isGhost, MemoryLeaderboardHost, type BoardOrder, type Ghost, type GhostFrame, type LeaderboardHost, type SubmitResult } from "./leaderboard.js";
 import { loadTileGrid, type TileGrid } from "./tilemap.js";
+import { NetSession, type NetLink } from "./net.js";
 import { coerceProp, global2D, apply, invert, parseColor, propAlias, World, type Entity, type RGBA } from "./world.js";
 
 export interface ScriptError {
@@ -61,6 +63,10 @@ export interface GameOptions extends LuauOptions {
   store?: StoreHost;
   /** Save data persistence (save.get/set). Default: in-memory. */
   save?: SaveHost;
+  /** Leaderboards + ghosts (DREAMSY.MD §13). Default: a fresh in-memory host. */
+  leaderboard?: LeaderboardHost;
+  /** Multiplayer room link (net/client.ts, net/loopback.ts). Default: offline (one local player). */
+  net?: NetLink;
   /** clock.now() source (unix seconds). Default: wall clock. Playtests pass a fixed clock. */
   clock?: () => number;
   /** sceneParams() of the starting scene (with `scene`: start mid-game, e.g. { level = 3 }). */
@@ -88,6 +94,15 @@ const TILE_KEYS = new Set(["tileset", "data"]);
 const MAX_SCENE_CHAIN = 8;
 
 export class GameLoadError extends Error {}
+
+/** A leaderboard submit that resolved (or failed): the results card listens for these. */
+export interface LeaderboardEvent { board: string; order: BoardOrder; value: number; finished: boolean; result?: SubmitResult; error?: string }
+interface LbRun { board: string; t0: number; seq: number; rec: GhostRecorder | null; track: Entity | null; explicitTrack: boolean }
+interface LbGhost { ghost: Ghost; board: string; entity: Entity | null; t0: number; tex: string[]; offset: [number, number]; endAt: number }
+/** Same as the API (DREAMSY.MD §13): lowercase letters, digits, underscore; ≤ 40 chars. */
+const BOARD_RE = /^[a-z0-9_]{1,40}$/;
+/** Ghost display alpha. */
+export const GHOST_ALPHA = 0.45;
 
 export class Game {
   readonly world = new World();
@@ -121,6 +136,22 @@ export class Game {
   /** Per TileMap2D: "bodyHandle:cell" pairs touching last tick (tileTouched fires on new pairs). */
   private tileTouching = new Map<Entity, Set<string>>();
   readonly store: StoreHost;
+  /** Multiplayer session (players, remote events, room API); offline when no `net` link was given. */
+  net!: NetSession;
+  readonly leaderboardHost: LeaderboardHost;
+  private lbRuns = new Map<string, LbRun>();
+  private lbSeq = 0;
+  private lbInFlight = 0;
+  private lbQueue: SubmitResult[] = [];
+  private lbListeners = new Set<(ev: LeaderboardEvent) => void>();
+  /** Ghost waiting for its data / scene / run start ("armed" = spawn at the next leaderboard.start). */
+  private lbPendingGhost: { which: string; board: string; armed: boolean; ghost: Ghost | null; token: number } | null = null;
+  private lbGhost: LbGhost | null = null;
+  private lbToken = 0;
+  /** Boards this session used (and string literals found in scripts): the pause menu's Leaderboard view. */
+  readonly leaderboardBoards: string[] = [];
+  /** Last board started / submitted. */
+  lastBoard: string | null = null;
   /** Undrained audio events (render/audio.ts plays and clears them). */
   audioQueue: AudioEvent[] = [];
   /** History of audio events (playtest reports). */
@@ -178,6 +209,7 @@ export class Game {
     this.dt = 1 / (opts.tickRate ?? 60);
     this.rng = new Random(opts.seed ?? 1);
     this.store = opts.store ?? new MemoryStoreHost(manifest.store ?? []);
+    this.leaderboardHost = opts.leaderboard ?? new MemoryLeaderboardHost();
     this.saveHost = opts.save ?? new MemorySaveHost();
     this.camRng = new Random(((opts.seed ?? 1) ^ 0x5bd1e995) >>> 0);
     this.refSize = referenceSize(manifest);
@@ -226,6 +258,7 @@ export class Game {
   /** Platform "Restart": fires game.restartRequested, or (no listeners) reloads the entry scene. */
   requestRestart() {
     if (this.disposed) return;
+    this.lbCancelAll();
     if (this.hasConn(null, "restartRequested")) this.fire(null, "restartRequested", () => 0);
     else this.pendingScene = this.manifest.entry_scene;
     this.processSceneChange();
@@ -286,6 +319,278 @@ export class Game {
     }
   }
 
+  // ---------------------------------------------------------------- leaderboards + ghosts (DREAMSY.MD §13)
+
+  /** A leaderboard submit/ghost fetch is waiting on the host (headless runners await this between ticks). */
+  get leaderboardBusy(): boolean { return this.lbInFlight > 0; }
+  /** True when the game uses leaderboards (scripts mention them, or a board was used): shows the pause-menu entry. */
+  get usesLeaderboards(): boolean { return this.leaderboardBoards.length > 0 || this.lbUsed; }
+  private lbUsed = false;
+
+  /** Subscribe to submit results (UI). Returns an unsubscribe function. */
+  onLeaderboard(fn: (ev: LeaderboardEvent) => void): () => void {
+    this.lbListeners.add(fn);
+    return () => this.lbListeners.delete(fn);
+  }
+
+  /** Running timers: board → game seconds elapsed. */
+  get leaderboardRuns(): Record<string, number> {
+    const o: Record<string, number> = {};
+    for (const r of this.lbRuns.values()) o[r.board] = this.time - r.t0;
+    return o;
+  }
+
+  /** Live ghost entity (tests/tools). */
+  get ghostEntity(): Entity | null { return this.lbGhost?.entity?.alive ? this.lbGhost.entity : null; }
+
+  /** Results card "Race the #1 ghost": fetch it now, spawn it at the next leaderboard.start of that scene. */
+  armGhost(which: string, board: string) { this.requestGhost(which, board, true); }
+
+  private scanBoards() {
+    const srcs: string[] = [];
+    for (const p of this.pkg.paths("scripts/")) if (p.endsWith(".luau")) srcs.push(this.pkg.text(p) ?? "");
+    let any = false;
+    for (const src of srcs) {
+      if (/\bleaderboard\s*\.\s*(start|finish|submit)\b/.test(src)) any = true;
+      for (const m of src.matchAll(/\bleaderboard\s*\.\s*(?:start|finish|submit)\s*\(\s*"([a-z0-9_]{1,40})"/g)) this.noteBoard(m[1]!);
+    }
+    if (any && !this.leaderboardBoards.length) this.lbUsed = true;
+  }
+
+  private noteBoard(board: string) {
+    this.lbUsed = true;
+    if (!this.leaderboardBoards.includes(board)) this.leaderboardBoards.push(board);
+  }
+
+  private boardArg(L: LuaState, i: number, fn: string): string | null {
+    const vm = this.vm;
+    if (vm.isNil(L, i)) return null;
+    const b = vm.toString(L, i) ?? "";
+    if (!BOARD_RE.test(b)) throw new Error(`leaderboard.${fn}: board must be a name like "fastest" or "track_1" (lowercase letters, digits and _, at most 40), got "${b}"`);
+    return b;
+  }
+
+  /** nil board → "fastest" if running, else the most recently started run, else "fastest". */
+  private runningBoard(b: string | null): string {
+    if (b) return b;
+    if (this.lbRuns.has(DEFAULT_BOARD)) return DEFAULT_BOARD;
+    let best: LbRun | null = null;
+    for (const r of this.lbRuns.values()) if (!best || r.seq > best.seq) best = r;
+    return best?.board ?? DEFAULT_BOARD;
+  }
+
+  private leaderboardOp(L: LuaState): number {
+    const vm = this.vm;
+    const what = vm.toString(L, 2);
+    switch (what) {
+      case "start": {
+        const board = this.boardArg(L, 3, "start") ?? DEFAULT_BOARD;
+        const track = vm.isNil(L, 4) ? null : this.entityArg(L, 4);
+        this.noteBoard(board);
+        this.lastBoard = board;
+        const target = track ?? this.avatar();
+        const run: LbRun = { board, t0: this.time, seq: this.lbSeq++, rec: target ? new GhostRecorder(this.scenePath, this.time) : null, track: target, explicitTrack: !!track };
+        this.lbRuns.set(board, run);
+        run.rec?.sample(this.time, () => this.ghostSample(run));
+        const p = this.lbPendingGhost;
+        if (p?.armed && p.board === board) p.armed = false; // spawns as soon as its data is here (scene permitting)
+        this.removeGhost(); // a fresh run: drop the previous replay
+        this.trySpawnGhost();
+        return 0;
+      }
+      case "finish": {
+        const board = this.runningBoard(this.boardArg(L, 3, "finish"));
+        const run = this.lbRuns.get(board);
+        if (!run) { this.log("warn", `[leaderboard] finish("${board}") without a running leaderboard.start("${board}")`); vm.pushNil(L); return 1; }
+        this.lbRuns.delete(board);
+        const value = Math.round((this.time - run.t0) * 1000) / 1000;
+        run.rec?.sample(this.time, () => this.ghostSample(run));
+        const ghost = run.rec && run.rec.frames.length >= 2 ? run.rec.ghost() : undefined;
+        if (this.lbGhost?.board === board) this.removeGhost();
+        this.submitRun(board, "asc", value, ghost, true);
+        vm.pushNumber(L, value);
+        return 1;
+      }
+      case "submit": {
+        const board = this.boardArg(L, 3, "submit");
+        if (!board) throw new Error('leaderboard.submit expects a board name, e.g. leaderboard.submit("score", 1200)');
+        const value = vm.toNumber(L, 4);
+        if (vm.type(L, 4) !== LUA_TNUMBER || !Number.isFinite(value)) throw new Error("leaderboard.submit expects a number value");
+        const order = vm.isNil(L, 5) ? "desc" : vm.toString(L, 5);
+        if (order !== "asc" && order !== "desc") throw new Error('leaderboard.submit: order must be "asc" (lower is better) or "desc" (higher is better)');
+        this.noteBoard(board);
+        this.lastBoard = board;
+        this.submitRun(board, order, value, undefined, false);
+        return 0;
+      }
+      case "cancel": {
+        const b = this.boardArg(L, 3, "cancel");
+        if (b === null) this.lbCancelAll();
+        else { this.lbRuns.delete(b); if (this.lbGhost?.board === b) this.removeGhost(); }
+        return 0;
+      }
+      case "elapsed": {
+        const run = this.lbRuns.get(this.runningBoard(this.boardArg(L, 3, "elapsed")));
+        vm.pushNumber(L, run ? this.time - run.t0 : 0);
+        return 1;
+      }
+      case "running": {
+        vm.pushBoolean(L, this.lbRuns.has(this.runningBoard(this.boardArg(L, 3, "running"))));
+        return 1;
+      }
+      case "raceGhost": {
+        const which = vm.toString(L, 3) ?? "";
+        if (!which) throw new Error('leaderboard.raceGhost expects "best", "pb" or a run id');
+        const board = this.boardArg(L, 4, "raceGhost") ?? (this.lbRuns.size ? this.runningBoard(null) : this.lastBoard ?? DEFAULT_BOARD);
+        this.requestGhost(which, board, false);
+        return 0;
+      }
+    }
+    throw new Error(`leaderboard: unknown call ${what}`);
+  }
+
+  private lbCancelAll() {
+    this.lbRuns.clear();
+    this.removeGhost();
+  }
+
+  private submitRun(board: string, order: BoardOrder, value: number, ghost: Ghost | undefined, finished: boolean) {
+    this.lbInFlight++;
+    this.leaderboardHost.submit({ board, order, value, ...(ghost ? { ghost } : {}) }).then(
+      (r) => {
+        if (this.disposed) return;
+        this.lbQueue.push(r);
+        this.emitLb({ board, order, value, finished, result: r });
+      },
+      (e) => {
+        const msg = (e as Error)?.message ?? String(e);
+        this.log("warn", `[leaderboard] submit to "${board}" failed: ${msg}`);
+        if (!this.disposed) this.emitLb({ board, order, value, finished, error: msg });
+      },
+    ).finally(() => this.lbInFlight--);
+  }
+
+  private emitLb(ev: LeaderboardEvent) {
+    for (const fn of [...this.lbListeners]) { try { fn(ev); } catch (e) { this.log("warn", `[leaderboard] listener: ${(e as Error).message}`); } }
+  }
+
+  private fireLeaderboardResults() {
+    const q = this.lbQueue;
+    if (!q.length) return;
+    this.lbQueue = [];
+    for (const r of q) this.fire(null, "leaderboardResult", (L) => { this.vm.pushNumber(L, r.rank); this.vm.pushNumber(L, r.best); this.vm.pushBoolean(L, r.personalBest); return 3; });
+  }
+
+  /** The tracked entity's first Sprite2D (itself, or a descendant; prefers one with anims). */
+  private trackedSprite(e: Entity | null): Entity | null {
+    if (!e?.alive) return null;
+    let first: Entity | null = null;
+    for (const x of this.world.walk(e)) {
+      if (x.type !== "Sprite2D") continue;
+      if (x.get<string>("anims")) return x;
+      first ??= x;
+    }
+    return first;
+  }
+
+  /** Deduplicated textures of a sprite's anim set, in file order: ghost frame indices point into this. */
+  private animTextures(sprite: Entity | null): string[] {
+    const path = sprite?.get<string>("anims");
+    const set = path ? this.animSet(path) : null;
+    const out: string[] = [];
+    for (const a of Object.values(set ?? {})) for (const f of a.frames) if (!out.includes(f)) out.push(f);
+    return out;
+  }
+
+  private ghostSample(run: LbRun): GhostFrame | null {
+    if (!run.track?.alive && !run.explicitTrack) run.track = this.avatar();
+    const e = run.track;
+    if (!e?.alive) return null;
+    const m = global2D(e);
+    const sprite = this.trackedSprite(e);
+    const tex = sprite?.get<string>("texture");
+    const frame = sprite && tex ? Math.max(0, this.animTextures(sprite).indexOf(tex)) : 0;
+    return [m[4], m[5], sprite?.get<boolean>("flip_h") ? 1 : 0, frame];
+  }
+
+  private requestGhost(which: string, board: string, armed: boolean) {
+    const token = ++this.lbToken;
+    this.lbPendingGhost = { which, board, armed, ghost: null, token };
+    this.lbInFlight++;
+    this.leaderboardHost.ghost(which, board).then(
+      (g) => {
+        const p = this.lbPendingGhost;
+        if (this.disposed || !p || p.token !== token) return;
+        if (!g || !isGhost(g)) { this.lbPendingGhost = null; this.log("warn", `[leaderboard] no ghost "${which}" on board "${board}"`); return; }
+        p.ghost = g;
+      },
+      (e) => { if (this.lbPendingGhost?.token === token) this.lbPendingGhost = null; this.log("warn", `[leaderboard] ghost "${which}" failed: ${(e as Error)?.message ?? e}`); },
+    ).finally(() => this.lbInFlight--);
+  }
+
+  private trySpawnGhost() {
+    const p = this.lbPendingGhost;
+    if (!p?.ghost || p.armed || p.ghost.scene !== this.scenePath) return;
+    this.lbPendingGhost = null;
+    this.removeGhost();
+    const run = this.lbRuns.get(p.board);
+    const tracked = run?.track?.alive ? run.track : this.avatar();
+    const tmpl = this.trackedSprite(tracked);
+    const e = this.world.create(null, "Sprite2D", "ghost");
+    let offset: [number, number] = [0, 0];
+    if (tmpl) {
+      for (const k of ["texture", "size", "scale"]) if (k in tmpl.props) e.props[k] = structuredClone(tmpl.props[k]);
+      const tm = global2D(tmpl), em = global2D(tracked);
+      offset = [tm[4] - em[4], tm[5] - em[5]];
+      let z = 0;
+      for (let x: Entity | null = tmpl; x; x = x.parent) z += x.def.props.z_index ? x.get<number>("z_index") : 0;
+      e.props.z_index = Math.max(-4096, z - 1);
+    } else e.props.size = [32, 32];
+    const mod = (tmpl?.get<number[]>("modulate") ?? [1, 1, 1, 1]);
+    e.props.modulate = [mod[0]!, mod[1]!, mod[2]!, (mod[3] ?? 1) * GHOST_ALPHA];
+    this.world.attach(e, this.world.root);
+    const g = p.ghost;
+    this.lbGhost = { ghost: g, board: p.board, entity: e, t0: this.time, tex: this.animTextures(tmpl), offset, endAt: g.frames.length / (g.hz || 10) + 1 };
+    this.placeGhost();
+  }
+
+  private placeGhost() {
+    const g = this.lbGhost!;
+    const e = g.entity;
+    if (!e?.alive) { this.lbGhost = null; return; }
+    const t = this.time - g.t0;
+    const s = ghostAt(g.ghost, t) ?? (t < g.endAt ? ghostAt(g.ghost, (g.ghost.frames.length - 1) / (g.ghost.hz || 10)) : null);
+    if (!s) { this.removeGhost(); return; }
+    const parent = e.parent ? global2D(e.parent) : null;
+    const [x, y] = parent ? apply(invert(parent), s.x + g.offset[0], s.y + g.offset[1]) : [s.x + g.offset[0], s.y + g.offset[1]];
+    e.props.position = [x, y];
+    e.props.flip_h = s.flipX;
+    const tex = g.tex[s.frame];
+    if (tex) e.props.texture = tex;
+    e.rev++;
+  }
+
+  private removeGhost() {
+    const e = this.lbGhost?.entity;
+    this.lbGhost = null;
+    if (e?.alive) this.world.remove(e);
+  }
+
+  private lbSceneChanged() {
+    // world.clear() already removed the ghost entity; recordings are single-scene, so stop sampling
+    this.lbGhost = null;
+    for (const r of this.lbRuns.values()) if (r.rec && r.rec.scene !== this.scenePath) { r.rec = null; r.track = null; }
+  }
+
+  private stepLeaderboard() {
+    for (const r of this.lbRuns.values()) {
+      if (!r.rec || r.rec.full) continue;
+      r.rec.sample(this.time, () => this.ghostSample(r));
+    }
+    if (this.lbGhost) this.placeGhost();
+    if (this.lbPendingGhost?.ghost) this.trySpawnGhost();
+  }
+
   /** Load and start a package (runs scripts). Throws GameLoadError for unplayable packages. */
   static async load(pkg: Package, opts: GameOptions = {}): Promise<Game> {
     await loadKitSources();
@@ -301,6 +606,7 @@ export class Game {
     await loadKitSources();
     registerKitDependencies(kitDependencies());
     game.enabledKits = expandKits(v.manifest.kits ?? []);
+    game.scanBoards();
     await game.loadStore();
     await game.loadSave();
     await game.init();
@@ -312,6 +618,12 @@ export class Game {
     this.physics = new Physics2D(this.dt, this.manifest.physics?.layers ?? []);
     this.vm = await LuauVM.create(this.opts);
     this.vm.host = (L) => this.host(L);
+    this.net = new NetSession(this.opts.net ?? null, {
+      vm: () => this.vm, world: this.world, scenePath: () => this.scenePath, avatar: () => this.avatar(),
+      destroy: (e) => this.destroyEntity(e), playAnim: (e, name) => this.playAnim(e, name, false),
+      call: (ref, nargs, push) => this.callRef(ref, null, nargs, push), entityArg: (L, i) => this.entityArg(L, i),
+      readJSON: (L, i) => this.readJSON(L, i), pushJSON: (L, v) => this.pushJSON(L, v), log: (level, text) => this.log(level, text),
+    });
     const L = this.vm.L;
     const err = this.vm.load(L, "=dreamsy", PRELUDE);
     if (err) throw new Error(`prelude failed to compile: ${err}`);
@@ -379,6 +691,7 @@ export class Game {
     this.tweens = this.tweens.filter((t) => t.e.alive);
     this.dialogs.clear();
     this.cam.init = false;
+    this.lbSceneChanged();
     this.scene = scene;
     this.scenePath = path;
     this.log("info", `[scene] loaded ${path}`);
@@ -504,7 +817,9 @@ export class Game {
     const sdt = this.dt * this.timeScale;
     this.time += sdt;
     this.callRef(this.refs.flush, null, 0);
+    this.net.beforeTick();
     this.firePurchases();
+    this.fireLeaderboardResults();
     if (this.pointerClearTick === this.tick) this.input.pointer = null;
     this.stepDialogs();
 
@@ -539,7 +854,9 @@ export class Game {
       }
       this.detectTileTouches();
     }
+    this.net.afterPhysics();
     this.stepSpritesAndParticles(sdt);
+    this.stepLeaderboard();
     this.updateCamera(false);
     this.toasts = this.toasts.filter((t) => t.until > this.time);
     this.processSceneChange();
@@ -1696,6 +2013,7 @@ export class Game {
         }
         throw new Error(`store: unknown call ${what}`);
       }
+      case OP.LEADERBOARD: return this.leaderboardOp(L);
       case OP.TWEEN: {
         const what = vm.toString(L, 2);
         if (what === "cancel") {
@@ -1873,6 +2191,7 @@ export class Game {
         }
         throw new Error(`game: unknown call ${what}`);
       }
+      case OP.NET: return this.net.op(L);
       case OP.SOUND: {
         const at = this.readTagged(L, 3);
         this.sounds.push({ asset: String(vm.toString(L, 2) ?? "").replace(/^asset:/, ""), at: Array.isArray(at) ? (at as number[]) : undefined });

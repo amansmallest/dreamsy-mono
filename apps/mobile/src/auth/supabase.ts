@@ -4,9 +4,9 @@ import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { SignInCancelled } from './native';
 
-// Email code (default) and Google sign-in through Supabase Auth. Email: signInWithOtp sends a
-// one-time code, verifyOtp turns it into a session. Google: OAuth in the system auth sheet (PKCE), then the Supabase
-// access token is traded for a Dreamsy session at POST /v1/auth/supabase. The Supabase session
+// Google sign-in through Supabase Auth (email codes go through services/api, see dreamsyApiBackend).
+// OAuth runs in the system auth sheet (PKCE), then the Supabase access token is traded for a
+// Dreamsy session at POST /v1/auth/supabase. The Supabase session
 // itself is not kept; services/api issues the token the app uses.
 //
 // Works in Expo Go (redirect exp://…/--/auth-callback) and in builds (dreamsy://auth-callback).
@@ -47,18 +47,4 @@ export async function googleAccessToken(): Promise<string> {
   const exchanged = await sb.auth.exchangeCodeForSession(code);
   if (exchanged.error) throw exchanged.error;
   return exchanged.data.session.access_token;
-}
-
-/** Email a one-time sign-in code (creates the Supabase user on first use). */
-export async function sendEmailCode(email: string): Promise<void> {
-  const { error } = await supabase().auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
-  if (error) throw error;
-}
-
-/** Check the emailed code and return a Supabase access token. */
-export async function verifyEmailCode(email: string, code: string): Promise<string> {
-  const { data, error } = await supabase().auth.verifyOtp({ email, token: code, type: 'email' });
-  if (error) throw error;
-  if (!data.session) throw new Error('That code did not sign you in. Ask for a new one.');
-  return data.session.access_token;
 }

@@ -27,14 +27,36 @@ export class InputState {
   /** While true (a blocking ui.dialog is open) scripts see no input; the engine reads the raw* values. */
   blocked = false;
 
-  axis(name: string): number { return this.blocked ? 0 : this.rawAxis(name); }
-  held(name: string): boolean { return !this.blocked && this.down.has(name); }
-  pressed(name: string): boolean { return !this.blocked && this.tickEdges.has(name); }
+  /** Every input name scripts have read (so phone controls can show buttons a kit reads via config). */
+  readonly read = new Set<string>();
+  /** Called the first time scripts read a given name. */
+  onFirstRead: ((name: string) => void) | null = null;
+  /** Simulation tick counter + the tick each name was last read (phone controls hide on menus). */
+  private tick = 0;
+  private lastRead = new Map<string, number>();
+  /** True if scripts read this input within the last `ticks` simulation ticks. */
+  recentlyRead(name: string, ticks = 45): boolean {
+    const t = this.lastRead.get(name);
+    return t !== undefined && this.tick - t <= ticks;
+  }
+  private noteRead(name: string) {
+    this.lastRead.set(name, this.tick);
+    if (this.read.has(name)) return;
+    this.read.add(name);
+    this.onFirstRead?.(name);
+  }
+
+  axis(name: string): number { this.noteRead(name); return this.blocked ? 0 : this.rawAxis(name); }
+  held(name: string): boolean { this.noteRead(name); return !this.blocked && this.down.has(name); }
+  pressed(name: string): boolean { this.noteRead(name); return !this.blocked && this.tickEdges.has(name); }
   rawAxis(name: string): number { return this.axes.get(name) ?? 0; }
+  /** Engine-side check (does not count as a script read). */
+  rawHeld(name: string): boolean { return this.down.has(name); }
   rawPressed(name: string): boolean { return this.tickEdges.has(name); }
 
   /** Called by the simulation at the start of each tick. */
   beginTick() {
+    this.tick++;
     this.tickEdges = this.edges;
     this.edges = new Set();
   }

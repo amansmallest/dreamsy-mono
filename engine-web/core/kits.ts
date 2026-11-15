@@ -48,6 +48,16 @@ export function setKitSources(extra: Record<string, string>, replace = false) {
   sources = replace ? { ...extra } : { ...(sources ?? {}), ...extra };
 }
 
+/** All Luau source of the given kits (for static scans such as which touch buttons a game needs). */
+export function kitSourceText(kits: readonly string[]): string {
+  let out = "";
+  for (const [k, v] of Object.entries(sources ?? {})) {
+    const m = /^kits\/([a-z][a-z0-9-]*)\/.+\.luau$/.exec(k);
+    if (m && kits.includes(m[1]!)) out += v + "\n";
+  }
+  return out;
+}
+
 export function kitSource(path: string): string | undefined {
   return sources?.[path];
 }

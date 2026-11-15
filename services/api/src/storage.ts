@@ -1,6 +1,7 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import {
+  DeleteObjectCommand,
   GetObjectCommand,
   NoSuchKey,
   PutObjectCommand,
@@ -11,6 +12,8 @@ import {
 export interface Storage {
   put(key: string, body: Uint8Array, contentType: string): Promise<void>;
   get(key: string): Promise<Uint8Array<ArrayBuffer> | null>;
+  /** Remove a blob (missing keys are fine). Used for superseded ghosts (§13). */
+  delete(key: string): Promise<void>;
 }
 
 export class MemoryStorage implements Storage {
@@ -20,6 +23,9 @@ export class MemoryStorage implements Storage {
   }
   async get(key: string) {
     return this.objects.get(key)?.body ?? null;
+  }
+  async delete(key: string) {
+    this.objects.delete(key);
   }
 }
 
@@ -45,6 +51,10 @@ export class FsStorage implements Storage {
       if ((e as NodeJS.ErrnoException).code === "ENOENT") return null;
       throw e;
     }
+  }
+
+  async delete(key: string) {
+    await rm(this.path(key), { force: true });
   }
 }
 
@@ -79,5 +89,9 @@ export class S3Storage implements Storage {
       if (err instanceof NoSuchKey) return null;
       throw err;
     }
+  }
+
+  async delete(key: string) {
+    await this.client.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: key }));
   }
 }

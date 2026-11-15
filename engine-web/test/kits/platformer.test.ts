@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { Package } from "@dreamsy/format";
 import { describe, expect, it } from "vitest";
-import { Game, MemorySaveHost, type Entity } from "../../core/index.js";
+import { Game, MemoryLeaderboardHost, MemorySaveHost, type Entity } from "../../core/index.js";
 
 const MANIFEST = (entry = "scenes/main.scene.json") =>
   `format = "0"\nname = "P"\ndimension = "2d"\norientation = "landscape"\nentry_scene = "${entry}"\nkits = ["platformer"]\n[style]\npreset = "pixel"\n`;
@@ -410,7 +410,8 @@ describe("platformer kit: level features", () => {
     const grid = [...FLAT];
     grid[10] = "..P.oo*oo..........G....................";
     const save = new MemorySaveHost();
-    const g = await Game.load(levelPkg({ grid, levelOpts: "complete_delay = 0.2, on_complete = function(st) print('DONE ' .. st.coins .. ' ' .. st.gemsFound) end" }), { save });
+    const lb = new MemoryLeaderboardHost();
+    const g = await Game.load(levelPkg({ grid, levelOpts: "complete_delay = 0.2, on_complete = function(st) print('DONE ' .. st.coins .. ' ' .. st.gemsFound) end" }), { save, leaderboard: lb });
     steps(g, 200, () => hold(g, 1));
     const ev = events(g);
     expect(ev.filter((e) => e.startsWith("coin")).length).toBe(4);
@@ -422,6 +423,10 @@ describe("platformer kit: level features", () => {
     expect(p.coins.test).toBe(4);
     expect(p.gems.test["1"]).toBe(true);
     expect(p.best.test).toBeGreaterThan(0.5);
+    // platform leaderboard: level start → complete timed by the engine, with a ghost of the player
+    expect(lb.submitted.map((r) => [r.board, r.order])).toEqual([["level_test", "asc"]]);
+    expect(lb.submitted[0]!.value).toBeCloseTo(p.best.test, 1);
+    expect(lb.submitted[0]!.ghost!.frames.length).toBeGreaterThan(3);
     noErrors(g);
   });
 

@@ -77,6 +77,8 @@ kit.level.start(opts) -> Level          -- opts below; Level.current = last star
   level:shoot({x, y, vx, vy, w, h, damage, owner = "player"|"enemy", gravity?, life?, sprite?})
   level:hitBoss(b, n)  level:stats() -> {time, coins, coinsTotal, gems, gemsFound, gemsTotal, secrets, deaths}
   level.ctl (controller), level.body {x, y, w, h, vx, vy}, level.tiles, level.enemies, level.bosses, level.cam, level.hud
+  -- platform leaderboard: level.start runs leaderboard.start("level_<id>", {track = player}); complete() finishes it
+  -- (engine results card + ghost); game over cancels. opts.board = "name" overrides, false opts out. level.board
 kit.worldmap.start({ art, sounds = {move, enter, locked}, node_size?, spacing?, row_gap?, origin?, on_enter?(level), input? })
 kit.world.setData(t)  .levels()  .level(id)  .worlds()  .isUnlocked(id)  .lockReason(id)  .nextLevel(id)
           .levelForScene(path)  .mapScene()  .summary() -> {levels, complete, gems, gemsTotal}

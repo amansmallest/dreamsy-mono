@@ -5,7 +5,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Package } from "@dreamsy/format";
-import { Game, MemorySaveHost } from "../../core/index.js";
+import { Game, MemoryLeaderboardHost, MemorySaveHost } from "../../core/index.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 
@@ -127,6 +127,27 @@ describe("puzzle kit", () => {
     expect(out.botWon).toBe(true);
     expect(out.botMoves).toBe(3);
     expect(out.botStars).toBe(3);
+  });
+
+  it("view times levels on the platform leaderboard (win → finish; Retry restarts; loss cancels; opt-out)", async () => {
+    const r = await runLuau(`
+      local sl = P.mechanic("sliding")
+      local lv = sl.parse("1 2 3\\n4 5 6\\n7 0 8")
+      lv.pack, lv.index = "garden", 2
+      local s = P.session("sliding", lv)
+      local v = P.view.new(s, { cell = 64 })
+      after(1.5, function()
+        s:restart()
+        after(0.5, function() s:apply(9) end)
+      end)
+      local s2 = P.session("sliding", sl.parse("1 2 3\\n4 5 6\\n7 0 8"))
+      P.view.new(s2, { cell = 64, board = false })
+      s2:apply(9)
+    `, { steps: 150 });
+    expect(r.errors).toEqual([]);
+    const sub = (r.game.leaderboardHost as MemoryLeaderboardHost).submitted;
+    expect(sub.map((x) => [x.board, x.order])).toEqual([["level_garden_2", "asc"]]);
+    expect(sub[0]!.value).toBeCloseTo(0.5, 1); // clock restarted by Retry
   });
 
   it("sliding + lights: rules, win detection, optimal hints", async () => {

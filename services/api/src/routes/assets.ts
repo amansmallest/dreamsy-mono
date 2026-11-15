@@ -3,7 +3,7 @@ import { AssetMeta, Package } from "@dreamsy/format";
 import { optionalUser, requireUser } from "../auth.js";
 import { fail, router, type Deps } from "../context.js";
 import { schema } from "../db/client.js";
-import { canSeeVersion, generationView, getGame, getVersion, readPackage, type GameVersion } from "../services.js";
+import { canAccessVersion, generationView, getGame, getVersion, readPackage, type GameVersion } from "../services.js";
 import { parseVersion } from "./games.js";
 
 const { generations, games } = schema;
@@ -36,7 +36,7 @@ export function assetRoutes({ db, storage, config }: Deps) {
   async function visibleVersion(gameId: string, versionParam: string, userId: string | null) {
     const game = await getGame(db, gameId);
     const version = parseVersion(versionParam);
-    if (!canSeeVersion(game, userId, version)) fail(404, "version not found");
+    if (!(await canAccessVersion(db, game, userId, version))) fail(404, "version not found");
     return getVersion(db, game.id, version);
   }
 

@@ -3,7 +3,7 @@
 // spinner, procgen stages), balance sim, and the example package end-to-end.
 import { describe, expect, it } from "vitest";
 import { Package } from "@dreamsy/format";
-import { Game, MemorySaveHost } from "../../core/index.js";
+import { Game, MemoryLeaderboardHost, MemorySaveHost } from "../../core/index.js";
 
 async function runLuau(src: string, opts: { steps?: number; save?: MemorySaveHost; clock?: () => number; drive?: (g: Game, i: number) => void } = {}) {
   const files: Record<string, string> = {
@@ -208,6 +208,8 @@ describe("runner kit", () => {
       core.save.save()
     `, { save });
     expect(a.out.slots).toBe(3);
+    const lb = (a.game.leaderboardHost as MemoryLeaderboardHost).submitted;
+    expect(lb.map((r) => [r.board, r.order, r.value])).toEqual([["distance", "desc", a.out.best]]);
     expect(a.out.first).toBe("m1");
     expect(a.out.best).toBeGreaterThanOrEqual(400);
     expect(a.out.completed).toBeGreaterThanOrEqual(1); // m3 (400 m)
@@ -258,7 +260,7 @@ describe("runner kit", () => {
   });
 
   it("obby: checkpoint, timer, finish, ghost record/playback, vanish, spinner, procgen stages", async () => {
-    const { out } = await lua(`
+    const { out, game } = await lua(`
       local O = R.obby
       local o = R.obbyRun("test")
       local t = 0
@@ -336,6 +338,7 @@ describe("runner kit", () => {
       out.botCp = easy.checkpoint
     `);
     expect(out.finished).toBe(true);
+    expect((game.leaderboardHost as MemoryLeaderboardHost).submitted.map((r) => [r.board, r.order])).toEqual([["stage_test", "asc"], ["stage_test", "asc"]]);
     expect(out.cp).toBe(1);
     expect(out.time).toBeGreaterThan(1);
     expect(out.best).toBe(true);

@@ -42,10 +42,10 @@ export default function ProfileScreen() {
     ]);
 
   const menu = () => {
-    const items = ['Edit avatar', 'Scan a game', 'Sign out'];
-    const pick = (i: number) => (i === 0 ? router.push('/avatar') : i === 1 ? router.push('/scan') : confirmSignOut());
+    const items = ['Family & friends', 'Edit avatar', 'Scan a game', 'Sign out'];
+    const pick = (i: number) => (i === 0 ? router.push('/groups') : i === 1 ? router.push('/avatar') : i === 2 ? router.push('/scan') : confirmSignOut());
     if (Platform.OS === 'ios') {
-      ActionSheetIOS.showActionSheetWithOptions({ options: [...items, 'Cancel'], cancelButtonIndex: 3, destructiveButtonIndex: 2 }, (i) => i < 3 && pick(i));
+      ActionSheetIOS.showActionSheetWithOptions({ options: [...items, 'Cancel'], cancelButtonIndex: 4, destructiveButtonIndex: 3 }, (i) => i < 4 && pick(i));
     } else {
       Alert.alert('Menu', undefined, [...items.map((t, i) => ({ text: t, onPress: () => pick(i) })), { text: 'Cancel', style: 'cancel' as const }]);
     }
@@ -64,6 +64,7 @@ export default function ProfileScreen() {
         onRefresh={refresh}
         footer={
           <View style={styles.settings}>
+            <Row icon="people-outline" label="Family & friends" onPress={() => router.push('/groups')} />
             <Row icon="person-circle-outline" label="Edit avatar" onPress={() => router.push('/avatar')} />
             <Row icon="qr-code-outline" label="Scan a game" onPress={() => router.push('/scan')} />
             <Row icon="log-out-outline" label="Sign out" danger last onPress={confirmSignOut} />

@@ -16,11 +16,12 @@ export function Home() {
   const [creating, setCreating] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
+  const [multiplayer, setMultiplayer] = useState(false);
   const list = games.data?.games ?? [];
   const building = list.filter((g) => g.activeGeneration && isActive(g.activeGeneration.status)).length;
-  const shown = useMemo(() => list.filter((g) =>
+  const shown = useMemo(() => list.filter((g) => (!multiplayer || !!g.multiplayer) && (
     filter === 'all' ? true : filter === 'live' ? g.status === 'published' : filter === 'draft' ? g.status === 'draft'
-      : !!g.activeGeneration && isActive(g.activeGeneration.status)), [list, filter]);
+      : !!g.activeGeneration && isActive(g.activeGeneration.status))), [list, filter, multiplayer]);
   const start = (prompt: string) => setCreating(prompt);
 
   return (
@@ -48,10 +49,15 @@ export function Home() {
           )}
         </div>
         {list.length > 0 && (
-          <Segmented value={filter} onChange={setFilter} options={[
-            { value: 'all', label: 'All' }, { value: 'building', label: 'Building' },
-            { value: 'live', label: 'Live' }, { value: 'draft', label: 'Drafts' },
-          ]} />
+          <div className="section-filters">
+            <button className={`filter-chip ${multiplayer ? 'is-on' : ''}`} aria-pressed={multiplayer} onClick={() => setMultiplayer((m) => !m)}>
+              <Icon name="users" size={14} /> Multiplayer
+            </button>
+            <Segmented value={filter} onChange={setFilter} options={[
+              { value: 'all', label: 'All' }, { value: 'building', label: 'Building' },
+              { value: 'live', label: 'Live' }, { value: 'draft', label: 'Drafts' },
+            ]} />
+          </div>
         )}
       </div>
 
@@ -61,7 +67,7 @@ export function Home() {
         ) : list.length === 0 ? (
           <Empty title="No games yet" body="Describe one above and Dreamsy builds it." />
         ) : shown.length === 0 ? (
-          <Empty compact title="Nothing here" action={<button className="link-btn" onClick={() => setFilter('all')}>Show all games</button>} />
+          <Empty compact title="Nothing here" action={<button className="link-btn" onClick={() => { setFilter('all'); setMultiplayer(false); }}>Show all games</button>} />
         ) : (
           <div className="tile-grid">
             {shown.map((g) => <GameCard key={g.id} game={g} />)}

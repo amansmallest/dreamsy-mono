@@ -324,6 +324,7 @@ export async function runAgent(args: {
   }];
 
   let nudged = false;
+  let cutOffs = 0;
   let jsonRetries = 0;
   // Fast mode: same Opus model, up to ~2.5x faster output at 2x price. DREAMSY_FAST=0 turns it off.
   // On a fast-mode rate limit we drop to standard speed for the rest of this run.
@@ -391,6 +392,12 @@ export async function runAgent(args: {
     messages.push({ role: "assistant", content: msg.content as Anthropic.Beta.BetaContentBlockParam[] });
 
     const uses = msg.content.filter((b): b is Anthropic.Beta.BetaToolUseBlock => b.type === "tool_use");
+    if (uses.length === 0 && msg.stop_reason === "max_tokens" && cutOffs < 3) {
+      // Spent the whole turn planning/thinking (big briefs) — not a give-up. Push it to act, without using the nudge.
+      cutOffs++;
+      messages.push({ role: "user", content: [{ type: "text", text: "You ran out of output space before calling any tool, so nothing was built. Stop planning: act now with apply_ops / draw_sprite / build_content in small batches (≤ 40 ops), and build the game in stages." }] });
+      continue;
+    }
     if (uses.length === 0) {
       // Ended without finish. Nudge once; then accept if valid.
       const v = validatePackage(ws.pkg);

@@ -308,6 +308,37 @@ importers:
         specifier: ^5.1.0
         version: 5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15))
 
+  services/gameserver:
+    dependencies:
+      '@dreamsy/engine':
+        specifier: workspace:^
+        version: link:../../engine-web
+      jose:
+        specifier: ^6.2.17
+        version: 6.2.17
+      ws:
+        specifier: ^8.23.0
+        version: 8.23.0
+    devDependencies:
+      '@dreamsy/format':
+        specifier: workspace:^
+        version: link:../../format
+      '@types/node':
+        specifier: ^26.6.6
+        version: 26.6.6
+      '@types/ws':
+        specifier: ^8.18.1
+        version: 8.18.2
+      tsx:
+        specifier: ^4.23.15
+        version: 4.23.15
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+      vitest:
+        specifier: ^5.1.0
+        version: 5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15))
+
   services/live:
     dependencies:
       convex:
@@ -2230,6 +2261,9 @@ packages:
 
   '@types/webxr@0.5.24':
     resolution: {integrity: sha512-h8fgEd/DpoS9CBrjEQXR+dIDraopAEfu4wYVNY2tEPwk60stPWhvZMf4Foo5FakuQ7HFZoa8WceaWFervK2Ovg==}
+
+  '@types/ws@8.18.2':
+    resolution: {integrity: sha512-67MQl+fpWKVTT1NYdnmo3U4sc/xPo/zQBncVnI74qmQa0z/b+1g6iYqNmGCPbxO+zz2aklb08a0oHfegiVd0/w==}
 
   '@types/yargs-parser@21.0.3':
     resolution: {integrity: sha512-I4q9QU9MQv4oEOz4tAHJtNz1cwuLxn2F3xcc2iV5WdqLPpUnj30aUuxt1mAxYTG+oe8CZMV/+6rU4S4gRDzqtQ==}
@@ -6556,6 +6590,10 @@ snapshots:
       meshoptimizer: 1.1.1
 
   '@types/webxr@0.5.24': {}
+
+  '@types/ws@8.18.2':
+    dependencies:
+      '@types/node': 26.6.6
 
   '@types/yargs-parser@21.0.3': {}
 

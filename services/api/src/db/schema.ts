@@ -82,6 +82,9 @@ export const gameVersions = pgTable("game_versions", {
   generationId: text("generation_id"),
   /** JPEG from the harness playtest (`thumbnails/<sha256>.jpg`), if the worker sent one. */
   thumbnailKey: text("thumbnail_key"),
+  /** Manifest `[players]` (DREAMSY.MD §3.1); max > 1 = multiplayer (§4.5). Set on commit; 1/1 when absent. */
+  playersMin: integer("players_min").notNull().default(1),
+  playersMax: integer("players_max").notNull().default(1),
   createdBy: text("created_by").notNull(),
   createdAt: createdAt(),
 }, (t) => [primaryKey({ columns: [t.gameId, t.version] })]);
@@ -256,3 +259,67 @@ export const emailCodes = pgTable("email_codes", {
   sendsInWindow: integer("sends_in_window").notNull().default(0),
   lastSentAt: timestamp("last_sent_at", { withTimezone: true }).notNull(),
 });
+
+// ---------- Leaderboards, ghosts, groups (DREAMSY.MD §13) ----------
+
+/** Every submitted run. `ghostKey` is set only while this run is the user's best on the board. */
+export const runs = pgTable("runs", {
+  id: text("id").primaryKey(),
+  gameId: text("game_id").notNull().references(() => games.id),
+  userId: text("user_id").notNull().references(() => users.id),
+  board: text("board").notNull(),
+  /** "asc" (lower is better: times) | "desc" (scores) */
+  order: text("order").notNull(),
+  version: integer("version").notNull(),
+  value: doublePrecision("value").notNull(),
+  ghostKey: text("ghost_key"),
+  createdAt: createdAt(),
+}, (t) => [
+  index("runs_board_user_idx").on(t.gameId, t.board, t.userId, t.createdAt),
+  index("runs_user_created_idx").on(t.userId, t.createdAt),
+]);
+
+/** One row per (game, board, user): the user's best run. What leaderboards rank. */
+export const leaderboardBests = pgTable("leaderboard_bests", {
+  gameId: text("game_id").notNull().references(() => games.id),
+  board: text("board").notNull(),
+  userId: text("user_id").notNull().references(() => users.id),
+  value: doublePrecision("value").notNull(),
+  runId: text("run_id").notNull(),
+  version: integer("version").notNull(),
+  order: text("order").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.gameId, t.board, t.userId] }),
+  index("leaderboard_bests_rank_idx").on(t.gameId, t.board, t.value),
+]);
+
+export const groups = pgTable("groups", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  ownerId: text("owner_id").notNull().references(() => users.id),
+  inviteCode: text("invite_code").notNull(),
+  createdAt: createdAt(),
+}, (t) => [uniqueIndex("groups_invite_code_idx").on(t.inviteCode)]);
+
+export const groupMembers = pgTable("group_members", {
+  groupId: text("group_id").notNull().references(() => groups.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull().references(() => users.id),
+  /** "owner" | "member" */
+  role: text("role").notNull().default("member"),
+  joinedAt: timestamp("joined_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.groupId, t.userId] }),
+  index("group_members_user_idx").on(t.userId),
+]);
+
+/** Games shared with a group (drafts included): members can see and play them. */
+export const groupGames = pgTable("group_games", {
+  groupId: text("group_id").notNull().references(() => groups.id, { onDelete: "cascade" }),
+  gameId: text("game_id").notNull().references(() => games.id),
+  sharedBy: text("shared_by").notNull().references(() => users.id),
+  at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.groupId, t.gameId] }),
+  index("group_games_game_idx").on(t.gameId),
+]);

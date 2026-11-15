@@ -12,6 +12,8 @@ import { uploadRoutes } from "./routes/uploads.js";
 import { userRoutes } from "./routes/users.js";
 import { workerRoutes } from "./routes/worker.js";
 import { insightsRoutes } from "./routes/insights.js";
+import { leaderboardRoutes } from "./routes/leaderboards.js";
+import { groupRoutes } from "./routes/groups.js";
 
 export function createApp(deps: Deps, opts: { log?: boolean; corsOrigins?: string[] } = {}) {
   const app = router();
@@ -35,6 +37,8 @@ export function createApp(deps: Deps, opts: { log?: boolean; corsOrigins?: strin
   app.route("/", assetRoutes(deps));
   app.route("/", socialRoutes(deps));
   app.route("/", insightsRoutes(deps));
+  app.route("/", leaderboardRoutes(deps));
+  app.route("/", groupRoutes(deps));
 
   app.notFound((c) => c.json({ error: "not found" }, 404));
   app.onError((err, c) => {

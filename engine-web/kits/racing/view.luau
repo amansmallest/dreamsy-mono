@@ -39,7 +39,10 @@ end
 --   ghost? = ghost table to race against, ghostSprite?, recordGhost? = trackId (saves the best-lap ghost when beaten),
 --   zoom = 1, sfx? = {key = id} (M.SFX), music?, theme?, minimap = true, finishDelay = 3 (s to wait for rivals),
 --   input? = fn() -> input, autopilot? = true | preset (the player car drives itself: attract mode, tests), onEvent?(name, data, handle), onFinish(results, handle) (default: podium with opts.buttons),
---   buttons? = { {label, onPress} }, names? = {id = display name}, extra? = fn(row) -> string (results column)
+--   buttons? = { {label, onPress} }, names? = {id = display name}, extra? = fn(row) -> string (results column),
+--   board? = platform leaderboard name (default "track_<track id>"; false = no leaderboard): timed from GO to the player's finish
+--   versus? = multiplayer race (default: on in a room, room.active): no AI rivals, one grid slot per room player (red, blue, ...),
+--     the player's car replicates to the others (team-tinted), the first to cross the line wins (room.finish)
 function M.race(o)
 	local tr = if o.track.gates then o.track else TrackM.new(o.track)
 	local sfxMap = setmetatable(o.sfx or {}, { __index = M.SFX })
@@ -67,10 +70,20 @@ function M.race(o)
 	end
 	local n = #(o.rivals or {})
 	if o.mode == "time_trial" then n = 0 end
+	-- versus (multiplayer room): the other players' cars are puppets replicated by the engine, so no AI and one slot each
+	local versus = o.versus ~= false and room ~= nil and room.active
+	h.versus = versus
+	local slot = n + 1
+	if versus then
+		n = 0
+		slot = 1
+		for i, p in players.all() do if p.isLocal then slot = i end end
+	end
 	-- player starts at the back of the grid in races (overtaking is the fun), front in time trials
 	for i = 1, n do addCar(o.rivals[i], i, false) end
-	local player = addCar(o.player, n + 1, true)
+	local player = addCar(o.player, slot, true)
 	h.player = player
+	if versus then room.replicate(h.sprites[player.id].e) end
 	-- ghost
 	local ghostE, ghost = nil, o.ghost
 	if ghost then
@@ -88,10 +101,15 @@ function M.race(o)
 	if o.music then pcall(music.play, o.music) end
 	local oilE = {}
 	local finishT = nil
+	-- platform leaderboard (engine timer + ghost + results card): GO → player finish; eliminated = cancelled
+	local board = if o.board == false or not leaderboard then nil else (o.board or ("track_" .. string.sub((string.gsub(string.lower(tostring(tr.id or o.recordGhost or "race")), "[^%w_]", "_")), 1, 34)))
+	h.board = board
 	local function onEvent(name, d)
 		local mine = d.id == player.id
 		if name == "countdown" then hud:banner(tostring(d.n), 0.9) playSfx(sfxMap, "countdown")
-		elseif name == "go" then hud:banner("GO!", 0.8) playSfx(sfxMap, "go", { pitch = 1.5 })
+		elseif name == "go" then
+			hud:banner("GO!", 0.8) playSfx(sfxMap, "go", { pitch = 1.5 })
+			if board then leaderboard.start(board, { track = h.sprites[player.id].e }) end
 		elseif name == "checkpoint" and mine then hud:splitText(d.delta)
 		elseif name == "missed" and mine then hud:banner("MISSED", 1.2, "checkpoint skipped - lap not counted") playSfx(sfxMap, "missed")
 		elseif name == "lap" and mine then
@@ -105,12 +123,14 @@ function M.race(o)
 			end
 		elseif name == "finish" and mine then
 			finishT = 0
+			if versus then room.finish(players["local"]) end -- first across the line wins; later finishes are ignored
+			if board and leaderboard.running(board) then leaderboard.finish(board) end
 			hud:banner(if race.mode == "time_trial" then "FINISH" else U.ordinal(d.place) .. "!", 2)
 			playSfx(sfxMap, "finish")
 			if juice and (race.mode == "time_trial" or d.place <= 3) then pcall(juice.confetti) end
 		elseif name == "eliminated" then
 			hud:banner(if d.id == player.id then "ELIMINATED" else "OUT: " .. (race.byId[d.id].name or d.id), 1.4)
-			if d.id == player.id then finishT = 0 end
+			if d.id == player.id then finishT = 0 if board then leaderboard.cancel(board) end end
 		elseif name == "wall" and mine then
 			playSfx(sfxMap, "wall", { volume = math.min(1, (d.v or 100) / 300) })
 			if juice then juice.shake(math.min(10, (d.v or 100) / 40), 0.2) end
@@ -192,7 +212,7 @@ function M.race(o)
 		end
 	end)
 	render(0)
-	function h.stop() h.done = true end
+	function h.stop() h.done = true if board then leaderboard.cancel(board) end end
 	return h
 end
 return M

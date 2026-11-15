@@ -1,6 +1,7 @@
-// Platform shell: the engine-owned pause button + menu (Resume, Restart, Settings, Controls, Quit),
+// Platform shell: the engine-owned pause button + menu (Resume, Restart, Leaderboard, Settings, Controls, Quit),
+// the leaderboard results card shown after leaderboard.finish (DREAMSY.MD §13),
 // themed from dreamsy.toml [ui]. Games never build their own pause/settings UI (format/LUAU_API.md).
-import { DEFAULT_SETTINGS, type Game, type Settings } from "../core/index.js";
+import { DEFAULT_SETTINGS, formatBoardValue, type BoardOrder, type Game, type LeaderboardEntry, type LeaderboardEvent, type Settings } from "../core/index.js";
 import type { InputUsage } from "../input/index.js";
 import { onColor, panelSurface, resolveTheme, withAlpha, type Theme } from "./theme.js";
 
@@ -29,7 +30,7 @@ export interface ShellHooks {
   onQuit?: () => void;
 }
 
-type View = "main" | "settings" | "controls";
+type View = "main" | "settings" | "controls" | "leaderboard";
 
 export class Shell {
   readonly root: HTMLDivElement;
@@ -38,6 +39,9 @@ export class Shell {
   private overlay: HTMLDivElement;
   private panel: HTMLDivElement;
   private view: View = "main";
+  private card: HTMLDivElement;
+  private lbBoard: string | null = null;
+  private unsubLb: () => void;
 
   constructor(private container: HTMLElement, private game: Game, private usage: InputUsage, private hooks: ShellHooks = {}) {
     this.theme = resolveTheme(game.manifest);
@@ -64,7 +68,14 @@ export class Shell {
       color: t.text, display: "flex", flexDirection: "column", gap: "10px", ...this.surface(withAlpha(t.background, 0.96), false),
     });
     this.overlay.append(this.panel);
-    this.root.append(this.button, this.overlay);
+    this.card = el("div", {
+      position: "absolute", inset: "0", display: "none", alignItems: "center", justifyContent: "center",
+      background: "rgba(0,0,0,0.45)", pointerEvents: "auto", padding: "16px", boxSizing: "border-box",
+    });
+    this.card.dataset.dreamsyResults = "";
+    this.card.addEventListener("pointerdown", (e) => e.stopPropagation());
+    this.unsubLb = game.onLeaderboard((ev) => { if (ev.finished) this.showResults(ev); });
+    this.root.append(this.button, this.overlay, this.card);
     container.append(this.root);
     window.addEventListener("keydown", this.onKey, true);
   }
@@ -82,7 +93,8 @@ export class Shell {
     if ((e.target as HTMLElement)?.tagName === "INPUT" && e.code === "KeyP") return;
     e.preventDefault();
     e.stopPropagation();
-    if (!this.isOpen) this.open();
+    if (this.cardOpen) this.closeCard();
+    else if (!this.isOpen) this.open();
     else if (this.view !== "main") this.show("main");
     else this.close();
   };
@@ -117,6 +129,7 @@ export class Shell {
         title("Paused"),
         this.btn("Resume", () => this.close(), true),
         this.btn("Restart", () => { this.close(); this.game.requestRestart(); }),
+        ...(this.game.usesLeaderboards ? [this.btn("Leaderboard", () => this.show("leaderboard"))] : []),
         this.btn("Settings", () => this.show("settings")),
         this.btn("Controls", () => this.show("controls")),
         this.btn("Quit", () => {
@@ -135,6 +148,30 @@ export class Shell {
         this.choice("Touch controls", [["S", 0.8], ["M", 1], ["L", 1.25]], st.touchSize, (v) => this.set({ touchSize: v })),
         this.btn("Back", () => this.show("main"), true),
       );
+    } else if (view === "leaderboard") {
+      const boards = this.game.leaderboardBoards;
+      const board = this.lbBoard ?? this.game.lastBoard ?? boards[0] ?? "fastest";
+      this.panel.append(title("Leaderboard"));
+      if (boards.length > 1) {
+        const tabs = el("div", { display: "flex", flexWrap: "wrap", gap: "6px", justifyContent: "center" });
+        for (const b of boards) {
+          const on = b === board;
+          const tb = el("button", {
+            border: "none", cursor: "pointer", padding: "6px 10px", font: `700 13px ${t.fontFamily}`, borderRadius: t.panel === "pixel" || t.panel === "sharp" ? "0" : "8px",
+            background: on ? t.primary : withAlpha(t.text, 0.15), color: on ? onColor(t.primary, "#fff") : t.text,
+          }, boardLabel(b));
+          tb.addEventListener("pointerdown", (e) => e.stopPropagation());
+          tb.addEventListener("click", (e) => { e.stopPropagation(); this.lbBoard = b; this.show("leaderboard"); });
+          tabs.append(tb);
+        }
+        this.panel.append(tabs);
+      } else this.panel.append(el("div", { textAlign: "center", opacity: "0.7", fontSize: "13px", marginTop: "-6px" }, boardLabel(board)));
+      const list = el("div", { minHeight: "60px" }, "Loading…");
+      this.panel.append(list, this.btn("Back", () => this.show("main"), true));
+      this.game.leaderboardHost.top(board, "public", 10).then(
+        (page) => { if (this.view === "leaderboard") list.replaceChildren(this.rows(page.entries, page.order, page.me?.runId, 10)); },
+        () => { list.textContent = "Couldn't load the leaderboard."; },
+      );
     } else {
       const rows: [string, string, string][] = [];
       if (this.usage.move) rows.push(["Move", "Arrows / WASD", "Left joystick"]);
@@ -147,6 +184,68 @@ export class Shell {
       for (const [a, k, tc] of rows) table.append(el("div", { fontWeight: "700", color: t.accent }, a), el("div", {}, k), el("div", {}, tc));
       this.panel.append(title("Controls"), table, this.btn("Back", () => this.show("main"), true));
     }
+  }
+
+  // ------------------------------------------------------------ leaderboard results card
+
+  get cardOpen(): boolean { return this.card.style.display !== "none"; }
+
+  closeCard() { this.card.style.display = "none"; this.card.replaceChildren(); }
+
+  /** After leaderboard.finish: time, rank, PB, top 5, "Race the #1 ghost", "Play again". */
+  showResults(ev: LeaderboardEvent) {
+    const t = this.theme;
+    const panel = el("div", {
+      width: "min(380px, 100%)", maxHeight: "100%", overflowY: "auto", boxSizing: "border-box", padding: "20px 20px 16px",
+      color: t.text, display: "flex", flexDirection: "column", gap: "10px", ...this.surface(withAlpha(t.background, 0.96), false),
+    });
+    const pixel = t.font === "pixel";
+    panel.append(
+      el("div", { textAlign: "center", fontSize: "13px", opacity: "0.7", textTransform: "uppercase", letterSpacing: "0.08em" }, boardLabel(ev.board)),
+      el("div", { textAlign: "center", fontSize: pixel ? "30px" : "40px", fontWeight: "800", color: t.accent, fontVariantNumeric: "tabular-nums" }, formatBoardValue(ev.value, ev.order)),
+    );
+    const r = ev.result;
+    const meta = el("div", { display: "flex", justifyContent: "center", alignItems: "center", gap: "10px", fontWeight: "700", fontSize: "16px" });
+    if (r) {
+      meta.append(el("span", {}, `Rank #${r.rank}`));
+      if (r.personalBest) meta.append(el("span", { background: t.primary, color: onColor(t.primary, "#fff"), padding: "3px 8px", fontSize: "12px", borderRadius: t.panel === "pixel" || t.panel === "sharp" ? "0" : "999px" }, "NEW PB"));
+      else meta.append(el("span", { opacity: "0.7", fontSize: "14px" }, `Record ${formatBoardValue(r.best, ev.order)}`));
+    } else meta.append(el("span", { opacity: "0.75", fontSize: "14px" }, "Couldn't submit this run."));
+    const list = el("div", { minHeight: "40px", fontSize: "14px", opacity: "0.8" }, r ? "Loading…" : "");
+    const race = this.btn("Race the #1 ghost", () => { this.closeCard(); this.game.armGhost("best", ev.board); this.game.requestRestart(); });
+    race.style.display = "none";
+    panel.append(meta, list, race,
+      this.btn("Play again", () => { this.closeCard(); this.game.requestRestart(); }, true),
+      this.btn("Close", () => this.closeCard()));
+    this.card.replaceChildren(panel);
+    this.card.style.display = "flex";
+    if (r) {
+      this.game.leaderboardHost.top(ev.board, "public", 5).then(
+        (page) => {
+          if (!panel.isConnected) return;
+          list.style.opacity = "1";
+          list.replaceChildren(this.rows(page.entries, page.order, r.runId ?? page.me?.runId, 5));
+          if (page.entries[0]?.hasGhost) race.style.display = "";
+        },
+        () => { list.textContent = ""; },
+      );
+    }
+  }
+
+  private rows(entries: LeaderboardEntry[], order: BoardOrder, meRunId: string | undefined, limit: number): HTMLElement {
+    const t = this.theme;
+    if (!entries.length) return el("div", { textAlign: "center", opacity: "0.7", padding: "8px" }, "No runs yet. Be the first!");
+    const box = el("div", { display: "grid", gridTemplateColumns: "auto 1fr auto", gap: "6px 10px", fontSize: "15px", alignItems: "center" });
+    for (const e of entries.slice(0, limit)) {
+      const me = !!meRunId && e.runId === meRunId;
+      const c = me ? t.accent : t.text;
+      box.append(
+        el("div", { fontWeight: "800", color: c, opacity: me ? "1" : "0.7" }, `#${e.rank}`),
+        el("div", { color: c, fontWeight: me ? "800" : "600", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, e.user),
+        el("div", { color: c, fontWeight: "700", fontVariantNumeric: "tabular-nums" }, formatBoardValue(e.value, order)),
+      );
+    }
+    return box;
   }
 
   private set(patch: Partial<Settings>) {
@@ -221,8 +320,15 @@ export class Shell {
 
   dispose() {
     window.removeEventListener("keydown", this.onKey, true);
+    this.unsubLb();
     this.root.remove();
   }
+}
+
+/** "track_3" → "Track 3", "fastest" → "Fastest". */
+function boardLabel(b: string): string {
+  const s = b.replace(/[_:.-]+/g, " ").trim();
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, style: Partial<CSSStyleDeclaration>, text?: string): HTMLElementTagNameMap[K] {

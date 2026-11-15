@@ -101,6 +101,7 @@ export class GameView {
     let ran = 0;
     for (let i = 0; i < n && !this.paused && !this.game.paused; i++) { this.game.step(); ran++; }
     this.touch?.setDimmed(!!this.game.dialogs.current);
+    this.touch?.syncActive();
     const t0 = performance.now();
     this.renderer.render();
     this.audio.update();
@@ -136,6 +137,7 @@ export class GameView {
     const t0 = performance.now();
     const ticks = this.paused ? 0 : this.game.advance(dt);
     this.touch?.setDimmed(!!this.game.dialogs.current);
+    this.touch?.syncActive();
     this.renderer.render();
     this.audio.update();
     this.frames++;

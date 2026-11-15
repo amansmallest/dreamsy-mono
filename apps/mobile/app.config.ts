@@ -22,9 +22,20 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     bundleIdentifier: bundleId,
     supportsTablet: false,
     usesAppleSignIn: true,
+    // Group invite links https://dreamsy.dev/join/<code> open the app (app/join/[code].tsx). Needs
+    // https://dreamsy.dev/.well-known/apple-app-site-association listing this app for /join/*.
+    associatedDomains: ['applinks:dreamsy.dev'],
   },
   android: {
     package: androidPackage,
+    intentFilters: [
+      {
+        action: 'VIEW',
+        autoVerify: true,
+        data: [{ scheme: 'https', host: 'dreamsy.dev', pathPrefix: '/join/' }],
+        category: ['BROWSABLE', 'DEFAULT'],
+      },
+    ],
   },
   plugins: [
     'expo-router',

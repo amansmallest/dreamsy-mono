@@ -11,14 +11,15 @@ type Busy = 'send' | 'verify' | 'google' | 'apple' | 'guest';
 
 const KNIGHT = { hat: 1, head: 0, eyes: 0, mouth: 0, extra: 3, body: 0 };
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const RESEND_SECONDS = 60;
+const RESEND_SECONDS = 30; // services/api allows one send per 30 s per address
 
-/** Default: email + one-time code (Supabase). Google / Apple / guest below. */
+/** Default: email + 6-digit code (services/api). Google (Supabase) / Apple / guest below. */
 export default function SignInScreen() {
   const { sendEmailCode, signInWithEmailCode, signInWithGoogle, signInWithApple, continueAsGuest, signInAsDemo } = useAuth();
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [sentTo, setSentTo] = useState<string | null>(null);
+  const [expiresMin, setExpiresMin] = useState(10);
   const [resendIn, setResendIn] = useState(0);
   const [busy, setBusy] = useState<Busy | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -41,8 +42,8 @@ export default function SignInScreen() {
       await fn();
     } catch (e) {
       if (e instanceof SignInCancelled) return;
-      if (e instanceof ApiError && e.status === 403) setError('Use an email, or a username ending in _demo.');
-      else setError(e instanceof Error ? e.message : 'Something went wrong');
+      setError(friendly(what, e));
+      if (what === 'verify') setCode('');
     } finally {
       setBusy(null);
     }
@@ -55,8 +56,10 @@ export default function SignInScreen() {
   const send = () =>
     run('send', async () => {
       if (demo) return signInAsDemo(address);
-      await sendEmailCode(address);
-      setSentTo(address);
+      const target = sentTo ?? address; // Resend keeps the address the code went to
+      const ttl = await sendEmailCode(target);
+      setSentTo(target);
+      setExpiresMin(Math.max(1, Math.round(ttl / 60)));
       setCode('');
       setResendIn(RESEND_SECONDS);
     });
@@ -65,9 +68,9 @@ export default function SignInScreen() {
       if (sentTo) await signInWithEmailCode(sentTo, value.trim());
     });
   const onCode = (t: string) => {
-    const digits = t.replace(/\D/g, '').slice(0, 10);
+    const digits = t.replace(/\D/g, '').slice(0, 6);
     setCode(digits);
-    // Supabase sends 6 digits by default (configurable up to 10); submit when a full 6-digit code lands.
+    // Submit as soon as the full code lands (typed or autofilled from the email).
     if (digits.length === 6 && !busy) void verify(digits);
   };
 
@@ -90,12 +93,12 @@ export default function SignInScreen() {
             </Txt>
             <Txt variant="body" muted center style={styles.subtitle}>
               {sentTo
-                ? `Code sent to ${sentTo}.`
+                ? `We sent a 6-digit code to ${sentTo}. It expires in ${expiresMin} minutes.`
                 : 'Describe a game. Dreamsy builds it.'}
             </Txt>
           </View>
 
-          {!isSupabaseConfigured ? null : sentTo ? (
+          {sentTo ? (
             <View style={styles.form}>
               <Field
                 value={code}
@@ -105,12 +108,19 @@ export default function SignInScreen() {
                 textContentType="oneTimeCode"
                 autoComplete="one-time-code"
                 autoFocus
-                maxLength={10}
+                maxLength={6}
                 style={styles.code}
               />
               <InkButton label="Sign in" sparkles busy={busy === 'verify'} disabled={code.length < 6 || (!!busy && busy !== 'verify')} onPress={() => void verify()} />
               <View style={styles.row}>
-                <Pressable hitSlop={8} onPress={() => setSentTo(null)} disabled={!!busy}>
+                <Pressable
+                  hitSlop={8}
+                  onPress={() => {
+                    setSentTo(null);
+                    setError(null);
+                  }}
+                  disabled={!!busy}
+                >
                   <Txt variant="label" muted>
                     Different email
                   </Txt>
@@ -144,22 +154,26 @@ export default function SignInScreen() {
                 disabled={!canSend || (!!busy && busy !== 'send')}
                 onPress={() => void send()}
               />
-              <View style={styles.or}>
-                <View style={styles.orLine} />
-                <Txt variant="label" muted>
-                  or
-                </Txt>
-                <View style={styles.orLine} />
-              </View>
-              <InkButton
-                label="Continue with Google"
-                icon="logo-google"
-                variant="outline"
-                size="md"
-                busy={busy === 'google'}
-                disabled={!!busy && busy !== 'google'}
-                onPress={() => void run('google', signInWithGoogle)}
-              />
+              {(isSupabaseConfigured || appleAvailable) && (
+                <View style={styles.or}>
+                  <View style={styles.orLine} />
+                  <Txt variant="label" muted>
+                    or
+                  </Txt>
+                  <View style={styles.orLine} />
+                </View>
+              )}
+              {isSupabaseConfigured && (
+                <InkButton
+                  label="Continue with Google"
+                  icon="logo-google"
+                  variant="outline"
+                  size="md"
+                  busy={busy === 'google'}
+                  disabled={!!busy && busy !== 'google'}
+                  onPress={() => void run('google', signInWithGoogle)}
+                />
+              )}
               {appleAvailable && (
                 <InkButton
                   label="Continue with Apple"
@@ -197,6 +211,17 @@ export default function SignInScreen() {
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
+}
+
+/** API errors in plain words. Email: 400 "wrong code" / "code expired; …", 429 wait; demo: 403. */
+function friendly(what: Busy, e: unknown): string {
+  if (!(e instanceof ApiError)) return e instanceof Error ? e.message : 'Something went wrong';
+  if (e.status === 0) return 'Can’t reach Dreamsy. Check your connection.';
+  if (e.status === 429) return what === 'send' && /too many/i.test(e.message) ? 'Too many codes for this email. Try again later.' : 'Wait a few seconds, then try again.';
+  if (what === 'verify' && e.status === 400) return /expired/i.test(e.message) ? 'That code expired. Tap Resend for a new one.' : 'Wrong code. Check the email and try again.';
+  if (what === 'send' && e.status === 403) return /demo/i.test(e.message) ? 'Use an email, or a username ending in _demo.' : 'Email sign-in isn’t set up on this server.';
+  if (what === 'send' && e.status === 400) return 'That doesn’t look like an email address.';
+  return e.message.charAt(0).toUpperCase() + e.message.slice(1);
 }
 
 const styles = StyleSheet.create({

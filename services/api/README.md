@@ -49,8 +49,8 @@ view: thumbnail/orientation of the latest version, plus `hidden`. Others: the pu
 **Platform v1** (DREAMSY.MD §11)
 | | |
 |---|---|
-| `GET /v1/feed?tab=trending\|new\|top\|following&cursor&limit` | `{games: FeedGame[], next}` |
-| `GET /v1/search?q&cursor&limit` | same shape; ILIKE on name, description, creator handle; trending order |
+| `GET /v1/feed?tab=trending\|new\|top\|following&cursor&limit&multiplayer=1` | `{games: FeedGame[], next}` |
+| `GET /v1/search?q&cursor&limit&multiplayer=1` | same shape; ILIKE on name, description, creator handle; trending order |
 | `POST /v1/games/:id/plays` `{version}` | `{counted, stats}`; 1 per user/game/UTC hour |
 | `PUT` / `DELETE /v1/games/:id/like` | idempotent → `{liked, stats}` |
 | `POST /v1/games/:id/remix` | 201 `{game}`: new draft, v1 = source published version (latest if yours), store stripped |
@@ -62,7 +62,7 @@ view: thumbnail/orientation of the latest version, plus `hidden`. Others: the pu
 | `GET /v1/public/games/:id/package` | **public** published zip; 404 for drafts/hidden |
 | `GET /v1/marketplace?sort=popular\|new\|price&cursor&limit` | `{items: [{gameId, gameName, itemId, kind, name, description, price, sales}], next}` |
 
-`FeedGame = {id, name, description, orientation, thumbnailUrl, creator {id, handle}, stats {plays, likes, remixes}, publishedAt, remixOf {gameId, name, version} | null}`;
+`FeedGame = {id, name, description, orientation, thumbnailUrl, players {min, max}, multiplayer, creator {id, handle}, stats {plays, likes, remixes}, publishedAt, remixOf {gameId, name, version} | null}`;
 feed/search/profile lists add `viewer {liked}` per item. Feeds, search, profiles, marketplace and
 public routes show only published, non-hidden games.
 

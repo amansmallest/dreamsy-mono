@@ -7,7 +7,7 @@ import { Linking, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { api, ApiError } from '@/api';
 import { useAuth } from '@/auth';
-import { gameIdFromScan } from '@/scanLink';
+import { gameIdFromScan, inviteCodeFromScan } from '@/scanLink';
 import { errorMessage, floating, ink, radius } from '@/theme';
 import { Button as InkButton, Empty, Sparkle, SquareButton, Txt } from '@/ui';
 
@@ -27,6 +27,13 @@ export default function ScanScreen() {
 
   const onScan = async ({ data }: BarcodeScanningResult) => {
     if (handling.current || data === lastBad.current) return;
+    const invite = inviteCodeFromScan(data);
+    if (invite) {
+      handling.current = true;
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      router.replace({ pathname: '/join/[code]', params: { code: invite } });
+      return;
+    }
     const id = gameIdFromScan(data);
     if (!id) {
       lastBad.current = data;

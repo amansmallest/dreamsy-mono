@@ -26,3 +26,16 @@ export function gameIdFromScan(raw: string): string | null {
   const id = at >= 0 ? parts[at + 1] : undefined;
   return id || null;
 }
+
+/** Group invite: https://<host>/join/<code> or dreamsy://join/<code> -> the code (DREAMSY.MD §13). */
+export function inviteCodeFromScan(raw: string): string | null {
+  let url: URL;
+  try {
+    url = new URL(raw.trim());
+  } catch {
+    return null;
+  }
+  const parts = [url.host, ...url.pathname.split('/')].filter(Boolean).map(decodeURIComponent);
+  const at = parts.indexOf('join');
+  return (at >= 0 && parts[at + 1]) || null;
+}

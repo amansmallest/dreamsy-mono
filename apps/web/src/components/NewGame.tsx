@@ -5,9 +5,9 @@ import { invalidate } from '../lib/store';
 import { Composer } from './Composer';
 import { Modal } from './ui';
 
-const IDEAS = ['A cozy pixel farming RPG', 'Neon platformer with a grappling hook', 'Tower defense in a candy kingdom', 'Monster-catching adventure'];
+export const IDEAS = ['A cozy pixel farming RPG', 'Neon platformer with a grappling hook', 'Tower defense in a candy kingdom', 'Monster-catching adventure'];
 
-export function NewGameModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function NewGameModal({ open, onClose, initialPrompt = '' }: { open: boolean; onClose: () => void; initialPrompt?: string }) {
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const nav = useNavigate();
@@ -15,13 +15,14 @@ export function NewGameModal({ open, onClose }: { open: boolean; onClose: () => 
     <Modal open={open} onClose={onClose} title="New game" width={640}>
       <div className="new-game">
         <label className="field">
-          <span className="label">Name</span>
-          <input className="input input-lg" value={name} placeholder="Broken Swords" maxLength={80} onChange={(e) => setName(e.target.value)} autoFocus />
+          <span className="field-label">Name</span>
+          <input className="input input-lg" value={name} placeholder="Broken Swords" maxLength={80} onChange={(e) => setName(e.target.value)} autoFocus={!initialPrompt} />
         </label>
         <div className="field">
-          <span className="label">First prompt</span>
-          <Composer placeholder="Describe your game — genre, vibe, what the player does. Drop reference images for the art style."
-            chips={IDEAS} sendLabel="Build it"
+          <span className="field-label">First prompt</span>
+          <Composer placeholder="Genre, vibe, what the player does. Drop images for the art style."
+            initialText={initialPrompt} autoFocus={!!initialPrompt}
+            chips={initialPrompt ? [] : IDEAS} sendLabel="Build it"
             onSend={async (prompt, files) => {
               setError(null);
               try {

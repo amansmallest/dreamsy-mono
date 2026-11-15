@@ -4,13 +4,14 @@ import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useResource } from '../lib/store';
 import { Icon, Sparkle } from './Icon';
+import { Avatar } from './ui';
 
 export function Logo() {
   return (
     <Link to="/" className="logo" aria-label="Dreamsy home">
-      <span className="logo-mark"><Sparkle size={16} /></span>
+      <Sparkle size={20} className="logo-mark" />
       <span className="logo-word">dreamsy</span>
-      <span className="logo-tag label">studio</span>
+      <span className="logo-tag">studio</span>
     </Link>
   );
 }
@@ -36,22 +37,22 @@ export function Layout() {
       <header className="topbar">
         <Logo />
         <nav className="nav">
-          <NavLink to="/" end className="nav-link"><Icon name="grid" size={16} />Games</NavLink>
-          <NavLink to="/activity" className="nav-link"><Icon name="history" size={16} />Activity</NavLink>
-          <NavLink to="/insights" className="nav-link"><Icon name="star" size={16} />Insights</NavLink>
-          <NavLink to="/account" className="nav-link"><Icon name="user" size={16} />Account</NavLink>
+          <NavLink to="/" end className="nav-link">Games</NavLink>
+          <NavLink to="/activity" className="nav-link">Activity</NavLink>
+          <NavLink to="/insights" className="nav-link">Insights</NavLink>
+          <NavLink to="/account" className="nav-link">Account</NavLink>
         </nav>
         <div className="topbar-right">
           {q && (
             <Link to="/account" className="quota-chip" title="Builds left today">
               <Icon name="bolt" size={14} />
-              <b>{q.remaining}</b><span>/{q.limit} builds</span>
+              <b>{q.remaining}</b><span>/ {q.limit} builds</span>
             </Link>
           )}
-          <button className="icon-btn" onClick={toggle} aria-label="Toggle theme" title="Toggle theme">
-            <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={18} />
+          <button className="icon-btn ghost" onClick={toggle} aria-label="Toggle theme" title="Toggle theme">
+            <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={19} />
           </button>
-          {user && <Link to="/account" className="avatar" title={`@${user.handle}`}>{user.handle.charAt(0).toUpperCase()}</Link>}
+          {user && <Link to="/account" className="topbar-avatar" title={`@${user.handle}`}><Avatar handle={user.handle} /></Link>}
         </div>
       </header>
       <main className="main"><Outlet /></main>

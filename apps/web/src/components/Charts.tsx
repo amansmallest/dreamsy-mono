@@ -1,5 +1,5 @@
-// Hand-rolled SVG charts in the ink-on-paper style. Monochrome by design: series are told apart by
-// line style (solid vs dashed) + legend + direct end labels, never by color alone.
+// Hand-rolled SVG charts in the Sky palette (blue, navy, sky). Series also differ by line style
+// (solid vs dashed) + legend + direct end labels, never by color alone.
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 
 export type Series = { name: string; values: (number | null)[]; dashed?: boolean };
@@ -56,8 +56,8 @@ export function LineChart({ dates, series, height = 200, min = 0, max, format = 
     <div className="chart" ref={ref}>
       {series.length > 1 && (
         <div className="chart-legend">
-          {series.map((s) => (
-            <span key={s.name}><svg width="22" height="8"><line x1="1" y1="4" x2="21" y2="4" className="chart-line" strokeDasharray={s.dashed ? '4 3' : undefined} /></svg>{s.name}</span>
+          {series.map((s, si) => (
+            <span key={s.name}><svg width="22" height="8"><line x1="1" y1="4" x2="21" y2="4" className={`chart-line s-${si}`} strokeDasharray={s.dashed ? '4 3' : undefined} /></svg>{s.name}</span>
           ))}
         </div>
       )}
@@ -78,7 +78,7 @@ export function LineChart({ dates, series, height = 200, min = 0, max, format = 
         {area && series[0] && (
           <path d={`${path(series[0].values)}L${x(lastIdx(series[0].values))},${y(min)}L${x(series[0].values.findIndex((v) => v != null))},${y(min)}Z`} className="chart-area" />
         )}
-        {series.map((s) => <path key={s.name} d={path(s.values)} className="chart-line" strokeDasharray={s.dashed ? '6 5' : undefined} />)}
+        {series.map((s, si) => <path key={s.name} d={path(s.values)} className={`chart-line s-${si}`} strokeDasharray={s.dashed ? '6 5' : undefined} />)}
         {series.length > 1 && endLabels(series.map((s) => {
           const i = lastIdx(s.values);
           return i < 0 ? null : { name: s.name, x: x(i) + 8, y: y(s.values[i]!) + 4 };
@@ -86,8 +86,8 @@ export function LineChart({ dates, series, height = 200, min = 0, max, format = 
         {hover != null && (
           <g>
             <line x1={x(hover)} x2={x(hover)} y1={pad.t} y2={pad.t + ih} className="chart-cross" />
-            {series.map((s) => s.values[hover] != null && (
-              <circle key={s.name} cx={x(hover)} cy={y(s.values[hover]!)} r={4.5} className={`chart-dot ${s.dashed ? 'hollow' : ''}`} />
+            {series.map((s, si) => s.values[hover] != null && (
+              <circle key={s.name} cx={x(hover)} cy={y(s.values[hover]!)} r={4.5} className={`chart-dot s-${si} ${s.dashed ? 'hollow' : ''}`} />
             ))}
           </g>
         )}
@@ -95,8 +95,8 @@ export function LineChart({ dates, series, height = 200, min = 0, max, format = 
       {hover != null && dates[hover] && (
         <div className="chart-tip" style={{ left: Math.min(width - 150, Math.max(0, x(hover) + 12)), top: 8 }}>
           <b>{shortDate(dates[hover]!)}</b>
-          {series.map((s) => (
-            <span key={s.name}><i className={s.dashed ? 'dash' : ''} />{s.name}<em>{s.values[hover] == null ? '—' : format(s.values[hover]!)}</em></span>
+          {series.map((s, si) => (
+            <span key={s.name}><i className={`s-${si} ${s.dashed ? 'dash' : ''}`} />{s.name}<em>{s.values[hover] == null ? '—' : format(s.values[hover]!)}</em></span>
           ))}
         </div>
       )}

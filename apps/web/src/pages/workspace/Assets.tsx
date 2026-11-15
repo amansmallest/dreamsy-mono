@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Icon, Sparkle } from '../../components/Icon';
+import { Icon } from '../../components/Icon';
+import { BuildRing } from '../../components/GameCard';
 import { AuthedImg, Button, Drawer, Empty, ErrorNote, IconButton, ProgressPill, Segmented } from '../../components/ui';
 import { activeGenerationIdFrom, api, ApiError, errorMessage, isActive, type Asset, type Generation } from '../../lib/api';
 import { assetCategory, bytes, humanId, type AssetCategory } from '../../lib/format';
@@ -26,7 +27,7 @@ function SpriteImage({ gameId, asset, version, pixelated, className }: { gameId:
   const other = useResource(version ? `assets:${gameId}:${version}` : null, () => api.assets(gameId, version));
   const url = version ? other.data?.assets.find((a) => a.id === asset.id)?.url ?? null : asset.url;
   return <AuthedImg url={url} alt={asset.id} className={className} pixelated={pixelated}
-    fallback={<span className="sprite-missing label">{other.data ? 'not in this version' : ''}</span>} />;
+    fallback={<span className="sprite-missing">{other.data ? 'not in this version' : ''}</span>} />;
 }
 
 function SpriteCard({ gameId, asset, pixelated, selected, edit, live, onOpen, onToggle }: {
@@ -41,7 +42,7 @@ function SpriteCard({ gameId, asset, pixelated, selected, edit, live, onOpen, on
           {showBefore && edit
             ? <SpriteImage gameId={gameId} asset={asset} version={edit.before} pixelated={pixelated} className="sprite-img" />
             : <AuthedImg url={asset.url} alt={asset.id} className="sprite-img" pixelated={pixelated} />}
-          {live && <div className="sprite-live"><Sparkle size={16} className="spin-slow" /></div>}
+          {live && <div className="sprite-live"><BuildRing size={34} /></div>}
         </div>
         <span className="sprite-name">{humanId(asset.id)}</span>
       </button>
@@ -120,7 +121,7 @@ export function AssetsPanel({ gameId, version, pixelated, activeGen, stream, edi
         <div className="select-bar">
           <span><b>{sel.length}</b> selected</span>
           <button className="link-btn" onClick={() => setSel([])}>Clear</button>
-          <Button size="sm" sparkles onClick={() => setEditing(sel)}>Edit together</Button>
+          <Button size="sm" onClick={() => setEditing(sel)}>Edit together</Button>
         </div>
       )}
       <Drawer open={!!editing} onClose={() => setEditing(null)}>
@@ -164,7 +165,7 @@ function SpriteEditor({ gameId, assets, pixelated, activeGen, stream, onClose, o
     <div className="editor">
       <div className="editor-head">
         <div>
-          <span className="label">{assets.length > 1 ? `${assets.length} sprites` : 'Sprite'}</span>
+          <span className="kicker">{assets.length > 1 ? `${assets.length} sprites` : 'Sprite'}</span>
           <h2 className="h2">{one ? humanId(one.id) : 'Edit together'}</h2>
         </div>
         <IconButton icon="x" label="Close" onClick={onClose} />
@@ -172,7 +173,7 @@ function SpriteEditor({ gameId, assets, pixelated, activeGen, stream, onClose, o
       {one ? (
         <div className={`editor-stage ${zoom ? 'is-zoom' : ''}`} onClick={() => setZoom(!zoom)} title="Click to zoom">
           <AuthedImg url={one.url} alt={one.id} className="editor-img" pixelated={pixelated} />
-          {live && <div className="sprite-live"><Sparkle size={26} className="spin-slow" /></div>}
+          {live && <div className="sprite-live"><BuildRing size={56} /></div>}
         </div>
       ) : (
         <div className="editor-multi">
@@ -195,7 +196,7 @@ function SpriteEditor({ gameId, assets, pixelated, activeGen, stream, onClose, o
       )}
       {one?.prompt && (
         <blockquote className="provenance">
-          <span className="label">Drawn from</span>
+          <span className="field-label">Drawn from</span>
           <p>{one.prompt}</p>
         </blockquote>
       )}
@@ -206,7 +207,7 @@ function SpriteEditor({ gameId, assets, pixelated, activeGen, stream, onClose, o
         </div>
       ) : null}
       <div className="editor-compose">
-        <span className="label">What should change?</span>
+        <span className="field-label">What should change?</span>
         <textarea className="input" rows={3} value={text} placeholder={one ? `e.g. make the ${humanId(one.id)}'s shield red` : 'e.g. give them all a darker outline'}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); void send(); } }} />
@@ -214,7 +215,7 @@ function SpriteEditor({ gameId, assets, pixelated, activeGen, stream, onClose, o
           {CHIPS.map((c) => <button key={c} className="quick-chip" onClick={() => setText((t) => (t ? `${t}, ${c.toLowerCase()}` : c))}>{c}</button>)}
         </div>
         {err && <p className="form-error">{err}</p>}
-        <Button size="lg" sparkles className="w-full" busy={busy} disabled={!text.trim() || blocked} onClick={send}>
+        <Button size="lg" className="w-full" busy={busy} disabled={!text.trim() || blocked} onClick={send}>
           {blocked ? 'Build in progress…' : `Redraw ${assets.length > 1 ? `${assets.length} sprites` : 'sprite'}`}
         </Button>
       </div>

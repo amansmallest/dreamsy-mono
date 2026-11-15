@@ -1,23 +1,20 @@
 import { useEffect, useRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuthedImage } from '../lib/blobs';
-import { Icon, Sparkle, type IconName } from './Icon';
+import { Icon, PixelCloud, Sparkle, type IconName } from './Icon';
 
 type BtnProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: 'solid' | 'outline' | 'ghost' | 'danger';
+  variant?: 'solid' | 'outline' | 'ghost' | 'danger' | 'dark';
   size?: 'sm' | 'md' | 'lg';
   icon?: IconName;
-  sparkles?: boolean;
   busy?: boolean;
 };
 
-export function Button({ variant = 'solid', size = 'md', icon, sparkles, busy, children, className = '', disabled, ...rest }: BtnProps) {
+export function Button({ variant = 'solid', size = 'md', icon, busy, children, className = '', disabled, ...rest }: BtnProps) {
   return (
     <button className={`btn btn-${variant} btn-${size} ${busy ? 'is-busy' : ''} ${className}`} disabled={disabled || busy} {...rest}>
-      {sparkles && <Sparkle size={size === 'lg' ? 14 : 11} className="btn-spark" />}
-      {busy ? <Spinner /> : icon && <Icon name={icon} size={size === 'sm' ? 15 : 18} />}
+      {busy ? <Spinner size={size === 'sm' ? 14 : 16} /> : icon && <Icon name={icon} size={size === 'sm' ? 15 : 18} />}
       {children && <span>{children}</span>}
-      {sparkles && <Sparkle size={size === 'lg' ? 14 : 11} className="btn-spark" />}
     </button>
   );
 }
@@ -32,21 +29,22 @@ export function IconButton({ icon, label, className = '', active, ...rest }: But
 
 export const Spinner = ({ size = 16 }: { size?: number }) => <span className="spinner" style={{ width: size, height: size }} aria-label="Loading" />;
 
-export function Label({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <span className={`label ${className}`}>{children}</span>;
+export function Avatar({ handle, size = 'md' }: { handle: string; size?: 'sm' | 'md' | 'xl' }) {
+  return <span className={`avatar avatar-${size}`} aria-hidden>{handle.charAt(0).toUpperCase() || '?'}</span>;
 }
 
+/** Pixel-font badge (LIVE, DRAFT, BUILDING, v3…). */
 export function Chip({ children, tone = 'plain', icon }: { children: ReactNode; tone?: 'plain' | 'ink' | 'ok' | 'danger' | 'live'; icon?: IconName }) {
   return (
     <span className={`chip chip-${tone}`}>
-      {tone === 'live' && <span className="live-dot" />}
-      {icon && <Icon name={icon} size={12} />}
+      {(tone === 'live' || tone === 'ok') && <span className="live-dot" />}
+      {icon && <Icon name={icon} size={11} />}
       {children}
     </span>
   );
 }
 
-/** Outlined pill progress bar with ink fill; `value` null = indeterminate. */
+/** Thin progress bar in blue on a mist track; `value` null = indeterminate. */
 export function ProgressPill({ value, size = 'md' }: { value: number | null; size?: 'sm' | 'md' }) {
   return (
     <div className={`progress progress-${size} ${value == null ? 'is-indeterminate' : ''}`} role="progressbar"
@@ -71,7 +69,7 @@ export function Modal({ open, onClose, children, title, width = 520 }: { open: b
       <div className="modal" style={{ maxWidth: width }} role="dialog" aria-modal>
         <div className="modal-head">
           {title && <h2 className="modal-title">{title}</h2>}
-          <IconButton icon="x" label="Close" onClick={onClose} />
+          <IconButton icon="x" label="Close" className="ghost" onClick={onClose} />
         </div>
         {children}
       </div>
@@ -102,17 +100,14 @@ function useEscape(open: boolean, onClose: () => void) {
   }, [open]);
 }
 
-export function Empty({ title, body, action, art = 'sparkles' }: { title: string; body?: ReactNode; action?: ReactNode; art?: 'sparkles' | 'box' }) {
+/** Empty state: a small pixel-cloud vignette, a title, one line, and the next step. */
+export function Empty({ title, body, action, compact }: { title: string; body?: ReactNode; action?: ReactNode; compact?: boolean }) {
   return (
-    <div className="empty">
+    <div className={`empty ${compact ? 'is-compact' : ''}`}>
       <div className="empty-art" aria-hidden>
-        {art === 'sparkles' ? (
-          <>
-            <Sparkle size={44} />
-            <Sparkle size={18} filled={false} className="empty-s2" />
-            <Sparkle size={12} className="empty-s3" />
-          </>
-        ) : <Icon name="grid" size={40} />}
+        <PixelCloud variant="a" px={4} className="empty-cloud-a drift" />
+        <PixelCloud variant="b" px={3} className="empty-cloud-b drift" />
+        <Sparkle size={14} className="empty-spark" />
       </div>
       <h3 className="empty-title">{title}</h3>
       {body && <p className="empty-body">{body}</p>}

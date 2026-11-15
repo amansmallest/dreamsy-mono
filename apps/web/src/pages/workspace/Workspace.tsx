@@ -79,7 +79,7 @@ export function Workspace() {
     <div className={`ws ${expanded ? 'is-expanded' : ''}`}>
       <aside className="ws-left">
         <div className="ws-title">
-          <Link to="/" className="icon-btn sm" aria-label="Back to games"><Icon name="arrowLeft" size={16} /></Link>
+          <Link to="/" className="icon-btn sm ghost" aria-label="Back to games"><Icon name="chevronLeft" size={18} /></Link>
           <GameName id={id} name={g.name} />
         </div>
         <PreviewCard game={g} versions={versions.data?.versions ?? []} version={version} onVersion={selectVersion} building={!!activeGen} />
@@ -91,9 +91,9 @@ export function Workspace() {
           nearBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 160;
         }}>
           {gens.error ? <ErrorNote error={gens.error} onRetry={gens.refetch} />
-            : !gens.data ? <div className="center-page"><Spinner /></div>
+            : !gens.data ? <div className="chat-skeleton"><div className="skeleton skel-bubble" /><div className="skeleton skel-card" /></div>
             : ordered.length === 0 ? (
-              <Empty title="Let's build something" body="Describe the game you want. Mention genre, mood, and how it plays — attach images for the art style." />
+              <Empty title="Let's build something" body="Describe your game below. Attach images to set the art style." />
             ) : ordered.map((gen, i) => (
               <BuildEntry key={gen.id} generation={gen} defaultOpen={i === ordered.length - 1}
                 stream={activeGen?.id === gen.id ? stream : undefined} onSelectVersion={selectVersion} />
@@ -104,7 +104,7 @@ export function Workspace() {
             placeholder={g.latestVersion ? 'What should change? e.g. “add a dash move and make the slimes bounce”' : 'Describe your game…'}
             chips={g.latestVersion ? CHIPS : []}
             disabled={!!activeGen}
-            disabledNote={<><Sparkle size={10} /> Building · next prompt unlocks when it's done</>}
+            disabledNote={<><Sparkle size={10} className="blue" /> Next prompt unlocks when this build finishes</>}
             onSend={async (prompt, files) => {
               setComposerError(null);
               try {
@@ -124,7 +124,7 @@ export function Workspace() {
 
       <aside className="ws-right">
         <Segmented value={tab} onChange={setTab} options={[
-          { value: 'sprites', label: <><Icon name="image" size={15} /> Sprites</> },
+          { value: 'sprites', label: <><Icon name="grid" size={15} /> Sprites</> },
           { value: 'versions', label: <><Icon name="history" size={15} /> Versions</> },
         ]} />
         {tab === 'sprites' ? (
@@ -151,6 +151,6 @@ function GameName({ id, name }: { id: string; name: string }) {
     <input className="ws-name-input" value={val} autoFocus maxLength={80} onChange={(e) => setVal(e.target.value)} onBlur={save}
       onKeyDown={(e) => { if (e.key === 'Enter') void save(); if (e.key === 'Escape') { setVal(name); setEditing(false); } }} />
   ) : (
-    <button className="ws-name" onClick={() => setEditing(true)} title="Rename">{name}<Icon name="edit" size={14} /></button>
+    <button className="ws-name" onClick={() => setEditing(true)} title="Rename"><span>{name}</span><Icon name="edit" size={14} /></button>
   );
 }

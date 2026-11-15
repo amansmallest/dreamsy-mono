@@ -1,4 +1,4 @@
-import type { SVGProps } from 'react';
+import type { CSSProperties, ReactNode, SVGProps } from 'react';
 
 const P: Record<string, string> = {
   plus: 'M12 5v14M5 12h14',
@@ -8,6 +8,7 @@ const P: Record<string, string> = {
   arrowLeft: 'M19 12H5M11 6l-6 6 6 6',
   arrowRight: 'M5 12h14M13 6l6 6-6 6',
   chevronDown: 'M6 9l6 6 6-6',
+  chevronLeft: 'M15 6l-6 6 6 6',
   chevronRight: 'M9 6l6 6-6 6',
   image: 'M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5zM4 16l4.5-4.5 4 4 2.5-2.5L20 18M15.5 9.5h.01',
   phone: 'M8 3h8a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM11 18h2',
@@ -25,7 +26,7 @@ const P: Record<string, string> = {
   minimize: 'M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5',
   sun: 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4',
   moon: 'M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z',
-  stop: 'M7 7h10v10H7z',
+  stop: 'M8 8h8v8H8z',
   edit: 'M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4',
   link: 'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1',
   star: 'M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.4 6.7 19.4l1.2-6L3.4 9.3l6-.7L12 3z',
@@ -33,42 +34,119 @@ const P: Record<string, string> = {
   mail: 'M4 6h16v12H4zM4 7l8 6 8-6',
   compare: 'M12 3v18M5 7h4M5 12h4M5 17h4M15 7h4M15 12h4M15 17h4',
   alert: 'M12 4l9 16H3l9-16zM12 10v4M12 17h.01',
-  play: 'M8 5v14l11-7z',
+  play: 'M8 5.5v13l10.5-6.5z',
+  heart: 'M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.2a4.3 4.3 0 0 1 7.5 2.6C19.5 15.4 12 20 12 20z',
+  remix: 'M6 4v5a5 5 0 0 0 5 5h7M15 10.5l3.5 3.5-3.5 3.5',
 };
 
 export type IconName = keyof typeof P;
 
 export function Icon({ name, size = 18, ...rest }: { name: IconName; size?: number } & SVGProps<SVGSVGElement>) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2}
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9}
       strokeLinecap="round" strokeLinejoin="round" aria-hidden {...rest}>
       <path d={P[name]} />
     </svg>
   );
 }
 
-/** Hand-drawn four-point sparkle (slightly wobbly on purpose). */
-export function Sparkle({ size = 14, className, filled = true, style }: { size?: number; className?: string; filled?: boolean; style?: React.CSSProperties }) {
+/** Rows of a pixel grid → one crisp path per fill key (horizontal runs merged). */
+function pixelPaths(rows: string[]) {
+  const out: Record<string, string> = {};
+  rows.forEach((row, y) => {
+    let x = 0;
+    while (x < row.length) {
+      const c = row[x]!;
+      if (c === '.') { x++; continue; }
+      let w = 1;
+      while (row[x + w] === c) w++;
+      out[c] = (out[c] ?? '') + `M${x} ${y}h${w}v1h-${w}z`;
+      x += w;
+    }
+  });
+  return out;
+}
+
+const SPARKLE = pixelPaths(['...#...', '...#...', '..###..', '#######', '..###..', '...#...', '...#...'])['#']!;
+
+/** Four-point sparkle on a 7×7 pixel grid — the brand mark. */
+export function Sparkle({ size = 14, className, style }: { size?: number; className?: string; style?: CSSProperties }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" className={className} style={style} aria-hidden>
-      <path d="M12.2 1.5c.5 5.6 3.6 9.2 10.3 10.4-6.4 1.1-9.6 4.8-10.6 10.6-.9-5.9-4.3-9.4-10.4-10.4 6.2-1.3 9.8-4.9 10.7-10.6z"
-        fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={filled ? 0.6 : 1.8} strokeLinejoin="round" />
+    <svg width={size} height={size} viewBox="0 0 7 7" className={className} style={style} shapeRendering="crispEdges" aria-hidden>
+      <path d={SPARKLE} fill="currentColor" />
     </svg>
   );
 }
 
-/** Scattered doodle sparkles for empty space. */
-export function Doodles({ variant = 'a' }: { variant?: 'a' | 'b' | 'c' }) {
-  const spots: Record<string, [number, number, number, boolean][]> = {
-    a: [[6, 12, 22, true], [14, 70, 12, false], [88, 18, 16, false], [93, 60, 26, true], [78, 88, 11, true]],
-    b: [[4, 30, 14, false], [96, 22, 20, true], [90, 78, 12, false]],
-    c: [[10, 20, 18, true], [85, 30, 12, false], [20, 80, 10, false], [75, 75, 22, true]],
-  };
+const CLOUDS = {
+  a: pixelPaths([
+    '.......xxxx.........',
+    '.....xxxxxxxx.......',
+    '...xxxxxxxxxxx.xxx..',
+    '..xxxxxxxxxxxxxxxxx.',
+    '.xxxxxxxxxxxxxxxxxxx',
+    'xxxxxxxxxxxxxxxxxxxx',
+    '.ssssssssssssssssss.',
+  ]),
+  b: pixelPaths([
+    '....xxxx....',
+    '..xxxxxxxx..',
+    '.xxxxxxxxxxx',
+    'xxxxxxxxxxxx',
+    '.ssssssssss.',
+  ]),
+  c: pixelPaths([
+    '..........xxxx..........',
+    '...xxx..xxxxxxxx........',
+    '..xxxxxxxxxxxxxxxx.xxx..',
+    '.xxxxxxxxxxxxxxxxxxxxxx.',
+    'xxxxxxxxxxxxxxxxxxxxxxxx',
+    '.ssssssssssssssssssssss.',
+  ]),
+};
+const CLOUD_SIZE = { a: [20, 7], b: [12, 5], c: [24, 6] } as const;
+type CloudVariant = keyof typeof CLOUDS;
+
+/** Blocky cloud made of square pixels: body in --cloud, underside in --cloud-shade. */
+export function PixelCloud({ variant = 'a', px = 5, className = '', style }: { variant?: CloudVariant; px?: number; className?: string; style?: CSSProperties }) {
+  const [w, h] = CLOUD_SIZE[variant];
+  const p = CLOUDS[variant];
   return (
-    <div className="doodles" aria-hidden>
-      {spots[variant]!.map(([x, y, s, f], i) => (
-        <Sparkle key={i} size={s} filled={f} className="doodle" style={{ left: `${x}%`, top: `${y}%`, animationDelay: `${i * 0.7}s` }} />
-      ))}
+    <svg width={w * px} height={h * px} viewBox={`0 0 ${w} ${h}`} className={`pixel-cloud ${className}`} style={style} shapeRendering="crispEdges" aria-hidden>
+      <path d={p.x} className="pc-body" />
+      <path d={p.s} className="pc-shade" />
+    </svg>
+  );
+}
+
+type CloudSpot = [variant: CloudVariant, left: string, top: string, px: number];
+const SKIES: Record<string, { clouds: CloudSpot[]; sparks: [left: string, top: string, size: number][] }> = {
+  hero: {
+    clouds: [['a', '66%', '12%', 7], ['b', '87%', '44%', 5], ['c', '70%', '66%', 5], ['b', '93%', '80%', 3]],
+    sparks: [['93%', '15%', 12], ['62%', '46%', 8]],
+  },
+  panel: {
+    clouds: [['a', '48%', '11%', 9], ['b', '8%', '25%', 6], ['c', '34%', '38%', 6], ['b', '76%', '55%', 4]],
+    sparks: [['86%', '7%', 14], ['16%', '48%', 9], ['88%', '38%', 8]],
+  },
+  strip: { clouds: [['b', '40%', '12%', 3], ['a', '57%', '48%', 3], ['b', '68%', '-6%', 2]], sparks: [] },
+  card: { clouds: [['a', '60%', '10%', 4], ['b', '80%', '44%', 3]], sparks: [['90%', '76%', 8]] },
+  empty: { clouds: [['a', '2%', '34%', 4], ['b', '58%', '4%', 3], ['b', '64%', '64%', 3]], sparks: [['44%', '6%', 8]] },
+};
+export type SkyPreset = keyof typeof SKIES;
+
+/** The one gradient (sky → mist) with slowly drifting pixel clouds; children render on top. */
+export function PixelSky({ preset = 'hero', className = '', children }: { preset?: SkyPreset; className?: string; children?: ReactNode }) {
+  const sky = SKIES[preset]!;
+  return (
+    <div className={`pixel-sky sky-${preset} ${className}`}>
+      <div className="pixel-sky-art" aria-hidden>
+        {sky.clouds.map(([v, left, top, px], i) => (
+          <PixelCloud key={i} variant={v} px={px} className="drift" style={{ left, top, animationDelay: `${-i * 9}s`, animationDuration: `${28 + i * 7}s` }} />
+        ))}
+        {sky.sparks.map(([left, top, s], i) => <Sparkle key={i} size={s} className="sky-spark" style={{ left, top, animationDelay: `${i * 1.3}s` }} />)}
+      </div>
+      {children}
     </div>
   );
 }

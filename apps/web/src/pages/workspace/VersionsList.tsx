@@ -8,7 +8,7 @@ export function VersionsList({ game, versions, selected, onSelect, building }: {
   game: Game; versions: GameVersion[]; selected: number; onSelect: (v: number) => void; building: boolean;
 }) {
   const [busy, setBusy] = useState<number | null>(null);
-  if (!versions.length) return <Empty title="No versions yet" body="Every build or edit commits a new, immutable version here." />;
+  if (!versions.length) return <Empty title="No versions yet" body="Each build saves a version you can come back to." />;
   return (
     <ol className="versions">
       {versions.map((v) => {
@@ -19,7 +19,7 @@ export function VersionsList({ game, versions, selected, onSelect, building }: {
               <span className="version-badge">v{v.version}</span>
               <span className="version-text">
                 <span className="version-summary">{v.summary || (v.generationId ? 'Build' : 'Manual version')}</span>
-                <span className="label muted">{timeAgo(v.createdAt)} · {bytes(v.sizeBytes)}</span>
+                <span className="version-meta">{timeAgo(v.createdAt)} · {bytes(v.sizeBytes)}</span>
               </span>
             </button>
             <div className="version-side">

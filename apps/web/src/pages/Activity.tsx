@@ -26,17 +26,14 @@ export function Activity() {
 
   return (
     <div className="page narrow">
-      <section className="hero compact">
-        <div>
-          <span className="label">Everything you've built</span>
-          <h1 className="display">Activity</h1>
-        </div>
+      <section className="page-head">
+        <h1 className="display">activity</h1>
         <Segmented value={filter} onChange={setFilter} options={[
           { value: 'all', label: 'All' }, { value: 'running', label: 'Running' }, { value: 'succeeded', label: 'Succeeded' }, { value: 'failed', label: 'Failed' },
         ]} />
       </section>
       {first.error ? <ErrorNote error={first.error} onRetry={first.refetch} />
-        : !first.data ? <div className="feed">{Array.from({ length: 5 }, (_, i) => <div key={i} className="feed-item skeleton" />)}</div>
+        : !first.data ? <div className="feed">{Array.from({ length: 5 }, (_, i) => <div key={i} className="feed-item feed-skeleton"><div className="skeleton feed-thumb" /><div className="feed-text"><div className="skeleton skel-line w40" /><div className="skeleton skel-line w80" /></div></div>)}</div>
         : shown.length === 0 ? <Empty title={items.length ? 'Nothing matches' : 'No builds yet'} body={items.length ? 'Try another filter.' : 'Builds across all your games show up here.'} />
         : (
           <div className="feed">
@@ -66,11 +63,11 @@ function FeedItem({ item: { generation: g, game } }: { item: ActivityItem }) {
           <div className="feed-top">
             <span className="feed-game">{game.name}</span>
             <Chip tone={STATUS_TONE[g.status]}>{STATUS_LABEL[g.status]}</Chip>
-            {g.resultVersion && <span className="label">v{g.resultVersion}</span>}
-            {m.score != null && <Chip icon="star">{m.score.toFixed(1)}</Chip>}
+            {g.resultVersion && <span className="vtag">v{g.resultVersion}</span>}
+            {m.score != null && <span className="score"><Icon name="star" size={13} /> {m.score.toFixed(1)}</span>}
           </div>
           <p className="feed-prompt">{truncate(g.prompt, 160)}</p>
-          <span className="label muted">{timeAgo(g.createdAt)}{g.startedAt && !active ? ` · took ${duration(g.startedAt, g.finishedAt)}` : ''}{m.cost != null ? ` · $${m.cost.toFixed(2)}` : ''}</span>
+          <span className="feed-meta">{timeAgo(g.createdAt)}{g.startedAt && !active ? ` · took ${duration(g.startedAt, g.finishedAt)}` : ''}{m.cost != null ? ` · $${m.cost.toFixed(2)}` : ''}</span>
         </div>
         <Icon name="chevronDown" size={18} className={`chev ${open ? 'is-open' : ''}`} />
       </button>

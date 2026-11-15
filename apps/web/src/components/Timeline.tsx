@@ -24,7 +24,7 @@ export function Timeline({ events, live, onSelectVersion }: { events: Generation
         </li>
       )}
       {!live && cost != null && cost > 0 && (
-        <li className="tl-step tl-meta"><span className="tl-node tl-node-dot" /><div className="tl-body"><span className="label">Compute ${cost.toFixed(2)}</span></div></li>
+        <li className="tl-step tl-meta"><span className="tl-node tl-node-dot" /><div className="tl-body"><span className="tl-count">Compute ${cost.toFixed(2)}</span></div></li>
       )}
     </ol>
   );
@@ -68,7 +68,7 @@ function TimelineStep({ step: s, last, live, onSelectVersion }: { step: Step; la
           </div>
         )}
         {s.kind === 'content' && s.total > 0 && (
-          <div className="tl-progress"><ProgressPill size="sm" value={s.done / s.total} /><span className="label">{s.done}/{s.total}</span></div>
+          <div className="tl-progress"><ProgressPill size="sm" value={s.done / s.total} /><span className="tl-count">{s.done}/{s.total}</span></div>
         )}
         {s.kind === 'review' && s.score != null && (
           <div className="score-row">

@@ -21,8 +21,9 @@ export function useAttachments() {
   };
 }
 
-export function Composer({ placeholder, chips = [], disabled, disabledNote, onSend, autoFocus, children, sendLabel = 'Build' }: {
+export function Composer({ placeholder, chips = [], disabled, disabledNote, onSend, autoFocus, children, sendLabel = 'Build', initialText = '' }: {
   placeholder: string;
+  initialText?: string;
   chips?: string[];
   disabled?: boolean;
   disabledNote?: ReactNode;
@@ -32,7 +33,7 @@ export function Composer({ placeholder, chips = [], disabled, disabledNote, onSe
   onSend: (prompt: string, files: File[]) => Promise<void>;
   children?: ReactNode;
 }) {
-  const [text, setText] = useState('');
+  const [text, setText] = useState(initialText);
   const [busy, setBusy] = useState(false);
   const [drag, setDrag] = useState(false);
   const att = useAttachments();
@@ -86,11 +87,11 @@ export function Composer({ placeholder, chips = [], disabled, disabledNote, onSe
       )}
       <div className="composer-bar">
         <input ref={fileInput} type="file" accept={TYPES.join(',')} multiple hidden onChange={(e) => { if (e.target.files) att.add(e.target.files); e.target.value = ''; }} />
-        <button className="icon-btn" aria-label="Attach reference images" title="Attach reference images" onClick={() => fileInput.current?.click()}>
+        <button className="icon-btn ghost" aria-label="Attach reference images" title="Attach reference images" onClick={() => fileInput.current?.click()}>
           <Icon name="image" />
         </button>
-        <span className="composer-hint label">{disabled && disabledNote ? disabledNote : <><Kbd>{isMac ? '⌘' : 'Ctrl'}</Kbd><Kbd>↵</Kbd> to send</>}</span>
-        <Button sparkles busy={busy} disabled={!canSend} onClick={send}>{sendLabel}</Button>
+        <span className="composer-hint">{disabled && disabledNote ? disabledNote : <><Kbd>{isMac ? '⌘' : 'Ctrl'}</Kbd><Kbd>↵</Kbd> to send</>}</span>
+        <Button icon="arrowUp" busy={busy} disabled={!canSend} onClick={send}>{sendLabel}</Button>
       </div>
     </div>
   );

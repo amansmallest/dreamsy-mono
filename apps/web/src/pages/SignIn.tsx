@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Logo } from '../components/Layout';
-import { Icon, Sparkle, Doodles } from '../components/Icon';
+import { Icon, PixelSky } from '../components/Icon';
 import { Button } from '../components/ui';
 import { errorMessage } from '../lib/api';
 import { useAuth } from '../lib/auth';
@@ -28,20 +28,16 @@ export function SignIn() {
 
   return (
     <div className="signin">
-      <section className="signin-hero">
-        <Doodles variant="a" />
+      <PixelSky preset="panel" className="signin-hero">
         <Logo />
-        <h1 className="display">Dream it.<br />Build it.<br /><span className="display-outline">Play it.</span></h1>
-        <p className="lead">The Dreamsy studio: describe a game, watch it get built round by round, then poke at every sprite until it's yours. Playing happens on your phone.</p>
-        <ul className="signin-points">
-          <li><Sparkle size={12} /> Chat-driven builds with live progress</li>
-          <li><Sparkle size={12} /> Click any sprite to redraw it</li>
-          <li><Sparkle size={12} /> Publish & share with a QR code</li>
-        </ul>
-      </section>
-      <section className="signin-card card">
-        <span className="label">Welcome to the studio</span>
-        <h2 className="h2">Sign in</h2>
+        <div className="signin-hero-copy">
+          <h1 className="display">Dream it.<br />Build it.<br /><span className="blue">Play it.</span></h1>
+          <p className="lead">Describe a game, watch it get built, then redraw any sprite until it's yours.</p>
+        </div>
+      </PixelSky>
+      <section className="signin-pane">
+        <div className="signin-form">
+        <h2 className="h1">Sign in</h2>
         {auth.mode === 'supabase' ? (
           <>
             {auth.providers.google && (
@@ -56,17 +52,17 @@ export function SignIn() {
             )}
             {auth.providers.email && (
               <>
-                <div className="or"><span>or with email</span></div>
+                <div className="or"><span>or</span></div>
                 {!sent ? (
                   <form className="stack" onSubmit={(e) => { e.preventDefault(); void run('email', async () => { await auth.sendEmailCode(email.trim()); setSent(true); })(); }}>
                     <input className="input" type="email" required placeholder="you@studio.com" value={email} onChange={(e) => setEmail(e.target.value)} />
-                    <Button size="lg" sparkles className="w-full" busy={busy === 'email'} type="submit">Email me a code</Button>
+                    <Button size="lg" className="w-full" busy={busy === 'email'} type="submit">Email me a code</Button>
                   </form>
                 ) : (
                   <form className="stack" onSubmit={(e) => { e.preventDefault(); void run('verify', () => auth.verifyEmailCode(email.trim(), code.trim()))(); }}>
-                    <p className="small muted"><Icon name="mail" size={14} /> We sent a code and a magic link to <b>{email}</b>. Use either.</p>
+                    <p className="small muted row-icon"><Icon name="mail" size={15} /><span>We sent a code and a magic link to <b>{email}</b>. Use either.</span></p>
                     <input className="input input-code" inputMode="numeric" autoComplete="one-time-code" placeholder="123456" value={code} onChange={(e) => setCode(e.target.value)} />
-                    <Button size="lg" sparkles className="w-full" busy={busy === 'verify'} type="submit" disabled={code.trim().length < 6}>Verify & enter</Button>
+                    <Button size="lg" className="w-full" busy={busy === 'verify'} type="submit" disabled={code.trim().length < 6}>Verify & enter</Button>
                     <button type="button" className="link-btn" onClick={() => { setSent(false); setCode(''); }}>Use a different email</button>
                   </form>
                 )}
@@ -75,12 +71,13 @@ export function SignIn() {
           </>
         ) : (
           <>
-            <p className="small muted">Supabase isn't configured (<code>VITE_SUPABASE_URL</code> unset), so this dev build signs in with a guest account on <code>{env.apiUrl}</code>.</p>
-            <Button size="lg" sparkles className="w-full" busy={busy === 'guest'} onClick={run('guest', auth.continueAsGuest)}>Continue as guest</Button>
+            <p className="small muted">Dev build without Supabase: you'll get a guest account on <code>{env.apiUrl}</code>.</p>
+            <Button size="lg" className="w-full" busy={busy === 'guest'} onClick={run('guest', auth.continueAsGuest)}>Continue as guest</Button>
           </>
         )}
         {error && <p className="form-error">{error}</p>}
         <p className="tiny muted">Same account as the Dreamsy app.</p>
+        </div>
       </section>
     </div>
   );

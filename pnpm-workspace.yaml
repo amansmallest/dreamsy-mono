@@ -1,0 +1,7 @@
+packages:
+  - services/api
+  - harness
+  - format
+  - engine-web
+  - apps/mobile
+  - apps/web

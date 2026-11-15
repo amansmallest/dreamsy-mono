@@ -3,6 +3,11 @@
 #   ./scripts/deploy.sh
 set -euo pipefail
 cd "$(dirname "$0")/.."
+# Web dashboard → dreamsy.dev (built here with apps/web/.env.local: prod API, Supabase, Convex)
+pnpm -s -C apps/web exec vite build --logLevel warn
+grep -q "^VITE_API_URL=https://api.dreamsy.dev" apps/web/.env.local || { echo "apps/web/.env.local must point VITE_API_URL at https://api.dreamsy.dev"; exit 1; }
+ssh dreamsy-ec2 'mkdir -p /srv/dreamsy/web'
+rsync -az --delete apps/web/dist/ dreamsy-ec2:/srv/dreamsy/web/
 rsync -az --delete --exclude node_modules --exclude .git --exclude apps --exclude .dev-logs --exclude .data \
   --exclude '*credentials*' --exclude '.env' --exclude '.env.local' --exclude 'harness/.env' --exclude 'services/api/.env' \
   --exclude engine-web/dist ./ dreamsy-ec2:dreamsy/

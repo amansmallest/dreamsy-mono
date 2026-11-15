@@ -475,3 +475,18 @@ describe("worker checkpoints + eta", () => {
     expect(done.data.generation.etaSeconds).toBeNull();
   });
 });
+
+describe("demo sign-in bypass", () => {
+  it("lets *_demo and special names in, same account every time; rejects others", async () => {
+    const a = await call("POST", "/v1/auth/demo", { json: { username: "Judge_Demo" } });
+    expect(a.status).toBe(200);
+    expect(a.data.user.handle).toBe("judge_demo");
+    const b = await call("POST", "/v1/auth/demo", { json: { username: "judge_demo" } });
+    expect(b.data.user.id).toBe(a.data.user.id);
+    const me = await call("GET", "/v1/me", { token: b.data.token });
+    expect(me.data.user.id).toBe(a.data.user.id);
+    expect((await call("POST", "/v1/auth/demo", { json: { username: "demo" } })).status).toBe(200);
+    expect((await call("POST", "/v1/auth/demo", { json: { username: "apoorv" } })).status).toBe(403);
+    expect((await call("POST", "/v1/auth/demo", { json: { username: "x" } })).status).toBe(400);
+  });
+});

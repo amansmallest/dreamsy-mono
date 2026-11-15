@@ -1,0 +1,12 @@
+import { chromium } from "playwright";
+const b = await chromium.launch();
+const p = await b.newPage({ viewport: { width: 1280, height: 900 } });
+const errs = []; p.on("pageerror", e => errs.push(e.message)); p.on("console", m => m.type() === "error" && errs.push(m.text()));
+await p.goto("https://dreamsy.dev/", { waitUntil: "networkidle" });
+await p.fill("input.input", "judge_demo");
+await p.click("form button[type=submit]");
+await p.waitForSelector("text=Your games", { timeout: 15000 });
+await p.waitForTimeout(3000);
+await p.screenshot({ path: process.argv[2], fullPage: true });
+console.log(JSON.stringify({ url: p.url(), live: await p.locator(".live").count(), errs: errs.slice(0, 5) }));
+await b.close();

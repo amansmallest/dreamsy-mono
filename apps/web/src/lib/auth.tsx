@@ -1,5 +1,6 @@
 // Auth: Supabase (email OTP + OAuth) exchanged for a Dreamsy API token via POST /v1/auth/supabase,
 // or — only when VITE_SUPABASE_URL is unset — a dev guest account (POST /v1/auth/guest).
+// Demo bypass: a username ending in _demo (or a special name) signs in with no code (POST /v1/auth/demo).
 import { createClient, type Session, type SupabaseClient } from '@supabase/supabase-js';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { api, setApiHooks, type User } from './api';
@@ -30,6 +31,7 @@ type AuthApi = {
   verifyEmailCode: (email: string, code: string) => Promise<void>;
   signInWithOAuth: (provider: 'google' | 'apple') => Promise<void>;
   continueAsGuest: () => Promise<void>;
+  demoSignIn: (username: string) => Promise<void>;
   signOut: () => Promise<void>;
   setUser: (u: User) => void;
 };
@@ -44,7 +46,7 @@ const storage = {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({ status: 'loading', user: null });
   const [providers, setProviders] = useState<Providers>({ google: true, apple: false, email: true });
-  const token = useRef<string | null>(supabase ? null : storage.get(GUEST_KEY));
+  const token = useRef<string | null>(storage.get(GUEST_KEY)); // guest or demo token
   const exchanging = useRef<Promise<string | null> | null>(null);
 
   const signedOut = useCallback((error?: string) => {
@@ -72,7 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setApiHooks({
       getToken: () => token.current,
       onUnauthorized: async () => {
-        if (supabase) {
+        if (supabase && !storage.get(GUEST_KEY)) {
           try {
             const { data } = await supabase.auth.refreshSession();
             const t = await exchange(data.session);
@@ -101,7 +103,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let alive = true;
     supabase.auth.getSession().then(async ({ data }) => {
       if (!alive) return;
-      if (!data.session) return setState({ status: 'signedOut', user: null });
+      if (!data.session) {
+        if (!token.current) return setState({ status: 'signedOut', user: null });
+        // Demo account (no Supabase session): resume with the stored API token.
+        return api.me().then(({ user }) => alive && setState({ status: 'signedIn', user }), () => alive && signedOut());
+      }
       try { await exchange(data.session); } catch (e) { signedOut(String((e as Error).message)); }
     });
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
@@ -135,6 +141,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     async continueAsGuest() {
       const { user, token: t } = await api.guest();
+      token.current = t;
+      storage.set(GUEST_KEY, t);
+      setState({ status: 'signedIn', user });
+    },
+    async demoSignIn(username) {
+      const { user, token: t } = await api.demo(username);
       token.current = t;
       storage.set(GUEST_KEY, t);
       setState({ status: 'signedIn', user });

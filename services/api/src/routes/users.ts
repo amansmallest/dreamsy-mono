@@ -31,6 +31,18 @@ const AppleSignIn = z.object({
 });
 const GoogleSignIn = z.object({ idToken: z.string().min(1) });
 const SupabaseSignIn = z.object({ accessToken: z.string().min(1) });
+const DemoSignIn = z.object({ username: z.string().trim().toLowerCase().pipe(z.string().regex(/^[a-z0-9_]{3,20}$/, "username must be 3–20 chars of a-z, 0-9, _")) });
+
+/**
+ * Demo bypass (judges, app review, phone demos): no email code. Allowed for any username ending in
+ * "_demo" and for the special names in DEMO_USERNAMES (default "demo,judge"). DEMO_LOGIN=0 turns it off.
+ * The same username always signs into the same account (no password: demo accounts are shared by design).
+ */
+export function demoAllowed(username: string, env: NodeJS.ProcessEnv = process.env): boolean {
+  if (env.DEMO_LOGIN === "0") return false;
+  const special = (env.DEMO_USERNAMES ?? "demo,judge").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+  return username.endsWith("_demo") || special.includes(username);
+}
 
 export function userRoutes({ db, config, identity }: Deps) {
   const r = router();
@@ -74,6 +86,26 @@ export function userRoutes({ db, config, identity }: Deps) {
   r.post("/v1/auth/supabase", async (c) => {
     const body = await parseJson(c.req.raw, SupabaseSignIn);
     return c.json(await signIn("supabase", body.accessToken));
+  });
+
+  /** Demo bypass: `{ username }` → the demo account with that handle (created on first use). */
+  r.post("/v1/auth/demo", async (c) => {
+    const { username } = await parseJson(c.req.raw, DemoSignIn);
+    if (!demoAllowed(username)) fail(403, "demo sign-in is only for usernames ending in _demo");
+    const user = await db.transaction(async (tx) => {
+      const find = () => tx.select({ user: users }).from(authIdentities)
+        .innerJoin(users, eq(users.id, authIdentities.userId))
+        .where(and(eq(authIdentities.provider, "demo"), eq(authIdentities.subject, username)));
+      const [existing] = await find();
+      if (existing) return existing.user;
+      const [handleTaken] = await tx.select({ id: users.id }).from(users).where(eq(users.handle, username));
+      const fresh = newUser();
+      const [created] = await tx.insert(users).values(handleTaken ? fresh : { ...fresh, handle: username }).returning();
+      await tx.insert(authIdentities).values({ provider: "demo", subject: username, userId: created!.id, email: null }).onConflictDoNothing();
+      const [winner] = await find();
+      return winner!.user;
+    });
+    return c.json({ user, token: await signUserToken(config, user.id) });
   });
 
   /** Anonymous guest account. Linking a guest to Apple/Google: later. */

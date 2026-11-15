@@ -30,5 +30,5 @@ services:
     image: caddy:2
     restart: unless-stopped
     ports: ["80:80", "443:443"]
-    volumes: [./Caddyfile:/etc/caddy/Caddyfile:ro, /srv/dreamsy/caddy:/data, /srv/dreamsy/engine:/srv/engine:ro]
+    volumes: [./Caddyfile:/etc/caddy/Caddyfile:ro, /srv/dreamsy/caddy:/data, /srv/dreamsy/engine:/srv/engine:ro, /srv/dreamsy/web:/srv/web:ro]
     depends_on: [api]

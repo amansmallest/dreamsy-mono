@@ -54,8 +54,14 @@ export function SignIn() {
               <>
                 <div className="or"><span>or</span></div>
                 {!sent ? (
-                  <form className="stack" onSubmit={(e) => { e.preventDefault(); void run('email', async () => { await auth.sendEmailCode(email.trim()); setSent(true); })(); }}>
-                    <input className="input" type="email" required placeholder="you@studio.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+                  <form className="stack" onSubmit={(e) => {
+                    e.preventDefault();
+                    const v = email.trim();
+                    // Demo bypass: a username (no "@"), e.g. judge_demo, signs straight in.
+                    if (!v.includes('@')) return void run('email', () => auth.demoSignIn(v))();
+                    void run('email', async () => { await auth.sendEmailCode(v); setSent(true); })();
+                  }}>
+                    <input className="input" type="text" inputMode="email" autoComplete="email" autoCapitalize="none" required placeholder="you@studio.com" value={email} onChange={(e) => setEmail(e.target.value)} />
                     <Button size="lg" className="w-full" busy={busy === 'email'} type="submit">Email me a code</Button>
                   </form>
                 ) : (

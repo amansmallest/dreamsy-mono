@@ -2,7 +2,8 @@
 # Start the whole Dreamsy dev stack and open the app in Expo Go.
 #   ./scripts/dev.sh            (Ctrl+C stops everything)
 #   ./scripts/dev.sh --reseed   (publish the showcase games again)
-#   ./scripts/dev.sh --tunnel   (phone on any network: API, engine and Metro over Cloudflare quick tunnels)
+#   ./scripts/dev.sh --tunnel   (phone on any network: Metro over a Cloudflare quick tunnel)
+#   ./scripts/dev.sh --local    (app uses this laptop's API + engine instead of prod api/play.dreamsy.dev)
 set -euo pipefail
 set -m   # job control: each background server gets its own process group, so cleanup kills the whole tree
 cd "$(dirname "$0")/.."
@@ -12,8 +13,9 @@ ROOT=$(pwd)
 export NODE_OPTIONS="${NODE_OPTIONS:-} --network-family-autoselection-attempt-timeout=2000"
 LOGS="$ROOT/.dev-logs"; mkdir -p "$LOGS"
 IP=$(ipconfig getifaddr en0 2>/dev/null || echo localhost)
-TUNNEL=0; RESEED=0
-for a in "$@"; do case "$a" in --tunnel) TUNNEL=1;; --reseed) RESEED=1;; esac; done
+TUNNEL=0; RESEED=0; LOCAL=0
+for a in "$@"; do case "$a" in --tunnel) TUNNEL=1;; --reseed) RESEED=1;; --local) LOCAL=1;; esac; done
+PROD_API=https://api.dreamsy.dev; PROD_ENGINE=https://play.dreamsy.dev/
 PIDS=()
 cleanup() {
   echo; echo "stopping…"
@@ -50,10 +52,13 @@ fi
 (cd apps/mobile && npx expo whoami >/dev/null 2>&1) || { echo "Not signed in to Expo. Create a token at https://expo.dev/settings/access-tokens and add EXPO_TOKEN=... to the repo-root .env (or run: cd apps/mobile && npx expo login). Sign in to Expo Go on the phone with the same account."; exit 1; }
 docker info >/dev/null 2>&1 || { echo "Docker isn't running. Start Docker Desktop, then rerun."; exit 1; }
 [ -f services/api/.env ] || { echo "Missing services/api/.env (copy services/api/.env.example)."; exit 1; }
-grep -q "^EXPO_PUBLIC_API_URL=http://$IP:" apps/mobile/.env.local 2>/dev/null || {
+if [ "$LOCAL" = 1 ]; then
   printf 'EXPO_PUBLIC_API_URL=http://%s:8787\nEXPO_PUBLIC_ENGINE_URL=http://%s:2005/\n' "$IP" "$IP" > apps/mobile/.env.local
-  echo "  wrote apps/mobile/.env.local for LAN IP $IP"
-}
+  echo "  app → this laptop ($IP)"
+else
+  printf 'EXPO_PUBLIC_API_URL=%s\nEXPO_PUBLIC_ENGINE_URL=%s\n' "$PROD_API" "$PROD_ENGINE" > apps/mobile/.env.local
+  echo "  app → prod ($PROD_API, $PROD_ENGINE)"
+fi
 for port in 8787 2005 3000 8081 8082 19000 19001 19002; do free_port $port; done   # API, engine, dashboard, Expo/Metro
 pkill -f "harness.*src/main.ts worker" 2>/dev/null && echo "  stopped leftover harness worker" || true
 
@@ -100,14 +105,16 @@ if [ "$TUNNEL" = 1 ]; then
   step "Tunnels (phone works on any network; these URLs are public while dev.sh runs)"
   command -v cloudflared >/dev/null || { echo "Install cloudflared: brew install cloudflared"; exit 1; }
   rm -f "$LOGS"/tunnel-*.log
-  bg tunnel-api cloudflared tunnel --no-autoupdate --url http://localhost:8787
-  bg tunnel-engine cloudflared tunnel --no-autoupdate --url http://localhost:2005
   bg tunnel-metro cloudflared tunnel --no-autoupdate --url http://localhost:8081
-  API_PUBLIC=$(tunnel_url api); ENGINE_PUBLIC=$(tunnel_url engine); METRO_PUBLIC=$(tunnel_url metro)
-  printf 'EXPO_PUBLIC_API_URL=%s\nEXPO_PUBLIC_ENGINE_URL=%s/\n' "$API_PUBLIC" "$ENGINE_PUBLIC" > apps/mobile/.env.local
+  if [ "$LOCAL" = 1 ]; then   # prod API/engine are already public; only a local stack needs tunnels for them
+    bg tunnel-api cloudflared tunnel --no-autoupdate --url http://localhost:8787
+    bg tunnel-engine cloudflared tunnel --no-autoupdate --url http://localhost:2005
+    API_PUBLIC=$(tunnel_url api); ENGINE_PUBLIC=$(tunnel_url engine)
+    printf 'EXPO_PUBLIC_API_URL=%s\nEXPO_PUBLIC_ENGINE_URL=%s/\n' "$API_PUBLIC" "$ENGINE_PUBLIC" > apps/mobile/.env.local
+    echo "  API     $API_PUBLIC"; echo "  engine  $ENGINE_PUBLIC"
+  fi
+  METRO_PUBLIC=$(tunnel_url metro)
   export EXPO_PACKAGER_PROXY_URL="$METRO_PUBLIC"
-  echo "  API     $API_PUBLIC"
-  echo "  engine  $ENGINE_PUBLIC"
   echo "  metro   $METRO_PUBLIC"
 fi
 

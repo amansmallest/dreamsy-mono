@@ -80,7 +80,11 @@ function showMessage(text: string) {
 
 /** Share links: /g/<gameId> or ?public=<gameId> — plays the published version, no account needed. */
 const publicId = params.get("public") ?? location.pathname.match(/\/g\/([^/?#]+)/)?.[1] ?? null;
-const publicApi = (params.get("api") ?? `${location.protocol}//${location.hostname}:8787`).replace(/\/$/, "");
+// Hosted (play.<domain>) → api.<domain>; local dev → same host on :8787.
+const defaultApi = location.hostname.startsWith("play.")
+  ? `https://api.${location.hostname.slice("play.".length)}`
+  : `${location.protocol}//${location.hostname}:8787`;
+const publicApi = (params.get("api") ?? defaultApi).replace(/\/$/, "");
 
 async function fetchPackage(): Promise<{ pkg: Package; label: string } | null> {
   if (publicId) {

@@ -1,0 +1,12 @@
+{
+  "name": "@dreamsy/live",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "convex dev",
+    "deploy": "convex deploy"
+  },
+  "dependencies": {
+    "convex": "^1.50.0"
+  }
+}

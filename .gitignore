@@ -24,3 +24,6 @@ dist/
 *.p12
 *.key
 *.mobileprovision
+
+# credentials
+*credentials*.csv

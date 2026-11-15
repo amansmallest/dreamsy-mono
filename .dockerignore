@@ -1,0 +1,12 @@
+**/node_modules
+**/.env
+**/.env.*
+.data
+.dev-logs
+.git
+apps
+third_party
+*credentials*.csv
+**/*.pem
+**/*.key
+engine-web/dist

@@ -1,0 +1,19 @@
+# Behind Cloudflare (proxied). Serves plain HTTP (Cloudflare SSL "Flexible") and HTTPS with an
+# internal cert (SSL "Full"), so either zone setting works.
+{
+  auto_https disable_redirects
+}
+# API
+http://api.dreamsy.dev, https://api.dreamsy.dev, http://:80 {
+  tls internal
+  reverse_proxy api:8787 {
+    flush_interval -1   # SSE build progress
+  }
+}
+# Engine: the game player for the app's WebView and ?public= share links
+http://play.dreamsy.dev, https://play.dreamsy.dev {
+  tls internal
+  root * /srv/engine
+  try_files {path} /index.html
+  file_server
+}

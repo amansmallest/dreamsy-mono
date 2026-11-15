@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { GameCard } from '../components/GameCard';
+import { LiveNow } from '../components/LiveNow';
 import { Doodles, Icon } from '../components/Icon';
 import { NewGameModal } from '../components/NewGame';
 import { Button, Empty, ErrorNote, Segmented } from '../components/ui';
@@ -59,6 +60,7 @@ export function Home() {
             {shown.map((g) => <GameCard key={g.id} game={g} />)}
           </div>
         )}
+      <LiveNow />
       <NewGameModal open={creating} onClose={() => setCreating(false)} />
     </div>
   );

@@ -6,6 +6,7 @@ export const env = {
   supabaseUrl: noSlash(v(import.meta.env.VITE_SUPABASE_URL)),
   supabaseKey: v(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY),
   appDeeplink: v(import.meta.env.VITE_APP_DEEPLINK) || 'dreamsy://',
+  convexUrl: v(import.meta.env.VITE_CONVEX_URL),
   shareUrl: noSlash(v(import.meta.env.VITE_SHARE_URL) || 'https://dreamsy.app'),
 };
 

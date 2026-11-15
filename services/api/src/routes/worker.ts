@@ -5,6 +5,7 @@ import { z } from "zod";
 import { requireWorker } from "../auth.js";
 import { fail, parseJson, router, type Deps } from "../context.js";
 import { schema } from "../db/client.js";
+import { mirrorToLive } from "../live.js";
 import { MAX_PACKAGE_BYTES } from "../package.js";
 import {
   appendEvent,
@@ -119,6 +120,7 @@ export function workerRoutes({ db, storage, config }: Deps) {
     });
 
     if (!claimed) return c.body(null, 204);
+    mirrorToLive(db, claimed.id, "started", {});
 
     const game = await getGame(db, claimed.gameId);
     const images = claimed.imageIds.length
@@ -166,6 +168,7 @@ export function workerRoutes({ db, storage, config }: Deps) {
       }).where(eq(generations.id, c.req.param("id")));
       await appendEvent(tx, c.req.param("id"), body.type, body.data);
     });
+    mirrorToLive(db, c.req.param("id"), body.type, body.data);
     return c.json({ ok: true, leaseSeconds: config.leaseSeconds });
   });
 
@@ -215,6 +218,7 @@ export function workerRoutes({ db, storage, config }: Deps) {
       await appendEvent(tx, gen.id, "checkpoint", { version: version.version, summary: res.summary });
       return version;
     });
+    mirrorToLive(db, c.req.param("id"), "checkpoint", { version: version.version, summary: res.summary });
     return c.json({ version: versionView(version) }, 201);
   });
 
@@ -233,6 +237,7 @@ export function workerRoutes({ db, storage, config }: Deps) {
       await appendEvent(tx, gen.id, "succeeded", { version: version.version, summary: res.summary });
       return { gen: done!, version };
     });
+    mirrorToLive(db, gen.id, "succeeded", { version: version.version, summary: res.summary });
     return c.json({ generation: generationView(gen), version: versionView(version) }, 201);
   });
 
@@ -248,6 +253,7 @@ export function workerRoutes({ db, storage, config }: Deps) {
       await appendEvent(tx, gen.id, retry ? "requeued" : "failed", { error: body.error });
       return updated!;
     });
+    if (gen.status === "failed") mirrorToLive(db, gen.id, "failed", { error: body.error });
     return c.json({ generation: generationView(gen) });
   });
 

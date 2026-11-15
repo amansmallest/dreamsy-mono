@@ -1,0 +1,34 @@
+# Production stack on one EC2 box — mirrors the dev stack (Postgres + API + worker, files on disk).
+#   cd ~/dreamsy && docker compose -f deploy/docker-compose.yml --env-file deploy/.env.prod up -d --build
+services:
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment: { POSTGRES_USER: dreamsy, POSTGRES_PASSWORD: "${PG_PASSWORD}", POSTGRES_DB: dreamsy }
+    volumes: [/srv/dreamsy/pg:/var/lib/postgresql/data]
+    healthcheck: { test: ["CMD", "pg_isready", "-U", "dreamsy"], interval: 3s, retries: 30 }
+  api:
+    build: { context: .., dockerfile: deploy/Dockerfile }
+    image: dreamsy:latest
+    restart: unless-stopped
+    env_file: .env.prod
+    environment:
+      DATABASE_URL: "postgres://dreamsy:${PG_PASSWORD}@postgres:5432/dreamsy"
+      STORAGE_DIR: /data/blobs
+    volumes: [/srv/dreamsy/data:/data]
+    depends_on: { postgres: { condition: service_healthy } }
+  worker:
+    image: dreamsy:latest
+    restart: unless-stopped
+    command: ["pnpm", "-s", "-C", "harness", "worker"]
+    env_file: .env.prod
+    environment: { DREAMSY_API_URL: "http://api:8787" }
+    volumes: [/srv/dreamsy/data:/app/.data]   # memory + sprite library (blobs dir shared, unused by worker)
+    depends_on: [api]
+    ipc: host                                   # Chromium shared memory
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    volumes: [./Caddyfile:/etc/caddy/Caddyfile:ro, /srv/dreamsy/caddy:/data, /srv/dreamsy/engine:/srv/engine:ro]
+    depends_on: [api]

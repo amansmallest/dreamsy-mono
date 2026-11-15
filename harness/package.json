@@ -1,0 +1,30 @@
+{
+  "name": "@dreamsy/harness",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "worker": "tsx src/main.ts worker",
+    "local": "tsx src/main.ts local",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.8.0",
+    "@dreamsy/engine": "workspace:^",
+    "@dreamsy/format": "workspace:^",
+    "@google/genai": "^3.3.0",
+    "ajv": "^8",
+    "playwright": "^1.65.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@dreamsy/api": "workspace:^",
+    "@electric-sql/pglite": "^0.5.16",
+    "@types/node": "^26.6.6",
+    "drizzle-orm": "^0.45.4",
+    "fflate": "^0.8.3",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
+  }
+}

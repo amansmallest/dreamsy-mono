@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "dreamsy://kits/tycoon/generator.json",
+  "title": "data/generators/<id>.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "cost",
+    "output"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+    },
+    "name": {
+      "type": "string"
+    },
+    "desc": {
+      "type": "string"
+    },
+    "icon": {
+      "type": "string",
+      "pattern": "^asset:[a-z][a-z0-9_]*$"
+    },
+    "order": {
+      "type": "number"
+    },
+    "currency": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+    },
+    "cost": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "base"
+      ],
+      "properties": {
+        "base": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "growth": {
+          "type": "number",
+          "minimum": 1,
+          "description": "cost \u00d7growth per owned (1.07\u20131.15)"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,63}$"
+        }
+      }
+    },
+    "output": {
+      "type": "number",
+      "minimum": 0,
+      "description": "currency per cycle per unit owned"
+    },
+    "cycle": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "seconds per cycle (default 1)"
+    },
+    "auto": {
+      "type": "boolean",
+      "description": "runs by itself (default: true when there is no manager)"
+    },
+    "manager": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cost"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "cost": {
+          "type": "number",
+          "minimum": 0
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,63}$"
+        }
+      }
+    },
+    "unlock": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "owned": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "description": "generator id \u2192 owned count"
+        },
+        "earned": {
+          "type": "number"
+        },
+        "all_time": {
+          "type": "number"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,63}$"
+        },
+        "prestiges": {
+          "type": "integer"
+        }
+      }
+    },
+    "milestones": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "at",
+          "mult"
+        ],
+        "properties": {
+          "at": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "mult": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "kind": {
+            "enum": [
+              "output",
+              "speed"
+            ]
+          },
+          "target": {
+            "type": "string",
+            "description": "\"all\" or a generator id"
+          }
+        }
+      }
+    }
+  }
+}

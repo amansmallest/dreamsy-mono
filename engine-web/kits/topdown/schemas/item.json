@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "dreamsy:kit/topdown/item",
+  "title": "topdown item (data/items/<id>.json)",
+  "type": "object",
+  "required": ["id", "kind"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$", "description": "Referenced by chest/item tile tags, NPC gives, shops, drops." },
+    "name": { "type": "string" },
+    "kind": { "enum": ["sword", "bow", "bomb", "hookshot", "boots", "passive", "wand", "custom", "key", "boss_key", "heart_container", "heart", "rupee", "ammo"],
+      "description": "sword: melee damage. bow/wand: projectile. bomb: placed, explodes, breaks tags. hookshot: pulls to hook posts across gaps. boots/passive: passes + speed_mult. custom: emits useItem. key/boss_key/heart_container/heart/rupee/ammo: consumed on pickup." },
+    "sprite": { "type": "string", "pattern": "^asset:[a-z0-9_]+$", "description": "Icon (HUD slot, pickups)." },
+    "description": { "type": "string" },
+    "message": { "type": "string", "description": "Shown under the name on first pickup (teach the player)." },
+    "equip": { "type": "boolean", "description": "false = never goes in the item slot." },
+    "damage": { "type": "number" },
+    "speed": { "type": "number", "description": "projectile / hook speed px/s" },
+    "range": { "type": "number", "description": "hookshot reach px" },
+    "ammo": { "type": "integer", "description": "Starting ammo (item uses ammo when set)." },
+    "max": { "type": "integer", "description": "Max ammo." },
+    "max_out": { "type": "integer", "description": "bomb: bombs on screen at once" },
+    "fuse": { "type": "number" }, "radius": { "type": "number" }, "self_damage": { "type": "number" },
+    "breaks": { "type": "array", "items": { "type": "string" }, "description": "Tile tags destroyed (bomb, wand), e.g. [\"cracked\"]." },
+    "passes": { "type": "array", "items": { "type": "string" }, "description": "Blocking tile tags the hero can walk through while owning it, e.g. [\"rough\"] for boots." },
+    "speed_mult": { "type": "number" },
+    "amount": { "type": "number", "description": "rupee / heart (half hearts) / ammo amount" },
+    "ammo_for": { "type": "string", "description": "kind ammo: which item it refills" },
+    "projectile": { "type": "string", "description": "bow/wand projectile sprite" },
+    "bomb_sprite": { "type": "string" }
+  }
+}

@@ -1,0 +1,85 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "dreamsy/kits/survival/node.json",
+ "title": "Resource node (data/nodes/<id>.json)",
+ "type": "object",
+ "additionalProperties": false,
+ "required": [
+  "tile",
+  "drops"
+ ],
+ "properties": {
+  "id": {
+   "type": "string",
+   "pattern": "^[a-z][a-z0-9_]*$"
+  },
+  "name": {
+   "type": "string"
+  },
+  "tile": {
+   "type": "string",
+   "minLength": 1,
+   "maxLength": 1,
+   "description": "tileset char (printable ASCII, not '.' or ' ')"
+  },
+  "hp": {
+   "type": "number",
+   "minimum": 1
+  },
+  "tool": {
+   "type": "string",
+   "description": "tool kind (item data.tool.kind); omit = hands"
+  },
+  "tier": {
+   "type": "integer",
+   "minimum": 0,
+   "description": "min tool tier; 0 = hands ok"
+  },
+  "drops": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "item"
+    ],
+    "additionalProperties": false,
+    "properties": {
+     "item": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+     },
+     "count": {
+      "oneOf": [
+       {
+        "type": "integer",
+        "minimum": 0
+       },
+       {
+        "type": "array",
+        "items": {
+         "type": "integer",
+         "minimum": 0
+        },
+        "minItems": 2,
+        "maxItems": 2
+       }
+      ],
+      "description": "count or [min, max]"
+     },
+     "chance": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+     }
+    }
+   }
+  },
+  "respawn": {
+   "type": "number",
+   "description": "seconds; 0 = never"
+  },
+  "solid": {
+   "type": "boolean"
+  }
+ }
+}

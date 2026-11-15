@@ -1,0 +1,240 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "data/story/story.json",
+ "type": "object",
+ "additionalProperties": false,
+ "properties": {
+  "title": {
+   "type": "string"
+  },
+  "start": {
+   "type": "string"
+  },
+  "galleryKey": {
+   "type": "string"
+  },
+  "theEnd": {
+   "type": "string"
+  },
+  "characters": {
+   "type": "object",
+   "additionalProperties": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "name": {
+      "type": "string"
+     },
+     "color": {
+      "type": "string",
+      "pattern": "^#[0-9a-fA-F]{6}$"
+     },
+     "default": {
+      "type": "string"
+     },
+     "position": {
+      "enum": [
+       "farleft",
+       "left",
+       "midleft",
+       "center",
+       "midright",
+       "right",
+       "farright"
+      ]
+     },
+     "expressions": {
+      "type": "object",
+      "additionalProperties": {
+       "type": "string",
+       "pattern": "^asset:[a-z0-9_]+$"
+      }
+     },
+     "size": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "minItems": 2,
+      "maxItems": 2
+     },
+     "affection": {
+      "oneOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "object",
+        "properties": {
+         "min": {
+          "type": "number"
+         },
+         "max": {
+          "type": "number"
+         }
+        },
+        "additionalProperties": false
+       }
+      ]
+     }
+    }
+   }
+  },
+  "backgrounds": {
+   "type": "object",
+   "additionalProperties": {
+    "type": "string",
+    "pattern": "^asset:[a-z0-9_]+$"
+   }
+  },
+  "cgs": {
+   "type": "object",
+   "additionalProperties": {
+    "type": "object",
+    "properties": {
+     "title": {
+      "type": "string"
+     },
+     "image": {
+      "type": "string",
+      "pattern": "^asset:[a-z0-9_]+$"
+     },
+     "order": {
+      "type": "number"
+     }
+    },
+    "additionalProperties": false
+   }
+  },
+  "endings": {
+   "type": "object",
+   "additionalProperties": {
+    "type": "object",
+    "properties": {
+     "title": {
+      "type": "string"
+     },
+     "text": {
+      "type": "string"
+     },
+     "order": {
+      "type": "number"
+     }
+    },
+    "required": [
+     "title"
+    ],
+    "additionalProperties": false
+   }
+  },
+  "clues": {
+   "type": "object",
+   "additionalProperties": {
+    "$ref": "clue.schema.json"
+   }
+  },
+  "combine": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "items"
+    ],
+    "additionalProperties": false,
+    "properties": {
+     "items": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "minItems": 2,
+      "maxItems": 2
+     },
+     "result": {
+      "type": "string"
+     },
+     "text": {
+      "oneOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "array",
+        "items": {
+         "type": "string"
+        }
+       }
+      ]
+     },
+     "effects": {
+      "description": "Story command strings (\"give rope\", \"set x\", \"aff mira 1\", \"clue id\") or core effect objects",
+      "oneOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "array",
+        "items": {
+         "type": [
+          "string",
+          "object"
+         ]
+        }
+       }
+      ]
+     },
+     "keep": {
+      "type": "boolean"
+     }
+    }
+   }
+  },
+  "cantUse": {
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    }
+   ]
+  },
+  "cantCombine": {
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    }
+   ]
+  },
+  "ui": {
+   "type": "object",
+   "additionalProperties": false,
+   "properties": {
+    "cps": {
+     "type": "number"
+    },
+    "autoDelay": {
+     "type": "number"
+    },
+    "narration": {
+     "type": "string"
+    },
+    "charSize": {
+     "type": "array",
+     "items": {
+      "type": "number"
+     }
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "dreamsy/kits/roguelite/roguelite.json",
+  "title": "data/roguelite.json \u2014 run config (all optional; defaults in kits/roguelite/state.luau)",
+  "type": "object",
+  "properties": {
+    "runCurrency": {},
+    "metaCurrency": {},
+    "metaName": {},
+    "startGold": {},
+    "choices": {},
+    "weights": {},
+    "eliteFromStep": {},
+    "scaling": {},
+    "rewards": {},
+    "rarity": {},
+    "eliteRarity": {},
+    "bossRarity": {},
+    "relicChoices": {},
+    "shop": {},
+    "rest": {},
+    "heat": {},
+    "meta": {},
+    "baseStats": {},
+    "roomTime": {},
+    "sim": {},
+    "saveRun": {}
+  },
+  "additionalProperties": false
+}

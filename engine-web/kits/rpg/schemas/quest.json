@@ -1,0 +1,205 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "rpg/quest.json",
+  "title": "data/quests/<id>.json",
+  "description": "A quest: ordered steps with objectives, then rewards.",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "order": {
+      "type": "integer"
+    },
+    "hidden": {
+      "type": "boolean"
+    },
+    "silent": {
+      "type": "boolean"
+    },
+    "auto_start": {
+      "type": "boolean"
+    },
+    "start_if": {
+      "$ref": "common.json#/$defs/condition"
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "auto": {
+            "type": "boolean"
+          },
+          "effects": {
+            "$ref": "common.json#/$defs/effects"
+          },
+          "objectives": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "enum": [
+                    "item",
+                    "flag",
+                    "visit",
+                    "talk",
+                    "defeat",
+                    "catch",
+                    "party_size",
+                    "level",
+                    "money",
+                    "condition",
+                    "custom"
+                  ]
+                },
+                "text": {
+                  "type": "string"
+                },
+                "item": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                },
+                "count": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "consume": {
+                  "type": "boolean"
+                },
+                "flag": {
+                  "type": "string"
+                },
+                "map": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                },
+                "npc": {
+                  "type": "string"
+                },
+                "trainer": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                },
+                "creature": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                },
+                "creature_type": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                },
+                "level": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "amount": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "if": {
+                  "$ref": "common.json#/$defs/condition"
+                },
+                "id": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "type"
+              ]
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "text"
+        ]
+      },
+      "minItems": 1
+    },
+    "rewards": {
+      "type": "object",
+      "properties": {
+        "money": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "items": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "item": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9_]*$"
+                  },
+                  "count": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "item"
+                ]
+              }
+            }
+          ]
+        },
+        "flags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "creature": {
+          "type": "object",
+          "properties": {
+            "creature": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "level": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "creature"
+          ]
+        },
+        "effects": {
+          "$ref": "common.json#/$defs/effects"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "steps"
+  ]
+}

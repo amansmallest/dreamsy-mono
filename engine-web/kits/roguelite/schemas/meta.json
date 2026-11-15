@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "dreamsy/kits/roguelite/meta.json",
+  "title": "data/meta/<id>.json \u2014 meta tree node (progression skill def; costs in the meta currency)",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "icon": {
+      "type": "string",
+      "pattern": "^asset:[a-z0-9_]+$"
+    },
+    "branch": {
+      "type": "string"
+    },
+    "tier": {
+      "type": "number"
+    },
+    "maxRank": {
+      "type": "integer"
+    },
+    "cost": {},
+    "requires": {
+      "type": "array"
+    },
+    "requiresAny": {
+      "type": "array"
+    },
+    "condition": {
+      "description": "core condition (+ roguelite kinds: relic, class, heat, runFloor, hpBelow, runGold, wins, classWins)"
+    },
+    "effects": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "description": "core effects (+ roguelite kinds: heal, healPct, maxHp, gold{raw?}, charge, shield, hurt, relic ('random'|id|{rarity weights}), meta)"
+    },
+    "mods": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "stat"
+        ],
+        "properties": {
+          "stat": {
+            "type": "string"
+          },
+          "add": {
+            "type": "number"
+          },
+          "pct": {
+            "type": "number"
+          },
+          "mul": {
+            "type": "number"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "cost"
+  ]
+}

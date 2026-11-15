@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "racing cup (data/cups/<id>.json)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "tracks"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "name": {
+      "type": "string"
+    },
+    "order": {
+      "type": "number"
+    },
+    "tracks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_]*$"
+      }
+    },
+    "points": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "laps": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "difficulty": {
+      "enum": [
+        "easy",
+        "normal",
+        "hard",
+        "expert"
+      ]
+    },
+    "unlock": {
+      "type": [
+        "object",
+        "array"
+      ],
+      "description": "core condition, e.g. {\"level\":3,\"track\":\"driver\"} or {\"flag\":\"cup_won\"}"
+    },
+    "reward": {
+      "type": "object"
+    },
+    "rivals": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "car"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "name": {
+            "type": "string"
+          },
+          "car": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "preset": {
+            "enum": [
+              "easy",
+              "normal",
+              "hard",
+              "expert"
+            ]
+          },
+          "color": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

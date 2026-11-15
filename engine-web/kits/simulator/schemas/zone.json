@@ -1,0 +1,105 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "dreamsy/kits/simulator/zone.json",
+ "title": "data/zones/<id>.json \u2014 zone",
+ "type": "object",
+ "properties": {
+  "id": {
+   "type": "string",
+   "description": "Optional; must equal the file name."
+  },
+  "name": {
+   "type": "string"
+  },
+  "desc": {
+   "type": "string"
+  },
+  "icon": {
+   "type": "string",
+   "pattern": "^asset:[a-z0-9_]+$"
+  },
+  "order": {
+   "type": "number",
+   "description": "Track/list order (ascending)."
+  },
+  "color": {
+   "type": "string",
+   "description": "Ground tint."
+  },
+  "unlock": {
+   "type": "object",
+   "properties": {
+    "coins": {
+     "type": "number",
+     "minimum": 0
+    },
+    "rebirths": {
+     "type": "integer",
+     "minimum": 0
+    },
+    "condition": {
+     "description": "core condition"
+    },
+    "hint": {
+     "type": "string"
+    }
+   },
+   "additionalProperties": false
+  },
+  "nodes": {
+   "type": "array",
+   "minItems": 1,
+   "items": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string"
+     },
+     "name": {
+      "type": "string"
+     },
+     "hp": {
+      "type": "number",
+      "exclusiveMinimum": 0
+     },
+     "reward": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Coin value carried when broken (\u00d7 coin multiplier on sell)."
+     },
+     "size": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "default": 1,
+      "description": "Backpack units."
+     },
+     "weight": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "default": 1
+     },
+     "sprite": {
+      "type": "string",
+      "pattern": "^asset:[a-z0-9_]+$"
+     },
+     "color": {
+      "type": "string"
+     },
+     "scale": {
+      "type": "number"
+     }
+    },
+    "required": [
+     "id",
+     "hp",
+     "reward"
+    ],
+    "additionalProperties": false
+   }
+  }
+ },
+ "required": [
+  "nodes"
+ ],
+ "additionalProperties": false
+}

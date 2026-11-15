@@ -1,0 +1,111 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "dreamsy/kits/simulator/simulator.json",
+ "title": "data/simulator.json \u2014 simulator config",
+ "type": "object",
+ "properties": {
+  "currency": {
+   "type": "string",
+   "default": "coins"
+  },
+  "currencyName": {
+   "type": "string"
+  },
+  "currencyIcon": {
+   "type": "string",
+   "pattern": "^asset:[a-z0-9_]+$"
+  },
+  "petSlots": {
+   "type": "integer",
+   "minimum": 0,
+   "default": 3
+  },
+  "maxPets": {
+   "type": "integer",
+   "minimum": 1,
+   "default": 60
+  },
+  "offline": {
+   "type": "object",
+   "properties": {
+    "rate": {
+     "type": "number",
+     "minimum": 0,
+     "maximum": 1,
+     "default": 0.25
+    },
+    "capHours": {
+     "type": "number",
+     "minimum": 0,
+     "default": 4
+    },
+    "minSeconds": {
+     "type": "number",
+     "minimum": 0,
+     "default": 60
+    }
+   },
+   "additionalProperties": false
+  },
+  "rebirth": {
+   "type": "object",
+   "properties": {
+    "threshold": {
+     "type": "number",
+     "minimum": 0
+    },
+    "exponent": {
+     "type": "number",
+     "exclusiveMinimum": 0,
+     "maximum": 1
+    },
+    "scale": {
+     "type": "number",
+     "minimum": 0
+    },
+    "bonus": {
+     "type": "number",
+     "description": "Coin multiplier per rebirth point (0.25 = +25%)."
+    },
+    "zone": {
+     "type": "string",
+     "description": "Zone that must be unlocked before rebirth."
+    },
+    "slotsPerRebirth": {
+     "type": "number",
+     "minimum": 0
+    },
+    "maxSlots": {
+     "type": "integer"
+    }
+   },
+   "additionalProperties": false
+  },
+  "rarities": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string"
+     },
+     "name": {
+      "type": "string"
+     },
+     "color": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "name",
+     "color"
+    ],
+    "additionalProperties": false
+   },
+   "description": "Lowest \u2192 highest. Default common, uncommon, rare, epic, legendary, mythic."
+  }
+ },
+ "required": [],
+ "additionalProperties": false
+}

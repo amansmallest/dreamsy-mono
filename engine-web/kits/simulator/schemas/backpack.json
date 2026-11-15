@@ -1,0 +1,60 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "dreamsy/kits/simulator/backpack.json",
+ "title": "data/backpacks/<id>.json \u2014 backpack (upgrade track)",
+ "type": "object",
+ "properties": {
+  "id": {
+   "type": "string",
+   "description": "Optional; must equal the file name."
+  },
+  "name": {
+   "type": "string"
+  },
+  "desc": {
+   "type": "string"
+  },
+  "icon": {
+   "type": "string",
+   "pattern": "^asset:[a-z0-9_]+$"
+  },
+  "order": {
+   "type": "number",
+   "description": "Track/list order (ascending)."
+  },
+  "cost": {
+   "oneOf": [
+    {
+     "type": "number",
+     "minimum": 0
+    },
+    {
+     "type": "object",
+     "properties": {
+      "coins": {
+       "type": "number",
+       "minimum": 0
+      },
+      "amount": {
+       "type": "number",
+       "minimum": 0
+      }
+     },
+     "additionalProperties": false
+    }
+   ],
+   "description": "In-game coins (number or {coins}). Never Stars."
+  },
+  "capacity": {
+   "type": "number",
+   "exclusiveMinimum": 0
+  },
+  "zone": {
+   "type": "string"
+  }
+ },
+ "required": [
+  "capacity"
+ ],
+ "additionalProperties": false
+}

@@ -1,0 +1,117 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "data/story/boards/<id>.json \u2014 deduction board",
+ "type": "object",
+ "additionalProperties": false,
+ "required": [
+  "links",
+  "solved"
+ ],
+ "properties": {
+  "title": {
+   "type": "string"
+  },
+  "prompt": {
+   "type": "string"
+  },
+  "clues": {
+   "type": "array",
+   "items": {
+    "type": "string"
+   }
+  },
+  "links": {
+   "type": "array",
+   "minItems": 1,
+   "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "clues",
+     "text"
+    ],
+    "properties": {
+     "id": {
+      "type": "string"
+     },
+     "clues": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "minItems": 2,
+      "maxItems": 2
+     },
+     "text": {
+      "type": "string"
+     },
+     "effects": {
+      "description": "Story command strings (\"give rope\", \"set x\", \"aff mira 1\", \"clue id\") or core effect objects",
+      "oneOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "array",
+        "items": {
+         "type": [
+          "string",
+          "object"
+         ]
+        }
+       }
+      ]
+     }
+    }
+   }
+  },
+  "need": {
+   "type": "array",
+   "items": {
+    "type": "string"
+   }
+  },
+  "question": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "text",
+    "options"
+   ],
+   "properties": {
+    "text": {
+     "type": "string"
+    },
+    "options": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+       "text"
+      ],
+      "properties": {
+       "text": {
+        "type": "string"
+       },
+       "correct": {
+        "type": "boolean"
+       }
+      }
+     }
+    }
+   }
+  },
+  "mistakes": {
+   "type": "integer",
+   "minimum": 1
+  },
+  "solved": {
+   "type": "string"
+  },
+  "failed": {
+   "type": "string"
+  }
+ }
+}

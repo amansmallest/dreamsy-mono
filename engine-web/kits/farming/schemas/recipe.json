@@ -1,0 +1,63 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "dreamsy/kits/farming/recipe.json",
+ "title": "Crafting recipe (data/recipes/<id>.json)",
+ "type": "object",
+ "additionalProperties": false,
+ "required": [
+  "inputs"
+ ],
+ "properties": {
+  "id": {
+   "type": "string",
+   "pattern": "^[a-z][a-z0-9_]*$"
+  },
+  "name": {
+   "type": "string"
+  },
+  "icon": {
+   "type": "string",
+   "pattern": "^asset:[a-z0-9_]+$"
+  },
+  "output": {
+   "type": "string",
+   "pattern": "^[a-z][a-z0-9_]*$"
+  },
+  "count": {
+   "type": "integer",
+   "minimum": 1
+  },
+  "inputs": {
+   "type": "object",
+   "additionalProperties": {
+    "type": "integer",
+    "minimum": 1
+   }
+  },
+  "gold": {
+   "type": "integer"
+  },
+  "unlock": {
+   "type": [
+    "object",
+    "array"
+   ],
+   "description": "core condition"
+  },
+  "showLocked": {
+   "type": "boolean"
+  },
+  "category": {
+   "type": "string",
+   "description": "crafted | fertilizer | artisan (artisan/crop/product are shipped by the balance bot)"
+  },
+  "value": {
+   "type": "integer",
+   "description": "ship value of the output"
+  },
+  "data": {
+   "type": "object",
+   "description": "{placeable, sprinkler:{area 4|8|24}} or {fertilizer:{quality 0..2, speed 0..1}}"
+  }
+ }
+}

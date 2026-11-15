@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "dreamsy://kits/tycoon/event.json",
+  "title": "data/events/<id>.json \u2014 tappable timed event / boost",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+    },
+    "name": {
+      "type": "string"
+    },
+    "desc": {
+      "type": "string"
+    },
+    "icon": {
+      "type": "string",
+      "pattern": "^asset:[a-z][a-z0-9_]*$"
+    },
+    "order": {
+      "type": "number"
+    },
+    "effect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "value"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "output",
+            "speed",
+            "cost",
+            "tap",
+            "offline_hours",
+            "offline_rate",
+            "prestige"
+          ],
+          "description": "output \u00d7value; speed: cycle \u00f7value; cost \u00d7value (e.g. 0.9); tap \u00d7value; offline_hours +value; offline_rate +value; prestige gain \u00d7value"
+        },
+        "target": {
+          "type": "string",
+          "description": "\"all\" or a generator id"
+        },
+        "value": {
+          "type": "number"
+        }
+      }
+    },
+    "effects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "value"
+        ],
+        "properties": {
+          "kind": {
+            "enum": [
+              "output",
+              "speed",
+              "cost",
+              "tap",
+              "offline_hours",
+              "offline_rate",
+              "prestige"
+            ],
+            "description": "output \u00d7value; speed: cycle \u00f7value; cost \u00d7value (e.g. 0.9); tap \u00d7value; offline_hours +value; offline_rate +value; prestige gain \u00d7value"
+          },
+          "target": {
+            "type": "string",
+            "description": "\"all\" or a generator id"
+          },
+          "value": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "duration": {
+      "type": "number",
+      "minimum": 0,
+      "description": "boost seconds"
+    },
+    "lifetime": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "seconds the event waits to be tapped"
+    },
+    "every": {
+      "type": "array",
+      "items": {
+        "type": "number",
+        "minimum": 0
+      },
+      "minItems": 2,
+      "maxItems": 2,
+      "description": "[min, max] seconds between events"
+    },
+    "weight": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "reward": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "income_seconds": {
+          "type": "number",
+          "minimum": 0
+        },
+        "amount": {
+          "type": "number"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,63}$"
+        }
+      }
+    }
+  }
+}

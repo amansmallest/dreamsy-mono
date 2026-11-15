@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "dreamsy:kit/topdown/npc",
+  "title": "topdown NPC / sign (data/npcs/<id>.json)",
+  "type": "object",
+  "required": ["id", "dialog"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$", "description": "Tile marker tags [\"npc\", id] (entity) or [\"sign\", id] (the tile is the sign)." },
+    "name": { "type": "string", "description": "Dialog speaker." },
+    "sprite": { "type": "string" }, "animset": { "type": "string" }, "anim": { "type": "string" }, "portrait": { "type": "string" },
+    "size": { "$ref": "#/definitions/vec2" }, "draw_size": { "$ref": "#/definitions/vec2" },
+    "dialog": { "oneOf": [ { "type": "array", "items": { "type": "string" } }, { "type": "string", "description": "core dialog tree id (data/dialog/<id>.json)" } ] },
+    "dialog_if": { "type": "array", "description": "First matching entry replaces dialog.", "items": { "type": "object", "required": ["lines"], "properties": {
+      "if": { "description": "any @kit/core condition, e.g. {\"quest\":\"q\",\"is\":\"done\"}" }, "flag": { "type": "string" }, "not_flag": { "type": "string" }, "item": { "type": "string" }, "lines": { "oneOf": [ { "type": "array", "items": { "type": "string" } }, { "type": "string" } ] } } } },
+    "gives": { "type": "string", "description": "Item given once after talking (sets flag gave:<id>)." },
+    "sets_flag": { "type": "string" },
+    "shop": { "type": "array", "items": { "type": "object", "required": ["item", "price"], "properties": { "item": { "type": "string" }, "price": { "type": "integer", "minimum": 0 }, "once": { "type": "boolean" } } } },
+    "shop_prompt": { "type": "string" }, "too_poor": { "type": "string" }
+  },
+  "definitions": { "vec2": { "type": "array", "items": { "type": "number" }, "minItems": 2, "maxItems": 2 } }
+}

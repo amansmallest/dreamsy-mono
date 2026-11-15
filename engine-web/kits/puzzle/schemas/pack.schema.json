@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "puzzle pack (data/packs/<id>.json)",
+  "type": "object",
+  "required": ["mechanic", "levels"],
+  "additionalProperties": false,
+  "properties": {
+    "name": { "type": "string" },
+    "order": { "type": "number", "description": "sort key on the world map" },
+    "mechanic": { "type": "string", "description": "push | flow | match3 | sliding | lights | nonogram | a registered custom mechanic" },
+    "description": { "type": "string" },
+    "icon": { "type": "string", "pattern": "^asset:[a-z0-9_]+$" },
+    "gate": { "enum": ["sequential", "open"], "default": "sequential" },
+    "unlock": {
+      "description": "{stars: n} total stars | {stars: n, pack: id} | {completed: packId} | any core condition (e.g. {puzzleStars: n, pack?})",
+      "type": "object"
+    },
+    "levels": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          { "type": "string", "pattern": "^data/.+\\.(txt|json)$", "description": "authored level file" },
+          {
+            "type": "object", "required": ["generate"], "additionalProperties": false,
+            "properties": {
+              "generate": {
+                "type": "object", "additionalProperties": false,
+                "properties": {
+                  "count": { "type": "integer", "minimum": 1, "maximum": 1000 },
+                  "seed": { "type": "number" },
+                  "params": { "type": "object", "description": "fixed mechanic.generate params" },
+                  "curve": {
+                    "type": "array", "description": "progression difficulty tiers over 0..1 (first → last level of the run); numbers lerp",
+                    "items": { "type": "object", "required": ["at", "params"], "properties": { "at": { "type": "number" }, "params": { "type": "object" } } }
+                  }
+                }
+              }
+            }
+          },
+          { "$ref": "level.schema.json" }
+        ]
+      }
+    }
+  }
+}

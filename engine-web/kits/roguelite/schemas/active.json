@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "dreamsy/kits/roguelite/active.json",
+  "title": "data/actives/<id>.json \u2014 active item (recharges per cleared room)",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "icon": {
+      "type": "string",
+      "pattern": "^asset:[a-z0-9_]+$"
+    },
+    "charge": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "action": {
+      "type": "string",
+      "description": "game handles it (event active_used)"
+    },
+    "effects": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "description": "core effects (+ roguelite kinds: heal, healPct, maxHp, gold{raw?}, charge, shield, hurt, relic ('random'|id|{rarity weights}), meta)"
+    },
+    "price": {
+      "type": "integer"
+    },
+    "starter": {
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "name"
+  ]
+}

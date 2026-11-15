@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "dreamsy/kits/roguelite/class.json",
+  "title": "data/classes/<id>.json \u2014 playable class",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "icon": {
+      "type": "string",
+      "pattern": "^asset:[a-z0-9_]+$"
+    },
+    "sprite": {
+      "type": "string",
+      "pattern": "^asset:[a-z0-9_]+$"
+    },
+    "order": {
+      "type": "number"
+    },
+    "stats": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "number"
+      },
+      "description": "overrides config.baseStats: hp damage fireRate speed crit critMult armor dodge lifesteal regen thorns luck goldMult healMult range projectiles ..."
+    },
+    "mods": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "stat"
+        ],
+        "properties": {
+          "stat": {
+            "type": "string"
+          },
+          "add": {
+            "type": "number"
+          },
+          "pct": {
+            "type": "number"
+          },
+          "mul": {
+            "type": "number"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "triggers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "on",
+          "effects"
+        ],
+        "properties": {
+          "on": {
+            "enum": [
+              "kill",
+              "eliteKill",
+              "bossKill",
+              "hit",
+              "crit",
+              "hurt",
+              "roomEnter",
+              "roomClear",
+              "floorStart",
+              "lowHp",
+              "activeUsed",
+              "relicGained"
+            ]
+          },
+          "every": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "chance": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "condition": {
+            "description": "core condition (+ roguelite kinds: relic, class, heat, runFloor, hpBelow, runGold, wins, classWins)"
+          },
+          "effects": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "core effects (+ roguelite kinds: heal, healPct, maxHp, gold{raw?}, charge, shield, hurt, relic ('random'|id|{rarity weights}), meta)"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "relics": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "active": {
+      "type": "string"
+    },
+    "unlock": {
+      "description": "core condition (+ roguelite kinds: relic, class, heat, runFloor, hpBelow, runGold, wins, classWins)"
+    },
+    "unlockText": {
+      "type": "string"
+    },
+    "weapon": {
+      "type": "object",
+      "description": "game-specific attack data"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "stats"
+  ]
+}

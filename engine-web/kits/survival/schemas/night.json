@@ -1,0 +1,45 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "dreamsy/kits/survival/night.json",
+ "title": "Night wave (data/nights/<id>.json)",
+ "type": "object",
+ "additionalProperties": false,
+ "required": [
+  "night",
+  "budget"
+ ],
+ "properties": {
+  "id": {
+   "type": "string",
+   "pattern": "^[a-z][a-z0-9_]*$"
+  },
+  "night": {
+   "type": "integer",
+   "minimum": 1
+  },
+  "budget": {
+   "type": "number",
+   "minimum": 0
+  },
+  "enemies": {
+   "type": "array",
+   "items": {
+    "type": "string",
+    "pattern": "^[a-z][a-z0-9_]*$"
+   }
+  },
+  "boss": {
+   "type": "string",
+   "pattern": "^[a-z][a-z0-9_]*$"
+  },
+  "spawnEvery": {
+   "type": "number"
+  },
+  "minDist": {
+   "type": "integer"
+  },
+  "maxCount": {
+   "type": "integer"
+  }
+ }
+}

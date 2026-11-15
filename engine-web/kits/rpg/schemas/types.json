@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "rpg/types.json",
+  "title": "data/types.json",
+  "description": "Type names and the effectiveness chart (attacker -> defender -> multiplier; missing = 1).",
+  "type": "object",
+  "properties": {
+    "types": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "color": {
+            "$ref": "common.json#/$defs/color"
+          },
+          "icon": {
+            "$ref": "common.json#/$defs/asset"
+          },
+          "immune_status": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "built-in: \"burn\", \"poison\", \"sleep\", \"stun\", \"freeze\", \"confuse\"; others via rpg.hooks.status"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "name"
+        ]
+      }
+    },
+    "chart": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 4
+        }
+      }
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "types",
+    "chart"
+  ]
+}

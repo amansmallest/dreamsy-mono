@@ -1,0 +1,63 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "data/story/characters/<id>.json (or story.json characters.<id>)",
+ "type": "object",
+ "additionalProperties": false,
+ "properties": {
+  "name": {
+   "type": "string"
+  },
+  "color": {
+   "type": "string",
+   "pattern": "^#[0-9a-fA-F]{6}$"
+  },
+  "default": {
+   "type": "string"
+  },
+  "position": {
+   "enum": [
+    "farleft",
+    "left",
+    "midleft",
+    "center",
+    "midright",
+    "right",
+    "farright"
+   ]
+  },
+  "expressions": {
+   "type": "object",
+   "additionalProperties": {
+    "type": "string",
+    "pattern": "^asset:[a-z0-9_]+$"
+   }
+  },
+  "size": {
+   "type": "array",
+   "items": {
+    "type": "number"
+   },
+   "minItems": 2,
+   "maxItems": 2
+  },
+  "affection": {
+   "oneOf": [
+    {
+     "type": "boolean"
+    },
+    {
+     "type": "object",
+     "properties": {
+      "min": {
+       "type": "number"
+      },
+      "max": {
+       "type": "number"
+      }
+     },
+     "additionalProperties": false
+    }
+   ]
+  }
+ }
+}

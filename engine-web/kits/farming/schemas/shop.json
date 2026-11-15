@@ -1,0 +1,84 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "dreamsy/kits/farming/shop.json",
+ "title": "Shop (data/shops/<id>.json)",
+ "type": "object",
+ "additionalProperties": false,
+ "required": [
+  "stock"
+ ],
+ "properties": {
+  "id": {
+   "type": "string",
+   "pattern": "^[a-z][a-z0-9_]*$"
+  },
+  "name": {
+   "type": "string"
+  },
+  "hours": {
+   "type": "array",
+   "items": {
+    "type": "integer"
+   },
+   "minItems": 2,
+   "maxItems": 2
+  },
+  "closed": {
+   "type": "array",
+   "items": {
+    "type": "string"
+   }
+  },
+  "condition": {
+   "type": [
+    "object",
+    "array"
+   ],
+   "description": "core condition"
+  },
+  "stock": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "item": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+     },
+     "animal": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+     },
+     "upgrade": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+     },
+     "price": {
+      "type": "integer"
+     },
+     "name": {
+      "type": "string"
+     },
+     "seasons": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "pattern": "^[a-z][a-z0-9_]*$"
+      }
+     },
+     "condition": {
+      "type": [
+       "object",
+       "array"
+      ],
+      "description": "core condition"
+     },
+     "showLocked": {
+      "type": "boolean"
+     }
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,47 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "dreamsy/kits/survival/recipe.json",
+ "title": "Recipe (data/recipes/<id>.json)",
+ "type": "object",
+ "additionalProperties": false,
+ "required": [
+  "needs"
+ ],
+ "properties": {
+  "id": {
+   "type": "string",
+   "pattern": "^[a-z][a-z0-9_]*$"
+  },
+  "name": {
+   "type": "string"
+  },
+  "needs": {
+   "type": "object",
+   "additionalProperties": {
+    "type": "integer",
+    "minimum": 1
+   }
+  },
+  "gives": {
+   "type": "string",
+   "pattern": "^[a-z][a-z0-9_]*$"
+  },
+  "count": {
+   "type": "integer",
+   "minimum": 1
+  },
+  "station": {
+   "type": "string",
+   "pattern": "^[a-z][a-z0-9_]*$"
+  },
+  "category": {
+   "type": "string"
+  },
+  "time": {
+   "type": "number"
+  },
+  "unlock": {
+   "description": "core condition"
+  }
+ }
+}

@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "dreamsy/kits/runner/character.json",
+  "title": "data/characters/<id>.json \u2014 unlockable runner (progression tree 'characters')",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "order": {
+      "type": "number"
+    },
+    "sprite": {
+      "type": "string",
+      "pattern": "^asset:[a-z0-9_]+$"
+    },
+    "tint": {
+      "type": "string"
+    },
+    "cost": {
+      "description": "{ coins: n } (0 = owned from the start)"
+    },
+    "mods": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "stat"
+        ],
+        "properties": {
+          "stat": {
+            "type": "string"
+          },
+          "add": {
+            "type": "number"
+          },
+          "pct": {
+            "type": "number"
+          },
+          "mul": {
+            "type": "number"
+          }
+        },
+        "additionalProperties": false
+      },
+      "description": "player params: jumpTime slideTime laneTime magnetTime shieldTime doubleTime magnetRange lives coinValue"
+    },
+    "requires": {
+      "type": "array"
+    },
+    "condition": {
+      "description": "core condition (+ roguelite kinds: relic, class, heat, runFloor, hpBelow, runGold, wins, classWins)"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "cost"
+  ]
+}

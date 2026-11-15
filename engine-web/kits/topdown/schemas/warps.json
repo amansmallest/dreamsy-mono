@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "dreamsy:kit/topdown/warps",
+  "title": "topdown warps (data/warps.json): warp tile id -> destination",
+  "type": "object",
+  "additionalProperties": {
+    "type": "object", "required": ["scene"], "additionalProperties": false,
+    "properties": {
+      "scene": { "type": "string", "pattern": "^scenes/.+\\.scene\\.json$" },
+      "entry": { "type": "string", "description": "Entry marker id in the target scene (tiles tagged [\"entry\", id, \"face_up\"?])." },
+      "area": { "type": "string", "description": "Optional area id passed as sceneParams().area" }
+    }
+  }
+}

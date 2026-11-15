@@ -1,0 +1,414 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "dreamsy/kits/ai/enemy.json",
+  "title": "Enemy (data/enemies/<id>.json): ai behaviour + combat stats + procgen budget",
+  "type": "object",
+  "required": [
+    "id"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "name": {
+      "type": "string"
+    },
+    "sprite": {
+      "type": "string",
+      "pattern": "^asset:"
+    },
+    "size": {
+      "type": "number"
+    },
+    "behavior": {
+      "enum": [
+        "idle",
+        "wander",
+        "patrol",
+        "chase",
+        "flee",
+        "keep_distance",
+        "charge",
+        "jump_at",
+        "swoop",
+        "turret",
+        "spawner",
+        "boss"
+      ]
+    },
+    "params": {
+      "type": "object",
+      "description": "behaviour params (see ai KIT.md table), e.g. speed, aggro, leash, points, fireEvery"
+    },
+    "mode": {
+      "enum": [
+        "topdown",
+        "platformer",
+        "flyer"
+      ]
+    },
+    "aggro": {
+      "type": "number"
+    },
+    "fsm": {
+      "type": "object",
+      "required": [
+        "start",
+        "states"
+      ],
+      "properties": {
+        "start": {
+          "type": "string"
+        },
+        "states": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object"
+          }
+        },
+        "transitions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "from",
+              "to",
+              "when"
+            ],
+            "properties": {
+              "from": {
+                "type": "string"
+              },
+              "to": {
+                "type": "string"
+              },
+              "when": {
+                "type": "string",
+                "description": "see | lost | near:<px> | far:<px> | hp<0.5 | hp>0.5 | after:<s> | always"
+              }
+            }
+          }
+        }
+      }
+    },
+    "utility": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "behavior": {
+            "enum": [
+              "idle",
+              "wander",
+              "patrol",
+              "chase",
+              "flee",
+              "keep_distance",
+              "charge",
+              "jump_at",
+              "swoop",
+              "turret",
+              "spawner",
+              "boss"
+            ]
+          },
+          "score": {
+            "oneOf": [
+              {
+                "type": "number"
+              },
+              {
+                "enum": [
+                  "hp_low",
+                  "target_near",
+                  "target_far",
+                  "sees",
+                  "always"
+                ]
+              }
+            ]
+          },
+          "weight": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "phases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "pattern"
+        ],
+        "properties": {
+          "hp": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "loop": {
+            "type": "boolean"
+          },
+          "pattern": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "behavior": {
+                  "enum": [
+                    "idle",
+                    "wander",
+                    "patrol",
+                    "chase",
+                    "flee",
+                    "keep_distance",
+                    "charge",
+                    "jump_at",
+                    "swoop",
+                    "turret",
+                    "spawner"
+                  ]
+                },
+                "time": {
+                  "type": "number"
+                },
+                "action": {
+                  "type": "string"
+                },
+                "wait": {
+                  "type": "number"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "projectile": {
+      "type": "object",
+      "properties": {
+        "sprite": {
+          "type": "string"
+        },
+        "speed": {
+          "type": "number"
+        },
+        "amount": {
+          "type": "number"
+        },
+        "status": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "chance": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "duration": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "stacks": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "power": {
+                  "type": "number",
+                  "minimum": 0
+                }
+              }
+            }
+          ]
+        },
+        "pierce": {
+          "type": "integer"
+        },
+        "homing": {
+          "type": "number"
+        },
+        "lifetime": {
+          "type": "number"
+        }
+      }
+    },
+    "cost": {
+      "type": "number",
+      "minimum": 0,
+      "description": "procgen encounter budget cost"
+    },
+    "weight": {
+      "type": "number"
+    },
+    "minLevel": {
+      "type": "integer"
+    },
+    "maxLevel": {
+      "type": "integer"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "boss": {
+      "type": "boolean"
+    },
+    "flying": {
+      "type": "boolean"
+    },
+    "hp": {
+      "type": "number"
+    },
+    "armor": {
+      "type": "number"
+    },
+    "resist": {
+      "type": "object"
+    },
+    "contact": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "amount": {
+          "type": "number",
+          "minimum": 0
+        },
+        "type": {
+          "type": "string"
+        },
+        "knockback": {
+          "type": "number",
+          "minimum": 0
+        },
+        "knockTime": {
+          "type": "number"
+        },
+        "status": {
+          "oneOf": [
+            {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "name"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "chance": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "duration": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "stacks": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "power": {
+                      "type": "number",
+                      "minimum": 0
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "array",
+              "items": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "name"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "chance": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "duration": {
+                        "type": "number",
+                        "minimum": 0
+                      },
+                      "stacks": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "power": {
+                        "type": "number",
+                        "minimum": 0
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "critChance": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "critMult": {
+          "type": "number"
+        },
+        "ignoreArmor": {
+          "type": "boolean"
+        },
+        "ignoreIframes": {
+          "type": "boolean"
+        },
+        "ignoreShield": {
+          "type": "boolean"
+        }
+      }
+    },
+    "loot": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        {
+          "type": "object"
+        }
+      ]
+    },
+    "knockbackResist": {
+      "type": "number"
+    }
+  }
+}

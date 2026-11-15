@@ -1,0 +1,314 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Quest",
+  "description": "data/quests/<id>.json \u2014 core kit quest.",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "giver": {
+      "type": "string"
+    },
+    "requires": {
+      "$ref": "#/$defs/condition"
+    },
+    "autoStart": {
+      "type": "boolean"
+    },
+    "repeatable": {
+      "type": "boolean"
+    },
+    "retryable": {
+      "type": "boolean"
+    },
+    "hidden": {
+      "type": "boolean"
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "text": {
+            "type": "string"
+          },
+          "objectives": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                },
+                "text": {
+                  "type": "string"
+                },
+                "event": {
+                  "type": "string"
+                },
+                "match": {
+                  "type": "object"
+                },
+                "count": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "perEvent": {
+                  "type": "boolean"
+                },
+                "condition": {
+                  "$ref": "#/$defs/condition"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "effects": {
+            "$ref": "#/$defs/effects"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "rewards": {
+      "$ref": "#/$defs/effects"
+    }
+  },
+  "required": [
+    "title",
+    "steps"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "condition": {
+      "description": "Condition: one object (kind chosen by its key), or an array = all must hold. Comparators eq/ne/gt/gte/lt/lte apply to flag/item/currency/level/prestige values.",
+      "oneOf": [
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/condition"
+          }
+        },
+        {
+          "type": "object",
+          "properties": {
+            "flag": {
+              "type": "string"
+            },
+            "item": {
+              "type": "string"
+            },
+            "inventory": {
+              "type": "string"
+            },
+            "count": {
+              "type": "number"
+            },
+            "currency": {
+              "type": "string"
+            },
+            "amount": {
+              "type": "number"
+            },
+            "quest": {
+              "type": "string"
+            },
+            "is": {
+              "enum": [
+                "inactive",
+                "active",
+                "done",
+                "failed",
+                "started",
+                "available"
+              ]
+            },
+            "step": {
+              "type": "string"
+            },
+            "achievement": {
+              "type": "string"
+            },
+            "seen": {
+              "type": "string"
+            },
+            "chance": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "level": {
+              "type": "number"
+            },
+            "track": {
+              "type": "string"
+            },
+            "skill": {
+              "type": "string"
+            },
+            "rank": {
+              "type": "number"
+            },
+            "tree": {
+              "type": "string"
+            },
+            "prestige": {
+              "type": "number"
+            },
+            "layer": {
+              "type": "string"
+            },
+            "milestone": {
+              "type": "string"
+            },
+            "set": {
+              "type": "string"
+            },
+            "all": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/condition"
+              }
+            },
+            "any": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/condition"
+              }
+            },
+            "not": {
+              "$ref": "#/$defs/condition"
+            },
+            "eq": {},
+            "ne": {},
+            "gt": {
+              "type": "number"
+            },
+            "gte": {
+              "type": "number"
+            },
+            "lt": {
+              "type": "number"
+            },
+            "lte": {
+              "type": "number"
+            }
+          },
+          "additionalProperties": true
+        }
+      ]
+    },
+    "effect": {
+      "type": "object",
+      "description": "One effect (kind chosen by its key). Games/kits may register more kinds (core.conditions.registerEffect).",
+      "properties": {
+        "set": {
+          "type": "string",
+          "description": "flag key; value (default true)"
+        },
+        "add": {
+          "type": "string",
+          "description": "numeric flag key; value (default 1)"
+        },
+        "value": {},
+        "give": {
+          "type": "string",
+          "description": "item id; count"
+        },
+        "take": {
+          "type": "string"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "inventory": {
+          "type": "string"
+        },
+        "earn": {
+          "type": "string",
+          "description": "currency id; amount"
+        },
+        "spend": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "number"
+        },
+        "quest": {
+          "type": "string"
+        },
+        "action": {
+          "enum": [
+            "start",
+            "complete",
+            "fail",
+            "advance",
+            "reset"
+          ]
+        },
+        "force": {
+          "type": "boolean"
+        },
+        "unlock": {
+          "type": "string",
+          "description": "achievement id"
+        },
+        "emit": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object"
+        },
+        "toast": {
+          "type": "string"
+        },
+        "seconds": {
+          "type": "number"
+        },
+        "xp": {
+          "type": "number"
+        },
+        "track": {
+          "type": "string"
+        },
+        "skillPoints": {
+          "type": "number"
+        },
+        "unlockSkill": {
+          "type": "string"
+        },
+        "tree": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "effects": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/effect"
+      }
+    }
+  }
+}

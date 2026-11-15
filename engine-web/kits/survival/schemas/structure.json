@@ -1,0 +1,69 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "dreamsy/kits/survival/structure.json",
+ "title": "Buildable structure (data/structures/<id>.json); placed by an item with data.place = id",
+ "type": "object",
+ "additionalProperties": false,
+ "required": [
+  "tile"
+ ],
+ "properties": {
+  "id": {
+   "type": "string",
+   "pattern": "^[a-z][a-z0-9_]*$"
+  },
+  "name": {
+   "type": "string"
+  },
+  "tile": {
+   "type": "string",
+   "minLength": 1,
+   "maxLength": 1,
+   "description": "tileset char (printable ASCII, not '.' or ' ')"
+  },
+  "kind": {
+   "enum": [
+    "wall",
+    "door",
+    "station",
+    "fire",
+    "storage",
+    "bed",
+    "light",
+    "floor",
+    "decor"
+   ]
+  },
+  "solid": {
+   "type": "boolean"
+  },
+  "hp": {
+   "type": "number"
+  },
+  "radius": {
+   "type": "integer",
+   "minimum": 0,
+   "description": "station reach / warmth radius (cells)"
+  },
+  "warmth": {
+   "type": "number"
+  },
+  "slots": {
+   "type": "integer"
+  },
+  "limit": {
+   "type": "integer"
+  },
+  "adjacent": {
+   "type": "string",
+   "description": "must touch a structure of this id or kind"
+  },
+  "biomes": {
+   "type": "array",
+   "items": {
+    "type": "string",
+    "pattern": "^[a-z][a-z0-9_]*$"
+   }
+  }
+ }
+}

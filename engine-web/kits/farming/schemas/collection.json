@@ -1,0 +1,42 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "dreamsy/kits/farming/collection.json",
+ "title": "Collection / museum (data/collections/<id>.json)",
+ "type": "object",
+ "additionalProperties": false,
+ "required": [
+  "items"
+ ],
+ "properties": {
+  "id": {
+   "type": "string",
+   "pattern": "^[a-z][a-z0-9_]*$"
+  },
+  "name": {
+   "type": "string"
+  },
+  "items": {
+   "type": "array",
+   "items": {
+    "type": "string",
+    "pattern": "^[a-z][a-z0-9_]*$"
+   }
+  },
+  "auto": {
+   "enum": [
+    "shipped"
+   ]
+  },
+  "rewards": {
+   "type": "object",
+   "additionalProperties": {
+    "type": "array",
+    "items": {
+     "type": "object"
+    },
+    "description": "core effects ({earn}, {give}, {set}, {toast}, ...)"
+   },
+   "description": "\"<count>\" or \"all\" \u2192 effects"
+  }
+ }
+}

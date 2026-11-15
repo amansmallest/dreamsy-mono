@@ -1,0 +1,86 @@
+{
+ "title": "deckbuilder config (data/deckbuilder.json)",
+ "type": "object",
+ "properties": {
+  "statuses": {
+   "type": "object",
+   "additionalProperties": {
+    "type": "object",
+    "properties": {
+     "text": {
+      "type": "string"
+     },
+     "icon": {
+      "type": "string"
+     },
+     "debuff": {
+      "type": "boolean"
+     },
+     "decay": {
+      "type": "boolean"
+     },
+     "turnStart": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "description": "effect string, e.g. \"damage 6\", \"apply weak 2 all\", \"if killed then energy 1\" (KIT.md)"
+      }
+     },
+     "turnEnd": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "description": "effect string, e.g. \"damage 6\", \"apply weak 2 all\", \"if killed then energy 1\" (KIT.md)"
+      }
+     }
+    }
+   }
+  },
+  "rarity": {
+   "type": "object"
+  },
+  "relicRarity": {
+   "type": "object"
+  },
+  "gold": {
+   "type": "object"
+  },
+  "cardChoices": {
+   "type": "integer"
+  },
+  "cardPrice": {
+   "type": "object"
+  },
+  "relicPrice": {
+   "type": "object"
+  },
+  "removePrice": {
+   "type": "integer"
+  },
+  "removeStep": {
+   "type": "integer"
+  },
+  "shopCards": {
+   "type": "integer"
+  },
+  "shopRelics": {
+   "type": "integer"
+  },
+  "restHeal": {
+   "type": "number"
+  },
+  "budget": {
+   "type": "object"
+  },
+  "weakFights": {
+   "type": "integer"
+  },
+  "meta": {
+   "type": "object"
+  },
+  "strict": {
+   "type": "boolean"
+  }
+ },
+ "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

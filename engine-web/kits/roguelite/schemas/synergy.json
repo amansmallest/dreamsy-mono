@@ -1,0 +1,192 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "dreamsy/kits/roguelite/synergy.json",
+  "title": "data/synergies/<id>.json \u2014 set bonus",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "tags": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer"
+      }
+    },
+    "relics": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "mods": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "stat"
+        ],
+        "properties": {
+          "stat": {
+            "type": "string"
+          },
+          "add": {
+            "type": "number"
+          },
+          "pct": {
+            "type": "number"
+          },
+          "mul": {
+            "type": "number"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "triggers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "on",
+          "effects"
+        ],
+        "properties": {
+          "on": {
+            "enum": [
+              "kill",
+              "eliteKill",
+              "bossKill",
+              "hit",
+              "crit",
+              "hurt",
+              "roomEnter",
+              "roomClear",
+              "floorStart",
+              "lowHp",
+              "activeUsed",
+              "relicGained"
+            ]
+          },
+          "every": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "chance": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "condition": {
+            "description": "core condition (+ roguelite kinds: relic, class, heat, runFloor, hpBelow, runGold, wins, classWins)"
+          },
+          "effects": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "core effects (+ roguelite kinds: heal, healPct, maxHp, gold{raw?}, charge, shield, hurt, relic ('random'|id|{rarity weights}), meta)"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "tiers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "count"
+        ],
+        "properties": {
+          "count": {
+            "type": "integer"
+          },
+          "mods": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "stat"
+              ],
+              "properties": {
+                "stat": {
+                  "type": "string"
+                },
+                "add": {
+                  "type": "number"
+                },
+                "pct": {
+                  "type": "number"
+                },
+                "mul": {
+                  "type": "number"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "triggers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "on",
+                "effects"
+              ],
+              "properties": {
+                "on": {
+                  "enum": [
+                    "kill",
+                    "eliteKill",
+                    "bossKill",
+                    "hit",
+                    "crit",
+                    "hurt",
+                    "roomEnter",
+                    "roomClear",
+                    "floorStart",
+                    "lowHp",
+                    "activeUsed",
+                    "relicGained"
+                  ]
+                },
+                "every": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "chance": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "condition": {
+                  "description": "core condition (+ roguelite kinds: relic, class, heat, runFloor, hpBelow, runGold, wins, classWins)"
+                },
+                "effects": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  },
+                  "description": "core effects (+ roguelite kinds: heal, healPct, maxHp, gold{raw?}, charge, shield, hurt, relic ('random'|id|{rarity weights}), meta)"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "name"
+  ]
+}

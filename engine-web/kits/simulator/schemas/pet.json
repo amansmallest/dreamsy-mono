@@ -1,0 +1,57 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "dreamsy/kits/simulator/pet.json",
+ "title": "data/pets/<id>.json \u2014 pet / companion",
+ "type": "object",
+ "properties": {
+  "id": {
+   "type": "string",
+   "description": "Optional; must equal the file name."
+  },
+  "name": {
+   "type": "string"
+  },
+  "desc": {
+   "type": "string"
+  },
+  "icon": {
+   "type": "string",
+   "pattern": "^asset:[a-z0-9_]+$"
+  },
+  "order": {
+   "type": "number",
+   "description": "Track/list order (ascending)."
+  },
+  "rarity": {
+   "type": "string",
+   "default": "common"
+  },
+  "bonus": {
+   "type": "object",
+   "description": "Fractions added while equipped: 0.25 = +25%.",
+   "properties": {
+    "power": {
+     "type": "number"
+    },
+    "coins": {
+     "type": "number"
+    },
+    "capacity": {
+     "type": "number"
+    },
+    "speed": {
+     "type": "number"
+    },
+    "luck": {
+     "type": "number"
+    }
+   },
+   "additionalProperties": false
+  }
+ },
+ "required": [
+  "rarity",
+  "bonus"
+ ],
+ "additionalProperties": false
+}

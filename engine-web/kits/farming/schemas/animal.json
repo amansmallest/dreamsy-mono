@@ -1,0 +1,74 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "dreamsy/kits/farming/animal.json",
+ "title": "Animal (data/animals/<id>.json)",
+ "type": "object",
+ "additionalProperties": false,
+ "required": [
+  "product"
+ ],
+ "properties": {
+  "id": {
+   "type": "string",
+   "pattern": "^[a-z][a-z0-9_]*$"
+  },
+  "name": {
+   "type": "string"
+  },
+  "sprite": {
+   "type": "string",
+   "pattern": "^asset:[a-z0-9_]+$"
+  },
+  "color": {
+   "type": "string"
+  },
+  "building": {
+   "type": "string",
+   "description": "coop | barn | any config.animals.buildings key (capacity stat <building>_capacity)"
+  },
+  "price": {
+   "type": "integer",
+   "minimum": 0
+  },
+  "feed": {
+   "type": "string",
+   "pattern": "^[a-z][a-z0-9_]*$"
+  },
+  "matureDays": {
+   "type": "integer",
+   "minimum": 0
+  },
+  "productEvery": {
+   "type": "integer",
+   "minimum": 1
+  },
+  "product": {
+   "type": "string",
+   "pattern": "^[a-z][a-z0-9_]*$"
+  },
+  "productName": {
+   "type": "string"
+  },
+  "productPrice": {
+   "type": "integer"
+  },
+  "productIcon": {
+   "type": "string",
+   "pattern": "^asset:[a-z0-9_]+$"
+  },
+  "largeProduct": {
+   "type": "string",
+   "pattern": "^[a-z][a-z0-9_]*$"
+  },
+  "largeProductName": {
+   "type": "string"
+  },
+  "largeProductPrice": {
+   "type": "integer"
+  },
+  "largeProductIcon": {
+   "type": "string",
+   "pattern": "^asset:[a-z0-9_]+$"
+  }
+ }
+}

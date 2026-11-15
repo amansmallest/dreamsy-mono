@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "tower-defense wave set (data/waves/<id>.json)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "waves"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "waves": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "groups"
+        ],
+        "properties": {
+          "groups": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "enemy"
+              ],
+              "properties": {
+                "enemy": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                },
+                "count": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "interval": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "delay": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "path": {
+                  "type": "string",
+                  "description": "Path id (spawn char, e.g. \"S\"); \"*\"/omitted = round-robin over all paths."
+                },
+                "hp_mult": {
+                  "type": "number",
+                  "minimum": 0
+                }
+              }
+            },
+            "minItems": 1
+          },
+          "bonus": {
+            "type": "number",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "scaling": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "hp": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Extra hp fraction per wave: hp \u00d7 (1 + hp \u00d7 (n-1))."
+        }
+      }
+    },
+    "endless": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pool"
+      ],
+      "properties": {
+        "pool": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "minItems": 1
+        },
+        "boss": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "boss_every": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "hp_growth": {
+          "type": "number",
+          "minimum": 1
+        },
+        "count_base": {
+          "type": "number",
+          "minimum": 1
+        },
+        "count_growth": {
+          "type": "number",
+          "minimum": 0
+        },
+        "interval": {
+          "type": "number",
+          "minimum": 0.05
+        },
+        "bonus": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    }
+  }
+}

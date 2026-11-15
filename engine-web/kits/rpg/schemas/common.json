@@ -1,0 +1,466 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "rpg/common.json",
+  "title": "rpg kit shared definitions",
+  "description": "Conditions, effects, dialog lines and small value types used by every rpg content file.",
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "asset": {
+      "type": "string",
+      "pattern": "^asset:[a-z][a-z0-9_]*$",
+      "description": "\"asset:<id>\" image"
+    },
+    "color": {
+      "type": "string",
+      "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+    },
+    "cell": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "minItems": 2,
+      "maxItems": 2,
+      "description": "[col, row], 0-based"
+    },
+    "facing": {
+      "enum": [
+        "up",
+        "down",
+        "left",
+        "right"
+      ]
+    },
+    "line": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "text": {
+              "type": "string"
+            },
+            "speaker": {
+              "type": "string"
+            },
+            "portrait": {
+              "$ref": "common.json#/$defs/asset"
+            },
+            "if": {
+              "$ref": "common.json#/$defs/condition"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "text"
+          ]
+        }
+      ]
+    },
+    "lines": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "common.json#/$defs/line"
+          }
+        }
+      ]
+    },
+    "condition": {
+      "description": "Object = all keys must hold; list = all; keys: flag, not_flag, flags, item(+count), no_item, money, var(+eq|ne|gte|lte), quest(+state|step), party_has, party_size, level, caught, seen, map, all, any, not; unknown keys -> rpg.hooks.condition",
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "common.json#/$defs/condition"
+          }
+        },
+        {
+          "type": "object",
+          "properties": {
+            "flag": {
+              "type": "string"
+            },
+            "not_flag": {
+              "type": "string"
+            },
+            "flags": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "item": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "count": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "no_item": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "money": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "var": {
+              "type": "string"
+            },
+            "eq": {},
+            "ne": {},
+            "gte": {
+              "type": "number"
+            },
+            "lte": {
+              "type": "number"
+            },
+            "quest": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "state": {
+              "enum": [
+                "not_started",
+                "active",
+                "done",
+                "started"
+              ]
+            },
+            "step": {
+              "type": "string"
+            },
+            "party_has": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "party_size": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "level": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "caught": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "seen": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "map": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "all": {
+              "type": "array",
+              "items": {
+                "$ref": "common.json#/$defs/condition"
+              }
+            },
+            "any": {
+              "type": "array",
+              "items": {
+                "$ref": "common.json#/$defs/condition"
+              }
+            },
+            "not": {
+              "$ref": "common.json#/$defs/condition"
+            }
+          },
+          "additionalProperties": true
+        }
+      ]
+    },
+    "effect": {
+      "description": "One action key (+ params). Unknown keys -> rpg.hooks.effect",
+      "type": "object",
+      "properties": {
+        "if": {
+          "$ref": "common.json#/$defs/condition"
+        },
+        "silent": {
+          "type": "boolean"
+        },
+        "set_flag": {
+          "type": "string"
+        },
+        "clear_flag": {
+          "type": "string"
+        },
+        "set_var": {
+          "type": "string"
+        },
+        "add_var": {
+          "type": "string"
+        },
+        "value": {},
+        "give_item": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "take_item": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "give_money": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "take_money": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "give_creature": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "level": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "nickname": {
+          "type": "string"
+        },
+        "heal": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "const": "silent"
+            }
+          ]
+        },
+        "start_battle": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "wild_battle": {
+          "type": "object",
+          "properties": {
+            "creature": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "level": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "can_run": {
+              "type": "boolean"
+            },
+            "battle": {
+              "$ref": "common.json#/$defs/battle_bg"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "creature"
+          ]
+        },
+        "warp": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "map": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                },
+                "spawn": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "map"
+              ]
+            }
+          ]
+        },
+        "spawn": {
+          "type": "string"
+        },
+        "start_quest": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "advance_quest": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "complete_quest": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "open_shop": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "open_storage": {
+          "type": "boolean"
+        },
+        "dialog": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            {
+              "type": "object"
+            }
+          ]
+        },
+        "emit": {
+          "type": "string"
+        },
+        "args": {},
+        "sfx": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "music": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "toast": {
+          "type": "string"
+        },
+        "seconds": {
+          "type": "number"
+        },
+        "wait": {
+          "type": "number",
+          "minimum": 0
+        },
+        "save": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": true
+    },
+    "effects": {
+      "type": "array",
+      "items": {
+        "$ref": "common.json#/$defs/effect"
+      }
+    },
+    "battle_bg": {
+      "type": "object",
+      "properties": {
+        "sky": {
+          "$ref": "common.json#/$defs/color"
+        },
+        "ground": {
+          "$ref": "common.json#/$defs/color"
+        },
+        "background": {
+          "$ref": "common.json#/$defs/asset"
+        }
+      },
+      "additionalProperties": false
+    },
+    "dialog_node": {
+      "type": "object",
+      "properties": {
+        "if": {
+          "$ref": "common.json#/$defs/condition"
+        },
+        "else": {
+          "type": "string"
+        },
+        "branches": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "if": {
+                "$ref": "common.json#/$defs/condition"
+              },
+              "goto": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "goto"
+            ]
+          }
+        },
+        "speaker": {
+          "type": "string"
+        },
+        "portrait": {
+          "$ref": "common.json#/$defs/asset"
+        },
+        "lines": {
+          "$ref": "common.json#/$defs/lines"
+        },
+        "text": {
+          "$ref": "common.json#/$defs/lines"
+        },
+        "prompt": {
+          "$ref": "common.json#/$defs/line"
+        },
+        "effects": {
+          "$ref": "common.json#/$defs/effects"
+        },
+        "choices": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string"
+              },
+              "goto": {
+                "type": "string"
+              },
+              "if": {
+                "$ref": "common.json#/$defs/condition"
+              },
+              "effects": {
+                "$ref": "common.json#/$defs/effects"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "text"
+            ]
+          }
+        },
+        "next": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

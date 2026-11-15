@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>Dreamsy Engine</title>
+  <style>
+    :root { color-scheme: dark; }
+    html, body { margin: 0; height: 100%; background: #0d1117; color: #e6edf3; font: 14px/1.4 system-ui, -apple-system, sans-serif; overflow: hidden; overscroll-behavior: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+    #stage { position: fixed; inset: 0; }
+    #hud { position: fixed; top: calc(env(safe-area-inset-top) + 6px); left: 50%; transform: translateX(-50%); z-index: 100001; font: 11px/1.3 ui-monospace, Menlo, monospace; background: rgba(0,0,0,.55); padding: 4px 8px; border-radius: 6px; pointer-events: auto; display: flex; gap: 8px; align-items: center; }
+    #hud a, #hud button { color: #9ecbff; background: none; border: 0; font: inherit; cursor: pointer; padding: 0; text-decoration: none; }
+    #console { position: fixed; left: 8px; right: 8px; bottom: 8px; max-height: 40%; overflow: auto; z-index: 100002; background: rgba(20,4,8,.92); color: #ffb3b3; font: 12px/1.35 ui-monospace, Menlo, monospace; border: 1px solid #f85149; border-radius: 8px; padding: 8px 10px; white-space: pre-wrap; display: none; user-select: text; -webkit-user-select: text; }
+    #console .log { color: #c9d1d9; }
+    #console header { display: flex; justify-content: space-between; color: #ff7b72; font-weight: 700; margin-bottom: 4px; }
+    #console header button { background: none; border: 0; color: #ff7b72; font: inherit; cursor: pointer; }
+    #picker { position: fixed; inset: 0; overflow: auto; padding: 24px; box-sizing: border-box; display: none; }
+    #picker h1 { font-size: 22px; margin: 0 0 4px; }
+    #picker p { color: #8b949e; margin: 0 0 16px; }
+    #picker ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+    #picker li a { display: block; padding: 14px 16px; border-radius: 10px; background: #161b22; border: 1px solid #30363d; color: #e6edf3; text-decoration: none; }
+    #picker li a:hover { border-color: #58a6ff; }
+    #picker li small { color: #8b949e; display: block; }
+    #drop { position: fixed; inset: 0; z-index: 200000; background: rgba(88,166,255,.18); border: 3px dashed #58a6ff; display: none; align-items: center; justify-content: center; font-size: 22px; pointer-events: none; }
+    #message { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; text-align: center; padding: 24px; color: #8b949e; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <div id="stage"></div>
+  <div id="picker"></div>
+  <div id="message"></div>
+  <div id="hud" style="display:none"></div>
+  <div id="console"></div>
+  <div id="drop">Drop a game .zip to play it</div>
+  <script type="module" src="./main.ts"></script>
+</body>
+</html>

@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "rpg/dialog.json",
+  "title": "data/dialog/<id>.json",
+  "description": "A dialog tree (nodes) or a single node (short form).",
+  "type": "object",
+  "properties": {
+    "if": {
+      "$ref": "common.json#/$defs/condition"
+    },
+    "else": {
+      "type": "string"
+    },
+    "branches": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "if": {
+            "$ref": "common.json#/$defs/condition"
+          },
+          "goto": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "goto"
+        ]
+      }
+    },
+    "speaker": {
+      "type": "string"
+    },
+    "portrait": {
+      "$ref": "common.json#/$defs/asset"
+    },
+    "lines": {
+      "$ref": "common.json#/$defs/lines"
+    },
+    "text": {
+      "$ref": "common.json#/$defs/lines"
+    },
+    "prompt": {
+      "$ref": "common.json#/$defs/line"
+    },
+    "effects": {
+      "$ref": "common.json#/$defs/effects"
+    },
+    "choices": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "goto": {
+            "type": "string"
+          },
+          "if": {
+            "$ref": "common.json#/$defs/condition"
+          },
+          "effects": {
+            "$ref": "common.json#/$defs/effects"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "text"
+        ]
+      }
+    },
+    "next": {
+      "type": "string"
+    },
+    "start": {
+      "type": "string"
+    },
+    "nodes": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "common.json#/$defs/dialog_node"
+      }
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,831 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "shooter enemy or boss (data/enemies/<id>.json)",
+ "type": "object",
+ "additionalProperties": true,
+ "properties": {
+  "name": {
+   "type": "string"
+  },
+  "sprite": {
+   "type": "string",
+   "pattern": "^asset:[a-z0-9_]+$"
+  },
+  "color": {
+   "type": "string",
+   "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+  },
+  "size": {
+   "type": "array",
+   "items": {
+    "type": "number"
+   },
+   "minItems": 2,
+   "maxItems": 2
+  },
+  "radius": {
+   "type": "number"
+  },
+  "hp": {
+   "type": "number",
+   "minimum": 1
+  },
+  "score": {
+   "type": "number"
+  },
+  "path": {
+   "type": "object",
+   "additionalProperties": false,
+   "properties": {
+    "kind": {
+     "enum": [
+      "straight",
+      "sine",
+      "stop",
+      "swoop",
+      "dive",
+      "hover"
+     ]
+    },
+    "speed": {
+     "type": "number"
+    },
+    "angle": {
+     "type": "number"
+    },
+    "amp": {
+     "type": "number"
+    },
+    "freq": {
+     "type": "number"
+    },
+    "stopY": {
+     "type": "number"
+    },
+    "hold": {
+     "type": "number"
+    },
+    "exitSpeed": {
+     "type": "number"
+    },
+    "exitAngle": {
+     "type": "number"
+    },
+    "turn": {
+     "type": "number"
+    },
+    "at": {
+     "type": "number"
+    },
+    "diveSpeed": {
+     "type": "number"
+    },
+    "y": {
+     "type": "number"
+    },
+    "sway": {
+     "type": "number"
+    },
+    "swayFreq": {
+     "type": "number"
+    }
+   },
+   "required": [
+    "kind"
+   ]
+  },
+  "emitters": {
+   "type": "array",
+   "items": {
+    "oneOf": [
+     {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+     },
+     {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+       "pattern": {
+        "enum": [
+         "aimed",
+         "fan",
+         "ring",
+         "spiral",
+         "wave",
+         "line"
+        ]
+       },
+       "count": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 64
+       },
+       "spread": {
+        "type": "number"
+       },
+       "angle": {
+        "type": "number"
+       },
+       "aim": {
+        "type": "boolean"
+       },
+       "spin": {
+        "type": "number"
+       },
+       "spinPerVolley": {
+        "type": "number"
+       },
+       "waveAmp": {
+        "type": "number"
+       },
+       "waveFreq": {
+        "type": "number"
+       },
+       "rate": {
+        "type": "number",
+        "exclusiveMinimum": 0
+       },
+       "burst": {
+        "type": "integer",
+        "minimum": 1
+       },
+       "burstGap": {
+        "type": "number"
+       },
+       "delay": {
+        "type": "number"
+       },
+       "duration": {
+        "type": "number"
+       },
+       "volleys": {
+        "type": "integer"
+       },
+       "speed": {
+        "type": "number"
+       },
+       "speedStep": {
+        "type": "number"
+       },
+       "offset": {
+        "type": "array",
+        "items": {
+         "type": "number"
+        },
+        "minItems": 2,
+        "maxItems": 2
+       },
+       "bullet": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+         "sprite": {
+          "type": "string",
+          "pattern": "^asset:[a-z0-9_]+$"
+         },
+         "color": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+         },
+         "size": {
+          "type": "array",
+          "items": {
+           "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2
+         },
+         "radius": {
+          "type": "number"
+         },
+         "damage": {
+          "type": "number"
+         },
+         "lifetime": {
+          "type": "number"
+         },
+         "rotate": {
+          "type": "boolean"
+         },
+         "speed": {
+          "type": "number"
+         },
+         "accel": {
+          "type": "number"
+         },
+         "minSpeed": {
+          "type": "number"
+         },
+         "maxSpeed": {
+          "type": "number"
+         },
+         "speedCurve": {
+          "type": "array",
+          "items": {
+           "type": "array",
+           "items": {
+            "type": "number"
+           },
+           "minItems": 2,
+           "maxItems": 2
+          },
+          "minItems": 1
+         },
+         "turn": {
+          "type": "number"
+         },
+         "turnAfter": {
+          "type": "number"
+         },
+         "angleCurve": {
+          "type": "array",
+          "items": {
+           "type": "array",
+           "items": {
+            "type": "number"
+           },
+           "minItems": 2,
+           "maxItems": 2
+          },
+          "minItems": 1
+         },
+         "waveAmp": {
+          "type": "number"
+         },
+         "waveFreq": {
+          "type": "number"
+         }
+        }
+       }
+      },
+      "required": [
+       "pattern"
+      ]
+     }
+    ]
+   }
+  },
+  "bullet": {
+   "type": "object",
+   "additionalProperties": false,
+   "properties": {
+    "sprite": {
+     "type": "string",
+     "pattern": "^asset:[a-z0-9_]+$"
+    },
+    "color": {
+     "type": "string",
+     "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+    },
+    "size": {
+     "type": "array",
+     "items": {
+      "type": "number"
+     },
+     "minItems": 2,
+     "maxItems": 2
+    },
+    "radius": {
+     "type": "number"
+    },
+    "damage": {
+     "type": "number"
+    },
+    "lifetime": {
+     "type": "number"
+    },
+    "rotate": {
+     "type": "boolean"
+    },
+    "speed": {
+     "type": "number"
+    },
+    "accel": {
+     "type": "number"
+    },
+    "minSpeed": {
+     "type": "number"
+    },
+    "maxSpeed": {
+     "type": "number"
+    },
+    "speedCurve": {
+     "type": "array",
+     "items": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "minItems": 2,
+      "maxItems": 2
+     },
+     "minItems": 1
+    },
+    "turn": {
+     "type": "number"
+    },
+    "turnAfter": {
+     "type": "number"
+    },
+    "angleCurve": {
+     "type": "array",
+     "items": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "minItems": 2,
+      "maxItems": 2
+     },
+     "minItems": 1
+    },
+    "waveAmp": {
+     "type": "number"
+    },
+    "waveFreq": {
+     "type": "number"
+    }
+   }
+  },
+  "drops": {
+   "type": "object",
+   "additionalProperties": false,
+   "properties": {
+    "power": {
+     "type": "number"
+    },
+    "bomb": {
+     "type": "number"
+    },
+    "life": {
+     "type": "number"
+    },
+    "coins": {
+     "type": "integer",
+     "minimum": 0
+    }
+   }
+  },
+  "cost": {
+   "type": "number"
+  },
+  "weight": {
+   "type": "number"
+  },
+  "minLevel": {
+   "type": "number"
+  },
+  "behavior": {
+   "type": "string",
+   "description": "arena/ai-kit behaviour (chase, keep_distance, wander, charge, turret...)"
+  },
+  "params": {
+   "type": "object"
+  },
+  "speed": {
+   "type": "number"
+  },
+  "aggro": {
+   "type": "number"
+  },
+  "leash": {
+   "type": "number"
+  },
+  "boss": {
+   "type": "boolean"
+  },
+  "music": {
+   "type": "string"
+  },
+  "enter": {
+   "oneOf": [
+    {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "y": {
+       "type": "number"
+      },
+      "speed": {
+       "type": "number"
+      }
+     }
+    },
+    {
+     "const": false
+    }
+   ]
+  },
+  "bounds": {
+   "type": "array",
+   "items": {
+    "type": "number"
+   },
+   "minItems": 4,
+   "maxItems": 4
+  },
+  "phases": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "hp": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+     },
+     "name": {
+      "type": "string"
+     },
+     "loop": {
+      "type": "boolean"
+     },
+     "pattern": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "description": "boss pattern step: {action:'fire'|'summon', emitter|emitters, for, enemy, count, wait} or {behavior (ai kit), time, ...params} or {wait}",
+       "properties": {
+        "action": {
+         "enum": [
+          "fire",
+          "summon"
+         ]
+        },
+        "emitter": {
+         "oneOf": [
+          {
+           "type": "string",
+           "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          {
+           "type": "object",
+           "additionalProperties": false,
+           "properties": {
+            "pattern": {
+             "enum": [
+              "aimed",
+              "fan",
+              "ring",
+              "spiral",
+              "wave",
+              "line"
+             ]
+            },
+            "count": {
+             "type": "integer",
+             "minimum": 1,
+             "maximum": 64
+            },
+            "spread": {
+             "type": "number"
+            },
+            "angle": {
+             "type": "number"
+            },
+            "aim": {
+             "type": "boolean"
+            },
+            "spin": {
+             "type": "number"
+            },
+            "spinPerVolley": {
+             "type": "number"
+            },
+            "waveAmp": {
+             "type": "number"
+            },
+            "waveFreq": {
+             "type": "number"
+            },
+            "rate": {
+             "type": "number",
+             "exclusiveMinimum": 0
+            },
+            "burst": {
+             "type": "integer",
+             "minimum": 1
+            },
+            "burstGap": {
+             "type": "number"
+            },
+            "delay": {
+             "type": "number"
+            },
+            "duration": {
+             "type": "number"
+            },
+            "volleys": {
+             "type": "integer"
+            },
+            "speed": {
+             "type": "number"
+            },
+            "speedStep": {
+             "type": "number"
+            },
+            "offset": {
+             "type": "array",
+             "items": {
+              "type": "number"
+             },
+             "minItems": 2,
+             "maxItems": 2
+            },
+            "bullet": {
+             "type": "object",
+             "additionalProperties": false,
+             "properties": {
+              "sprite": {
+               "type": "string",
+               "pattern": "^asset:[a-z0-9_]+$"
+              },
+              "color": {
+               "type": "string",
+               "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+              },
+              "size": {
+               "type": "array",
+               "items": {
+                "type": "number"
+               },
+               "minItems": 2,
+               "maxItems": 2
+              },
+              "radius": {
+               "type": "number"
+              },
+              "damage": {
+               "type": "number"
+              },
+              "lifetime": {
+               "type": "number"
+              },
+              "rotate": {
+               "type": "boolean"
+              },
+              "speed": {
+               "type": "number"
+              },
+              "accel": {
+               "type": "number"
+              },
+              "minSpeed": {
+               "type": "number"
+              },
+              "maxSpeed": {
+               "type": "number"
+              },
+              "speedCurve": {
+               "type": "array",
+               "items": {
+                "type": "array",
+                "items": {
+                 "type": "number"
+                },
+                "minItems": 2,
+                "maxItems": 2
+               },
+               "minItems": 1
+              },
+              "turn": {
+               "type": "number"
+              },
+              "turnAfter": {
+               "type": "number"
+              },
+              "angleCurve": {
+               "type": "array",
+               "items": {
+                "type": "array",
+                "items": {
+                 "type": "number"
+                },
+                "minItems": 2,
+                "maxItems": 2
+               },
+               "minItems": 1
+              },
+              "waveAmp": {
+               "type": "number"
+              },
+              "waveFreq": {
+               "type": "number"
+              }
+             }
+            }
+           },
+           "required": [
+            "pattern"
+           ]
+          }
+         ]
+        },
+        "emitters": {
+         "type": "array",
+         "items": {
+          "oneOf": [
+           {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+           },
+           {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+             "pattern": {
+              "enum": [
+               "aimed",
+               "fan",
+               "ring",
+               "spiral",
+               "wave",
+               "line"
+              ]
+             },
+             "count": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 64
+             },
+             "spread": {
+              "type": "number"
+             },
+             "angle": {
+              "type": "number"
+             },
+             "aim": {
+              "type": "boolean"
+             },
+             "spin": {
+              "type": "number"
+             },
+             "spinPerVolley": {
+              "type": "number"
+             },
+             "waveAmp": {
+              "type": "number"
+             },
+             "waveFreq": {
+              "type": "number"
+             },
+             "rate": {
+              "type": "number",
+              "exclusiveMinimum": 0
+             },
+             "burst": {
+              "type": "integer",
+              "minimum": 1
+             },
+             "burstGap": {
+              "type": "number"
+             },
+             "delay": {
+              "type": "number"
+             },
+             "duration": {
+              "type": "number"
+             },
+             "volleys": {
+              "type": "integer"
+             },
+             "speed": {
+              "type": "number"
+             },
+             "speedStep": {
+              "type": "number"
+             },
+             "offset": {
+              "type": "array",
+              "items": {
+               "type": "number"
+              },
+              "minItems": 2,
+              "maxItems": 2
+             },
+             "bullet": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+               "sprite": {
+                "type": "string",
+                "pattern": "^asset:[a-z0-9_]+$"
+               },
+               "color": {
+                "type": "string",
+                "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+               },
+               "size": {
+                "type": "array",
+                "items": {
+                 "type": "number"
+                },
+                "minItems": 2,
+                "maxItems": 2
+               },
+               "radius": {
+                "type": "number"
+               },
+               "damage": {
+                "type": "number"
+               },
+               "lifetime": {
+                "type": "number"
+               },
+               "rotate": {
+                "type": "boolean"
+               },
+               "speed": {
+                "type": "number"
+               },
+               "accel": {
+                "type": "number"
+               },
+               "minSpeed": {
+                "type": "number"
+               },
+               "maxSpeed": {
+                "type": "number"
+               },
+               "speedCurve": {
+                "type": "array",
+                "items": {
+                 "type": "array",
+                 "items": {
+                  "type": "number"
+                 },
+                 "minItems": 2,
+                 "maxItems": 2
+                },
+                "minItems": 1
+               },
+               "turn": {
+                "type": "number"
+               },
+               "turnAfter": {
+                "type": "number"
+               },
+               "angleCurve": {
+                "type": "array",
+                "items": {
+                 "type": "array",
+                 "items": {
+                  "type": "number"
+                 },
+                 "minItems": 2,
+                 "maxItems": 2
+                },
+                "minItems": 1
+               },
+               "waveAmp": {
+                "type": "number"
+               },
+               "waveFreq": {
+                "type": "number"
+               }
+              }
+             }
+            },
+            "required": [
+             "pattern"
+            ]
+           }
+          ]
+         }
+        },
+        "for": {
+         "type": "number"
+        },
+        "wait": {
+         "type": "number"
+        },
+        "enemy": {
+         "type": "string",
+         "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "count": {
+         "type": "integer"
+        },
+        "behavior": {
+         "type": "string"
+        },
+        "time": {
+         "type": "number"
+        }
+       }
+      },
+      "minItems": 1
+     }
+    },
+    "required": [
+     "pattern"
+    ]
+   }
+  }
+ },
+ "required": [
+  "hp"
+ ]
+}

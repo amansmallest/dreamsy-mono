@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "dreamsy/kits/procgen/chunk.json",
+  "title": "Platformer level chunk (data/chunks/<id>.json)",
+  "type": "object",
+  "required": [
+    "grid"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "grid": {
+      "type": "string",
+      "description": "rows of tileset chars; all chunks the same height"
+    },
+    "difficulty": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 10
+    },
+    "weight": {
+      "type": "number",
+      "minimum": 0
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "start",
+          "end"
+        ]
+      }
+    }
+  }
+}

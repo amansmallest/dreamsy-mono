@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "rpg/item.json",
+  "title": "data/items/<id>.json",
+  "description": "An item.",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "maxLength": 24
+    },
+    "kind": {
+      "enum": [
+        "heal",
+        "cure",
+        "revive",
+        "capture",
+        "battle",
+        "held",
+        "evolve",
+        "key",
+        "misc"
+      ]
+    },
+    "description": {
+      "type": "string"
+    },
+    "icon": {
+      "$ref": "common.json#/$defs/asset"
+    },
+    "price": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "sell": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "heal": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "heal_percent": {
+      "type": "number",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "cure": {
+      "anyOf": [
+        {
+          "const": true
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "built-in: \"burn\", \"poison\", \"sleep\", \"stun\", \"freeze\", \"confuse\"; others via rpg.hooks.status"
+          }
+        }
+      ]
+    },
+    "revive": {
+      "type": "number",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "power": {
+      "type": "number",
+      "minimum": 0.1,
+      "maximum": 255
+    },
+    "boost": {
+      "type": "object",
+      "properties": {
+        "stat": {
+          "enum": [
+            "atk",
+            "def",
+            "mag",
+            "res",
+            "spd",
+            "acc",
+            "eva"
+          ]
+        },
+        "stages": {
+          "type": "integer",
+          "minimum": -6,
+          "maximum": 6
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "stat"
+      ]
+    },
+    "held": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "mult": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 3
+        },
+        "heal_percent": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 50
+        }
+      },
+      "additionalProperties": false
+    },
+    "evolve": {
+      "type": "boolean"
+    },
+    "teach": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "teach_to": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_]*$"
+      }
+    },
+    "level_up": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10
+    },
+    "use": {
+      "$ref": "common.json#/$defs/effects"
+    },
+    "consumable": {
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "kind"
+  ]
+}

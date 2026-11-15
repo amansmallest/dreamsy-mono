@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "dreamsy/kits/runner/runner.json",
+  "title": "data/runner.json \u2014 config (all optional; defaults in kits/runner/state.luau)",
+  "type": "object",
+  "properties": {
+    "currency": {},
+    "currencyName": {},
+    "lanes": {},
+    "rowLength": {},
+    "gapRows": {},
+    "viewAhead": {},
+    "hitWindow": {},
+    "speed": {},
+    "tierSpread": {},
+    "biomes": {},
+    "player": {},
+    "powerups": {},
+    "dailyModifiers": {},
+    "daily": {},
+    "missionSlots": {},
+    "obby": {},
+    "procStages": {}
+  },
+  "additionalProperties": false
+}

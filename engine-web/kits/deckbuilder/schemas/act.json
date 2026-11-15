@@ -1,0 +1,72 @@
+{
+ "title": "deckbuilder act (data/acts/<id>.json)",
+ "type": "object",
+ "additionalProperties": false,
+ "properties": {
+  "name": {
+   "type": "string"
+  },
+  "order": {
+   "type": "integer"
+  },
+  "rows": {
+   "type": "integer",
+   "minimum": 4,
+   "maximum": 20
+  },
+  "cols": {
+   "type": "integer"
+  },
+  "paths": {
+   "type": "integer"
+  },
+  "weights": {
+   "type": "object",
+   "additionalProperties": {
+    "type": "number"
+   }
+  },
+  "rules": {
+   "type": "object"
+  },
+  "bosses": {
+   "type": "array",
+   "items": {
+    "type": "string"
+   }
+  },
+  "encounters": {
+   "type": "object",
+   "properties": {
+    "weak": {
+     "type": "array"
+    },
+    "normal": {
+     "type": "array"
+    },
+    "elite": {
+     "type": "array"
+    },
+    "boss": {
+     "type": "array"
+    }
+   }
+  },
+  "budget": {
+   "type": "object"
+  },
+  "maxEnemies": {
+   "type": "integer"
+  },
+  "events": {
+   "type": "array",
+   "items": {
+    "type": "string"
+   }
+  },
+  "background": {
+   "type": "string"
+  }
+ },
+ "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

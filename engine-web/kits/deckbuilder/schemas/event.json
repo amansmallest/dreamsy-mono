@@ -1,0 +1,66 @@
+{
+ "title": "deckbuilder event (data/events/<id>.json)",
+ "type": "object",
+ "additionalProperties": false,
+ "required": [
+  "choices"
+ ],
+ "properties": {
+  "name": {
+   "type": "string"
+  },
+  "text": {
+   "type": "string"
+  },
+  "image": {
+   "type": "string",
+   "pattern": "^asset:"
+  },
+  "act": {
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  },
+  "choices": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+     "text"
+    ],
+    "properties": {
+     "text": {
+      "type": "string"
+     },
+     "effects": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "description": "effect string, e.g. \"damage 6\", \"apply weak 2 all\", \"if killed then energy 1\" (KIT.md)"
+      }
+     },
+     "condition": {
+      "type": "string",
+      "description": "condition, e.g. \"gold >= 50\", \"target.poison\", \"hp < 50%\""
+     },
+     "result": {
+      "type": "string"
+     },
+     "fight": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     }
+    }
+   }
+  }
+ },
+ "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

@@ -1,0 +1,66 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "dreamsy/kits/simulator/egg.json",
+ "title": "data/eggs/<id>.json \u2014 egg (in-game coins only; odds = weights, shown in UI)",
+ "type": "object",
+ "properties": {
+  "id": {
+   "type": "string",
+   "description": "Optional; must equal the file name."
+  },
+  "name": {
+   "type": "string"
+  },
+  "desc": {
+   "type": "string"
+  },
+  "icon": {
+   "type": "string",
+   "pattern": "^asset:[a-z0-9_]+$"
+  },
+  "order": {
+   "type": "number",
+   "description": "Track/list order (ascending)."
+  },
+  "cost": {
+   "oneOf": [
+    {
+     "type": "number",
+     "minimum": 0
+    },
+    {
+     "type": "object",
+     "properties": {
+      "coins": {
+       "type": "number",
+       "minimum": 0
+      },
+      "amount": {
+       "type": "number",
+       "minimum": 0
+      }
+     },
+     "additionalProperties": false
+    }
+   ],
+   "description": "In-game coins (number or {coins}). Never Stars."
+  },
+  "zone": {
+   "type": "string"
+  },
+  "pets": {
+   "type": "object",
+   "additionalProperties": {
+    "type": "number",
+    "exclusiveMinimum": 0
+   },
+   "minProperties": 1,
+   "description": "petId \u2192 weight"
+  }
+ },
+ "required": [
+  "cost",
+  "pets"
+ ],
+ "additionalProperties": false
+}

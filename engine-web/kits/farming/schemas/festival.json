@@ -1,0 +1,53 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "dreamsy/kits/farming/festival.json",
+ "title": "Festival (data/festivals/<id>.json)",
+ "type": "object",
+ "additionalProperties": false,
+ "required": [
+  "season",
+  "day",
+  "location"
+ ],
+ "properties": {
+  "id": {
+   "type": "string",
+   "pattern": "^[a-z][a-z0-9_]*$"
+  },
+  "name": {
+   "type": "string"
+  },
+  "season": {
+   "type": "string",
+   "pattern": "^[a-z][a-z0-9_]*$"
+  },
+  "day": {
+   "type": "integer",
+   "minimum": 1
+  },
+  "start": {
+   "type": "integer"
+  },
+  "end": {
+   "type": "integer"
+  },
+  "location": {
+   "type": "string",
+   "pattern": "^[a-z][a-z0-9_]*$"
+  },
+  "dialog": {
+   "type": "string",
+   "pattern": "^[a-z][a-z0-9_]*$"
+  },
+  "lines": {
+   "type": "array"
+  },
+  "rewards": {
+   "type": "array",
+   "items": {
+    "type": "object"
+   },
+   "description": "core effects ({earn}, {give}, {set}, {toast}, ...)"
+  }
+ }
+}

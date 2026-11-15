@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "dreamsy/kits/procgen/biomes.json",
+  "title": "Biome table (data/biomes/<id>.json) for procgen.terrain; first match wins",
+  "type": "object",
+  "required": [
+    "biomes"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "biomes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "char"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "char": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1
+          },
+          "minE": {
+            "type": "number"
+          },
+          "maxE": {
+            "type": "number"
+          },
+          "minM": {
+            "type": "number"
+          },
+          "maxM": {
+            "type": "number"
+          },
+          "walkable": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  }
+}

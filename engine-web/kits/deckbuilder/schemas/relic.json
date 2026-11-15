@@ -1,0 +1,102 @@
+{
+ "title": "deckbuilder relic (data/relics/<id>.json)",
+ "type": "object",
+ "additionalProperties": false,
+ "properties": {
+  "name": {
+   "type": "string"
+  },
+  "rarity": {
+   "enum": [
+    "starter",
+    "common",
+    "uncommon",
+    "rare",
+    "boss",
+    "shop",
+    "special"
+   ]
+  },
+  "text": {
+   "type": "string"
+  },
+  "icon": {
+   "type": "string",
+   "pattern": "^asset:"
+  },
+  "character": {
+   "type": "string"
+  },
+  "unlock": {
+   "type": "integer"
+  },
+  "on": {
+   "enum": [
+    "pickup",
+    "battle_start",
+    "turn_start",
+    "turn_end",
+    "card_played",
+    "attack_played",
+    "skill_played",
+    "power_played",
+    "enemy_killed",
+    "battle_end",
+    "shuffle",
+    "hp_lost"
+   ]
+  },
+  "effects": {
+   "type": "array",
+   "items": {
+    "type": "string",
+    "description": "effect string, e.g. \"damage 6\", \"apply weak 2 all\", \"if killed then energy 1\" (KIT.md)"
+   }
+  },
+  "every": {
+   "type": "integer",
+   "minimum": 1
+  },
+  "first": {
+   "type": "boolean"
+  },
+  "condition": {
+   "type": "string",
+   "description": "condition, e.g. \"gold >= 50\", \"target.poison\", \"hp < 50%\""
+  },
+  "card": {
+   "enum": [
+    "attack",
+    "skill",
+    "power",
+    "status",
+    "curse"
+   ]
+  },
+  "triggers": {
+   "type": "array",
+   "items": {
+    "type": "object"
+   }
+  },
+  "mods": {
+   "type": "object",
+   "properties": {
+    "max_energy": {
+     "type": "integer"
+    },
+    "draw": {
+     "type": "integer"
+    },
+    "max_hp": {
+     "type": "integer"
+    },
+    "gold": {
+     "type": "integer"
+    }
+   },
+   "additionalProperties": false
+  }
+ },
+ "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

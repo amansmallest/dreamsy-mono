@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "dreamsy/kits/runner/stage.json",
+  "title": "data/stages/<id>.json \u2014 obby stage (px, y down, climbs upward)",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "order": {
+      "type": "number"
+    },
+    "width": {
+      "type": "number"
+    },
+    "height": {
+      "type": "number"
+    },
+    "par": {
+      "type": "number"
+    },
+    "spawn": {
+      "type": "object",
+      "required": [
+        "x",
+        "y"
+      ],
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      }
+    },
+    "parts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "kind",
+          "x",
+          "y"
+        ],
+        "properties": {
+          "kind": {
+            "enum": [
+              "solid",
+              "move",
+              "vanish",
+              "conveyor",
+              "bounce",
+              "spinner",
+              "spike",
+              "checkpoint",
+              "goal"
+            ]
+          },
+          "x": {
+            "type": "number"
+          },
+          "y": {
+            "type": "number"
+          },
+          "w": {
+            "type": "number"
+          },
+          "h": {
+            "type": "number"
+          },
+          "dx": {
+            "type": "number"
+          },
+          "dy": {
+            "type": "number"
+          },
+          "period": {
+            "type": "number"
+          },
+          "phase": {
+            "type": "number"
+          },
+          "on": {
+            "type": "number"
+          },
+          "off": {
+            "type": "number"
+          },
+          "step": {
+            "type": "boolean"
+          },
+          "speed": {
+            "type": "number"
+          },
+          "power": {
+            "type": "number"
+          },
+          "r": {
+            "type": "number"
+          },
+          "arms": {
+            "type": "integer"
+          },
+          "angle": {
+            "type": "number"
+          },
+          "thick": {
+            "type": "number"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "spawn",
+    "parts"
+  ]
+}

@@ -1,0 +1,21 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "data/story/clues/<id>.json (or story.json clues.<id>)",
+ "type": "object",
+ "additionalProperties": false,
+ "required": [
+  "name"
+ ],
+ "properties": {
+  "name": {
+   "type": "string"
+  },
+  "text": {
+   "type": "string"
+  },
+  "icon": {
+   "type": "string",
+   "pattern": "^asset:[a-z0-9_]+$"
+  }
+ }
+}

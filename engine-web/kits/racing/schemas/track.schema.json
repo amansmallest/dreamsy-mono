@@ -1,0 +1,293 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "racing track (data/tracks/<id>.json)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "line"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "name": {
+      "type": "string"
+    },
+    "order": {
+      "type": "number"
+    },
+    "tileSize": {
+      "type": "integer",
+      "minimum": 8,
+      "maximum": 256,
+      "default": 64
+    },
+    "origin": {
+      "oneOf": [
+        {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 3,
+          "items": {
+            "type": "number"
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "x",
+            "y"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "x": {
+              "type": "number"
+            },
+            "y": {
+              "type": "number"
+            },
+            "speed": {
+              "type": "number",
+              "minimum": 50
+            }
+          }
+        }
+      ]
+    },
+    "units": {
+      "enum": [
+        "cells",
+        "px"
+      ],
+      "default": "cells"
+    },
+    "line": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "oneOf": [
+          {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 3,
+            "items": {
+              "type": "number"
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "x",
+              "y"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              },
+              "speed": {
+                "type": "number",
+                "minimum": 50
+              }
+            }
+          }
+        ]
+      },
+      "description": "racing line waypoints in driving order ([col,row,speed?] cells by default)"
+    },
+    "width": {
+      "type": "number",
+      "minimum": 0.5,
+      "default": 1.5,
+      "description": "road half-width in tiles"
+    },
+    "wall": {
+      "type": "number",
+      "description": "rasterizer: cells farther than this (tiles) from the line are walls (default width+3)"
+    },
+    "margin": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "cols": {
+      "type": "integer"
+    },
+    "rows": {
+      "type": "integer"
+    },
+    "grid": {
+      "type": "string",
+      "description": "TileMap2D grid text or file:data/levels/<id>.txt; absent = rasterized from line"
+    },
+    "tileset": {
+      "type": "string",
+      "pattern": "^data/tilesets/[a-z0-9_]+\\.json$"
+    },
+    "tiles": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "solid": {
+            "type": "boolean"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            }
+          }
+        }
+      }
+    },
+    "chars": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "road": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1
+        },
+        "curb": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1
+        },
+        "offroad": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1
+        },
+        "wall": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1
+        },
+        "finish": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1
+        },
+        "boost": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1
+        },
+        "oil": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1
+        },
+        "ramp": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1
+        },
+        "item": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1
+        }
+      }
+    },
+    "checkpoints": {
+      "oneOf": [
+        {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 32
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      ],
+      "default": 4
+    },
+    "gateWidth": {
+      "type": "number"
+    },
+    "start": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1,
+      "description": "finish line = middle of segment start\u2192start+1"
+    },
+    "startAt": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "laps": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 20,
+      "default": 3
+    },
+    "loop": {
+      "type": "boolean",
+      "default": true
+    },
+    "hazards": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "kind",
+          "at"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "enum": [
+              "boost",
+              "oil",
+              "ramp",
+              "item"
+            ]
+          },
+          "at": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "offset": {
+            "type": "number"
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4
+          }
+        }
+      }
+    },
+    "medals": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "gold": {
+          "type": "number"
+        },
+        "silver": {
+          "type": "number"
+        },
+        "bronze": {
+          "type": "number"
+        }
+      }
+    },
+    "data": {
+      "type": "object"
+    }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "dreamsy:kit/topdown/enemy",
+  "title": "topdown enemy (data/enemies/<id>.json)",
+  "type": "object",
+  "required": ["id", "behaviour"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+    "name": { "type": "string" },
+    "behaviour": { "enum": ["wanderer", "chaser", "charger", "archer", "spawner", "ai"], "description": "Or a name registered with kit.enemies.define. \"ai\" = an @kit/ai brain from `ai`." },
+    "ai": { "type": "object", "description": "@kit/ai behaviour spec (behaviour \"ai\"): {behavior: wander|patrol|chase|keep_distance|turret|spawner|..., ...params} or {fsm}/{utility}/{behavior: boss, phases}. Shots use `shoot` params." },
+    "sprite": { "type": "string" }, "animset": { "type": "string" }, "anims": { "type": "object" },
+    "color": { "type": "string" }, "faces": { "enum": ["left", "right"] },
+    "size": { "$ref": "#/definitions/vec2" }, "draw_size": { "$ref": "#/definitions/vec2" },
+    "hp": { "type": "number", "minimum": 1 }, "speed": { "type": "number" },
+    "damage": { "type": "number", "description": "half hearts" },
+    "knockback": { "type": "boolean" }, "iframes": { "type": "number" }, "invulnerable": { "type": "boolean" },
+    "flying": { "type": "boolean", "description": "crosses gaps/water" }, "touch": { "type": "boolean", "description": "contact damage" },
+    "passive": { "type": "boolean", "description": "doesn't keep shutters closed" },
+    "turn": { "$ref": "#/definitions/vec2" }, "aggro": { "type": "number" },
+    "charge": { "type": "object", "additionalProperties": false, "properties": { "speed": { "type": "number" }, "windup": { "type": "number" }, "stun": { "type": "number" } } },
+    "shoot": { "type": "object", "additionalProperties": false, "properties": { "interval": { "type": "number" }, "speed": { "type": "number" }, "range": { "type": "number" }, "keep": { "type": "number" }, "size": { "$ref": "#/definitions/vec2" }, "life": { "type": "number" }, "aligned": { "type": "boolean" }, "sprite": { "type": "string" } } },
+    "spawn": { "type": "object", "additionalProperties": false, "properties": { "enemy": { "type": "string" }, "interval": { "type": "number" }, "max": { "type": "integer" }, "radius": { "type": "number" } } },
+    "drops": { "type": "array", "items": { "type": "object", "required": ["item"], "properties": { "item": { "type": "string" }, "chance": { "type": "number", "minimum": 0, "maximum": 1 } } } }
+  },
+  "definitions": { "vec2": { "type": "array", "items": { "type": "number" }, "minItems": 2, "maxItems": 2 } }
+}

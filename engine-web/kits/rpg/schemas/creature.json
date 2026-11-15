@@ -1,0 +1,178 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "rpg/creature.json",
+  "title": "data/creatures/<id>.json",
+  "description": "A creature species.",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "maxLength": 20
+    },
+    "types": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_]*$"
+      },
+      "minItems": 1,
+      "maxItems": 2
+    },
+    "description": {
+      "type": "string"
+    },
+    "base": {
+      "type": "object",
+      "properties": {
+        "hp": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 255
+        },
+        "atk": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 255
+        },
+        "def": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 255
+        },
+        "mag": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 255
+        },
+        "res": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 255
+        },
+        "spd": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 255
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "hp",
+        "atk",
+        "def",
+        "mag",
+        "res",
+        "spd"
+      ]
+    },
+    "learnset": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "level": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "move": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "level",
+          "move"
+        ]
+      },
+      "minItems": 1
+    },
+    "evolution": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/evolution"
+          }
+        },
+        {
+          "$ref": "#/$defs/evolution"
+        }
+      ]
+    },
+    "catch_rate": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 255
+    },
+    "xp_yield": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "xp_curve": {
+      "type": "string",
+      "description": "\"fast\" | \"medium\" | \"slow\" | a data/rpg.json xp_curves name"
+    },
+    "sprites": {
+      "type": "object",
+      "properties": {
+        "front": {
+          "$ref": "common.json#/$defs/asset"
+        },
+        "back": {
+          "$ref": "common.json#/$defs/asset"
+        },
+        "icon": {
+          "$ref": "common.json#/$defs/asset"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "front"
+      ]
+    },
+    "cry": {
+      "type": "string",
+      "description": "sfx id played when it enters battle"
+    },
+    "ai": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "evolution": {
+      "type": "object",
+      "properties": {
+        "into": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "level": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 100
+        },
+        "item": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "if": {
+          "$ref": "common.json#/$defs/condition"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "into"
+      ]
+    }
+  },
+  "required": [
+    "name",
+    "types",
+    "base",
+    "learnset",
+    "sprites"
+  ]
+}

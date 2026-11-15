@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "dreamsy/kits/runner/mission.json",
+  "title": "data/missions/<id>.json",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "text": {
+      "type": "string"
+    },
+    "stat": {
+      "enum": [
+        "distance",
+        "coins",
+        "jumps",
+        "slides",
+        "lanes",
+        "powerups",
+        "gems",
+        "runs",
+        "score"
+      ]
+    },
+    "target": {
+      "type": "number"
+    },
+    "scope": {
+      "enum": [
+        "run",
+        "total"
+      ]
+    },
+    "order": {
+      "type": "number"
+    },
+    "reward": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "description": "core effects (+ roguelite kinds: heal, healPct, maxHp, gold{raw?}, charge, shield, hurt, relic ('random'|id|{rarity weights}), meta)"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "text",
+    "stat",
+    "target"
+  ]
+}

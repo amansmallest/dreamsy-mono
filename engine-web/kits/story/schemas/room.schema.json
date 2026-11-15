@@ -1,0 +1,176 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "data/story/rooms/<id>.json \u2014 point-and-click scene",
+ "type": "object",
+ "additionalProperties": false,
+ "required": [
+  "hotspots"
+ ],
+ "properties": {
+  "name": {
+   "type": "string"
+  },
+  "background": {
+   "type": "string",
+   "pattern": "^asset:[a-z0-9_]+$"
+  },
+  "hint": {
+   "type": "string"
+  },
+  "labels": {
+   "type": "boolean"
+  },
+  "hotspots": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "rect"
+    ],
+    "properties": {
+     "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_]+$"
+     },
+     "name": {
+      "type": "string"
+     },
+     "rect": {
+      "description": "[x, y, w, h] in 720x1280 screen px; keep y+h <= 1100 (inventory bar below)",
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "minItems": 4,
+      "maxItems": 4
+     },
+     "sprite": {
+      "type": "string",
+      "pattern": "^asset:[a-z0-9_]+$"
+     },
+     "if": {
+      "description": "Story expression string (\"trust >= 2 and has key\") or a core condition object",
+      "type": [
+       "string",
+       "object",
+       "array"
+      ]
+     },
+     "look": {
+      "description": "text, list of lines, or \"@label\" to call a script (ends with @return)",
+      "oneOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "array",
+        "items": {
+         "type": "string"
+        }
+       }
+      ]
+     },
+     "examine": {
+      "oneOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "array",
+        "items": {
+         "type": "string"
+        }
+       }
+      ]
+     },
+     "take": {
+      "type": "string"
+     },
+     "count": {
+      "type": "integer"
+     },
+     "clue": {
+      "type": "string"
+     },
+     "effects": {
+      "description": "Story command strings (\"give rope\", \"set x\", \"aff mira 1\", \"clue id\") or core effect objects",
+      "oneOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "array",
+        "items": {
+         "type": [
+          "string",
+          "object"
+         ]
+        }
+       }
+      ]
+     },
+     "call": {
+      "type": "string"
+     },
+     "go": {
+      "type": "string"
+     },
+     "use": {
+      "type": "object",
+      "description": "item id (or \"*\") -> result",
+      "additionalProperties": {
+       "type": "object",
+       "additionalProperties": false,
+       "properties": {
+        "text": {
+         "oneOf": [
+          {
+           "type": "string"
+          },
+          {
+           "type": "array",
+           "items": {
+            "type": "string"
+           }
+          }
+         ]
+        },
+        "effects": {
+         "description": "Story command strings (\"give rope\", \"set x\", \"aff mira 1\", \"clue id\") or core effect objects",
+         "oneOf": [
+          {
+           "type": "string"
+          },
+          {
+           "type": "array",
+           "items": {
+            "type": [
+             "string",
+             "object"
+            ]
+           }
+          }
+         ]
+        },
+        "consume": {
+         "type": "boolean"
+        },
+        "remove": {
+         "type": "boolean"
+        },
+        "call": {
+         "type": "string"
+        },
+        "go": {
+         "type": "string"
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ }
+}

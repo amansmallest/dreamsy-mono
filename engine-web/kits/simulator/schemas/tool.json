@@ -1,0 +1,66 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "dreamsy/kits/simulator/tool.json",
+ "title": "data/tools/<id>.json \u2014 tool (one upgrade track, bought in order)",
+ "type": "object",
+ "properties": {
+  "id": {
+   "type": "string",
+   "description": "Optional; must equal the file name."
+  },
+  "name": {
+   "type": "string"
+  },
+  "desc": {
+   "type": "string"
+  },
+  "icon": {
+   "type": "string",
+   "pattern": "^asset:[a-z0-9_]+$"
+  },
+  "order": {
+   "type": "number",
+   "description": "Track/list order (ascending)."
+  },
+  "cost": {
+   "oneOf": [
+    {
+     "type": "number",
+     "minimum": 0
+    },
+    {
+     "type": "object",
+     "properties": {
+      "coins": {
+       "type": "number",
+       "minimum": 0
+      },
+      "amount": {
+       "type": "number",
+       "minimum": 0
+      }
+     },
+     "additionalProperties": false
+    }
+   ],
+   "description": "In-game coins (number or {coins}). Never Stars."
+  },
+  "power": {
+   "type": "number",
+   "exclusiveMinimum": 0
+  },
+  "speed": {
+   "type": "number",
+   "minimum": 0,
+   "description": "Auto swings per second (0 = tap only)."
+  },
+  "zone": {
+   "type": "string",
+   "description": "Zone required to buy."
+  }
+ },
+ "required": [
+  "power"
+ ],
+ "additionalProperties": false
+}

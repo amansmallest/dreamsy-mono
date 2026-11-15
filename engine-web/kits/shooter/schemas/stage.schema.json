@@ -1,0 +1,243 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "shooter stage (data/stages/<id>.json)",
+ "type": "object",
+ "additionalProperties": false,
+ "properties": {
+  "name": {
+   "type": "string"
+  },
+  "order": {
+   "type": "number"
+  },
+  "mode": {
+   "enum": [
+    "shmup",
+    "arena"
+   ]
+  },
+  "music": {
+   "type": "string"
+  },
+  "background": {
+   "type": "string",
+   "pattern": "^asset:[a-z0-9_]+$"
+  },
+  "bgColor": {
+   "type": "string",
+   "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+  },
+  "borderColor": {
+   "type": "string",
+   "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+  },
+  "speckColor": {
+   "type": "string",
+   "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+  },
+  "specks": {
+   "type": "integer"
+  },
+  "scroll": {
+   "type": "number"
+  },
+  "width": {
+   "type": "number"
+  },
+  "height": {
+   "type": "number"
+  },
+  "next": {
+   "type": "string",
+   "pattern": "^[a-z][a-z0-9_]*$"
+  },
+  "reward": {
+   "type": "object",
+   "additionalProperties": false,
+   "properties": {
+    "credits": {
+     "type": "number"
+    },
+    "noMiss": {
+     "type": "number"
+    }
+   }
+  },
+  "events": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "t": {
+      "type": "number"
+     },
+     "enemy": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+     },
+     "boss": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+     },
+     "text": {
+      "type": "string"
+     },
+     "pickup": {
+      "type": "string"
+     },
+     "x": {
+      "type": "number"
+     },
+     "xs": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      }
+     },
+     "y": {
+      "type": "number"
+     },
+     "count": {
+      "type": "integer",
+      "minimum": 1
+     },
+     "gap": {
+      "type": "number"
+     },
+     "dx": {
+      "type": "number"
+     },
+     "path": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+       "kind": {
+        "enum": [
+         "straight",
+         "sine",
+         "stop",
+         "swoop",
+         "dive",
+         "hover"
+        ]
+       },
+       "speed": {
+        "type": "number"
+       },
+       "angle": {
+        "type": "number"
+       },
+       "amp": {
+        "type": "number"
+       },
+       "freq": {
+        "type": "number"
+       },
+       "stopY": {
+        "type": "number"
+       },
+       "hold": {
+        "type": "number"
+       },
+       "exitSpeed": {
+        "type": "number"
+       },
+       "exitAngle": {
+        "type": "number"
+       },
+       "turn": {
+        "type": "number"
+       },
+       "at": {
+        "type": "number"
+       },
+       "diveSpeed": {
+        "type": "number"
+       },
+       "y": {
+        "type": "number"
+       },
+       "sway": {
+        "type": "number"
+       },
+       "swayFreq": {
+        "type": "number"
+       }
+      },
+      "required": [
+       "kind"
+      ]
+     },
+     "waitClear": {
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "t"
+    ]
+   }
+  },
+  "waves": {
+   "type": "object",
+   "additionalProperties": false,
+   "properties": {
+    "count": {
+     "type": "integer"
+    },
+    "budget": {
+     "type": "number"
+    },
+    "growth": {
+     "type": "number"
+    },
+    "add": {
+     "type": "number"
+    },
+    "gap": {
+     "type": "number"
+    },
+    "rest": {
+     "type": "number"
+    },
+    "seed": {
+     "type": "number"
+    },
+    "enemies": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+     }
+    },
+    "boss": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "id": {
+       "type": "string",
+       "pattern": "^[a-z][a-z0-9_]*$"
+      },
+      "every": {
+       "type": "integer"
+      }
+     }
+    }
+   },
+   "required": [
+    "enemies"
+   ]
+  },
+  "spawns": {
+   "type": "array",
+   "items": {
+    "type": "array",
+    "items": {
+     "type": "number"
+    },
+    "minItems": 2,
+    "maxItems": 2
+   }
+  }
+ }
+}

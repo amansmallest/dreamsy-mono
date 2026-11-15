@@ -1,0 +1,240 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "rpg/rpg.json",
+  "title": "data/rpg.json",
+  "description": "Game config for the rpg kit.",
+  "type": "object",
+  "properties": {
+    "start": {
+      "type": "object",
+      "properties": {
+        "map": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "spawn": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "map"
+      ]
+    },
+    "world_scene": {
+      "type": "string",
+      "pattern": "^scenes/.+\\.scene\\.json$"
+    },
+    "player_name": {
+      "type": "string",
+      "maxLength": 16
+    },
+    "money": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "items": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 1
+      }
+    },
+    "party": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "creature": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "level": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "creature"
+        ]
+      }
+    },
+    "flags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "zoom": {
+      "type": "number",
+      "minimum": 1,
+      "maximum": 8
+    },
+    "camera_fill": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 4
+    },
+    "run": {
+      "type": "boolean"
+    },
+    "player": {
+      "type": "object",
+      "properties": {
+        "sprite": {
+          "anyOf": [
+            {
+              "$ref": "common.json#/$defs/asset"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "down": {
+                  "$ref": "common.json#/$defs/asset"
+                },
+                "up": {
+                  "$ref": "common.json#/$defs/asset"
+                },
+                "left": {
+                  "$ref": "common.json#/$defs/asset"
+                },
+                "right": {
+                  "$ref": "common.json#/$defs/asset"
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "anims": {
+          "type": "string"
+        },
+        "size": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "offset_y": {
+          "type": "number"
+        },
+        "step_time": {
+          "type": "number",
+          "minimum": 0.05
+        },
+        "run_time": {
+          "type": "number",
+          "minimum": 0.03
+        },
+        "color": {
+          "$ref": "common.json#/$defs/color"
+        }
+      },
+      "additionalProperties": false
+    },
+    "item_sprite": {
+      "$ref": "common.json#/$defs/asset"
+    },
+    "dialog_speed": {
+      "type": "number",
+      "minimum": 0
+    },
+    "lose_money_percent": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "ui": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "common.json#/$defs/color"
+      }
+    },
+    "battle": {
+      "type": "object",
+      "properties": {
+        "sky": {
+          "$ref": "common.json#/$defs/color"
+        },
+        "ground": {
+          "$ref": "common.json#/$defs/color"
+        },
+        "background": {
+          "$ref": "common.json#/$defs/asset"
+        },
+        "platform": {
+          "$ref": "common.json#/$defs/asset"
+        },
+        "music": {
+          "type": "string"
+        },
+        "trainer_music": {
+          "type": "string"
+        },
+        "text_seconds": {
+          "type": "number",
+          "minimum": 0.2,
+          "maximum": 5
+        },
+        "sprite_size": {
+          "type": "number",
+          "minimum": 32,
+          "maximum": 400
+        }
+      },
+      "additionalProperties": false
+    },
+    "sfx": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "text": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "vars": {
+      "type": "object"
+    },
+    "xp_curves": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "menu_extra": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "effects": {
+            "$ref": "common.json#/$defs/effects"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "label",
+          "effects"
+        ]
+      }
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "start"
+  ]
+}

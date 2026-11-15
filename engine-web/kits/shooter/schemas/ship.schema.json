@@ -1,0 +1,72 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "shooter ship (data/ships/<id>.json)",
+ "type": "object",
+ "additionalProperties": false,
+ "properties": {
+  "name": {
+   "type": "string"
+  },
+  "order": {
+   "type": "number"
+  },
+  "sprite": {
+   "type": "string",
+   "pattern": "^asset:[a-z0-9_]+$"
+  },
+  "size": {
+   "type": "array",
+   "items": {
+    "type": "number"
+   },
+   "minItems": 2,
+   "maxItems": 2
+  },
+  "weapon": {
+   "type": "string",
+   "pattern": "^[a-z][a-z0-9_]*$"
+  },
+  "sub": {
+   "type": "string",
+   "pattern": "^[a-z][a-z0-9_]*$"
+  },
+  "speed": {
+   "type": "number"
+  },
+  "hp": {
+   "type": "number"
+  },
+  "hitbox": {
+   "type": "number"
+  },
+  "iframes": {
+   "type": "number"
+  },
+  "lives": {
+   "type": "integer"
+  },
+  "bombs": {
+   "type": "integer"
+  },
+  "cost": {
+   "type": "number"
+  },
+  "unlock": {
+   "type": "object",
+   "additionalProperties": false,
+   "properties": {
+    "score": {
+     "type": "number"
+    },
+    "clear": {
+     "type": "string",
+     "pattern": "^[a-z][a-z0-9_]*$"
+    }
+   }
+  }
+ },
+ "required": [
+  "name",
+  "weapon"
+ ]
+}

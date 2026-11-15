@@ -1,0 +1,35 @@
+{
+  "name": "@dreamsy/engine",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./core": "./core/index.ts",
+    "./render": "./render/index.ts",
+    "./input": "./input/index.ts",
+    "./playtest": "./tools/playtest.ts"
+  },
+  "scripts": {
+    "dev": "vite --host --port 2005 --strictPort",
+    "build": "vite build",
+    "build:luau": "bash luau/build.sh",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "screenshot": "tsx tools/screenshot.ts",
+    "screenshot:all": "tsx tools/screenshot-all.ts"
+  },
+  "dependencies": {
+    "@dimforge/rapier2d-compat": "^0.21.0",
+    "@dreamsy/format": "workspace:^",
+    "fflate": "^0.8.3",
+    "three": "^0.187.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/three": "^0.187.0",
+    "playwright": "^1.65.1",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.0"
+  }
+}

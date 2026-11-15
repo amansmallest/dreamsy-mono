@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "dreamsy://kits/tycoon/achievement.json",
+  "title": "data/achievements/<id>.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "when"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+    },
+    "name": {
+      "type": "string"
+    },
+    "desc": {
+      "type": "string"
+    },
+    "icon": {
+      "type": "string",
+      "pattern": "^asset:[a-z][a-z0-9_]*$"
+    },
+    "order": {
+      "type": "number"
+    },
+    "when": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "owned": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "description": "generator id \u2192 owned count"
+        },
+        "owned_total": {
+          "type": "integer"
+        },
+        "earned": {
+          "type": "number"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,63}$"
+        },
+        "prestiges": {
+          "type": "integer"
+        },
+        "taps": {
+          "type": "integer"
+        },
+        "upgrades": {
+          "type": "integer"
+        },
+        "managers": {
+          "type": "integer"
+        }
+      }
+    },
+    "reward": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mult": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "permanent global output \u00d7mult"
+        },
+        "amount": {
+          "type": "number"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,63}$"
+        }
+      }
+    }
+  }
+}

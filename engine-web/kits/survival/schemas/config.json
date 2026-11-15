@@ -1,0 +1,317 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "dreamsy/kits/survival/config.json",
+ "title": "Survival config (data/survival.json)",
+ "type": "object",
+ "additionalProperties": false,
+ "required": [],
+ "properties": {
+  "id": {
+   "type": "string",
+   "pattern": "^[a-z][a-z0-9_]*$"
+  },
+  "world": {
+   "type": "object",
+   "additionalProperties": false,
+   "properties": {
+    "w": {
+     "type": "integer",
+     "minimum": 8,
+     "maximum": 256
+    },
+    "h": {
+     "type": "integer",
+     "minimum": 8,
+     "maximum": 256
+    },
+    "tile": {
+     "type": "integer",
+     "minimum": 8
+    },
+    "seed": {
+     "type": [
+      "integer",
+      "string"
+     ]
+    },
+    "scale": {
+     "type": "number"
+    },
+    "octaves": {
+     "type": "integer"
+    },
+    "island": {
+     "type": "number",
+     "minimum": 0,
+     "maximum": 1
+    },
+    "clearRadius": {
+     "type": "integer"
+    },
+    "reach": {
+     "type": "number"
+    }
+   }
+  },
+  "biomes": {
+   "type": "array",
+   "minItems": 1,
+   "description": "ordered; first match by elevation e / moisture m wins",
+   "items": {
+    "type": "object",
+    "required": [
+     "id",
+     "char"
+    ],
+    "additionalProperties": false,
+    "properties": {
+     "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+     },
+     "name": {
+      "type": "string"
+     },
+     "char": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1,
+      "description": "tileset char (printable ASCII, not '.' or ' ')"
+     },
+     "minE": {
+      "type": "number"
+     },
+     "maxE": {
+      "type": "number"
+     },
+     "minM": {
+      "type": "number"
+     },
+     "maxM": {
+      "type": "number"
+     },
+     "walkable": {
+      "type": "boolean"
+     },
+     "temp": {
+      "type": "number",
+      "description": "\u00b0C"
+     },
+     "nodes": {
+      "type": "object",
+      "additionalProperties": {
+       "type": "number",
+       "minimum": 0,
+       "maximum": 1
+      },
+      "description": "node id -> chance per cell"
+     }
+    }
+   }
+  },
+  "day": {
+   "type": "object",
+   "additionalProperties": false,
+   "properties": {
+    "length": {
+     "type": "number"
+    },
+    "night": {
+     "type": "number"
+    },
+    "start": {
+     "type": "number"
+    },
+    "nightTemp": {
+     "type": "number"
+    }
+   }
+  },
+  "needs": {
+   "type": "object",
+   "additionalProperties": false,
+   "properties": {
+    "hunger": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "max": {
+       "type": "number"
+      },
+      "start": {
+       "type": "number"
+      },
+      "decay": {
+       "type": "number"
+      },
+      "damage": {
+       "type": "number"
+      },
+      "low": {
+       "type": "number"
+      }
+     }
+    },
+    "thirst": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "max": {
+       "type": "number"
+      },
+      "start": {
+       "type": "number"
+      },
+      "decay": {
+       "type": "number"
+      },
+      "damage": {
+       "type": "number"
+      },
+      "low": {
+       "type": "number"
+      }
+     }
+    },
+    "health": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "max": {
+       "type": "number"
+      },
+      "start": {
+       "type": "number"
+      },
+      "regen": {
+       "type": "number"
+      },
+      "regenAbove": {
+       "type": "number"
+      }
+     }
+    },
+    "temperature": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "min": {
+       "type": "number"
+      },
+      "max": {
+       "type": "number"
+      },
+      "start": {
+       "type": "number"
+      },
+      "follow": {
+       "type": "number"
+      },
+      "damage": {
+       "type": "number"
+      }
+     }
+    }
+   },
+   "description": "rates per minute"
+  },
+  "death": {
+   "type": "object",
+   "additionalProperties": false,
+   "properties": {
+    "drop": {
+     "enum": [
+      "all",
+      "half",
+      "none"
+     ]
+    },
+    "keepTools": {
+     "type": "boolean"
+    },
+    "respawn": {
+     "enum": [
+      "bed",
+      "start"
+     ]
+    },
+    "restore": {
+     "type": "object",
+     "additionalProperties": {
+      "type": "number"
+     }
+    }
+   }
+  },
+  "player": {
+   "type": "object",
+   "additionalProperties": false,
+   "properties": {
+    "speed": {
+     "type": "number"
+    },
+    "swing": {
+     "type": "number"
+    },
+    "damage": {
+     "type": "number"
+    }
+   }
+  },
+  "start": {
+   "type": "object",
+   "additionalProperties": false,
+   "properties": {
+    "items": {
+     "type": "object",
+     "additionalProperties": {
+      "type": "integer",
+      "minimum": 1
+     }
+    }
+   }
+  },
+  "nightGrowth": {
+   "type": "number",
+   "minimum": 1
+  },
+  "milestones": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "id"
+    ],
+    "additionalProperties": false,
+    "properties": {
+     "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+     },
+     "label": {
+      "type": "string"
+     },
+     "item": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+     },
+     "count": {
+      "type": "integer"
+     },
+     "structure": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+     },
+     "recipe": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+     },
+     "night": {
+      "type": "integer",
+      "minimum": 1
+     }
+    }
+   }
+  }
+ }
+}

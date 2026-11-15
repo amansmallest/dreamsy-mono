@@ -1,0 +1,484 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "rpg/map.json",
+  "title": "data/maps/<id>.json",
+  "description": "An overworld map: tile layers + spawns, warps, NPCs, signs, items, triggers, encounter zones.",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "hide_name": {
+      "type": "boolean"
+    },
+    "scene": {
+      "type": "string",
+      "pattern": "^scenes/.+\\.scene\\.json$"
+    },
+    "music": {
+      "type": "string"
+    },
+    "zoom": {
+      "type": "number",
+      "minimum": 1,
+      "maximum": 10
+    },
+    "tile_size": {
+      "type": "integer",
+      "minimum": 4,
+      "maximum": 64
+    },
+    "layers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "string"
+          },
+          "tileset": {
+            "type": "string",
+            "pattern": "^data/tilesets/[a-z0-9_]+\\.json$"
+          },
+          "z": {
+            "type": "integer"
+          },
+          "above": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "data",
+          "tileset"
+        ]
+      },
+      "minItems": 1
+    },
+    "data": {
+      "type": "string"
+    },
+    "tileset": {
+      "type": "string"
+    },
+    "battle": {
+      "$ref": "common.json#/$defs/battle_bg"
+    },
+    "spawns": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "minItems": 2,
+        "maxItems": 3,
+        "prefixItems": [
+          {
+            "type": "integer",
+            "minimum": 0
+          },
+          {
+            "type": "integer",
+            "minimum": 0
+          },
+          {
+            "$ref": "common.json#/$defs/facing"
+          }
+        ]
+      }
+    },
+    "warps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "at": {
+            "$ref": "common.json#/$defs/cell"
+          },
+          "to": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "spawn": {
+            "type": "string"
+          },
+          "on": {
+            "enum": [
+              "step",
+              "bump"
+            ]
+          },
+          "dir": {
+            "$ref": "common.json#/$defs/facing"
+          },
+          "if": {
+            "$ref": "common.json#/$defs/condition"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "at",
+          "to"
+        ]
+      }
+    },
+    "npcs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "at": {
+            "$ref": "common.json#/$defs/cell"
+          },
+          "facing": {
+            "$ref": "common.json#/$defs/facing"
+          },
+          "sprite": {
+            "anyOf": [
+              {
+                "$ref": "common.json#/$defs/asset"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "down": {
+                    "$ref": "common.json#/$defs/asset"
+                  },
+                  "up": {
+                    "$ref": "common.json#/$defs/asset"
+                  },
+                  "left": {
+                    "$ref": "common.json#/$defs/asset"
+                  },
+                  "right": {
+                    "$ref": "common.json#/$defs/asset"
+                  }
+                },
+                "additionalProperties": false
+              }
+            ]
+          },
+          "anims": {
+            "type": "string"
+          },
+          "size": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "offset_y": {
+            "type": "number"
+          },
+          "color": {
+            "$ref": "common.json#/$defs/color"
+          },
+          "portrait": {
+            "$ref": "common.json#/$defs/asset"
+          },
+          "dialog": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "lines": {
+            "$ref": "common.json#/$defs/lines"
+          },
+          "text": {
+            "$ref": "common.json#/$defs/lines"
+          },
+          "effects": {
+            "$ref": "common.json#/$defs/effects"
+          },
+          "choices": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string"
+                },
+                "goto": {
+                  "type": "string"
+                },
+                "if": {
+                  "$ref": "common.json#/$defs/condition"
+                },
+                "effects": {
+                  "$ref": "common.json#/$defs/effects"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "text"
+              ]
+            }
+          },
+          "move": {
+            "enum": [
+              "static",
+              "wander",
+              "patrol",
+              "look"
+            ]
+          },
+          "radius": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "path": {
+            "type": "array",
+            "items": {
+              "$ref": "common.json#/$defs/cell"
+            }
+          },
+          "look": {
+            "enum": [
+              "random"
+            ]
+          },
+          "fixed": {
+            "type": "boolean"
+          },
+          "trainer": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "sight": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 8
+          },
+          "after_dialog": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "if": {
+            "$ref": "common.json#/$defs/condition"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "at"
+        ]
+      }
+    },
+    "signs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "at": {
+            "$ref": "common.json#/$defs/cell"
+          },
+          "name": {
+            "type": "string"
+          },
+          "text": {
+            "$ref": "common.json#/$defs/lines"
+          },
+          "lines": {
+            "$ref": "common.json#/$defs/lines"
+          },
+          "dialog": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "effects": {
+            "$ref": "common.json#/$defs/effects"
+          },
+          "choices": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string"
+                },
+                "goto": {
+                  "type": "string"
+                },
+                "if": {
+                  "$ref": "common.json#/$defs/condition"
+                },
+                "effects": {
+                  "$ref": "common.json#/$defs/effects"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "text"
+              ]
+            }
+          },
+          "sprite": {
+            "$ref": "common.json#/$defs/asset"
+          },
+          "solid": {
+            "type": "boolean"
+          },
+          "facing": {
+            "$ref": "common.json#/$defs/facing"
+          },
+          "if": {
+            "$ref": "common.json#/$defs/condition"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "at"
+        ]
+      }
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "at": {
+            "$ref": "common.json#/$defs/cell"
+          },
+          "item": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "flag": {
+            "type": "string"
+          },
+          "hidden": {
+            "type": "boolean"
+          },
+          "sprite": {
+            "$ref": "common.json#/$defs/asset"
+          },
+          "if": {
+            "$ref": "common.json#/$defs/condition"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "at",
+          "item"
+        ]
+      }
+    },
+    "triggers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "at": {
+            "$ref": "common.json#/$defs/cell"
+          },
+          "w": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "h": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "name": {
+            "type": "string"
+          },
+          "dialog": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "lines": {
+            "$ref": "common.json#/$defs/lines"
+          },
+          "text": {
+            "$ref": "common.json#/$defs/lines"
+          },
+          "effects": {
+            "$ref": "common.json#/$defs/effects"
+          },
+          "once": {
+            "type": "boolean"
+          },
+          "flag": {
+            "type": "string"
+          },
+          "if": {
+            "$ref": "common.json#/$defs/condition"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "at"
+        ]
+      }
+    },
+    "encounters": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "rate": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "if": {
+            "$ref": "common.json#/$defs/condition"
+          },
+          "battle": {
+            "$ref": "common.json#/$defs/battle_bg"
+          },
+          "table": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "creature": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                },
+                "min": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "max": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "level": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "weight": {
+                  "type": "number",
+                  "minimum": 0
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "creature"
+              ]
+            },
+            "minItems": 1
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "table"
+        ]
+      }
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "spawns"
+  ]
+}

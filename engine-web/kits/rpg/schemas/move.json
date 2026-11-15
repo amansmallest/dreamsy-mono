@@ -1,0 +1,157 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "rpg/move.json",
+  "title": "data/moves/<id>.json",
+  "description": "A battle move.",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "maxLength": 20
+    },
+    "type": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "category": {
+      "enum": [
+        "physical",
+        "magic",
+        "status"
+      ]
+    },
+    "description": {
+      "type": "string"
+    },
+    "power": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 250
+    },
+    "accuracy": {
+      "anyOf": [
+        {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 100
+        },
+        {
+          "const": true
+        }
+      ]
+    },
+    "pp": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 64
+    },
+    "priority": {
+      "type": "integer",
+      "minimum": -5,
+      "maximum": 5
+    },
+    "target": {
+      "enum": [
+        "self",
+        "enemy"
+      ]
+    },
+    "crit_stage": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2
+    },
+    "hits": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "minItems": 2,
+          "maxItems": 2
+        }
+      ]
+    },
+    "effects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "enum": [
+              "status",
+              "stat",
+              "heal",
+              "drain",
+              "recoil",
+              "cure",
+              "daze",
+              "custom"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "description": "built-in: \"burn\", \"poison\", \"sleep\", \"stun\", \"freeze\", \"confuse\"; others via rpg.hooks.status"
+          },
+          "stat": {
+            "enum": [
+              "atk",
+              "def",
+              "mag",
+              "res",
+              "spd",
+              "acc",
+              "eva"
+            ]
+          },
+          "stages": {
+            "type": "integer",
+            "minimum": -6,
+            "maximum": 6
+          },
+          "target": {
+            "enum": [
+              "self",
+              "enemy"
+            ]
+          },
+          "chance": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "percent": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "id": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "type"
+        ]
+      }
+    },
+    "sfx": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "type",
+    "category",
+    "pp"
+  ]
+}

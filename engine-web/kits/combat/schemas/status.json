@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "dreamsy/kits/combat/status.json",
+  "title": "Custom status effect (data/statuses/<name>.json) \u2014 register with combat.defineStatus(name, def)",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "duration": {
+      "type": "number",
+      "minimum": 0
+    },
+    "tick": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "damage": {
+      "type": "number",
+      "minimum": 0
+    },
+    "heal": {
+      "type": "number",
+      "minimum": 0
+    },
+    "type": {
+      "type": "string"
+    },
+    "stacking": {
+      "enum": [
+        "refresh",
+        "stack",
+        "extend",
+        "max",
+        "ignore"
+      ]
+    },
+    "maxStacks": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "speedMult": {
+      "type": "number",
+      "minimum": 0
+    },
+    "busy": {
+      "type": "boolean"
+    },
+    "damageTakenMult": {
+      "type": "number",
+      "minimum": 0
+    },
+    "tint": {
+      "type": "string",
+      "pattern": "^#[0-9a-fA-F]{6}$"
+    },
+    "breaksOnHit": {
+      "type": "boolean"
+    },
+    "immuneAfter": {
+      "type": "number",
+      "minimum": 0
+    },
+    "ignoreArmor": {
+      "type": "boolean"
+    }
+  }
+}

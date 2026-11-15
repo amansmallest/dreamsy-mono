@@ -1,0 +1,127 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "shooter weapon (data/weapons/<id>.json)",
+ "type": "object",
+ "additionalProperties": false,
+ "properties": {
+  "name": {
+   "type": "string"
+  },
+  "kind": {
+   "enum": [
+    "shot",
+    "spread",
+    "laser",
+    "homing",
+    "orbital"
+   ]
+  },
+  "sprite": {
+   "type": "string",
+   "pattern": "^asset:[a-z0-9_]+$"
+  },
+  "color": {
+   "type": "string",
+   "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+  },
+  "size": {
+   "type": "array",
+   "items": {
+    "type": "number"
+   },
+   "minItems": 2,
+   "maxItems": 2
+  },
+  "sfx": {
+   "type": "string"
+  },
+  "icon": {
+   "type": "string",
+   "pattern": "^asset:[a-z0-9_]+$"
+  },
+  "order": {
+   "type": "number"
+  },
+  "levels": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "rate": {
+      "type": "number"
+     },
+     "count": {
+      "type": "number"
+     },
+     "gap": {
+      "type": "number"
+     },
+     "spread": {
+      "type": "number"
+     },
+     "damage": {
+      "type": "number"
+     },
+     "speed": {
+      "type": "number"
+     },
+     "pierce": {
+      "type": "number"
+     },
+     "radius": {
+      "type": "number"
+     },
+     "lifetime": {
+      "type": "number"
+     },
+     "homing": {
+      "type": "number"
+     },
+     "homingRange": {
+      "type": "number"
+     },
+     "length": {
+      "type": "number"
+     },
+     "width": {
+      "type": "number"
+     },
+     "dps": {
+      "type": "number"
+     },
+     "tick": {
+      "type": "number"
+     },
+     "orbs": {
+      "type": "number"
+     },
+     "orbitRadius": {
+      "type": "number"
+     },
+     "orbitSpeed": {
+      "type": "number"
+     },
+     "orbDamage": {
+      "type": "number"
+     },
+     "orbHitEvery": {
+      "type": "number"
+     },
+     "orbRadius": {
+      "type": "number"
+     },
+     "blocks": {
+      "type": "boolean"
+     }
+    }
+   },
+   "minItems": 1,
+   "maxItems": 10
+  }
+ },
+ "required": [
+  "kind",
+  "levels"
+ ]
+}

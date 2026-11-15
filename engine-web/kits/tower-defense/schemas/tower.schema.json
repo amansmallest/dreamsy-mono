@@ -1,0 +1,313 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "tower-defense tower (data/towers/<id>.json)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "cost"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "name": {
+      "type": "string"
+    },
+    "cost": {
+      "type": "number",
+      "minimum": 0
+    },
+    "range": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 20,
+      "description": "Tiles."
+    },
+    "rate": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 30,
+      "description": "Shots per second (0 = never fires: support/income towers)."
+    },
+    "damage": {
+      "type": "number",
+      "minimum": 0
+    },
+    "damage_type": {
+      "type": "string",
+      "description": "Damage type. Built-ins: physical, explosive, fire, lightning (armor applies), magic and true (ignore armor; true also ignores resistances). Any lowercase name works with resist."
+    },
+    "ground": {
+      "type": "boolean"
+    },
+    "air": {
+      "type": "boolean"
+    },
+    "targeting": {
+      "enum": [
+        "first",
+        "last",
+        "strong",
+        "close"
+      ]
+    },
+    "splash": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "radius": {
+          "type": "number",
+          "minimum": 0
+        },
+        "falloff": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "slow": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "factor": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Speed multiplier."
+        },
+        "duration": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "chain": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "range": {
+          "type": "number",
+          "minimum": 0
+        },
+        "falloff": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "dot": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "dps": {
+          "type": "number",
+          "minimum": 0
+        },
+        "duration": {
+          "type": "number",
+          "minimum": 0
+        },
+        "type": {
+          "type": "string"
+        }
+      }
+    },
+    "aura": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "range": {
+          "type": "number",
+          "minimum": 0
+        },
+        "damage": {
+          "type": "number",
+          "minimum": 0
+        },
+        "rate": {
+          "type": "number",
+          "minimum": 0
+        },
+        "range_bonus": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "income": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Money paid at every wave start."
+    },
+    "armor_pierce": {
+      "type": "number",
+      "minimum": 0
+    },
+    "bonus": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "boss": {
+          "type": "number",
+          "minimum": 0
+        },
+        "air": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "sprite": {
+      "type": "string",
+      "pattern": "^asset:[a-z][a-z0-9_]*$"
+    },
+    "icon": {
+      "type": "string",
+      "pattern": "^asset:[a-z][a-z0-9_]*$"
+    },
+    "color": {
+      "type": "string",
+      "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+    },
+    "projectile": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "color": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+        },
+        "speed": {
+          "type": "number",
+          "minimum": 0
+        },
+        "size": {
+          "type": "number",
+          "minimum": 0
+        },
+        "sprite": {
+          "type": "string",
+          "pattern": "^asset:[a-z][a-z0-9_]*$"
+        },
+        "beam": {
+          "type": "boolean"
+        }
+      }
+    },
+    "upgrades": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "cost"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "desc": {
+            "type": "string"
+          },
+          "cost": {
+            "type": "number",
+            "minimum": 0
+          },
+          "set": {
+            "type": "object",
+            "description": "stat (dotted keys ok: \"slow.factor\") \u2192 new value"
+          },
+          "add": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          },
+          "mul": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          }
+        }
+      },
+      "maxItems": 6,
+      "description": "Common tiers, bought in order before choosing a branch."
+    },
+    "branches": {
+      "type": "array",
+      "maxItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "tiers"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sprite": {
+            "type": "string",
+            "pattern": "^asset:[a-z][a-z0-9_]*$"
+          },
+          "icon": {
+            "type": "string",
+            "pattern": "^asset:[a-z][a-z0-9_]*$"
+          },
+          "tiers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "cost"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "desc": {
+                  "type": "string"
+                },
+                "cost": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "set": {
+                  "type": "object",
+                  "description": "stat (dotted keys ok: \"slow.factor\") \u2192 new value"
+                },
+                "add": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "number"
+                  }
+                },
+                "mul": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "number"
+                  }
+                }
+              }
+            },
+            "minItems": 1,
+            "maxItems": 6
+          }
+        }
+      }
+    }
+  }
+}

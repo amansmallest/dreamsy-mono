@@ -1,0 +1,91 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "dreamsy/kits/survival/poi.json",
+ "title": "Point of interest (data/pois/<id>.json)",
+ "type": "object",
+ "additionalProperties": false,
+ "required": [
+  "tile"
+ ],
+ "properties": {
+  "id": {
+   "type": "string",
+   "pattern": "^[a-z][a-z0-9_]*$"
+  },
+  "name": {
+   "type": "string"
+  },
+  "tile": {
+   "type": "string",
+   "minLength": 1,
+   "maxLength": 1,
+   "description": "tileset char (printable ASCII, not '.' or ' ')"
+  },
+  "foundTile": {
+   "type": "string",
+   "minLength": 1,
+   "maxLength": 1,
+   "description": "tileset char (printable ASCII, not '.' or ' ')"
+  },
+  "biomes": {
+   "type": "array",
+   "items": {
+    "type": "string",
+    "pattern": "^[a-z][a-z0-9_]*$"
+   }
+  },
+  "count": {
+   "type": "integer",
+   "minimum": 0
+  },
+  "minDist": {
+   "type": "integer"
+  },
+  "loot": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "item"
+    ],
+    "additionalProperties": false,
+    "properties": {
+     "item": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+     },
+     "count": {
+      "oneOf": [
+       {
+        "type": "integer",
+        "minimum": 0
+       },
+       {
+        "type": "array",
+        "items": {
+         "type": "integer",
+         "minimum": 0
+        },
+        "minItems": 2,
+        "maxItems": 2
+       }
+      ],
+      "description": "count or [min, max]"
+     },
+     "chance": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+     }
+    }
+   }
+  },
+  "effects": {
+   "type": "array",
+   "description": "core effects"
+  },
+  "message": {
+   "type": "string"
+  }
+ }
+}

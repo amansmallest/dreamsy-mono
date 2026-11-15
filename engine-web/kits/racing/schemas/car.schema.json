@@ -1,0 +1,172 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "racing car (data/cars/<id>.json)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "stats"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "name": {
+      "type": "string"
+    },
+    "order": {
+      "type": "number"
+    },
+    "sprite": {
+      "type": "string",
+      "pattern": "^asset:[a-z0-9_]+$"
+    },
+    "size": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "price": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "currency": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "unlock": {
+      "type": [
+        "object",
+        "array"
+      ],
+      "description": "core condition, e.g. {\"level\":3,\"track\":\"driver\"} or {\"flag\":\"cup_won\"}"
+    },
+    "lockedText": {
+      "type": "string"
+    },
+    "blurb": {
+      "type": "string"
+    },
+    "stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "maxSpeed": {
+          "type": "number",
+          "minimum": 0
+        },
+        "accel": {
+          "type": "number",
+          "minimum": 0
+        },
+        "brake": {
+          "type": "number",
+          "minimum": 0
+        },
+        "reverse": {
+          "type": "number",
+          "minimum": 0
+        },
+        "coast": {
+          "type": "number",
+          "minimum": 0
+        },
+        "turn": {
+          "type": "number",
+          "minimum": 0
+        },
+        "grip": {
+          "type": "number",
+          "minimum": 0
+        },
+        "driftGrip": {
+          "type": "number",
+          "minimum": 0
+        },
+        "driftMin": {
+          "type": "number",
+          "minimum": 0
+        },
+        "driftSteer": {
+          "type": "number",
+          "minimum": 0
+        },
+        "radius": {
+          "type": "number",
+          "minimum": 0
+        },
+        "mass": {
+          "type": "number",
+          "minimum": 0
+        },
+        "offroadSpeed": {
+          "type": "number",
+          "minimum": 0
+        },
+        "offroadDrag": {
+          "type": "number",
+          "minimum": 0
+        },
+        "nitro": {
+          "type": "number",
+          "minimum": 0
+        },
+        "nitroAccel": {
+          "type": "number",
+          "minimum": 0
+        },
+        "nitroSpeed": {
+          "type": "number",
+          "minimum": 0
+        },
+        "nitroRegen": {
+          "type": "number",
+          "minimum": 0
+        },
+        "driftCharge": {
+          "type": "number",
+          "minimum": 0
+        },
+        "boostSpeed": {
+          "type": "number",
+          "minimum": 0
+        },
+        "boostTime": {
+          "type": "number",
+          "minimum": 0
+        },
+        "oilSpin": {
+          "type": "number",
+          "minimum": 0
+        },
+        "rampTime": {
+          "type": "number",
+          "minimum": 0
+        },
+        "restitution": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "upgradeLevels": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "upgradeCost": {
+      "type": "number",
+      "minimum": 0,
+      "description": "multiplier on upgrade costs for this car"
+    },
+    "data": {
+      "type": "object"
+    }
+  }
+}

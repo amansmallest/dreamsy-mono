@@ -1,0 +1,108 @@
+{
+ "title": "deckbuilder card (data/cards/<id>.json)",
+ "type": "object",
+ "additionalProperties": false,
+ "required": [
+  "type",
+  "effects"
+ ],
+ "properties": {
+  "name": {
+   "type": "string"
+  },
+  "cost": {
+   "oneOf": [
+    {
+     "type": "integer",
+     "minimum": -1,
+     "maximum": 9
+    },
+    {
+     "const": "X"
+    }
+   ],
+   "description": "-1 = unplayable"
+  },
+  "type": {
+   "enum": [
+    "attack",
+    "skill",
+    "power",
+    "status",
+    "curse"
+   ]
+  },
+  "target": {
+   "enum": [
+    "enemy",
+    "all",
+    "self",
+    "none"
+   ]
+  },
+  "rarity": {
+   "enum": [
+    "basic",
+    "common",
+    "uncommon",
+    "rare",
+    "special"
+   ]
+  },
+  "character": {
+   "type": "string",
+   "description": "character id; omit = any; \"none\" = never in rewards"
+  },
+  "effects": {
+   "type": "array",
+   "items": {
+    "type": "string",
+    "description": "effect string, e.g. \"damage 6\", \"apply weak 2 all\", \"if killed then energy 1\" (KIT.md)"
+   }
+  },
+  "text": {
+   "type": "string"
+  },
+  "art": {
+   "type": "string",
+   "pattern": "^asset:"
+  },
+  "exhaust": {
+   "type": "boolean"
+  },
+  "retain": {
+   "type": "boolean"
+  },
+  "ethereal": {
+   "type": "boolean"
+  },
+  "innate": {
+   "type": "boolean"
+  },
+  "unplayable": {
+   "type": "boolean"
+  },
+  "playable": {
+   "type": "boolean"
+  },
+  "condition": {
+   "type": "string",
+   "description": "condition, e.g. \"gold >= 50\", \"target.poison\", \"hp < 50%\""
+  },
+  "token": {
+   "type": "boolean"
+  },
+  "noUpgrade": {
+   "type": "boolean"
+  },
+  "unlock": {
+   "type": "integer",
+   "minimum": 0
+  },
+  "upgrade": {
+   "type": "object",
+   "description": "fields overriding the base when upgraded (effects, cost, text, exhaust, ...); omit = auto (+3 damage/block or +1)"
+  }
+ },
+ "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

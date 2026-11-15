@@ -1,0 +1,51 @@
+{
+ "title": "deckbuilder character (data/characters/<id>.json)",
+ "type": "object",
+ "additionalProperties": false,
+ "required": [
+  "deck"
+ ],
+ "properties": {
+  "name": {
+   "type": "string"
+  },
+  "text": {
+   "type": "string"
+  },
+  "hp": {
+   "type": "integer"
+  },
+  "maxHp": {
+   "type": "integer"
+  },
+  "energy": {
+   "type": "integer"
+  },
+  "draw": {
+   "type": "integer"
+  },
+  "gold": {
+   "type": "integer"
+  },
+  "deck": {
+   "type": "array",
+   "items": {
+    "type": "string"
+   }
+  },
+  "relics": {
+   "type": "array",
+   "items": {
+    "type": "string"
+   }
+  },
+  "sprite": {
+   "type": "string",
+   "pattern": "^asset:"
+  },
+  "unlock": {
+   "type": "integer"
+  }
+ },
+ "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

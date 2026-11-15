@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "dreamsy/kits/roguelite/biome.json",
+  "title": "data/biomes/<id>.json \u2014 run segment (floors in order)",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "order": {
+      "type": "number"
+    },
+    "floors": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "steps": {
+      "type": "integer",
+      "minimum": 3
+    },
+    "enemies": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "elites": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "boss": {
+      "type": "string"
+    },
+    "gate": {
+      "enum": [
+        "elite",
+        "combat"
+      ]
+    },
+    "weights": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "number"
+      }
+    },
+    "arena": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "open",
+            "caves",
+            "dungeon"
+          ]
+        },
+        "w": {
+          "type": "integer"
+        },
+        "h": {
+          "type": "integer"
+        },
+        "pillars": {
+          "type": "integer"
+        },
+        "fill": {
+          "type": "number"
+        },
+        "steps": {
+          "type": "integer"
+        },
+        "minOpen": {
+          "type": "number"
+        },
+        "rooms": {
+          "type": "integer"
+        },
+        "minRoom": {
+          "type": "integer"
+        },
+        "maxRoom": {
+          "type": "integer"
+        },
+        "corridor": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "tiles": {
+      "type": "object"
+    },
+    "music": {
+      "type": "string"
+    },
+    "tint": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "enemies"
+  ]
+}

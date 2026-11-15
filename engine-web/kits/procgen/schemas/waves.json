@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "dreamsy/kits/procgen/waves.json",
+  "title": "Wave plan options (data/waves/<id>.json) for procgen.waves.waves(enemies, opts)",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "count": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "budget": {
+      "type": "number",
+      "minimum": 0
+    },
+    "growth": {
+      "type": "number",
+      "minimum": 1
+    },
+    "add": {
+      "type": "number"
+    },
+    "gap": {
+      "type": "number"
+    },
+    "maxCount": {
+      "type": "integer"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "boss": {
+      "type": "object",
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "every": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    }
+  }
+}

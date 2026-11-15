@@ -1,0 +1,154 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "dreamsy://kits/tycoon/upgrade.json",
+  "title": "data/upgrades/<id>.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "cost"
+  ],
+  "anyOf": [
+    {
+      "required": [
+        "effect"
+      ]
+    },
+    {
+      "required": [
+        "effects"
+      ]
+    }
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+    },
+    "name": {
+      "type": "string"
+    },
+    "desc": {
+      "type": "string"
+    },
+    "icon": {
+      "type": "string",
+      "pattern": "^asset:[a-z][a-z0-9_]*$"
+    },
+    "order": {
+      "type": "number"
+    },
+    "cost": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "amount"
+      ],
+      "properties": {
+        "amount": {
+          "type": "number",
+          "minimum": 0
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,63}$"
+        }
+      }
+    },
+    "effect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "value"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "output",
+            "speed",
+            "cost",
+            "tap",
+            "offline_hours",
+            "offline_rate",
+            "prestige"
+          ],
+          "description": "output \u00d7value; speed: cycle \u00f7value; cost \u00d7value (e.g. 0.9); tap \u00d7value; offline_hours +value; offline_rate +value; prestige gain \u00d7value"
+        },
+        "target": {
+          "type": "string",
+          "description": "\"all\" or a generator id"
+        },
+        "value": {
+          "type": "number"
+        }
+      }
+    },
+    "effects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "value"
+        ],
+        "properties": {
+          "kind": {
+            "enum": [
+              "output",
+              "speed",
+              "cost",
+              "tap",
+              "offline_hours",
+              "offline_rate",
+              "prestige"
+            ],
+            "description": "output \u00d7value; speed: cycle \u00f7value; cost \u00d7value (e.g. 0.9); tap \u00d7value; offline_hours +value; offline_rate +value; prestige gain \u00d7value"
+          },
+          "target": {
+            "type": "string",
+            "description": "\"all\" or a generator id"
+          },
+          "value": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "requires": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "owned": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "description": "generator id \u2192 owned count"
+        },
+        "upgrades": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,63}$"
+          }
+        },
+        "earned": {
+          "type": "number"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,63}$"
+        },
+        "prestiges": {
+          "type": "integer"
+        }
+      }
+    },
+    "permanent": {
+      "type": "boolean",
+      "description": "survives prestige (automatic when paid in a prestige currency)"
+    }
+  }
+}

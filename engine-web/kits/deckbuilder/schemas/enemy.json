@@ -1,0 +1,138 @@
+{
+ "title": "deckbuilder enemy (data/enemies/<id>.json)",
+ "type": "object",
+ "additionalProperties": false,
+ "required": [
+  "hp",
+  "moves"
+ ],
+ "properties": {
+  "name": {
+   "type": "string"
+  },
+  "hp": {
+   "oneOf": [
+    {
+     "type": "integer",
+     "minimum": 1
+    },
+    {
+     "type": "array",
+     "items": {
+      "type": "integer"
+     },
+     "minItems": 2,
+     "maxItems": 2
+    }
+   ]
+  },
+  "tier": {
+   "enum": [
+    "normal",
+    "elite",
+    "boss"
+   ]
+  },
+  "act": {
+   "oneOf": [
+    {
+     "type": "string"
+    },
+    {
+     "type": "integer"
+    }
+   ]
+  },
+  "cost": {
+   "type": "number"
+  },
+  "weight": {
+   "type": "number"
+  },
+  "minRow": {
+   "type": "integer"
+  },
+  "maxRow": {
+   "type": "integer"
+  },
+  "max": {
+   "type": "integer"
+  },
+  "sprite": {
+   "type": "string",
+   "pattern": "^asset:"
+  },
+  "start": {
+   "type": "array",
+   "items": {
+    "type": "string",
+    "description": "effect string, e.g. \"damage 6\", \"apply weak 2 all\", \"if killed then energy 1\" (KIT.md)"
+   }
+  },
+  "first": {
+   "type": "string"
+  },
+  "moves": {
+   "type": "object",
+   "additionalProperties": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "name": {
+      "type": "string"
+     },
+     "intent": {
+      "enum": [
+       "attack",
+       "attack_defend",
+       "attack_debuff",
+       "attack_buff",
+       "defend",
+       "buff",
+       "debuff",
+       "unknown"
+      ]
+     },
+     "effects": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "description": "effect string, e.g. \"damage 6\", \"apply weak 2 all\", \"if killed then energy 1\" (KIT.md)"
+      }
+     }
+    }
+   }
+  },
+  "pattern": {
+   "type": "object",
+   "properties": {
+    "kind": {
+     "enum": [
+      "cycle",
+      "random",
+      "sequence"
+     ]
+    },
+    "moves": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "weights": {
+     "type": "object",
+     "additionalProperties": {
+      "type": "number"
+     }
+    },
+    "noRepeat": {
+     "type": "integer"
+    },
+    "then": {
+     "type": "object"
+    }
+   }
+  }
+ },
+ "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

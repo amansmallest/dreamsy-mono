@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "tower-defense enemy (data/enemies/<id>.json)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "hp",
+    "speed"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "name": {
+      "type": "string"
+    },
+    "hp": {
+      "type": "number",
+      "minimum": 1,
+      "description": "Base hit points (\u00d7 wave scaling)."
+    },
+    "speed": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 20,
+      "description": "Tiles per second."
+    },
+    "armor": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Flat reduction per hit for armored damage types (min 20% of the hit gets through)."
+    },
+    "resist": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "number",
+        "minimum": -4,
+        "maximum": 1
+      },
+      "description": "damage type \u2192 fraction resisted (0.5 = half damage, -0.5 = 50% weakness)."
+    },
+    "bounty": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Money on kill."
+    },
+    "lives": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Lives lost when it reaches the exit (default 1)."
+    },
+    "flying": {
+      "type": "boolean",
+      "description": "Flies the straight line spawn\u2192exit; only towers with air = true hit it."
+    },
+    "boss": {
+      "type": "boolean",
+      "description": "Big health bar + bossSpawned event."
+    },
+    "regen": {
+      "type": "number",
+      "minimum": 0,
+      "description": "HP per second."
+    },
+    "split": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "into"
+      ],
+      "properties": {
+        "into": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        }
+      }
+    },
+    "heal": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "amount": {
+          "type": "number",
+          "minimum": 0
+        },
+        "radius": {
+          "type": "number",
+          "minimum": 0
+        },
+        "interval": {
+          "type": "number",
+          "minimum": 0.1
+        }
+      }
+    },
+    "immune": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "slow",
+          "dot"
+        ]
+      }
+    },
+    "sprite": {
+      "type": "string",
+      "pattern": "^asset:[a-z][a-z0-9_]*$"
+    },
+    "anims": {
+      "type": "string"
+    },
+    "anim": {
+      "type": "string"
+    },
+    "size": {
+      "type": "number",
+      "minimum": 0.1,
+      "maximum": 4,
+      "description": "Sprite size in tiles."
+    },
+    "color": {
+      "type": "string",
+      "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+    }
+  }
+}

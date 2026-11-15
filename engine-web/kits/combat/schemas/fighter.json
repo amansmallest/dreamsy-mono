@@ -1,0 +1,234 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "dreamsy/kits/combat/fighter.json",
+  "title": "Fighter stats (embedded in data/enemies/*.json, data/heroes/*.json \u2026; passed to combat.add)",
+  "type": "object",
+  "properties": {
+    "hp": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "maxHp": {
+      "type": "number"
+    },
+    "shield": {
+      "type": "number",
+      "minimum": 0
+    },
+    "shieldRegen": {
+      "type": "number",
+      "minimum": 0
+    },
+    "shieldDelay": {
+      "type": "number",
+      "minimum": 0
+    },
+    "armor": {
+      "type": "number"
+    },
+    "resist": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "number",
+        "maximum": 1
+      },
+      "description": "damage type or status name -> fraction reduced (0.5 = half, 1 = immune, -0.5 = weak)"
+    },
+    "immune": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "team": {
+      "type": "string"
+    },
+    "iframes": {
+      "type": "number",
+      "minimum": 0
+    },
+    "radius": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "critChance": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "critMult": {
+      "type": "number"
+    },
+    "knockbackResist": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "contact": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "amount": {
+          "type": "number",
+          "minimum": 0
+        },
+        "type": {
+          "type": "string"
+        },
+        "knockback": {
+          "type": "number",
+          "minimum": 0
+        },
+        "knockTime": {
+          "type": "number"
+        },
+        "status": {
+          "oneOf": [
+            {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "name"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "chance": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "duration": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "stacks": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "power": {
+                      "type": "number",
+                      "minimum": 0
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "array",
+              "items": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "name"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "chance": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "duration": {
+                        "type": "number",
+                        "minimum": 0
+                      },
+                      "stacks": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "power": {
+                        "type": "number",
+                        "minimum": 0
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "critChance": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "critMult": {
+          "type": "number"
+        },
+        "ignoreArmor": {
+          "type": "boolean"
+        },
+        "ignoreIframes": {
+          "type": "boolean"
+        },
+        "ignoreShield": {
+          "type": "boolean"
+        }
+      }
+    },
+    "attack": {
+      "type": "number"
+    },
+    "defense": {
+      "type": "number"
+    },
+    "level": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "types": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "loot": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        {
+          "$ref": "dreamsy/kits/loot.json"
+        }
+      ]
+    },
+    "respawn": {
+      "type": "object",
+      "properties": {
+        "delay": {
+          "type": "number"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "hp": {
+          "type": "number"
+        }
+      }
+    },
+    "destroyOnDeath": {
+      "type": "boolean"
+    },
+    "deathDelay": {
+      "type": "number"
+    }
+  }
+}

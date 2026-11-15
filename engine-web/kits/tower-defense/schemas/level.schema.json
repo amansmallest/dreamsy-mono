@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "tower-defense level (data/levels/<id>.json)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "waves"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "name": {
+      "type": "string"
+    },
+    "map": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "grid"
+      ],
+      "properties": {
+        "grid": {
+          "type": "string",
+          "description": "\"file:data/levels/<id>.txt\" (same grid as the scene's TileMap2D) or inline rows joined by \\n."
+        },
+        "tile_size": {
+          "type": "integer",
+          "minimum": 8,
+          "maximum": 256
+        },
+        "legend": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "path": {
+              "type": "string"
+            },
+            "spawns": {
+              "type": "string"
+            },
+            "exits": {
+              "type": "string"
+            },
+            "build": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "paths": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "points"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "points": {
+            "type": "array",
+            "minItems": 2,
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 2,
+              "maxItems": 2
+            }
+          }
+        }
+      }
+    },
+    "build_spots": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "integer"
+        },
+        "minItems": 2,
+        "maxItems": 2
+      }
+    },
+    "cols": {
+      "type": "integer"
+    },
+    "rows": {
+      "type": "integer"
+    },
+    "tile_size": {
+      "type": "integer"
+    },
+    "waves": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "money": {
+      "type": "number",
+      "minimum": 0
+    },
+    "lives": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "interest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "rate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "cap": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "sell_ratio": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "between": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": "Seconds between waves (auto-start countdown)."
+    },
+    "early_bonus": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Money per second saved by calling the next wave early."
+    }
+  }
+}

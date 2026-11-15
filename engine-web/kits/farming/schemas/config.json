@@ -1,0 +1,175 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "dreamsy/kits/farming/config.json",
+ "title": "Farming config (data/farming.json)",
+ "type": "object",
+ "additionalProperties": false,
+ "required": [],
+ "properties": {
+  "id": {
+   "type": "string",
+   "pattern": "^[a-z][a-z0-9_]*$"
+  },
+  "currency": {
+   "type": "string",
+   "pattern": "^[a-z][a-z0-9_]*$"
+  },
+  "currencyName": {
+   "type": "string"
+  },
+  "startGold": {
+   "type": "integer"
+  },
+  "startItems": {
+   "type": "object",
+   "additionalProperties": {
+    "type": "integer"
+   }
+  },
+  "bagSlots": {
+   "type": "integer"
+  },
+  "seed": {
+   "type": "integer"
+  },
+  "seasons": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "id",
+     "days"
+    ],
+    "properties": {
+     "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+     },
+     "name": {
+      "type": "string"
+     },
+     "days": {
+      "type": "integer",
+      "minimum": 1
+     }
+    }
+   }
+  },
+  "weekdays": {
+   "type": "array",
+   "items": {
+    "type": "string"
+   }
+  },
+  "dayStart": {
+   "type": "integer"
+  },
+  "dayEnd": {
+   "type": "integer"
+  },
+  "dayLength": {
+   "type": "number",
+   "description": "real seconds per day"
+  },
+  "weather": {
+   "type": "object",
+   "additionalProperties": {
+    "type": "object",
+    "additionalProperties": {
+     "type": "number"
+    }
+   },
+   "description": "<season>|default \u2192 {sunny: w, rain: w, ...}"
+  },
+  "weatherFixed": {
+   "type": "object",
+   "additionalProperties": {
+    "type": "string"
+   }
+  },
+  "energy": {
+   "type": "object"
+  },
+  "friendship": {
+   "type": "object"
+  },
+  "animals": {
+   "type": "object"
+  },
+  "quality": {
+   "type": "object"
+  },
+  "villagerSpeed": {
+   "type": "number"
+  },
+  "locations": {
+   "type": "object",
+   "additionalProperties": {
+    "type": "object",
+    "required": [
+     "x",
+     "y"
+    ],
+    "properties": {
+     "x": {
+      "type": "number"
+     },
+     "y": {
+      "type": "number"
+     },
+     "hidden": {
+      "type": "boolean"
+     },
+     "links": {
+      "type": [
+       "array",
+       "object"
+      ]
+     }
+    }
+   }
+  },
+  "art": {
+   "type": "object",
+   "properties": {
+    "sprout": {
+     "type": "string",
+     "pattern": "^asset:[a-z0-9_]+$"
+    },
+    "growing": {
+     "type": "string",
+     "pattern": "^asset:[a-z0-9_]+$"
+    },
+    "dead": {
+     "type": "string",
+     "pattern": "^asset:[a-z0-9_]+$"
+    },
+    "ready": {
+     "type": "string",
+     "pattern": "^asset:[a-z0-9_]+$"
+    }
+   }
+  },
+  "levelCurve": {
+   "type": "object"
+  },
+  "shipping": {
+   "type": "object"
+  },
+  "balance": {
+   "type": "object",
+   "properties": {
+    "days": {
+     "type": "integer"
+    },
+    "buy": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "pattern": "^(upgrade|animal|item):[a-z0-9_]+$"
+     }
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,107 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "dreamsy/kits/farming/crop.json",
+ "title": "Crop (data/crops/<id>.json)",
+ "type": "object",
+ "additionalProperties": false,
+ "required": [
+  "seasons",
+  "stages",
+  "price"
+ ],
+ "properties": {
+  "id": {
+   "type": "string",
+   "pattern": "^[a-z][a-z0-9_]*$"
+  },
+  "name": {
+   "type": "string"
+  },
+  "icon": {
+   "type": "string",
+   "pattern": "^asset:[a-z0-9_]+$"
+  },
+  "color": {
+   "type": "string"
+  },
+  "seasons": {
+   "type": "array",
+   "items": {
+    "type": "string",
+    "pattern": "^[a-z][a-z0-9_]*$"
+   },
+   "minItems": 1,
+   "description": "season ids it grows in (out of season at a season change = withers)"
+  },
+  "stages": {
+   "type": "array",
+   "items": {
+    "type": "integer",
+    "minimum": 1
+   },
+   "minItems": 1,
+   "description": "watered days per growth stage; total = days to harvest"
+  },
+  "regrow": {
+   "type": "integer",
+   "minimum": 1,
+   "description": "days to re-ripen after harvest (crop stays planted)"
+  },
+  "yield": {
+   "oneOf": [
+    {
+     "type": "integer",
+     "minimum": 1
+    },
+    {
+     "type": "array",
+     "items": {
+      "type": "integer",
+      "minimum": 1
+     },
+     "minItems": 2,
+     "maxItems": 2
+    }
+   ]
+  },
+  "price": {
+   "type": "integer",
+   "minimum": 0,
+   "description": "ship value per crop"
+  },
+  "xp": {
+   "type": "integer",
+   "minimum": 0,
+   "description": "farming XP per harvest (default price/10)"
+  },
+  "sprites": {
+   "type": "array",
+   "items": {
+    "type": "string",
+    "pattern": "^asset:[a-z0-9_]+$"
+   },
+   "description": "one per stage + 1 (last = ready); else config.art sprout/growing + icon"
+  },
+  "seed": {
+   "type": "object",
+   "additionalProperties": false,
+   "properties": {
+    "id": {
+     "type": "string",
+     "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "name": {
+     "type": "string"
+    },
+    "price": {
+     "type": "integer",
+     "minimum": 0
+    },
+    "icon": {
+     "type": "string",
+     "pattern": "^asset:[a-z0-9_]+$"
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,144 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "shooter config (data/shooter.json)",
+ "type": "object",
+ "additionalProperties": false,
+ "properties": {
+  "lives": {
+   "type": "integer"
+  },
+  "bombs": {
+   "type": "integer"
+  },
+  "maxBombs": {
+   "type": "integer"
+  },
+  "continues": {
+   "type": "integer"
+  },
+  "currency": {
+   "type": "string",
+   "pattern": "^[a-z][a-z0-9_]*$"
+  },
+  "currencyName": {
+   "type": "string"
+  },
+  "autoFire": {
+   "type": "boolean"
+  },
+  "campaign": {
+   "type": "array",
+   "items": {
+    "type": "string",
+    "pattern": "^[a-z][a-z0-9_]*$"
+   }
+  },
+  "startShip": {
+   "type": "string",
+   "pattern": "^[a-z][a-z0-9_]*$"
+  },
+  "grazeRadius": {
+   "type": "number"
+  },
+  "magnet": {
+   "type": "number"
+  },
+  "autoAimRange": {
+   "type": "number"
+  },
+  "bombDamage": {
+   "type": "number"
+  },
+  "bombBossDamage": {
+   "type": "number"
+  },
+  "invincible": {
+   "type": "boolean",
+   "description": "playtest aid only"
+  },
+  "score": {
+   "type": "object",
+   "additionalProperties": false,
+   "properties": {
+    "comboWindow": {
+     "type": "number"
+    },
+    "multEvery": {
+     "type": "number"
+    },
+    "maxMult": {
+     "type": "number"
+    },
+    "grazePoints": {
+     "type": "number"
+    },
+    "extends": {
+     "type": "array",
+     "items": {
+      "type": "number"
+     }
+    }
+   }
+  },
+  "pickups": {
+   "type": "object",
+   "additionalProperties": {
+    "type": "string",
+    "pattern": "^asset:[a-z0-9_]+$"
+   }
+  },
+  "shop": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+     },
+     "name": {
+      "type": "string"
+     },
+     "cost": {
+      "type": "number"
+     },
+     "max": {
+      "type": "integer"
+     },
+     "effect": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+       "power": {
+        "type": "number"
+       },
+       "life": {
+        "type": "number"
+       },
+       "bomb": {
+        "type": "number"
+       },
+       "weapon": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_]*$"
+       },
+       "sub": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_]*$"
+       },
+       "continue": {
+        "type": "number"
+       }
+      }
+     }
+    },
+    "required": [
+     "id",
+     "cost",
+     "effect"
+    ]
+   }
+  }
+ }
+}

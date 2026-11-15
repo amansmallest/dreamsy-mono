@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "puzzle level (data/levels/<id>.json, or inline in a pack). .txt levels are the mechanic's text grid.",
+  "type": "object",
+  "properties": {
+    "text": { "type": "string", "description": "mechanic text grid: push = XSB (# wall, - floor, @ player, $ crate, . goal, * crate on goal, + player on goal); flow = letters (pairs), . empty, # blocked; lights = o/.; nonogram = #/.; sliding = rows of numbers, 0 = gap" },
+    "par": { "type": "integer", "minimum": 1, "description": "omit: computed by the solver" },
+    "stars": { "type": "array", "items": { "type": "number" }, "minItems": 2, "maxItems": 2, "description": "par mechanics: [max moves for 3★, max moves for 2★]; match3: [score for 2★, score for 3★]" },
+    "w": { "type": "integer", "minimum": 2, "maximum": 12 },
+    "h": { "type": "integer", "minimum": 2, "maximum": 12 },
+    "colors": { "type": "integer", "minimum": 3, "maximum": 6, "description": "match3" },
+    "moves": { "type": "integer", "minimum": 1, "description": "match3 move limit" },
+    "seed": { "type": "number", "description": "match3 board + refill seed" },
+    "grid": { "type": "array", "items": { "type": "string", "pattern": "^[1-6]+$" }, "description": "match3 authored start board (rows of colour digits)" },
+    "jelly": { "type": "array", "items": { "type": "integer", "minimum": 1 }, "description": "match3 jelly cells (1-based index y*w+x+1)" },
+    "objective": {
+      "type": "object", "additionalProperties": false, "description": "match3",
+      "properties": {
+        "score": { "type": "number" },
+        "jelly": { "type": "boolean" },
+        "collect": { "type": "object", "patternProperties": { "^[1-6]$": { "type": "integer", "minimum": 1 } }, "additionalProperties": false }
+      }
+    },
+    "fill": { "type": "boolean", "description": "flow: every cell must be covered (default true)" }
+  }
+}

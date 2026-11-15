@@ -1,0 +1,172 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "dreamsy/kits/farming/villager.json",
+ "title": "Villager (data/villagers/<id>.json)",
+ "type": "object",
+ "additionalProperties": false,
+ "required": [
+  "name",
+  "schedule"
+ ],
+ "properties": {
+  "id": {
+   "type": "string",
+   "pattern": "^[a-z][a-z0-9_]*$"
+  },
+  "name": {
+   "type": "string"
+  },
+  "sprite": {
+   "type": "string",
+   "pattern": "^asset:[a-z0-9_]+$"
+  },
+  "portrait": {
+   "type": "string",
+   "pattern": "^asset:[a-z0-9_]+$"
+  },
+  "color": {
+   "type": "string"
+  },
+  "size": {
+   "type": "number"
+  },
+  "home": {
+   "type": "string",
+   "pattern": "^[a-z][a-z0-9_]*$"
+  },
+  "birthday": {
+   "type": "object",
+   "properties": {
+    "season": {
+     "type": "string",
+     "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "day": {
+     "type": "integer",
+     "minimum": 1
+    }
+   },
+   "required": [
+    "season",
+    "day"
+   ]
+  },
+  "loves": {
+   "type": "array",
+   "items": {
+    "type": "string"
+   },
+   "description": "item ids or \"category:<cat>\""
+  },
+  "likes": {
+   "type": "array",
+   "items": {
+    "type": "string"
+   }
+  },
+  "dislikes": {
+   "type": "array",
+   "items": {
+    "type": "string"
+   }
+  },
+  "hates": {
+   "type": "array",
+   "items": {
+    "type": "string"
+   }
+  },
+  "schedule": {
+   "type": "object",
+   "required": [
+    "default"
+   ],
+   "additionalProperties": {
+    "type": "array",
+    "items": {
+     "type": "array",
+     "prefixItems": [
+      {
+       "type": "integer",
+       "minimum": 0,
+       "maximum": 1800
+      },
+      {
+       "type": "string",
+       "pattern": "^[a-z][a-z0-9_]*$"
+      }
+     ],
+     "minItems": 2,
+     "maxItems": 2
+    },
+    "description": "[[minute, location], ...] (minute after midnight; location = config.locations key)"
+   },
+   "description": "keys by priority: <season>_<day>, rain (weather id), <weekday lowercase>, <season>, default"
+  },
+  "festivalSpots": {
+   "type": "object",
+   "additionalProperties": {
+    "type": "string",
+    "pattern": "^[a-z][a-z0-9_]*$"
+   }
+  },
+  "lines": {
+   "type": "object",
+   "additionalProperties": {
+    "oneOf": [
+     {
+      "type": "string"
+     },
+     {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     }
+    ]
+   },
+   "description": "keys: <season>_<day>, birthday, rain, hearts_<n> (highest reached), default; one line per day, rotating"
+  },
+  "heartEvents": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+     "hearts"
+    ],
+    "properties": {
+     "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+     },
+     "hearts": {
+      "type": "integer",
+      "minimum": 1
+     },
+     "dialog": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+     },
+     "lines": {
+      "type": "array"
+     },
+     "condition": {
+      "type": [
+       "object",
+       "array"
+      ],
+      "description": "core condition"
+     },
+     "effects": {
+      "type": "array",
+      "items": {
+       "type": "object"
+      },
+      "description": "core effects ({earn}, {give}, {set}, {toast}, ...)"
+     }
+    }
+   }
+  }
+ }
+}

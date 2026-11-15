@@ -6,6 +6,7 @@
  */
 
 import "../src/env.js";
+import "../src/package.js";
 import { readdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";

@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { isActive, type Game } from '../lib/api';
-import { timeAgo } from '../lib/format';
+import { compactCoins, DEFAULT_PLAY_PRICE, timeAgo } from '../lib/format';
 import { formatEta, useEtaRemaining, etaFromGeneration } from '../lib/generation';
 import { Icon, PixelCloud, Sparkle } from './Icon';
 import { AuthedImg, Chip, ProgressPill } from './ui';
@@ -44,6 +44,8 @@ function RunningStrip({ game }: { game: Game }) {
   );
 }
 
+export const playPrice = (g: Pick<Game, 'playPrice'>) => g.playPrice ?? DEFAULT_PLAY_PRICE;
+
 /** "Multiplayer · up to N" — games whose `[players] max` > 1 (rooms: quick match, codes for family). */
 export function MultiplayerChip({ game }: { game: Pick<Game, 'multiplayer' | 'players'> }) {
   if (!game.multiplayer || !game.players) return null;
@@ -61,6 +63,7 @@ export function GameCard({ game }: { game: Game }) {
           {live ? <Chip tone="ok">Live</Chip> : <Chip>Draft</Chip>}
           <MultiplayerChip game={game} />
         </div>
+        {live && !running && <span className="tile-price" title={`${playPrice(game).toLocaleString()} coins per play · you keep 90%`}><Icon name="coin" size={12} />{compactCoins(playPrice(game))} coins/play</span>}
         {running && <span className="tile-ring"><BuildRing queued={game.activeGeneration!.status === 'queued'} /></span>}
         {running && <RunningStrip game={game} />}
       </div>

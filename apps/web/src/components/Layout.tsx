@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { NavLink, Outlet, Link } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
-import { useResource } from '../lib/store';
+import { coinsToUsd, compactCoins, usd } from '../lib/format';
+import { invalidate, useResource } from '../lib/store';
 import { Icon, Sparkle } from './Icon';
+import { NotificationBell } from './Notifications';
 import { Avatar } from './ui';
 
 export function Logo() {
@@ -31,7 +33,17 @@ export function Layout() {
   const quota = useResource('quota', api.quota);
   const [theme, toggle] = useTheme();
   const user = state.status === 'signedIn' ? state.user : null;
+  const wallet = useResource('wallet', api.wallet);
+  // Balance moves when plays happen in the app; refresh when the tab regains focus.
+  useEffect(() => {
+    const onFocus = () => invalidate('wallet');
+    const onVis = () => { if (document.visibilityState === 'visible') onFocus(); };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVis);
+    return () => { window.removeEventListener('focus', onFocus); document.removeEventListener('visibilitychange', onVis); };
+  }, []);
   const q = quota.data?.quota;
+  const w = wallet.data?.wallet;
   return (
     <div className="shell">
       <header className="topbar">
@@ -50,6 +62,13 @@ export function Layout() {
               <b>{q.remaining}</b><span>/ {q.limit} builds</span>
             </Link>
           )}
+          {w && (
+            <Link to="/account" className="quota-chip coin-chip" title={`${w.balance.toLocaleString()} coins`}>
+              <Icon name="coin" size={14} />
+              <b>{compactCoins(w.balance)}</b><span>coins · {usd(w.usd ?? coinsToUsd(w.balance))}</span>
+            </Link>
+          )}
+          {user && <NotificationBell />}
           <button className="icon-btn ghost" onClick={toggle} aria-label="Toggle theme" title="Toggle theme">
             <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={19} />
           </button>

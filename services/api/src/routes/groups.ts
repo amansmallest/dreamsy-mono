@@ -6,6 +6,8 @@ import { fail, parseJson, router, type Deps } from "../context.js";
 import { schema } from "../db/client.js";
 import { newId } from "../ids.js";
 import { getGame, viewSharedGames, type Q } from "../services.js";
+import { notifyGroupJoin } from "../notifications.js";
+import { pushAfterCommit } from "../push.js";
 
 const { groups, groupMembers, groupGames, users, games } = schema;
 
@@ -27,7 +29,7 @@ type Group = typeof groups.$inferSelect;
 const userBrief = { id: users.id, handle: users.handle, avatar: users.avatar };
 
 /** Groups: family/friends circles for leaderboards and sharing drafts (§13). */
-export function groupRoutes({ db, config }: Deps) {
+export function groupRoutes({ db, config, pusher }: Deps) {
   const r = router();
   r.use("/v1/groups", requireUser(config));
   r.use("/v1/groups/*", requireUser(config));
@@ -83,17 +85,17 @@ export function groupRoutes({ db, config }: Deps) {
     const userId = c.get("userId");
     const code = normalizeCode(body.code);
     if (code.length !== CODE_LENGTH) fail(400, "invite code must be 8 characters");
-    const g = await db.transaction(async (tx) => {
+    const { g, notes } = await db.transaction(async (tx) => {
       const [g] = await tx.select().from(groups).where(eq(groups.inviteCode, code)).for("update");
       if (!g) fail(404, "invite code not found");
-      const [already] = await tx.select({ r: groupMembers.role }).from(groupMembers)
-        .where(and(eq(groupMembers.groupId, g.id), eq(groupMembers.userId, userId)));
-      if (already) return g;
-      const [{ n }] = (await tx.select({ n: count() }).from(groupMembers).where(eq(groupMembers.groupId, g.id))) as [{ n: number }];
-      if (n >= GROUP_MAX_MEMBERS) fail(409, `group is full (${GROUP_MAX_MEMBERS} members)`);
+      const members = await tx.select({ userId: groupMembers.userId }).from(groupMembers).where(eq(groupMembers.groupId, g.id));
+      if (members.some((m) => m.userId === userId)) return { g, notes: [] as string[] };
+      if (members.length >= GROUP_MAX_MEMBERS) fail(409, `group is full (${GROUP_MAX_MEMBERS} members)`);
       await tx.insert(groupMembers).values({ groupId: g.id, userId, role: "member" });
-      return g;
+      const notes = await notifyGroupJoin(tx, { memberIds: members.map((m) => m.userId), joinerId: userId, groupId: g.id, groupName: g.name });
+      return { g, notes };
     });
+    pushAfterCommit(db, pusher, notes);
     return c.json({ group: await view(db, g, userId) });
   });
 

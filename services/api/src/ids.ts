@@ -3,7 +3,7 @@ import { randomBytes } from "node:crypto";
 const ALPHABET = "0123456789abcdefghjkmnpqrstvwxyz"; // Crockford base32, lowercase
 
 /** Time-sortable prefixed ID, e.g. `g_01jd3k...`. 10 chars time + 16 chars random. */
-export function newId(prefix: "u" | "g" | "up" | "gen" | "pur" | "run" | "grp"): string {
+export function newId(prefix: "u" | "g" | "up" | "gen" | "pur" | "run" | "grp" | "pp" | "n"): string {
   let t = Date.now();
   let time = "";
   for (let i = 0; i < 10; i++) {

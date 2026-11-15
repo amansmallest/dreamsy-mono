@@ -146,6 +146,10 @@ export const generations = pgTable("generations", {
   progress: jsonb("progress").$type<{ round?: number; rounds?: number; phase?: string }>(),
   /** Per-build metrics from the worker's `metrics` event (insights graphs); null until it arrives. */
   metrics: jsonb("metrics").$type<GenerationMetrics>(),
+  /** Coins charged when queued (CREATE_PRICE for a game's first build, else 0; §11.6). */
+  charged: integer("charged").notNull().default(0),
+  /** Set when `charged` was refunded (first build failed/canceled with no version). Refunds once. */
+  refundedAt: timestamp("refunded_at", { withTimezone: true }),
   createdAt: createdAt(),
   startedAt: timestamp("started_at", { withTimezone: true }),
   finishedAt: timestamp("finished_at", { withTimezone: true }),
@@ -164,7 +168,10 @@ export const generationEvents = pgTable("generation_events", {
   createdAt: createdAt(),
 }, (t) => [index("generation_events_gen_idx").on(t.generationId, t.id)]);
 
-// ---------- Stars economy (no real money yet) ----------
+// ---------- Coins economy (DREAMSY.MD §11.6; the "Stars" ledger, shown to users as coins) ----------
+
+/** Ledger account that receives the platform's cut of plays and store sales. Seeded by migration 0011. */
+export const PLATFORM_USER_ID = "u_platform";
 
 export const wallets = pgTable("wallets", {
   userId: text("user_id").primaryKey().references(() => users.id),
@@ -178,11 +185,18 @@ export const ledger = pgTable("ledger", {
   userId: text("user_id").notNull().references(() => users.id),
   delta: integer("delta").notNull(),
   balanceAfter: integer("balance_after").notNull(),
-  /** "starter_grant" | "purchase" | "sale" */
+  /**
+   * "starter_grant" | "grant" (top-up) | "purchase" | "sale" | "play" (player debit) |
+   * "play_earning" (creator credit) | "platform_fee" (platform account credit) |
+   * "create" (first build: player debit + platform credit) | "create_refund" (its reversal) |
+   * "remix" (remixer debit) | "remix_earning" (original owner credit)
+   */
   kind: text("kind").notNull(),
   gameId: text("game_id"),
   itemId: text("item_id"),
   purchaseId: text("purchase_id"),
+  /** Play pass a "play" / "play_earning" / "platform_fee" entry belongs to. */
+  passId: text("pass_id"),
   createdAt: createdAt(),
 }, (t) => [index("ledger_user_idx").on(t.userId, t.id)]);
 
@@ -203,6 +217,20 @@ export const purchases = pgTable("purchases", {
   index("purchases_owner_idx").on(t.userId, t.gameId),
   uniqueIndex("purchases_idem_idx").on(t.userId, t.idempotencyKey),
 ]);
+
+/**
+ * Pay-per-play pass (DREAMSY.MD §11.6): starting someone else's game creates one per (user, game);
+ * starts while it's valid are free. `price` 0 = a free start (owner / shared draft).
+ */
+export const playPasses = pgTable("play_passes", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id),
+  gameId: text("game_id").notNull().references(() => games.id),
+  version: integer("version").notNull(),
+  price: integer("price").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: createdAt(),
+}, (t) => [index("play_passes_user_game_idx").on(t.userId, t.gameId, t.expiresAt)]);
 
 // ---------- Platform v1: social (DREAMSY.MD §11) ----------
 
@@ -323,3 +351,26 @@ export const groupGames = pgTable("group_games", {
   primaryKey({ columns: [t.groupId, t.gameId] }),
   index("group_games_game_idx").on(t.gameId),
 ]);
+
+// ---------- Notifications + push (DREAMSY.MD §11.6) ----------
+
+/** In-app inbox. `kind`: play_earning | remix_earning | sale | build_done | group_join. */
+export const notifications = pgTable("notifications", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id),
+  kind: text("kind").notNull(),
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  data: jsonb("data").$type<Record<string, unknown>>().notNull().default({}),
+  readAt: timestamp("read_at", { withTimezone: true }),
+  createdAt: createdAt(),
+}, (t) => [index("notifications_user_idx").on(t.userId, t.id)]);
+
+/** Expo push tokens; a token belongs to the device's last signed-in user. */
+export const pushTokens = pgTable("push_tokens", {
+  token: text("token").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id),
+  /** "ios" | "android" */
+  platform: text("platform").notNull(),
+  createdAt: createdAt(),
+}, (t) => [index("push_tokens_user_idx").on(t.userId)]);

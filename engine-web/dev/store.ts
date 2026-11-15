@@ -63,7 +63,7 @@ export class ApiStoreHost implements StoreHost {
           sheet.message("You already own this.");
           sheet.busy(false, true);
         } else if (r.status === 402) {
-          sheet.message(`Not enough Stars${r.data?.balance !== undefined ? ` (you have ★ ${r.data.balance})` : ""}.`);
+          sheet.message(`Not enough coins${r.data?.balance !== undefined ? ` (you have ${r.data.balance.toLocaleString()} coins)` : ""}.`);
           sheet.busy(false, true);
         } else {
           sheet.message(`Purchase failed (${r.status}). ${r.data?.error ?? ""}`);
@@ -101,15 +101,15 @@ class PurchaseSheet {
       <div style="font-size:22px;font-weight:700;margin:4px 0 6px">${esc(item.name)}</div>
       <div style="opacity:.8;margin-bottom:16px">${esc(item.description ?? "")}</div>
       <div style="display:flex;justify-content:space-between;margin-bottom:16px">
-        <span style="font-size:20px;font-weight:700;color:#ffcd75">★ ${item.price}</span>
-        <span style="opacity:.7">Balance: ${balance === undefined ? "?" : `★ ${balance}`}</span>
+        <span style="font-size:20px;font-weight:700;color:#ffcd75">${item.price.toLocaleString()} coins</span>
+        <span style="opacity:.7">Balance: ${balance === undefined ? "?" : `${balance.toLocaleString()} coins`}</span>
       </div>`;
     this.msg = document.createElement("div");
     Object.assign(this.msg.style, { color: "#ff8a80", minHeight: "20px", marginBottom: "8px" });
     const row = document.createElement("div");
     Object.assign(row.style, { display: "flex", gap: "12px" });
     const cancel = button("Cancel", "#333a4d");
-    this.buy = button(`Buy for ★ ${item.price}`, "#38b764");
+    this.buy = button(`Buy for ${item.price.toLocaleString()} coins`, "#38b764");
     cancel.onclick = () => this.onCancel();
     this.buy.onclick = () => this.onBuy();
     row.append(cancel, this.buy);

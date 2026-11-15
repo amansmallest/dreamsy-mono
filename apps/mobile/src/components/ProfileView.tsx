@@ -27,7 +27,7 @@ const PAD = 16;
 
 /**
  * Instagram-style profile: avatar + stats, name/bio, level, actions, 3-column game grid.
- * `header` slots in under the actions (the Me tab's Stars wallet); `footer` goes after the grid.
+ * `header` slots in under the actions (the Me tab's coins wallet + earnings); `footer` goes after the grid.
  */
 export function ProfileView({ userId, header, footer, onRefresh }: { userId: string; header?: ReactNode; footer?: ReactNode; onRefresh?: () => Promise<void> }) {
   const { user: me, updateUser } = useAuth();

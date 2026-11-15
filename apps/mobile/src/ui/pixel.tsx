@@ -36,6 +36,37 @@ export const PixelSparkle = memo(function PixelSparkle({
   );
 });
 
+const COIN = [
+  '.#####.',
+  '##...##',
+  '#..#..#',
+  '#.###.#',
+  '#..#..#',
+  '##...##',
+  '.#####.',
+];
+
+/** Pixel coin with the sparkle stamped in: the currency mark. */
+export const PixelCoin = memo(function PixelCoin({
+  size = 14,
+  color = ink.accent,
+  style,
+}: {
+  size?: number;
+  color?: string;
+  style?: StyleProp<ViewStyle>;
+}) {
+  return (
+    <View style={style}>
+      <Svg width={size} height={size} viewBox="0 0 7 7">
+        {COIN.flatMap((row, y) =>
+          [...row].map((c, x) => (c === '#' ? <Rect key={`${x}-${y}`} x={x} y={y} width={1.02} height={1.02} fill={color} /> : null)),
+        )}
+      </Svg>
+    </View>
+  );
+});
+
 const CLOUDS = {
   a: [
     '......####......',

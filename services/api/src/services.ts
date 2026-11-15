@@ -28,6 +28,12 @@ export interface GameExtras {
 
 export const thumbnailUrl = (gameId: string, version: number) => `/v1/games/${gameId}/versions/${version}/thumbnail`;
 
+/** Coins to start someone else's game (config.playPrice, §11.6); set once by createApp, shown on every game view. */
+let playPrice = 10_000;
+/** Coins to remix someone else's game (config.remixPrice); also on every game view. */
+let remixPrice = 25_000;
+export const setPrices = (p: { playPrice: number; remixPrice: number }) => { playPrice = p.playPrice; remixPrice = p.remixPrice; };
+
 const statsOf = (g: Game) => ({ plays: g.plays, likes: g.likes, remixes: g.remixes });
 
 /** What the view shows for one version: orientation (absent in manifest = landscape) + thumbnail. */
@@ -69,6 +75,8 @@ export const gameView = (g: Game, x: GameExtras) => ({
   ...playersShown(x, g.publishedVersion ?? (g.latestVersion || null)),
   creator: x.creator,
   stats: statsOf(g),
+  playPrice,
+  remixPrice,
   remixOf: x.remixOf,
   viewer: { liked: x.liked },
   createdAt: g.createdAt,
@@ -90,6 +98,8 @@ export const feedGameView = (g: Game, x: GameExtras) => ({
   ...playersShown(x, g.publishedVersion),
   creator: x.creator,
   stats: statsOf(g),
+  playPrice,
+  remixPrice,
   publishedAt: g.publishedAt,
   remixOf: x.remixOf,
 });
@@ -203,6 +213,9 @@ export const generationView = (g: Generation) => ({
   error: g.error,
   etaSeconds: g.etaSeconds,
   progress: g.progress,
+  /** Coins charged when queued (CREATE_PRICE for a first build, else 0). */
+  charged: g.charged,
+  refunded: g.refundedAt !== null,
   createdAt: g.createdAt,
   startedAt: g.startedAt,
   finishedAt: g.finishedAt,
@@ -336,6 +349,20 @@ export async function recomputeTrending(q: Q, gameId: string) {
       + 5 * (select count(*) from games r where r.remix_of_game_id = ${gameId} and r.created_at > ${since})
     )::float8 / power(greatest(extract(epoch from now() - coalesce(${games.publishedAt}, now())), 0) / 3600.0 + 2, 1.2)`,
   }).where(eq(games.id, gameId));
+}
+
+/**
+ * Count a play for stats: one per user per game per UTC hour (§11.2). Shared by `POST /plays`
+ * (legacy, free) and `POST /play` (pay-per-play), so a client calling both counts once.
+ */
+export async function countPlay(tx: Tx, userId: string, gameId: string, version: number): Promise<boolean> {
+  const hour = new Date(Math.floor(Date.now() / 3_600_000) * 3_600_000);
+  const inserted = await tx.insert(plays).values({ userId, gameId, version, hour })
+    .onConflictDoNothing().returning({ id: plays.id });
+  if (!inserted.length) return false;
+  await tx.update(games).set({ plays: sql`${games.plays} + 1` }).where(eq(games.id, gameId));
+  await recomputeTrending(tx, gameId);
+  return true;
 }
 
 // ---------- keyset pagination ----------

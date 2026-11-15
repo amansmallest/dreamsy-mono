@@ -120,6 +120,10 @@ export type Game = {
   multiplayer?: boolean;
   /** If the API includes it: the running build, so the Create list needn't ask per game. */
   activeGeneration?: Generation | null;
+  /** Coins to play someone else's published game (§11.6). Missing on older APIs: treat as PLAY_PRICE. */
+  playPrice?: number;
+  /** Coins to remix (all to the owner; free on your own game). Missing on older APIs = remix is free. */
+  remixPrice?: number;
 };
 
 /** What non-owners see: no latestVersion. */
@@ -153,6 +157,10 @@ export type FeedGame = {
   remixOf: RemixOf | null;
   /** Present on authed lists (feed, search, profiles). */
   viewer?: Viewer;
+  /** Coins to play (§11.6); missing on older APIs. */
+  playPrice?: number;
+  /** Coins to remix; missing on older APIs (remix is free there). */
+  remixPrice?: number;
 };
 export type FeedTab = 'trending' | 'new' | 'top' | 'following';
 export type Page<K extends string, T> = { [k in K]: T[] } & { next: string | null };
@@ -244,6 +252,8 @@ export type Quota = {
   remaining: number;
   /** When the next build frees up; null unless at the limit. */
   resetsAt: string | null;
+  /** Coins for a game's first build (edits are free). Missing on older APIs = creating is free. */
+  createPrice?: number;
 };
 
 /** 409 from POST /v1/games/:id/generations: the generation already running on this game. */
@@ -261,14 +271,66 @@ export type Upload = { id: string; contentType: string; sizeBytes: number; creat
 /** One SSE progress event. `type` is open-ended (the harness adds its own); `data` is JSON. */
 export type GenerationEvent = { id: string; type: string; data: Record<string, unknown> };
 
-/** Stars wallet. Ledger kinds: "starter_grant" | "purchase" | "sale" (open-ended). */
-export type Wallet = { balance: number; currency: 'stars' };
+/**
+ * Coins wallet (10,000 coins = $0.10). Ledger kinds: "starter_grant" | "grant" | "purchase" | "sale" |
+ * "play" | "play_earning" | "platform_fee" (open-ended). Older APIs say currency "stars" and omit usd.
+ */
+export type Wallet = { balance: number; currency: 'coins' | 'stars'; usd?: number; createPrice?: number };
 export type LedgerEntry = {
   delta: number;
   balanceAfter: number;
   kind: string;
   gameId: string | null;
   itemId: string | null;
+  createdAt: string;
+};
+
+/** POST /v1/games/:id/play. 402 carries `{ error: "insufficient_coins", balance, price }`. */
+export type PlayResult = {
+  charged: boolean;
+  price: number;
+  balance: number;
+  pass: { id: string; expiresAt: string } | null;
+  creatorEarned: number;
+};
+
+/** GET /v1/games/:id/play: would playing now be free? No side effects. */
+export type PlayStatus = {
+  free: boolean;
+  reason: 'owner' | 'draft' | 'pass' | null;
+  price: number;
+  balance: number;
+  pass: { id: string; expiresAt: string } | null;
+};
+
+export type Earnings = {
+  totalCoins: number;
+  todayCoins: number;
+  paidPlays: number;
+  usd: { total: number; today: number };
+  games: { gameId: string; name: string; coins: number; plays: number }[];
+};
+
+// ---------- notifications + push ----------
+
+/** Open-ended; these are the ones the app knows how to draw. */
+export type NotificationKind = 'play_earning' | 'remix_earning' | 'sale' | 'build_done' | 'group_join' | (string & {});
+export type NotificationData = {
+  gameId?: string;
+  remixGameId?: string;
+  groupId?: string;
+  fromUserId?: string;
+  coins?: number;
+  version?: number;
+  [k: string]: unknown;
+};
+export type AppNotification = {
+  id: string;
+  kind: NotificationKind;
+  title: string;
+  body: string;
+  data: NotificationData | null;
+  read: boolean;
   createdAt: string;
 };
 
@@ -360,8 +422,9 @@ export const api = {
     request<{ generations: Generation[] }>(`/v1/games/${enc(gameId)}/generations`),
   generation: (id: string) => request<{ generation: Generation }>(`/v1/generations/${enc(id)}`),
   /** 409 = a generation is already active on this game; 429 = daily quota reached. */
+  /** 402 = can't pay for a first build (`{ error: "insufficient_coins", balance, price }`). */
   generate: (gameId: string, body: { prompt: string; imageIds?: string[]; selection?: string[] }) =>
-    request<{ generation: Generation }>(`/v1/games/${enc(gameId)}/generations`, { method: 'POST', body }),
+    request<{ generation: Generation; charged?: number }>(`/v1/games/${enc(gameId)}/generations`, { method: 'POST', body }),
   cancelGeneration: (id: string) =>
     request<{ generation: Generation }>(`/v1/generations/${enc(id)}/cancel`, { method: 'POST' }),
 
@@ -379,11 +442,18 @@ export const api = {
   publicGame: (id: string) =>
     request<{ game: FeedGame & { publishedVersion: number } }>(`/v1/public/games/${enc(id)}`, { auth: false }),
 
+  /** Start a play: charges coins unless free (own game, group draft, active pass). Counts the play. */
+  play: (id: string) => request<PlayResult>(`/v1/games/${enc(id)}/play`, { method: 'POST' }),
+  playStatus: (id: string) => request<PlayStatus>(`/v1/games/${enc(id)}/play`),
+  earnings: () => request<Earnings>('/v1/me/earnings'),
+  /** Pre-coins play counter; only used when POST /play isn't deployed. */
   countPlay: (id: string, version: number) =>
     request<unknown>(`/v1/games/${enc(id)}/plays`, { method: 'POST', body: { version } }),
   like: (id: string) => request<unknown>(`/v1/games/${enc(id)}/like`, { method: 'PUT' }),
   unlike: (id: string) => request<unknown>(`/v1/games/${enc(id)}/like`, { method: 'DELETE' }),
-  remix: (id: string) => request<{ game: Game }>(`/v1/games/${enc(id)}/remix`, { method: 'POST' }),
+  /** 402 = can't pay the remix price. `charged` / `ownerEarned` absent on older APIs. */
+  remix: (id: string) =>
+    request<{ game: Game; charged?: number; ownerEarned?: number }>(`/v1/games/${enc(id)}/remix`, { method: 'POST' }),
   /** Published spin-offs (remixes) of a game. */
   remixes: (id: string, cursor?: string | null) =>
     request<Page<'games', FeedGame>>(`/v1/games/${enc(id)}/remixes${qs({ cursor })}`),
@@ -422,6 +492,17 @@ export const api = {
     request<{ game: Game }>(`/v1/groups/${enc(groupId)}/games`, { method: 'POST', body: { gameId } }),
   unshareFromGroup: (groupId: string, gameId: string) =>
     request<{ ok: true }>(`/v1/groups/${enc(groupId)}/games/${enc(gameId)}`, { method: 'DELETE' }),
+
+  // ---------- notifications + push (404 on older APIs) ----------
+
+  notifications: (cursor?: string | null, limit = 30) =>
+    request<{ items: AppNotification[]; unread: number; next: string | null }>(`/v1/me/notifications${qs({ cursor, limit })}`),
+  unreadCount: () => request<{ unread: number }>('/v1/me/notifications/unread'),
+  markRead: (body: { ids: string[] } | { all: true }) =>
+    request<{ unread: number }>('/v1/me/notifications/read', { method: 'POST', body }),
+  addPushToken: (token: string, platform: 'ios' | 'android') =>
+    request<{ ok: boolean }>('/v1/me/push-tokens', { method: 'POST', body: { token, platform } }),
+  removePushToken: (token: string) => request<{ ok: boolean }>('/v1/me/push-tokens', { method: 'DELETE', body: { token } }),
 };
 
 /**

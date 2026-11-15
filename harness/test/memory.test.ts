@@ -31,7 +31,7 @@ const playtest: Playtester = {
     return { errors: [], logs: [], toasts: [], entities: 1, consoleErrors: [], audio: { sfx: {}, music: [] }, shots: shots.map((t) => ({ t, jpeg: new Uint8Array([0xff, 0xd8, 0xff, 0xd9]) })) };
   },
 };
-const config: Config = { jwtSecret: "x".repeat(40), workerToken: "wt", dailyGenerationQuota: 100, leaseSeconds: 60, maxAttempts: 3, ssePollMs: 10, starterStars: 500, creatorShare: 0.5 };
+const config: Config = { jwtSecret: "x".repeat(40), workerToken: "wt", dailyGenerationQuota: 100, leaseSeconds: 60, maxAttempts: 3, ssePollMs: 10, starterStars: 500, creatorShare: 0.5, playPrice: 10000, playPassMinutes: 30, createPrice: 0, remixPrice: 0 };
 const identity: IdentityVerifier = { async verify() { throw new Error("unused"); } };
 const migrations = join(dirname(createRequire(import.meta.url).resolve("@dreamsy/api/app")), "../migrations");
 

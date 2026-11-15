@@ -32,6 +32,7 @@ import {
   type LocalImage,
   type Quota,
 } from '@/api';
+import { CREATE_PRICE, formatCoins, insufficientFrom, OutOfCoinsSheet, useCreatePrice } from '@/coins';
 import { BuildTurn } from '@/components/BuildCard';
 import { PlayersBadge, RemixBadge } from '@/components/GameCard';
 import { GamePreview } from '@/components/GamePreview';
@@ -41,7 +42,9 @@ import { VersionsSheet } from '@/components/VersionsSheet';
 import { useGenerationProgress } from '@/generationProgress';
 import { shareGame } from '@/social';
 import { errorMessage, floating, font, hairline, ink, radius } from '@/theme';
-import { Button as InkButton, Card, Chip, Empty, Loading, Sparkle, Txt } from '@/ui';
+import { showToast } from '@/toast';
+import { Button as InkButton, Card, Chip, Empty, Loading, PixelCoin, Sparkle, Txt } from '@/ui';
+import { walletChanged } from '@/wallet';
 
 const MAX_IMAGES = 8; // API limit per generation
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // API upload limit
@@ -99,6 +102,8 @@ export default function GameWorkspaceScreen() {
   const [imageHeaders, setImageHeaders] = useState<Record<string, string> | undefined>(undefined);
   const [remixName, setRemixName] = useState<string | null>(null);
   const [toast, setToast] = useState<{ version: number; text: string } | null>(null);
+  const createPrice = useCreatePrice();
+  const [outOfCoins, setOutOfCoins] = useState<{ balance: number; price: number } | null>(null);
 
   useEffect(() => {
     void authHeader().then(setImageHeaders, () => {});
@@ -271,13 +276,21 @@ export default function GameWorkspaceScreen() {
         }
       }
       setSending('Sending…');
-      const { generation } = await api.generate(id, { prompt: text, imageIds });
+      const { generation, charged } = await api.generate(id, { prompt: text, imageIds });
       setGenerations((list) => [generation, ...(list ?? [])]);
       setPrompt('');
       setAttachments([]);
       void loadQuota();
+      if (charged) {
+        showToast({ kind: 'charge', title: formatCoins(-charged, true) });
+        walletChanged();
+      }
     } catch (e) {
-      if (e instanceof ApiError && e.status === 409) {
+      const broke = insufficientFrom(e, createPrice ?? CREATE_PRICE);
+      if (broke) {
+        setOutOfCoins(broke);
+        walletChanged();
+      } else if (e instanceof ApiError && e.status === 409) {
         setComposerError('A build is already running. Wait for it or stop it.');
         await attachToActive(activeGenerationIdFrom(e));
       } else if (e instanceof ApiError && e.status === 429) {
@@ -372,6 +385,8 @@ export default function GameWorkspaceScreen() {
   }
 
   const canSend = !!prompt.trim() && !sending && !active;
+  // Only a game's first build costs coins; edits after it are free.
+  const firstBuildPrice = createPrice && game.latestVersion === 0 && !active ? createPrice : null;
   const live = game.status === 'published' && game.publishedVersion != null;
   const upToDate = live && game.publishedVersion === game.latestVersion;
   const empty = game.latestVersion === 0 && generations !== null && timeline.length === 0;
@@ -533,6 +548,19 @@ export default function GameWorkspaceScreen() {
           <Txt variant="label" color={composerError ? ink.danger : ink.muted} center>
             {composerError ?? sending}
           </Txt>
+        ) : firstBuildPrice ? (
+          <View style={styles.price}>
+            <Txt variant="label" color={ink.navy}>
+              Create ·
+            </Txt>
+            <PixelCoin size={12} color={ink.accent} />
+            <Txt variant="label" color={ink.navy}>
+              {formatCoins(firstBuildPrice, true)}
+            </Txt>
+            <Txt variant="label" muted>
+              · edits are free
+            </Txt>
+          </View>
         ) : quota && quota.remaining <= 5 ? (
           <Txt variant="label" muted center>
             {quota.remaining > 0
@@ -590,7 +618,7 @@ export default function GameWorkspaceScreen() {
           />
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Send"
+            accessibilityLabel={firstBuildPrice ? `Create, ${formatCoins(firstBuildPrice, true)}` : 'Send'}
             onPress={() => void send()}
             disabled={!canSend}
             style={[styles.circle, styles.send, { opacity: canSend ? 1 : 0.35 }]}
@@ -599,6 +627,8 @@ export default function GameWorkspaceScreen() {
           </Pressable>
         </View>
       </View>
+
+      <OutOfCoinsSheet state={outOfCoins} what="Creating a game" onClose={() => setOutOfCoins(null)} />
 
       <RenameDialog visible={renaming} initial={game.name} onDone={rename} />
 
@@ -725,6 +755,7 @@ const styles = StyleSheet.create({
   timeline: { paddingHorizontal: 12, paddingVertical: 16, gap: 16 },
   system: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   systemLine: { flex: 1, height: hairline, backgroundColor: ink.border },
+  price: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5 },
   composer: { borderTopWidth: hairline, borderTopColor: ink.border, backgroundColor: ink.card, paddingHorizontal: 12, paddingTop: 10, gap: 8 },
   chips: { gap: 8 },
   thumbs: { gap: 10, paddingTop: 6, paddingRight: 6 },

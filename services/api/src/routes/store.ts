@@ -5,9 +5,12 @@ import { requireUser } from "../auth.js";
 import { fail, parseJson, router, type Deps } from "../context.js";
 import { schema } from "../db/client.js";
 import { newId } from "../ids.js";
-import { getGame, getVersion, type Game, type Q, type Tx } from "../services.js";
+import { getGame, getVersion, type Game, type Q } from "../services.js";
+import { chargeWithSplit, coinsToUsd, lockWallet } from "../economy.js";
+import { notifySale } from "../notifications.js";
+import { pushAfterCommit } from "../push.js";
 
-const { wallets, ledger, purchases } = schema;
+const { ledger, purchases } = schema;
 
 const Purchase = z.object({
   itemId: z.string().min(1),
@@ -19,37 +22,16 @@ const Consume = z.object({ purchaseId: z.string() });
 type StoreItem = Manifest["store"][number];
 
 /**
- * Stars economy. No real money yet: every wallet starts with a free grant; players spend Stars
- * on items games declare in dreamsy.toml `[[store]]`; the creator is credited `creatorShare`.
+ * Coins economy (the "Stars" ledger, shown as coins; DREAMSY.MD §11.6). No real money yet: every
+ * wallet starts with a free grant; players spend coins on items games declare in dreamsy.toml
+ * `[[store]]`; the creator is credited `creatorShare`, the platform account the rest.
  * All balance changes go through the append-only ledger inside one transaction.
  */
-export function storeRoutes({ db, config }: Deps) {
+export function storeRoutes({ db, config, pusher }: Deps) {
   const r = router();
   r.use("/v1/me/wallet", requireUser(config));
   r.use("/v1/games/:id/store", requireUser(config));
   r.use("/v1/games/:id/store/*", requireUser(config));
-
-  /** Lock (and lazily create, with the starter grant) a user's wallet. */
-  async function lockWallet(tx: Tx, userId: string) {
-    const [w] = await tx.select().from(wallets).where(eq(wallets.userId, userId)).for("update");
-    if (w) return w;
-    await tx.insert(wallets).values({ userId, balance: config.starterStars }).onConflictDoNothing();
-    const [created] = await tx.select().from(wallets).where(eq(wallets.userId, userId)).for("update");
-    const hasGrant = await tx.select({ id: ledger.id }).from(ledger).where(and(eq(ledger.userId, userId), eq(ledger.kind, "starter_grant")));
-    if (!hasGrant.length) {
-      await tx.insert(ledger).values({ userId, delta: config.starterStars, balanceAfter: created!.balance, kind: "starter_grant" });
-    }
-    return created!;
-  }
-
-  async function move(tx: Tx, userId: string, delta: number, entry: { kind: string; gameId?: string; itemId?: string; purchaseId?: string }) {
-    const w = await lockWallet(tx, userId);
-    const balance = w.balance + delta;
-    if (balance < 0) fail(402, "not enough Stars", { balance: w.balance, needed: -delta });
-    await tx.update(wallets).set({ balance }).where(eq(wallets.userId, userId));
-    await tx.insert(ledger).values({ userId, delta, balanceAfter: balance, ...entry });
-    return balance;
-  }
 
   /** Store items visible to this user: published version for players, latest for the owner. */
   async function storeFor(q: Q, game: Game, userId: string): Promise<{ version: number; items: StoreItem[] }> {
@@ -70,10 +52,12 @@ export function storeRoutes({ db, config }: Deps) {
 
   r.get("/v1/me/wallet", async (c) => {
     const userId = c.get("userId");
-    const balance = await db.transaction(async (tx) => (await lockWallet(tx, userId)).balance);
+    const balance = await db.transaction(async (tx) => (await lockWallet(tx, config, userId)).balance);
     const recent = await db.select().from(ledger).where(eq(ledger.userId, userId)).orderBy(desc(ledger.id)).limit(20);
     return c.json({
-      wallet: { balance, currency: "stars" },
+      wallet: { balance, currency: "coins", usd: coinsToUsd(balance), createPrice: config.createPrice },
+      createPrice: config.createPrice,
+      remixPrice: config.remixPrice,
       recent: recent.map((e) => ({ delta: e.delta, balanceAfter: e.balanceAfter, kind: e.kind, gameId: e.gameId, itemId: e.itemId, createdAt: e.createdAt })),
     });
   });
@@ -90,7 +74,7 @@ export function storeRoutes({ db, config }: Deps) {
     const userId = c.get("userId");
     const result = await db.transaction(async (tx) => {
       const [prior] = await tx.select().from(purchases).where(and(eq(purchases.userId, userId), eq(purchases.idempotencyKey, body.idempotencyKey)));
-      if (prior) return { purchase: prior, replay: true };
+      if (prior) return { purchase: prior, replay: true, notes: [] as string[] };
 
       const game = await getGame(tx, c.req.param("id"));
       const { version, items } = await storeFor(tx, game, userId);
@@ -109,14 +93,19 @@ export function storeRoutes({ db, config }: Deps) {
       const [purchase] = await tx.insert(purchases).values({
         id, userId, gameId: game.id, itemId: item.id, kind: item.kind, price, version, idempotencyKey: body.idempotencyKey,
       }).returning();
+      let notes: string[] = [];
       if (price > 0) {
-        await move(tx, userId, -price, { kind: "purchase", gameId: game.id, itemId: item.id, purchaseId: id });
-        const share = Math.floor(price * config.creatorShare);
-        if (share > 0) await move(tx, game.ownerId, share, { kind: "sale", gameId: game.id, itemId: item.id, purchaseId: id });
+        const { creatorEarned } = await chargeWithSplit(tx, config, userId, game.ownerId, price, { debit: "purchase", credit: "sale" },
+          { gameId: game.id, itemId: item.id, purchaseId: id });
+        notes = await notifySale(tx, {
+          creatorId: game.ownerId, buyerId: userId, gameId: game.id, gameName: game.name,
+          itemId: item.id, itemName: item.name ?? item.id, coins: creatorEarned,
+        });
       }
-      return { purchase: purchase!, replay: false };
+      return { purchase: purchase!, replay: false, notes };
     });
-    const balance = await db.transaction(async (tx) => (await lockWallet(tx, userId)).balance);
+    pushAfterCommit(db, pusher, result.notes);
+    const balance = await db.transaction(async (tx) => (await lockWallet(tx, config, userId)).balance);
     const p = result.purchase;
     return c.json({
       purchase: { id: p.id, itemId: p.itemId, kind: p.kind, price: p.price, createdAt: p.createdAt },

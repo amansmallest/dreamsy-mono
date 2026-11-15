@@ -28,6 +28,8 @@ export type Generation = {
   finishedAt: string | null;
   /** Build metrics (jsonb; newer API builds). Fields are best-effort. */
   metrics?: BuildMetrics | null;
+  /** Coins charged when this generation started (100,000 for a game's first build, else 0; newer API builds). */
+  charged?: number;
 };
 
 export type BuildMetrics = {
@@ -75,6 +77,10 @@ export type Game = {
   players?: { min: number; max: number };
   multiplayer?: boolean;
   stats?: { plays: number; likes: number; remixes: number };
+  /** Coins charged per play of a published game (default 10,000 = $0.10). */
+  playPrice?: number;
+  /** Coins to remix this game (paid 100% to the owner; free on your own game). */
+  remixPrice?: number;
   activeGeneration?: Generation | null;
   createdAt: string;
   updatedAt: string;
@@ -95,8 +101,25 @@ export type GameVersion = {
 
 export type Asset = { id: string; kind: string; file: string; url: string; prompt?: string | null; model?: string | null; sizeBytes: number };
 export type GenerationEvent = { id: string; type: string; data: Record<string, unknown> };
-export type Quota = { limit: number; used: number; remaining: number; resetsAt: string | null };
-export type Wallet = { balance: number; currency: 'stars' };
+export type Quota = { limit: number; used: number; remaining: number; resetsAt: string | null; createPrice?: number };
+/** Coins: 10,000 coins = $0.10. `usd` is the balance in dollars. */
+export type Wallet = { balance: number; currency: 'coins'; usd: number; createPrice?: number };
+
+// ---------- notifications ----------
+export type NotificationKind = 'play_earning' | 'remix_earning' | 'sale' | 'build_done' | 'group_join' | (string & {});
+export type AppNotification = {
+  id: string;
+  kind: NotificationKind;
+  title: string;
+  body: string;
+  data: { gameId?: string; remixGameId?: string; groupId?: string; fromUserId?: string; coins?: number; version?: number; [k: string]: unknown } | null;
+  read: boolean;
+  createdAt: string;
+};
+export const isEarning = (k: NotificationKind) => k === 'play_earning' || k === 'remix_earning' || k === 'sale' || k === 'royalty';
+export type EarningsGame = { gameId: string; name: string; coins: number; plays: number };
+/** Creator earnings from paid plays (creator keeps 90%). `usd` values are dollars. */
+export type Earnings = { totalCoins: number; todayCoins: number; paidPlays: number; usd: { total: number; today: number }; games: EarningsGame[] };
 export type LedgerEntry = { delta: number; balanceAfter: number; kind: string; gameId: string | null; itemId: string | null; createdAt: string };
 export type Upload = { id: string; contentType: string; sizeBytes: number; createdAt: string };
 export type ActivityItem = { generation: Generation; game: { id: string; name: string; thumbnailUrl: string | null } };
@@ -181,8 +204,14 @@ export const api = {
     request<{ user: User; token: string }>('/v1/auth/supabase', { method: 'POST', body: { accessToken }, auth: false }),
   me: () => request<{ user: User }>('/v1/me'),
   updateMe: (body: { handle?: string; bio?: string }) => request<{ user: User }>('/v1/me', { method: 'PATCH', body }),
-  quota: () => request<{ quota: Quota }>('/v1/me/quota'),
-  wallet: () => request<{ wallet: Wallet; recent: LedgerEntry[] }>('/v1/me/wallet'),
+  quota: () => request<{ quota: Quota; createPrice?: number }>('/v1/me/quota'),
+  wallet: () => request<{ wallet: Wallet; recent: LedgerEntry[]; createPrice?: number }>('/v1/me/wallet'),
+  earnings: () => request<Earnings>('/v1/me/earnings'),
+  notifications: (cursor?: string | null, limit = 20) =>
+    request<{ items: AppNotification[]; unread: number; next: string | null }>(`/v1/me/notifications?limit=${limit}${cursor ? `&cursor=${enc(cursor)}` : ''}`),
+  unreadNotifications: () => request<{ unread: number }>('/v1/me/notifications/unread'),
+  markNotificationsRead: (body: { ids?: string[]; all?: boolean }) =>
+    request<{ unread: number }>('/v1/me/notifications/read', { method: 'POST', body }),
   activity: (cursor?: string | null) =>
     request<{ items: ActivityItem[]; next: string | null }>(`/v1/me/activity${cursor ? `?cursor=${enc(cursor)}` : ''}`),
 
@@ -222,7 +251,7 @@ export const api = {
   generations: (gameId: string) => request<{ generations: Generation[] }>(`/v1/games/${enc(gameId)}/generations`),
   generation: (id: string) => request<{ generation: Generation }>(`/v1/generations/${enc(id)}`),
   generate: (gameId: string, body: { prompt: string; imageIds?: string[]; assetIds?: string[] }) =>
-    request<{ generation: Generation }>(`/v1/games/${enc(gameId)}/generations`, { method: 'POST', body }),
+    request<{ generation: Generation; charged?: number }>(`/v1/games/${enc(gameId)}/generations`, { method: 'POST', body }),
   cancel: (id: string) => request<{ generation: Generation }>(`/v1/generations/${enc(id)}/cancel`, { method: 'POST', body: {} }),
 
   upload: (file: File) => {
@@ -232,8 +261,18 @@ export const api = {
   },
 };
 
+/** 404 = endpoint not deployed yet (coins economy); callers hide the section. */
+export const isNotFound = (e: unknown) => e instanceof ApiError && e.status === 404;
+
 export const errorMessage = (e: unknown) => (e instanceof Error ? e.message : 'Something went wrong');
 
 /** 409 on POST generations carries the active generation id. */
 export const activeGenerationIdFrom = (e: unknown) =>
   e instanceof ApiError && e.status === 409 && typeof e.body?.activeGenerationId === 'string' ? e.body.activeGenerationId : null;
+
+/** 402 insufficient_coins → {balance, price}; null for any other error. */
+export function insufficientCoins(e: unknown): { balance: number | null; price: number | null } | null {
+  if (!(e instanceof ApiError) || e.status !== 402) return null;
+  const n = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
+  return { balance: n(e.body?.balance), price: n(e.body?.price) };
+}

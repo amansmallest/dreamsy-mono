@@ -78,6 +78,20 @@
       "when": 1794780894497,
       "tag": "0010_version_players",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1794784200613,
+      "tag": "0011_pay_per_play",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1794784779708,
+      "tag": "0012_notifications_create_price",
+      "breakpoints": true
     }
   ]
 }

@@ -12,10 +12,20 @@ export interface Config {
   leaseSeconds: number;
   maxAttempts: number;
   ssePollMs: number;
-  /** Free Stars every new wallet starts with. */
+  /** Free coins every new wallet starts with (STARTER_STARS; the ledger is still "Stars" internally). */
   starterStars: number;
-  /** Share of each sale credited to the game's creator (0..1). */
+  /** Share of each play / store sale credited to the game's creator (0..1); the rest goes to the platform. */
   creatorShare: number;
+  /** Coins to start someone else's game (PLAY_PRICE, §11.6). */
+  playPrice: number;
+  /** How long a paid start keeps replays free (PLAY_PASS_MINUTES). */
+  playPassMinutes: number;
+  /** Coins for a game's first build (CREATE_PRICE, §11.6) → platform; refunded if it yields no version. Edits are free. */
+  createPrice: number;
+  /** Coins to remix someone else's game (REMIX_PRICE) → 100% to the original owner. */
+  remixPrice: number;
+  /** Coins from each paid play of a spin-off that go to the parent game's owner (taken from the spin-off creator's share). Default 1000. */
+  spinoffRoyalty?: number;
 }
 
 export type IdentityProvider = "apple" | "google" | "supabase";
@@ -37,7 +47,22 @@ export interface Deps {
   identity: IdentityVerifier;
   /** Email-code sign-in is disabled (503) without one. */
   mailer?: Mailer;
+  /** Sends Expo push messages; defaults to the Expo push API. Swappable so tests capture pushes. */
+  pusher?: Pusher;
 }
+
+/** One Expo push message (https://docs.expo.dev/push-notifications/sending-notifications/). */
+export interface PushMessage {
+  to: string;
+  title: string;
+  body: string;
+  data: Record<string, unknown>;
+  sound: "default";
+  badge: number;
+}
+/** Expo push ticket, one per message, same order. */
+export type PushTicket = { status: "ok"; id?: string } | { status: "error"; message?: string; details?: { error?: string } };
+export type Pusher = (messages: PushMessage[]) => Promise<PushTicket[]>;
 
 export type Env = { Variables: { userId: string } };
 

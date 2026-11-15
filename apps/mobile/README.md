@@ -41,6 +41,7 @@ native dependencies.
 | `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` | JS | Google iOS OAuth client id |
 | `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` | JS | Google web OAuth client id = idToken audience the API verifies |
 | `GOOGLE_IOS_URL_SCHEME` | app.config | reversed iOS client id (`com.googleusercontent.apps.…`) |
+| `EAS_PROJECT_ID` | app.config | EAS project id -> `extra.eas.projectId`; needed for Expo push tokens (push is skipped without it) |
 
 ## Layout
 
@@ -51,7 +52,7 @@ app/                 expo-router routes
   onboarding.tsx     first run: handle + avatar
   avatar.tsx         edit avatar (modal)
   (tabs)/            Home (feed tabs + search), Create (my games, running builds + ETA),
-                     Market (store items across games), Profile (own profile, Stars wallet)
+                     Market (store items across games), Profile (own profile, coins wallet, earnings)
   discover/[id].tsx  game page: play, like, share, share with family, remix, creator, report (DREAMSY.MD §11);
                      leaderboards (board picker, Everyone / each of my groups, top 20, me, ghost badge; §13)
   user/[id].tsx      creator profile: follow, published games
@@ -61,7 +62,11 @@ app/                 expo-router routes
                      new code (owner)
   join/[code].tsx    invite link dreamsy://join/<code> or https://dreamsy.dev/join/<code> (also from the QR
                      scanner). Joins when signed in; otherwise the code waits until sign-in + onboarding
-  game/[id].tsx      Create workspace: chat + preview, publish, round/ETA card, checkpoint reloads
+  game/[id].tsx      Create workspace: chat + preview, publish, round/ETA card, checkpoint reloads;
+                     first build costs CREATE_PRICE coins (402 -> "Out of coins"), edits free
+  notifications.tsx  inbox (earnings, build done, family joins): tap opens the game/group and marks read,
+                     "Mark all read". Bell + unread badge on Home and Profile; hidden when the API has no
+                     /v1/me/notifications (404)
   play/[id].tsx      full-screen player (params id, version, orientation?); locks to the game's
                      orientation and passes safe-area insets to the engine (`&insets=t,r,b,l`)
 src/
@@ -70,6 +75,11 @@ src/
   social.ts          shareUrl/shareGame, number formatting, fallback gradients
   usePaged.ts        cursor pagination for feeds/search/market
   wallet.ts          useWallet() + walletChanged() (refetch after in-game purchases)
+  coins.tsx          coin formatting, play gate, create/remix prices, "Out of coins" sheet
+  notifications.ts   unread store, 30 s foreground poll, "You got paid" toast, tap -> screen
+  push.ts            expo-notifications: permission + Expo token -> POST /v1/me/push-tokens, foreground
+                     presentation, push taps. Skipped in Expo Go on Android and without a projectId
+  toast.tsx          app-wide top toasts (<ToastHost /> in app/_layout.tsx)
   components/
     EngineView.tsx   the game player: WebView of engine-web in embed mode + message bridge
     GamePreview.tsx  inline 16:10 player card (workspace, discover detail)
@@ -120,7 +130,7 @@ mode, and posts JSON back via `window.ReactNativeWebView.postMessage`:
 | `{type:"ready"}` | hide the spinner |
 | `{type:"error", message}` | banner (load errors + script errors, rate-limited) |
 | `{type:"quit"}` | pause-menu Quit: closes the Play screen |
-| `{type:"purchase", itemId, balance}` | Stars purchase in the engine's sheet: wallet refetch |
+| `{type:"purchase", itemId, balance}` | Coins purchase in the engine's sheet: wallet refetch |
 
 The workspace preview is keyed by `latestVersion`, so a finished generation (or a restore)
 reloads it. Production will point `EXPO_PUBLIC_ENGINE_URL` at a hosted build of the engine page.

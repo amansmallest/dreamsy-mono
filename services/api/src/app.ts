@@ -14,8 +14,12 @@ import { workerRoutes } from "./routes/worker.js";
 import { insightsRoutes } from "./routes/insights.js";
 import { leaderboardRoutes } from "./routes/leaderboards.js";
 import { groupRoutes } from "./routes/groups.js";
+import { playRoutes } from "./routes/play.js";
+import { setPrices } from "./services.js";
+import { notificationRoutes } from "./routes/notifications.js";
 
 export function createApp(deps: Deps, opts: { log?: boolean; corsOrigins?: string[] } = {}) {
+  setPrices(deps.config);
   const app = router();
   if (opts.log) app.use(logger());
   // The engine runs in browsers/WebViews on other origins and calls the API with a bearer token
@@ -34,11 +38,13 @@ export function createApp(deps: Deps, opts: { log?: boolean; corsOrigins?: strin
   app.route("/", generationRoutes(deps));
   app.route("/", workerRoutes(deps));
   app.route("/", storeRoutes(deps));
+  app.route("/", playRoutes(deps));
   app.route("/", assetRoutes(deps));
   app.route("/", socialRoutes(deps));
   app.route("/", insightsRoutes(deps));
   app.route("/", leaderboardRoutes(deps));
   app.route("/", groupRoutes(deps));
+  app.route("/", notificationRoutes(deps));
 
   app.notFound((c) => c.json({ error: "not found" }, 404));
   app.onError((err, c) => {

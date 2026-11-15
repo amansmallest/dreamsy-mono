@@ -5,27 +5,45 @@ import { ActionSheetIOS, Alert, Platform, Pressable, StyleSheet, View } from 're
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { LedgerEntry } from '@/api';
 import { useAuth } from '@/auth';
+import { formatCoins, formatUsd } from '@/coins';
+import { EarningsCard } from '@/components/EarningsCard';
+import { NotificationBell } from '@/components/NotificationBell';
 import { ProfileView } from '@/components/ProfileView';
+import { unregisterPush } from '@/push';
 import { hairline, ink, radius } from '@/theme';
-import { IconButton, PixelSparkle, Pressy, Txt, type IconName } from '@/ui';
+import { IconButton, PixelCoin, Pressy, Txt, type IconName } from '@/ui';
 import { useWallet } from '@/wallet';
 
 const KIND_LABEL: Record<string, string> = {
-  starter_grant: 'Welcome Stars',
+  starter_grant: 'Welcome coins',
+  grant: 'Free coins',
   purchase: 'Purchase',
   sale: 'Sale',
+  play: 'Played a game',
+  play_earning: 'Someone played your game',
+  platform_fee: 'Dreamsy fee',
+  create: 'Created a game',
+  create_refund: 'Build refund',
+  remix: 'Remixed a game',
+  remix_earning: 'Someone remixed your game',
+  royalty: 'Spin-off royalty',
 };
 
 const describe = (e: LedgerEntry) => {
-  const kind = KIND_LABEL[e.kind] ?? e.kind;
+  const kind = KIND_LABEL[e.kind] ?? e.kind.replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase());
   return e.itemId ? `${kind} · ${e.itemId}` : kind;
 };
 
-/** Me: handle bar with a menu, Instagram profile, Stars wallet. */
+/** Me: handle bar with a menu, Instagram profile, coins wallet, creator earnings. */
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
-  const { wallet, recent, error, refresh } = useWallet();
+  const { wallet, recent, error, refresh, live } = useWallet();
   const [open, setOpen] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+  const pull = useCallback(async () => {
+    setReloadKey((k) => k + 1);
+    await refresh();
+  }, [refresh]);
 
   useFocusEffect(
     useCallback(() => {
@@ -38,7 +56,7 @@ export default function ProfileScreen() {
   const confirmSignOut = () =>
     Alert.alert('Sign out?', undefined, [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign out', style: 'destructive', onPress: () => void signOut() },
+      { text: 'Sign out', style: 'destructive', onPress: () => void unregisterPush().finally(() => signOut()) },
     ]);
 
   const menu = () => {
@@ -57,11 +75,14 @@ export default function ProfileScreen() {
         <Txt variant="title" numberOfLines={1} style={styles.handle}>
           {user.handle}
         </Txt>
-        <IconButton icon="menu-outline" label="Menu" onPress={menu} />
+        <View style={styles.barRight}>
+          <NotificationBell size={40} ring={ink.card} />
+          <IconButton icon="menu-outline" label="Menu" onPress={menu} />
+        </View>
       </View>
       <ProfileView
         userId={user.id}
-        onRefresh={refresh}
+        onRefresh={pull}
         footer={
           <View style={styles.settings}>
             <Row icon="people-outline" label="Family & friends" onPress={() => router.push('/groups')} />
@@ -71,13 +92,19 @@ export default function ProfileScreen() {
           </View>
         }
         header={
-          <Pressable onPress={() => setOpen((o) => !o)} style={styles.wallet} accessibilityRole="button" accessibilityLabel="Stars">
+          <View style={styles.cards}>
+          <Pressable onPress={() => setOpen((o) => !o)} style={styles.wallet} accessibilityRole="button" accessibilityLabel="Coins">
             <View style={styles.walletRow}>
               <View style={styles.star}>
-                <PixelSparkle size={14} color={ink.accentFg} />
+                <PixelCoin size={14} color={ink.accentFg} />
               </View>
               <View style={styles.flex}>
-                <Txt variant="pixel">{wallet ? wallet.balance.toLocaleString() : '–'} Stars</Txt>
+                <Txt variant="pixel">{wallet ? formatCoins(wallet.balance, true) : '– coins'}</Txt>
+                {wallet && live && (
+                  <Txt variant="meta" muted>
+                    {formatUsd(wallet.balance, wallet.usd)}
+                  </Txt>
+                )}
                 {error && (
                   <Txt variant="meta" color={ink.danger}>
                     {error}
@@ -99,11 +126,13 @@ export default function ProfileScreen() {
                   </View>
                   <Txt variant="heading" color={item.delta < 0 ? ink.fg : ink.ok}>
                     {item.delta > 0 ? '+' : ''}
-                    {item.delta}
+                    {formatCoins(item.delta)}
                   </Txt>
                 </View>
               ))}
           </Pressable>
+          <EarningsCard reloadKey={reloadKey} />
+          </View>
         }
       />
     </SafeAreaView>
@@ -130,6 +159,8 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: ink.card },
   bar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, height: 48 },
   handle: { flex: 1, fontSize: 22 },
+  barRight: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  cards: { gap: 12 },
   wallet: { backgroundColor: ink.wash, borderRadius: radius.lg, padding: 12, gap: 8 },
   walletRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   star: { width: 32, height: 32, borderRadius: 16, backgroundColor: ink.accent, alignItems: 'center', justifyContent: 'center' },

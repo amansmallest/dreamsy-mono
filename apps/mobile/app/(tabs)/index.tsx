@@ -5,10 +5,12 @@ import { FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, useWindowD
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { api, type FeedGame, type FeedTab } from '@/api';
 import { useAuth } from '@/auth';
+import { formatCoins, formatUsd } from '@/coins';
 import { Avatar } from '@/components/Avatar';
 import { FeaturedGame, GameCard } from '@/components/GameCard';
+import { NotificationBell } from '@/components/NotificationBell';
 import { errorMessage, ink, radius } from '@/theme';
-import { Button, Empty, IconButton, PixelSparkle, Pressy, Skeleton, Txt } from '@/ui';
+import { Button, Empty, IconButton, PixelCoin, PixelSparkle, Pressy, Skeleton, Txt } from '@/ui';
 import { useWallet } from '@/wallet';
 
 type ShelfKey = FeedTab | 'multiplayer';
@@ -27,7 +29,7 @@ type Shelves = Partial<Record<ShelfKey, FeedGame[]>>;
 /** Home: a game marketplace. Featured banner, then shelves of games that scroll sideways. */
 export default function HomeScreen() {
   const { user } = useAuth();
-  const { wallet, refresh: refreshWallet } = useWallet();
+  const { wallet, live, refresh: refreshWallet } = useWallet();
   const { width } = useWindowDimensions();
   const [shelves, setShelves] = useState<Shelves | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -79,13 +81,25 @@ export default function HomeScreen() {
         </View>
         <View style={styles.barRight}>
           {wallet && (
-            <Pressy onPress={() => router.navigate('/market')} style={styles.stars} accessibilityLabel={`${wallet.balance} Stars`}>
-              <PixelSparkle size={11} color={ink.accent} />
-              <Txt variant="label" color={ink.navy}>
-                {wallet.balance.toLocaleString()}
-              </Txt>
+            <Pressy
+              onPress={() => router.navigate('/market')}
+              style={styles.coins}
+              accessibilityLabel={`${wallet.balance.toLocaleString()} coins${live ? `, ${formatUsd(wallet.balance, wallet.usd)}` : ''}`}
+            >
+              <PixelCoin size={12} color={ink.accent} />
+              <View>
+                <Txt variant="label" color={ink.navy} style={styles.coinsAmount}>
+                  {formatCoins(wallet.balance, true)}
+                </Txt>
+                {live && (
+                  <Txt variant="meta" muted style={styles.coinsUsd}>
+                    {formatUsd(wallet.balance, wallet.usd)}
+                  </Txt>
+                )}
+              </View>
             </Pressy>
           )}
+          <NotificationBell />
           <IconButton icon="people-outline" label="Family & friends" size={36} onPress={() => router.push('/groups')} />
           <IconButton icon="qr-code-outline" label="Scan a game QR code" size={36} onPress={() => router.push('/scan')} />
         </View>
@@ -221,7 +235,9 @@ const styles = StyleSheet.create({
   logo: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6 },
   word: { fontSize: 22, letterSpacing: -1, color: ink.navy },
   barRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  stars: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 30, paddingHorizontal: 10, borderRadius: radius.pill, backgroundColor: ink.card },
+  coins: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 36, paddingLeft: 9, paddingRight: 11, borderRadius: radius.pill, backgroundColor: ink.card },
+  coinsAmount: { fontSize: 12, lineHeight: 14 },
+  coinsUsd: { fontSize: 10, lineHeight: 12 },
   content: { paddingBottom: 32 },
   search: { flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: PAD, marginTop: 4, marginBottom: 16, paddingHorizontal: 14, height: 44, borderRadius: radius.md, backgroundColor: ink.card },
   pad: { paddingHorizontal: PAD },

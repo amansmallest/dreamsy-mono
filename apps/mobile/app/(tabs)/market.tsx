@@ -7,7 +7,8 @@ import { absoluteApiUrl, api, type MarketItem, type MarketSort } from '@/api';
 import { openGame } from '@/components/GameCard';
 import { compact } from '@/social';
 import { ink, radius } from '@/theme';
-import { Badge, Empty, Header, Loading, Pills, PixelSky, PixelSparkle, Pressy, Txt, type IconName } from '@/ui';
+import { formatCoins } from '@/coins';
+import { Badge, Empty, Header, Loading, Pills, PixelCoin, PixelSky, Pressy, Txt, type IconName } from '@/ui';
 import { usePaged } from '@/usePaged';
 
 const SORTS: { value: MarketSort; label: string }[] = [
@@ -74,7 +75,7 @@ function ItemCard({ item }: { item: MarketItem }) {
   const icon = absoluteApiUrl(item.iconUrl);
   return (
     <Pressy
-      accessibilityLabel={`${item.name}, ${item.price} Stars, in ${item.gameName}`}
+      accessibilityLabel={`${item.name}, ${item.price.toLocaleString()} coins, in ${item.gameName}`}
       onPress={() => openGame(item.gameId)}
       haptic={false}
       style={styles.item}
@@ -99,9 +100,9 @@ function ItemCard({ item }: { item: MarketItem }) {
         </Txt>
         <View style={styles.priceRow}>
           <View style={styles.price}>
-            <PixelSparkle size={10} color={ink.accentFg} />
+            <PixelCoin size={10} color={ink.accentFg} />
             <Txt variant="label" color={ink.accentFg}>
-              {item.price}
+              {formatCoins(item.price)}
             </Txt>
           </View>
           {item.sales > 0 && (

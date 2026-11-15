@@ -6,6 +6,9 @@ import { requireWorker } from "../auth.js";
 import { fail, parseJson, router, type Deps } from "../context.js";
 import { schema } from "../db/client.js";
 import { mirrorToLive } from "../live.js";
+import { refundCreateIfUnbuilt } from "../economy.js";
+import { notifyBuildDone } from "../notifications.js";
+import { pushAfterCommit } from "../push.js";
 import { MAX_PACKAGE_BYTES } from "../package.js";
 import {
   appendEvent,
@@ -77,7 +80,7 @@ export const MAX_THUMBNAIL_BYTES = 2 * 1024 * 1024;
  * A worker that goes silent past its lease loses the job; another worker re-claims it.
  * Any 409 from events/complete means "stop working on this job" (canceled or reassigned).
  */
-export function workerRoutes({ db, storage, config }: Deps) {
+export function workerRoutes({ db, storage, config, pusher }: Deps) {
   const r = router();
   r.use("/v1/worker/*", requireWorker(config));
 
@@ -95,8 +98,11 @@ export function workerRoutes({ db, storage, config }: Deps) {
           lt(generations.leaseExpiresAt, new Date()),
           gte(generations.attempts, config.maxAttempts),
         ))
-        .returning({ id: generations.id });
-      for (const d of dead) await appendEvent(tx, d.id, "failed", { error: "worker lease expired too many times" });
+        .returning();
+      for (const d of dead) {
+        await appendEvent(tx, d.id, "failed", { error: "worker lease expired too many times" });
+        await refundCreateIfUnbuilt(tx, config, d);
+      }
 
       const [job] = await tx.select().from(generations)
         .where(and(eq(generations.provider, provider), or(
@@ -197,7 +203,7 @@ export function workerRoutes({ db, storage, config }: Deps) {
     const version = await commitVersion(tx, game, res.pkg, {
       createdBy: gen.userId, summary: res.summary, generationId: gen.id, thumbnailKey: res.thumbnailKey,
     });
-    return { gen, version };
+    return { gen, game, version };
   }
 
   const resultLimit = bodyLimit({
@@ -212,12 +218,17 @@ export function workerRoutes({ db, storage, config }: Deps) {
    */
   r.post("/v1/worker/generations/:id/checkpoint", resultLimit, async (c) => {
     const res = await readResult(c.req);
-    const version = await db.transaction(async (tx) => {
-      const { gen, version } = await commitResult(tx, c.req.param("id"), res);
+    const { version, notes } = await db.transaction(async (tx) => {
+      const { gen, game, version } = await commitResult(tx, c.req.param("id"), res);
       await tx.update(generations).set({ baseVersion: version.version, leaseExpiresAt: lease() }).where(eq(generations.id, gen.id));
       await appendEvent(tx, gen.id, "checkpoint", { version: version.version, summary: res.summary });
-      return version;
+      // A new game's first version is already playable: tell the creator.
+      const notes = version.version === 1
+        ? await notifyBuildDone(tx, { userId: gen.userId, gameId: game.id, gameName: game.name, version: version.version })
+        : [];
+      return { version, notes };
     });
+    pushAfterCommit(db, pusher, notes);
     mirrorToLive(db, c.req.param("id"), "checkpoint", { version: version.version, summary: res.summary });
     return c.json({ version: versionView(version) }, 201);
   });
@@ -225,8 +236,8 @@ export function workerRoutes({ db, storage, config }: Deps) {
   /** multipart: workerId, summary, package (zip), thumbnail? (JPEG ≤2MB). Commits version = base + 1. */
   r.post("/v1/worker/generations/:id/complete", resultLimit, async (c) => {
     const res = await readResult(c.req);
-    const { gen, version } = await db.transaction(async (tx) => {
-      const { gen, version } = await commitResult(tx, c.req.param("id"), res);
+    const { gen, version, notes } = await db.transaction(async (tx) => {
+      const { gen, game, version } = await commitResult(tx, c.req.param("id"), res);
       const [done] = await tx.update(generations).set({
         status: "succeeded",
         resultVersion: version.version,
@@ -235,8 +246,10 @@ export function workerRoutes({ db, storage, config }: Deps) {
         etaSeconds: null,
       }).where(eq(generations.id, gen.id)).returning();
       await appendEvent(tx, gen.id, "succeeded", { version: version.version, summary: res.summary });
-      return { gen: done!, version };
+      const notes = await notifyBuildDone(tx, { userId: gen.userId, gameId: game.id, gameName: game.name, version: version.version });
+      return { gen: done!, version, notes };
     });
+    pushAfterCommit(db, pusher, notes);
     mirrorToLive(db, gen.id, "succeeded", { version: version.version, summary: res.summary });
     return c.json({ generation: generationView(gen), version: versionView(version) }, 201);
   });
@@ -251,6 +264,7 @@ export function workerRoutes({ db, storage, config }: Deps) {
         : { status: "failed", leaseExpiresAt: null, error: body.error, finishedAt: new Date() },
       ).where(eq(generations.id, gen.id)).returning();
       await appendEvent(tx, gen.id, retry ? "requeued" : "failed", { error: body.error });
+      if (!retry && (await refundCreateIfUnbuilt(tx, config, updated!)) > 0) return getGeneration(tx, gen.id);
       return updated!;
     });
     if (gen.status === "failed") mirrorToLive(db, gen.id, "failed", { error: body.error });

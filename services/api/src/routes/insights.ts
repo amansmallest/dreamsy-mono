@@ -3,6 +3,7 @@ import { requireUser } from "../auth.js";
 import { fail, router, type Deps } from "../context.js";
 import { schema } from "../db/client.js";
 import type { GenerationMetrics } from "../db/schema.js";
+import { earningsOf } from "./play.js";
 
 const { generations } = schema;
 
@@ -12,7 +13,7 @@ const { generations } = schema;
  * inside the window, bucketed by finishedAt (UTC day). Averages only count builds that reported
  * metrics (and, for artScore, that were reviewed); they are null when nothing qualifies.
  *
- *   GET /v1/me/insights?days=30       — the caller's builds
+ *   GET /v1/me/insights?days=30       — the caller's builds (+ `earnings`, §11.6)
  *   GET /v1/insights/engine?days=30   — all builds, aggregated (no per-user data)
  */
 export function insightsRoutes({ db, config }: Deps) {
@@ -32,7 +33,12 @@ export function insightsRoutes({ db, config }: Deps) {
     return aggregate(rows, since, days);
   };
 
-  r.get("/v1/me/insights", async (c) => c.json(await load(parseDays(c.req.query("days")), c.get("userId"))));
+  // The caller's insights also carry their creator earnings (same shape as GET /v1/me/earnings).
+  r.get("/v1/me/insights", async (c) => {
+    const userId = c.get("userId");
+    const [builds, earnings] = await Promise.all([load(parseDays(c.req.query("days")), userId), earningsOf(db, userId)]);
+    return c.json({ ...builds, earnings });
+  });
   r.get("/v1/insights/engine", async (c) => c.json(await load(parseDays(c.req.query("days")))));
   return r;
 }

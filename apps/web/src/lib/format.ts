@@ -49,4 +49,16 @@ export function boardValue(value: number, order: 'asc' | 'desc'): string {
   return `${h ? `${h}:` : ''}${p2(m)}:${p2(s)}.${p2(c)}`;
 }
 
-export const inviteLink = (code: string) => `https://dreamsy.dev/join/${code}`;
+// ---------- coins (10,000 coins = $0.10) ----------
+export const COINS_PER_USD = 100_000;
+export const DEFAULT_PLAY_PRICE = 10_000;
+const compactFmt = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 });
+/** 990000 → "990K", 1000000 → "1M". */
+export const compactCoins = (n: number) => compactFmt.format(n);
+/** "990K coins". */
+export const coins = (n: number) => `${compactCoins(n)} coins`;
+export const coinsToUsd = (n: number) => n / COINS_PER_USD;
+/** Dollars → "$9.90". */
+export const usd = (d: number) => `$${d.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+export const inviteLink =(code: string) => `https://dreamsy.dev/join/${code}`;

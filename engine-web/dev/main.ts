@@ -141,7 +141,7 @@ async function start(pkg: Package, label: string, net?: NetLink) {
   view = null; game = null;
   message.style.display = "none";
   picker.style.display = "none";
-  // store: the real API (Stars, purchase sheet) when ?api=&game= is set, else the free in-memory store
+  // store: the real API (coins, purchase sheet) when ?api=&game= is set, else the free in-memory store
   const api = params.get("api"), apiGame = params.get("game");
   const items = parseManifest(pkg.text("dreamsy.toml") ?? "").manifest?.store ?? [];
   const store = api && apiGame

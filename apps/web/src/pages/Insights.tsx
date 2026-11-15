@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { BarList, LineChart } from '../components/Charts';
 import { Icon, PixelSky } from '../components/Icon';
 import { Empty, ErrorNote, Segmented } from '../components/ui';
-import { api, type Insights as Data, type InsightsDay } from '../lib/api';
-import { useResource } from '../lib/store';
+import { Link } from 'react-router-dom';
+import { api, isNotFound, type Insights as Data, type InsightsDay } from '../lib/api';
+import { coins, coinsToUsd, compactCoins, DEFAULT_PLAY_PRICE, usd } from '../lib/format';
+import { invalidate, useResource } from '../lib/store';
 
 const avg = (xs: (number | null)[]) => {
   const v = xs.filter((x): x is number => x != null);
@@ -39,7 +41,9 @@ export function Insights() {
         <h1 className="display">insights</h1>
         <Segmented value={days} onChange={setDays} options={[{ value: '7', label: '7 days' }, { value: '30', label: '30 days' }, { value: '90', label: '90 days' }]} />
       </section>
-      {err ? <ErrorNote error={err} onRetry={() => { mine.refetch(); engine.refetch(); }} />
+      <EarningsSection />
+      <div className="section-head compact"><h2 className="h2">Builds</h2></div>
+      {err ?<ErrorNote error={err} onRetry={() => { mine.refetch(); engine.refetch(); }} />
         : !mine.data || !engine.data ? <><div className="headlines">{Array.from({ length: 4 }, (_, i) => <div key={i} className="skeleton skel-headline" />)}</div><div className="insights-grid">{Array.from({ length: 4 }, (_, i) => <div key={i} className="skeleton skel-chart" />)}</div></>
         : <Body mine={mine.data} engine={engine.data} days={days} />}
     </div>
@@ -108,6 +112,82 @@ function Body({ mine, engine, days }: { mine: Data; engine: Data; days: string }
         </ChartCard>
       </div>
     </>
+  );
+}
+
+/** Pay-per-play earnings (all-time + today). Hidden while /v1/me/earnings isn't deployed (404). */
+function EarningsSection() {
+  const r = useResource('earnings', api.earnings);
+  if (isNotFound(r.error)) return null;
+  const e = r.data;
+  const games = e ? [...e.games].sort((a, b) => b.coins - a.coins) : [];
+  return (
+    <section className="earnings">
+      <div className="section-head compact">
+        <div className="section-title"><h2 className="h2">Earnings</h2><span className="section-count">You keep 90% of every play</span></div>
+        <button className="icon-btn sm ghost" aria-label="Refresh earnings" title="Refresh" onClick={() => { invalidate('earnings'); invalidate('wallet'); }}><Icon name="refresh" size={15} /></button>
+      </div>
+      {r.error ? <ErrorNote error={r.error} onRetry={r.refetch} />
+        : !e ? <div className="headlines">{Array.from({ length: 4 }, (_, i) => <div key={i} className="skeleton skel-headline" />)}</div>
+        : (
+          <>
+            <div className="headlines">
+              <PixelSky preset="card" className="headline is-sky">
+                <span className="kicker">Total earned</span>
+                <div className="headline-num">{usd(e.usd.total)}</div>
+                <span className="small">{e.totalCoins.toLocaleString()} coins</span>
+              </PixelSky>
+              <div className="card headline">
+                <span className="kicker">Today</span>
+                <div className="headline-num">{usd(e.usd.today)}</div>
+                <span className="small muted">{coins(e.todayCoins)}</span>
+              </div>
+              <div className="card headline">
+                <span className="kicker">Paid plays</span>
+                <div className="headline-num">{e.paidPlays.toLocaleString()}</div>
+                <span className="small muted">plays of your games by others</span>
+              </div>
+              <div className="card headline">
+                <span className="kicker">Your share</span>
+                <div className="headline-num">90<small>%</small></div>
+                <span className="small muted">{compactCoins(DEFAULT_PLAY_PRICE * 0.9)} of every {compactCoins(DEFAULT_PLAY_PRICE)}-coin play</span>
+              </div>
+            </div>
+            <div className="insights-grid earnings-grid">
+              <section className="card chart-card">
+                <div className="chart-card-head">
+                  <h3 className="h3">By game</h3>
+                  <span className="chart-sub">All-time paid plays · own plays and replays within 30 min are free</span>
+                </div>
+                {games.length === 0 ? (
+                  <p className="small muted earn-empty">No paid plays yet. Publish a game: every play by someone else earns you {compactCoins(DEFAULT_PLAY_PRICE * 0.9)} coins.</p>
+                ) : (
+                  <table className="earn-table">
+                    <thead><tr><th>Game</th><th>Plays</th><th>Coins</th><th>$</th></tr></thead>
+                    <tbody>
+                      {games.map((g) => (
+                        <tr key={g.gameId}>
+                          <td><Link to={`/games/${g.gameId}`} className="earn-game">{g.name}</Link></td>
+                          <td>{g.plays.toLocaleString()}</td>
+                          <td title={`${g.coins.toLocaleString()} coins`}>{compactCoins(g.coins)}</td>
+                          <td>{usd(coinsToUsd(g.coins))}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </section>
+              <ChartCard title="Coins per game" sub="All-time, creator share">
+                {games.length === 0 ? <p className="small muted earn-empty">Bars appear after your first paid play.</p> : (
+                  <div className="earn-bars">
+                    <BarList format={compactCoins} rows={games.slice(0, 8).map((g) => ({ label: g.name, value: g.coins, extra: usd(coinsToUsd(g.coins)) }))} />
+                  </div>
+                )}
+              </ChartCard>
+            </div>
+          </>
+        )}
+    </section>
   );
 }
 

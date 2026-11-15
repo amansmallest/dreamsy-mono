@@ -1,15 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { api, ApiError, playableVersion, type Group, type GroupMember, type SharedGame } from '@/api';
 import { useAuth } from '@/auth';
+import { formatCoins, priceOf, useEconomy, usePassActive, usePlayGate } from '@/coins';
 import { Avatar } from '@/components/Avatar';
 import { Thumbnail } from '@/components/Thumbnail';
 import { shareInvite } from '@/groups';
 import { timeAgo } from '@/social';
 import { errorMessage, font, hairline, ink, radius } from '@/theme';
-import { Badge, Button, Empty, Loading, Txt } from '@/ui';
+import { Badge, Button, Empty, Loading, PixelCoin, Txt } from '@/ui';
 
 /** One group: invite code, members, games shared with it; leave / delete / new code. */
 export default function GroupScreen() {
@@ -21,6 +22,7 @@ export default function GroupScreen() {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [busy, setBusy] = useState(false);
+  const gate = usePlayGate();
 
   const load = useCallback(async () => {
     try {
@@ -102,7 +104,7 @@ export default function GroupScreen() {
   const play = (g: SharedGame) => {
     const version = playableVersion(g);
     if (!version) return;
-    router.push({ pathname: '/play/[id]', params: { id: g.id, version: String(version), ...(g.orientation ? { orientation: g.orientation } : {}) } });
+    void gate.play({ id: g.id, version, orientation: g.orientation });
   };
 
   return (
@@ -137,7 +139,7 @@ export default function GroupScreen() {
       ) : (
         <View style={styles.list}>
           {games.map((g, i) => (
-            <SharedRow key={g.id} game={g} last={i === games.length - 1} onPlay={() => play(g)} />
+            <SharedRow key={g.id} game={g} mine={g.ownerId === user?.id} busy={gate.busy === g.id} last={i === games.length - 1} onPlay={() => play(g)} />
           ))}
         </View>
       )}
@@ -166,6 +168,8 @@ export default function GroupScreen() {
         ))}
       </View>
 
+      {gate.sheet}
+
       <View style={styles.danger}>
         <Button label="Leave group" icon="exit-outline" size="md" variant="outline" disabled={busy} onPress={leave} />
         {isOwner && <Button label="Delete group" icon="trash-outline" size="md" variant="ghost" disabled={busy} onPress={remove} />}
@@ -174,9 +178,13 @@ export default function GroupScreen() {
   );
 }
 
-function SharedRow({ game, last, onPlay }: { game: SharedGame; last: boolean; onPlay: () => void }) {
+function SharedRow({ game, mine, busy, last, onPlay }: { game: SharedGame; mine: boolean; busy: boolean; last: boolean; onPlay: () => void }) {
   const draft = !game.publishedVersion;
   const canPlay = !!playableVersion(game);
+  const economy = useEconomy();
+  const pass = usePassActive(game.id);
+  // Shared drafts, my own games and an active pass are free; otherwise show the price.
+  const paid = economy !== false && canPlay && !draft && !mine && !pass;
   return (
     <Pressable onPress={() => router.push({ pathname: '/discover/[id]', params: { id: game.id } })} style={[styles.game, !last && styles.line]}>
       <Thumbnail url={game.thumbnailUrl} seed={game.id} name={game.name} style={styles.thumb} />
@@ -190,9 +198,24 @@ function SharedRow({ game, last, onPlay }: { game: SharedGame; last: boolean; on
             @{game.sharedBy.handle} · {timeAgo(game.sharedAt)}
           </Txt>
         </View>
+        {paid && (
+          <View style={styles.price}>
+            <PixelCoin size={11} color={ink.navy} />
+            <Txt variant="label" color={ink.navy}>
+              {formatCoins(priceOf(game))}
+            </Txt>
+          </View>
+        )}
       </View>
-      <Pressable accessibilityRole="button" accessibilityLabel={`Play ${game.name}`} disabled={!canPlay} onPress={onPlay} hitSlop={6} style={[styles.play, !canPlay && { opacity: 0.4 }]}>
-        <Ionicons name="play" size={16} color={ink.accentFg} />
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={paid ? `Play ${game.name}, ${formatCoins(priceOf(game))} coins` : `Play ${game.name}`}
+        disabled={!canPlay || busy}
+        onPress={onPlay}
+        hitSlop={6}
+        style={[styles.play, !canPlay && { opacity: 0.4 }]}
+      >
+        {busy ? <ActivityIndicator size="small" color={ink.accentFg} /> : <Ionicons name="play" size={16} color={ink.accentFg} />}
       </Pressable>
     </Pressable>
   );
@@ -212,6 +235,7 @@ const styles = StyleSheet.create({
   game: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12 },
   thumb: { width: 52, height: 52, borderRadius: radius.sm },
   meta: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
+  price: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', marginTop: 4, paddingHorizontal: 7, paddingVertical: 2, borderRadius: radius.pill, backgroundColor: ink.wash },
   play: { width: 38, height: 38, borderRadius: 19, backgroundColor: ink.accent, alignItems: 'center', justifyContent: 'center' },
   danger: { marginTop: 24, gap: 8 },
   flex: { flex: 1 },

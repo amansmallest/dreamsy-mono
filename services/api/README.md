@@ -51,9 +51,18 @@ view: thumbnail/orientation of the latest version, plus `hidden`. Others: the pu
 |---|---|
 | `GET /v1/feed?tab=trending\|new\|top\|following&cursor&limit&multiplayer=1` | `{games: FeedGame[], next}` |
 | `GET /v1/search?q&cursor&limit&multiplayer=1` | same shape; ILIKE on name, description, creator handle; trending order |
-| `POST /v1/games/:id/plays` `{version}` | `{counted, stats}`; 1 per user/game/UTC hour |
+| `POST /v1/games/:id/plays` `{version}` | `{counted, stats}`; 1 per user/game/UTC hour (legacy: no charge) |
+| `POST /v1/games/:id/play` `{version?}` | pay-per-play start (DREAMSY.MD §11.6): `{charged, price, balance, pass: {id, expiresAt}, creatorEarned}`; 402 `{error: "insufficient_coins", balance, price}`; also counts the play |
+| `GET /v1/games/:id/play` | quote, no side effects: `{free, reason: "owner"\|"draft"\|"pass"\|null, price, balance, pass\|null}` |
+| `GET /v1/me/quota` · `GET /v1/me/wallet` | also carry `createPrice` (top level and inside `quota` / `wallet`) and `remixPrice`; game views carry `playPrice` + `remixPrice` |
+| `GET /v1/me/notifications?cursor&limit` | newest first: `{items: [{id, kind, title, body, data, read, createdAt}], unread, next}`; kinds `play_earning`, `remix_earning`, `sale`, `build_done`, `group_join` |
+| `GET /v1/me/notifications/unread` | `{unread}` |
+| `POST /v1/me/notifications/read` `{ids?, all?}` | `{unread}` |
+| `POST /v1/me/push-tokens` `{token: "ExponentPushToken[…]", platform: "ios"\|"android"}` | `{ok}`; a token belongs to its last registrant |
+| `DELETE /v1/me/push-tokens` `{token}` | `{ok}` |
+| `GET /v1/me/earnings` | `{totalCoins, todayCoins, paidPlays, usd: {total, today}, games: [{gameId, name, coins, plays}]}` |
 | `PUT` / `DELETE /v1/games/:id/like` | idempotent → `{liked, stats}` |
-| `POST /v1/games/:id/remix` | 201 `{game}`: new draft, v1 = source published version (latest if yours), store stripped |
+| `POST /v1/games/:id/remix` | 201 `{game, charged, ownerEarned}`: new draft, v1 = source published version (latest if yours), store stripped. Costs `REMIX_PRICE` (25,000) → 100% to the source's owner (+ `remix_earning` notification); free on your own game; 402 `{error: "insufficient_coins", balance, price}` |
 | `POST /v1/games/:id/report` `{reason}` | `{ok}`; one per user; ≥3 distinct reporters ⇒ `hidden` |
 | `GET /v1/users/:id` | `{user, stats {games, plays, likes, followers, following}, viewer {following}}` |
 | `GET /v1/users/:id/games?cursor&limit` | `{games, next}`: published FeedGames; self = all own games (owner views) |
@@ -79,12 +88,19 @@ Choices where §11 was open:
 - `viewer.ownedPasses` and marketplace `iconUrl` are omitted (store icons are package assets with no URL yet).
 - Reports: owners can't report their own game; hidden games are only un-hidden manually (DB).
 
+Notifications + push (DREAMSY.MD §11.6): every notification row is inserted in the same transaction
+as the event that caused it, then pushed after commit through Expo
+(`https://exp.host/--/api/v2/push/send`, batches of ≤100, 10 s timeout, errors swallowed, never
+blocks the request). Message: `{to, title, body, data: {...data, kind, notificationId}, sound:
+"default", badge: unread}`. Tokens Expo reports as `DeviceNotRegistered` are deleted. Tests inject
+`Deps.pusher`. Env: `CREATE_PRICE` (100000), `REMIX_PRICE` (25000).
+
 **Uploads** — `POST /v1/uploads` (multipart `file`, png/jpeg/webp/heic ≤10MB) · `GET /v1/uploads/:id`
 
 **Generations** (prompt → harness)
 | | |
 |---|---|
-| `POST /v1/games/:id/generations` `{prompt, imageIds?, selection?}` | queue; one active per game; daily quota |
+| `POST /v1/games/:id/generations` `{prompt, imageIds?, selection?}` | 201 `{generation, charged}`; queue; one active per game; daily quota. A game's **first** build (no versions yet) costs `CREATE_PRICE` (100,000) → platform, refunded once if it ends failed/canceled with no version; edits free; 402 `{error: "insufficient_coins", balance, price}` |
 | `GET /v1/games/:id/generations` · `GET /v1/generations/:id` | |
 | `POST /v1/generations/:id/cancel` | |
 | `GET /v1/generations/:id/events` | SSE progress; resumes via `Last-Event-ID` |

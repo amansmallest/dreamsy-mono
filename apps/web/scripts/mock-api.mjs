@@ -125,11 +125,16 @@ export function handle(method, url, headers) {
   if (p === '/v1/me' && method === 'PATCH') return json({ user });
   if (p === '/v1/me') return json({ user });
   if (p === '/v1/me/quota') return json({ quota: { limit: 10, used: 3, remaining: 7, resetsAt: null } });
-  if (p === '/v1/me/wallet') return json({ wallet: { balance: 1250, currency: 'stars' }, recent: [
-    { delta: 150, balanceAfter: 1250, kind: 'sale', gameId: 'g_swords', itemId: 'vip_pass', createdAt: ago(90) },
-    { delta: 150, balanceAfter: 1100, kind: 'sale', gameId: 'g_swords', itemId: 'vip_pass', createdAt: ago(60 * 7) },
-    { delta: -50, balanceAfter: 950, kind: 'purchase', gameId: 'g_neon', itemId: 'turbo_skin', createdAt: ago(60 * 30) },
-    { delta: 1000, balanceAfter: 1000, kind: 'starter_grant', gameId: null, itemId: null, createdAt: ago(60 * 24 * 40) },
+  if (p === '/v1/me/wallet') return json({ wallet: { balance: 1_098_000, currency: 'coins', usd: 10.98 }, recent: [
+    { delta: 9000, balanceAfter: 1_098_000, kind: 'play_earning', gameId: 'g_swords', itemId: null, createdAt: ago(12) },
+    { delta: 9000, balanceAfter: 1_089_000, kind: 'play_earning', gameId: 'g_farm', itemId: null, createdAt: ago(90) },
+    { delta: -10000, balanceAfter: 1_080_000, kind: 'play', gameId: 'g_other', itemId: null, createdAt: ago(60 * 7) },
+    { delta: 1_000_000, balanceAfter: 1_000_000, kind: 'starter_grant', gameId: null, itemId: null, createdAt: ago(60 * 24 * 40) },
+  ] });
+  if (p === '/v1/me/earnings') return json({ totalCoins: 108_000, todayCoins: 18_000, paidPlays: 12, usd: { total: 1.08, today: 0.18 }, games: [
+    { gameId: 'g_swords', name: 'Broken Swords', coins: 72_000, plays: 8 },
+    { gameId: 'g_farm', name: 'Moonlit Farm', coins: 27_000, plays: 3 },
+    { gameId: 'g_neon', name: 'Neon Drift', coins: 9_000, plays: 1 },
   ] });
   if (p === '/v1/me/games') return json({ games });
   if (p === '/v1/me/insights') return json(insights(false, 2));

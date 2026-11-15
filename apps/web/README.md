@@ -40,9 +40,9 @@ once, then signs out. Guest mode stores the guest token in localStorage.
   kind filter + search, click-to-edit drawer with provenance prompt + chips → `POST generations
   {prompt, assetIds}`, multi-select, inline live progress, before/after toggle) and Versions (restore).
 - `/activity` — builds across games (`/v1/me/activity`), filter, expandable timelines.
-- `/insights` — `/v1/me/insights` vs `/v1/insights/engine`: art score, success rate, memory hits,
+- `/insights` — Earnings (`/v1/me/earnings`: totals, today, paid plays, per-game table + bars; hidden on 404), then `/v1/me/insights` vs `/v1/insights/engine`: art score, success rate, memory hits,
   cost, minutes, sprite reuse, by-kit.
-- `/account` — handle/bio, quota, Stars wallet + ledger, sign out. Light/dark toggle in the top bar.
+- `/account` — handle/bio, quota, coins wallet + ledger + earnings line, sign out. Light/dark toggle in the top bar.
 
 ## Screenshots (mocked API)
 

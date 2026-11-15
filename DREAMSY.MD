@@ -436,6 +436,57 @@ unless marked **public**.
   Purchases still go through `POST /v1/games/:id/store/purchase` (in the game's context).
 - `sales` counts purchases per item.
 
+**Coins & pay-per-play (2026-11-15).** The Stars ledger (`wallets`, append-only `ledger`) is the
+currency, shown to users as **coins**. 10,000 coins = $0.10 (1,000,000 = $10); no real money yet.
+- Every account starts with **1,000,000 coins** (`STARTER_STARS`); migration `0011_pay_per_play` topped
+  existing wallets up to 1,000,000 with a `grant` ledger entry and seeded the platform account `u_platform`.
+- Starting someone else's game costs **`PLAY_PRICE` = 10,000 coins**, split **`CREATOR_SHARE` = 0.9**:
+  creator 9,000, platform 1,000. Three ledger rows that sum to zero: `play` (player −10,000),
+  `play_earning` (creator +9,000), `platform_fee` (`u_platform` +1,000), linked by `pass_id`.
+  Store purchases split the same way (`purchase` / `sale` / `platform_fee`).
+- A paid start opens a **30-minute play pass** (`play_passes`, `PLAY_PASS_MINUTES`) for (user, game);
+  starts while it's valid are free and return the same pass (reloads, crashes, rematches, multiplayer rejoin).
+- Free: the owner playing their own game; group members playing an unpublished draft shared to their group.
+- `POST /v1/games/:id/play {version?}` → `{ charged, price, balance, pass: {id, expiresAt}, creatorEarned }`
+  (`price` is always the play price; `creatorEarned` 0 unless charged); 402 `{error:"insufficient_coins", balance, price}`.
+  One transaction; wallet rows locked in id order, so concurrent starts charge once and never go negative.
+  It also counts the play (same 1/user/game/hour dedupe as `POST /plays`, which stays for old clients, free).
+  `GET /v1/games/:id/play` is a side-effect-free quote: `{free, reason: "owner"|"draft"|"pass"|null, price, balance, pass|null}`.
+- `GET /v1/me/earnings` → `{ totalCoins, todayCoins, paidPlays, usd: {total, today}, games: [{gameId, name, coins, plays}] }`
+  (play earnings + store sales); also returned as `earnings` on `GET /v1/me/insights`.
+  `GET /v1/me/wallet` → `wallet: {balance, currency: "coins", usd}`. Game views carry `playPrice`.
+- v1 gate is client-side: the app calls `POST /play` before opening the player; package fetch does
+  not check passes yet. Real-money top-up / cash-out is later.
+
+**Create & remix prices + notifications (2026-11-15).**
+- **Create:** a game's *first* build (`POST /v1/games/:id/generations` while the game has no
+  versions) costs **`CREATE_PRICE` = 100,000 coins** → platform (two `create` ledger rows). Edits,
+  tweaks and sprite edits of a built game are free. Response `{generation, charged}` (0 or 100,000;
+  also `generation.charged` / `generation.refunded`); 402 `{error:"insufficient_coins", balance,
+  price}`. If that build ends `failed` (final, incl. lease give-up) or `canceled` while the game still
+  has no version, the charge is refunded once (`create_refund` rows; `generations.refunded_at`, set
+  under the generation row lock). A checkpoint that committed v1 keeps the charge.
+- **Remix:** `POST /v1/games/:id/remix` costs **`REMIX_PRICE` = 25,000 coins**, 100% to the original
+  game's owner (`remix` −25,000 / `remix_earning` +25,000); free on your own game. Response
+  `{game, charged, ownerEarned}`; same 402.
+- Prices are exposed: game views `remixPrice` (next to `playPrice`); `GET /v1/me/quota` and
+  `GET /v1/me/wallet` carry `createPrice` (top level and in `quota` / `wallet`) and `remixPrice`.
+- **Notifications** (`notifications` table, migration `0012_notifications_create_price`): inserted in
+  the same transaction as their cause via `notify(tx, userId, kind, title, body, data)`; never to
+  yourself. Kinds: `play_earning` (one per paid pass: "You got paid" / "@p played G — +9K coins
+  ($0.09)"), `remix_earning` ("@p remixed G — +25K coins ($0.25)"), `sale` ("@p bought I in G — +N
+  coins"), `build_done` ("Your game is ready" / "G vN is playable"; on complete, and on the checkpoint
+  that commits a new game's v1), `group_join` ("New family member" / "@p joined Group", to the other
+  members).
+  `GET /v1/me/notifications?cursor=&limit=` → `{items:[{id, kind, title, body, data, read,
+  createdAt}], unread, next}`; `GET /v1/me/notifications/unread` → `{unread}`;
+  `POST /v1/me/notifications/read {ids?, all?}` → `{unread}`.
+- **Push:** `POST /v1/me/push-tokens {token, platform}` / `DELETE {token}` (`push_tokens`; a token
+  belongs to its last registrant). After commit the API sends each new notification to the owner's
+  Expo tokens (`src/push.ts`: `https://exp.host/--/api/v2/push/send`, ≤100/batch, 10 s timeout,
+  fire-and-forget, errors swallowed) as `{to, title, body, data:{...data, kind, notificationId},
+  sound:"default", badge: unread}`; tokens reported `DeviceNotRegistered` are deleted.
+
 ### 11.7 Safety
 - `POST /v1/games/:id/report {reason}`; games with ≥3 distinct reports are hidden from feeds pending review (`hidden` flag).
 
@@ -540,3 +591,9 @@ Implementation notes (services/api `routes/leaderboards.ts`, `routes/groups.ts`,
   (`canAccessGame` / `canAccessVersion` in services.ts). Store purchases still need the published version.
 Groups: ≤ 50 members, invite code is 8 chars (rotatable by owner). Group members can play games shared to the group
 even when unpublished (draft visibility check extends to "shared with one of my groups").
+
+#### Spin-off royalties (2026-11-15)
+Four parties: platform (Dreamsy), creator, spin-off creator, player. A paid play of a **spin-off** (a remix) still costs 10,000:
+platform 1,000 · the spin-off's creator 8,000 · the **direct parent's** owner 1,000 royalty (`royalty` ledger kind + "royalty"
+notification). One level only: a spin-off of a spin-off pays the first spin-off's creator, not the grandparent. No royalty when the
+parent is your own game (you keep 9,000). `SPINOFF_ROYALTY` (default 1000) is taken from the creator's 90% share.

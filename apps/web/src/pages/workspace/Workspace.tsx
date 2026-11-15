@@ -6,7 +6,9 @@ import { Icon, Sparkle } from '../../components/Icon';
 import { ShareWithGroupModal } from '../../components/ShareWithGroup';
 import { Empty, ErrorNote, Segmented, Spinner } from '../../components/ui';
 import { MultiplayerChip } from '../../components/GameCard';
-import { activeGenerationIdFrom, api, errorMessage, isActive, type Generation } from '../../lib/api';
+import { activeGenerationIdFrom, api, errorMessage, insufficientCoins, isActive, type Generation } from '../../lib/api';
+import { createLabel, InsufficientCoinsModal, useCreatePrice, type CoinShortfall } from '../../components/Costs';
+import { coins, coinsToUsd, DEFAULT_PLAY_PRICE, usd } from '../../lib/format';
 import { useGenerationStream } from '../../lib/generation';
 import { invalidate, setCached, useResource } from '../../lib/store';
 import { AssetsPanel, type Edit } from './Assets';
@@ -27,6 +29,8 @@ export function Workspace() {
   const [expanded, setExpanded] = useState(false);
   const [edits, setEdits] = useState<Record<string, Edit>>({});
   const [composerError, setComposerError] = useState<string | null>(null);
+  const [broke, setBroke] = useState<CoinShortfall | null>(null);
+  const createPrice = useCreatePrice();
   const chatRef = useRef<HTMLDivElement>(null);
   const nearBottom = useRef(true);
   const toBottom = (smooth = false) => requestAnimationFrame(() => { const el = chatRef.current; if (el) el.scrollTo({ top: el.scrollHeight, behavior: smooth ? 'smooth' : 'auto' }); });
@@ -46,7 +50,7 @@ export function Workspace() {
   const pixelated = (versionMeta?.manifest?.style?.preset ?? 'pixel') === 'pixel';
 
   const refreshAll = useCallback(() => {
-    invalidate(`game:${id}`); invalidate(`versions:${id}`); invalidate(`gens:${id}`); invalidate('games'); invalidate('quota'); invalidate('activity');
+    invalidate(`game:${id}`); invalidate(`versions:${id}`); invalidate(`gens:${id}`); invalidate('games'); invalidate('quota'); invalidate('activity'); invalidate('wallet');
   }, [id]);
 
   const stream = useGenerationStream(activeGen, {
@@ -90,6 +94,7 @@ export function Workspace() {
             <Icon name="users" size={17} />
           </button>
         </div>
+        <GameEarnings gameId={id} live={g.status === 'published'} price={g.playPrice ?? DEFAULT_PLAY_PRICE} />
         <ShareWithGroupModal gameId={id} gameName={g.name} open={sharing} onClose={() => setSharing(false)} />
         <PreviewCard game={g} versions={versions.data?.versions ?? []} version={version} onVersion={selectVersion} building={!!activeGen} />
       </aside>
@@ -112,6 +117,7 @@ export function Workspace() {
           <Composer
             placeholder={g.latestVersion ? 'What should change? e.g. “add a dash move and make the slimes bounce”' : 'Describe your game…'}
             chips={g.latestVersion ? CHIPS : []}
+            sendLabel={g.latestVersion ? 'Build' : createLabel(createPrice)}
             disabled={!!activeGen}
             disabledNote={<><Sparkle size={10} className="blue" /> Next prompt unlocks when this build finishes</>}
             onSend={async (prompt, files) => {
@@ -120,14 +126,18 @@ export function Workspace() {
                 const imageIds = await Promise.all(files.map(async (f) => (await api.upload(f)).upload.id));
                 const { generation } = await api.generate(id, { prompt, imageIds });
                 onStarted(generation);
+                if (!g.latestVersion) invalidate('wallet');
               } catch (e) {
                 if (activeGenerationIdFrom(e)) refreshAll();
-                setComposerError(errorMessage(e));
+                const need = insufficientCoins(e);
+                if (need) setBroke({ ...need, price: need.price ?? createPrice, action: 'Building a new game' });
+                else setComposerError(errorMessage(e));
                 throw e;
               }
             }}>
             {composerError && <p className="form-error">{composerError}</p>}
           </Composer>
+          <InsufficientCoinsModal need={broke} onClose={() => setBroke(null)} />
         </div>
       </section>
 
@@ -147,6 +157,22 @@ export function Workspace() {
         )}
       </aside>
     </div>
+  );
+}
+
+/** "12 paid plays · 108K coins · $1.08" from /v1/me/earnings; hidden if the endpoint 404s or there's nothing to show. */
+function GameEarnings({ gameId, live, price }: { gameId: string; live: boolean; price: number }) {
+  const r = useResource('earnings', api.earnings);
+  if (!r.data) return null;
+  const row = r.data.games.find((x) => x.gameId === gameId);
+  if (!row && !live) return null;
+  const plays = row?.plays ?? 0;
+  const earned = row?.coins ?? 0;
+  return (
+    <Link to="/insights" className="ws-earnings" title={`${price.toLocaleString()} coins per play · you keep 90%`}>
+      <Icon name="coin" size={13} />
+      <span><b>{plays.toLocaleString()}</b> paid {plays === 1 ? 'play' : 'plays'} · {coins(earned)} · {usd(coinsToUsd(earned))}</span>
+    </Link>
   );
 }
 

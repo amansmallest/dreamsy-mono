@@ -4,6 +4,7 @@ import { jwksIdentityVerifier } from "./auth.js";
 import { createApp } from "./app.js";
 import type { Config } from "./context.js";
 import { connectPostgres } from "./db/client.js";
+import { CREATE_PRICE, REMIX_PRICE } from "./economy.js";
 import { FsStorage, S3Storage, type Storage } from "./storage.js";
 import { resendMailer } from "./mailer.js";
 import { fileURLToPath } from "node:url";
@@ -21,8 +22,13 @@ const config: Config = {
   leaseSeconds: Number(process.env.WORKER_LEASE_SECONDS ?? 120),
   maxAttempts: Number(process.env.GENERATION_MAX_ATTEMPTS ?? 3),
   ssePollMs: Number(process.env.SSE_POLL_MS ?? 500),
-  starterStars: Number(process.env.STARTER_STARS ?? 500),
-  creatorShare: Number(process.env.CREATOR_SHARE ?? 0.5),
+  starterStars: Number(process.env.STARTER_STARS ?? 1_000_000),
+  creatorShare: Number(process.env.CREATOR_SHARE ?? 0.9),
+  playPrice: Number(process.env.PLAY_PRICE ?? 10_000),
+  playPassMinutes: Number(process.env.PLAY_PASS_MINUTES ?? 30),
+  createPrice: Number(process.env.CREATE_PRICE ?? CREATE_PRICE),
+  remixPrice: Number(process.env.REMIX_PRICE ?? REMIX_PRICE),
+  spinoffRoyalty: Number(process.env.SPINOFF_ROYALTY ?? 1000),
 };
 if (config.jwtSecret.length < 32) throw new Error("JWT_SECRET must be at least 32 characters");
 

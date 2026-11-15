@@ -1,5 +1,5 @@
-// Stars wallet for the signed-in user. Any screen showing it uses useWallet(); anything that
-// changes it (an in-game purchase) calls walletChanged() and every mounted useWallet refetches.
+// Coins wallet for the signed-in user. Any screen showing it uses useWallet(); anything that
+// changes it (an in-game purchase, a paid play) calls walletChanged() and every mounted useWallet refetches.
 
 import { useCallback, useEffect, useState } from 'react';
 import { api, type LedgerEntry, type Wallet } from './api';
@@ -35,5 +35,7 @@ export function useWallet() {
     };
   }, [refresh]);
 
-  return { wallet, recent, error, refresh };
+  /** Coins API deployed (older APIs report "stars"). */
+  const live = wallet?.currency === 'coins';
+  return { wallet, recent, error, refresh, live };
 }

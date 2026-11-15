@@ -945,3 +945,98 @@ a.shared-name:hover { color: var(--blue); }
   .groups-grid { grid-template-columns: 1fr; }
   .member-list .push { display: none; }
 }
+
+/* ---------- coins economy (10,000 coins = $0.10; creators keep 90%) ---------- */
+.coin-chip b { font-variant-numeric: tabular-nums; }
+.tile-price {
+  position: absolute; left: 10px; bottom: 10px; z-index: 2; display: inline-flex; align-items: center; gap: 5px;
+  height: 24px; padding: 0 9px; border-radius: 999px; background: var(--surface); color: var(--navy);
+  font: 600 12px var(--body); font-variant-numeric: tabular-nums;
+}
+.tile-price svg { color: var(--blue); }
+.earnings { margin-bottom: 32px; }
+.earnings-grid .chart-card { min-height: 0; }
+.earn-empty { margin: 14px 0 0; }
+.earn-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 14px; font-variant-numeric: tabular-nums; }
+.earn-table th { font: 400 10.5px/1.2 var(--pixel); text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); text-align: right; padding: 0 0 8px 12px; }
+.earn-table td { text-align: right; padding: 10px 0 10px 12px; border-top: 1px solid var(--line); }
+.earn-table td:last-child { font: 700 15px var(--display); color: var(--navy); }
+.earn-table th:first-child, .earn-table td:first-child { text-align: left; padding-left: 0; max-width: 0; width: 50%; }
+.earn-game { display: block; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.earn-game:hover { color: var(--blue); }
+.earn-bars .barlist-row { grid-template-columns: minmax(0, 120px) 1fr 44px 52px; }
+.earn-bars .barlist-label { text-transform: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.earn-line {
+  display: flex; align-items: center; gap: 8px; padding: 10px 12px; margin-top: -4px; border-radius: var(--r-md);
+  background: var(--mist); color: var(--navy); font-size: 13.5px; transition: background 0.15s;
+}
+.earn-line b { font: 700 14px var(--display); }
+.earn-line:hover { background: color-mix(in srgb, var(--mist) 70%, var(--sky)); }
+.ws-earnings {
+  display: inline-flex; align-items: center; gap: 6px; margin: -8px 0 14px; color: var(--muted); font-size: 13px;
+  font-variant-numeric: tabular-nums; transition: color 0.15s;
+}
+.ws-earnings svg { color: var(--blue); flex: none; }
+.ws-earnings b { color: var(--ink); font-weight: 600; }
+.ws-earnings:hover { color: var(--ink); }
+
+/* ---------- notifications: bell, panel, "You got paid" toast ---------- */
+.notif { position: relative; }
+.notif-bell { position: relative; }
+.notif-badge {
+  position: absolute; top: 3px; right: 2px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 999px;
+  display: grid; place-items: center; background: var(--ink); color: var(--bg); box-shadow: 0 0 0 2px var(--surface);
+  font: 700 10.5px/1 var(--body); pointer-events: none;
+}
+.notif-panel {
+  position: absolute; top: calc(100% + 10px); right: -8px; z-index: 30; width: min(380px, calc(100vw - 24px));
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); box-shadow: var(--float);
+  overflow: hidden; animation: pop 0.18s var(--ease);
+}
+.notif-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 10px; border-bottom: 1px solid var(--line); }
+.notif-head h3 { margin: 0; font: 700 16px var(--display); letter-spacing: -0.01em; }
+.notif-head .link-btn:disabled { color: var(--faint); cursor: default; }
+.notif-list { max-height: min(460px, calc(100vh - 140px)); overflow: auto; padding: 6px; display: flex; flex-direction: column; }
+.notif-empty { padding: 28px 16px; text-align: center; font-size: 13.5px; display: grid; place-items: center; }
+.notif-item {
+  display: flex; align-items: flex-start; gap: 10px; width: 100%; padding: 10px; border: 0; border-radius: var(--r-sm);
+  background: transparent; color: var(--ink); text-align: left; cursor: pointer; font: inherit;
+}
+.notif-item:hover { background: var(--hover); }
+.notif-icon { flex: none; width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; background: var(--mist); color: var(--navy); }
+.notif-item.is-earning .notif-icon { background: var(--ink); color: var(--bg); }
+.notif-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; font-size: 13.5px; line-height: 1.35; }
+.notif-text b { font-weight: 600; }
+.notif-text span { color: var(--muted); overflow-wrap: anywhere; }
+.notif-item.is-unread .notif-text span { color: var(--ink); }
+.notif-text time { font-size: 12px; }
+.notif-dot { flex: none; width: 8px; height: 8px; margin-top: 6px; border-radius: 50%; background: var(--blue); }
+.notif-more { align-self: center; margin: 6px 0 4px; }
+
+.paid-toast {
+  position: fixed; right: 20px; bottom: 20px; z-index: 60; display: flex; align-items: flex-start; gap: 4px;
+  max-width: min(420px, calc(100vw - 32px)); padding: 12px 10px 12px 14px; border-radius: var(--r-md);
+  background: var(--ink); color: var(--bg); box-shadow: var(--float); animation: toast-in 0.26s var(--ease);
+}
+@keyframes toast-in { from { transform: translateY(12px); opacity: 0; } }
+.paid-toast-body { display: flex; align-items: flex-start; gap: 10px; border: 0; padding: 0; background: none; color: inherit; text-align: left; cursor: pointer; font: inherit; }
+.paid-toast-icon { flex: none; width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: color-mix(in srgb, var(--bg) 14%, transparent); }
+.paid-toast-text { display: flex; flex-direction: column; gap: 2px; font-size: 13.5px; line-height: 1.35; }
+.paid-toast-text b { font: 700 14.5px var(--display); }
+.paid-toast-text span { opacity: 0.72; }
+.paid-toast-x { flex: none; border: 0; background: none; color: inherit; opacity: 0.6; padding: 4px; cursor: pointer; border-radius: 6px; }
+.paid-toast-x:hover { opacity: 1; }
+@media (max-width: 640px) { .paid-toast { right: 16px; left: 16px; bottom: 16px; } }
+
+/* ---------- coin costs ---------- */
+.new-game-cost { margin: 0; font-size: 13px; }
+.coins-modal { display: flex; flex-direction: column; gap: 12px; }
+.coins-modal-icon { width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center; background: var(--ink); color: var(--bg); }
+.coins-modal-lede { margin: 0; font-size: 15.5px; }
+.coins-modal-rows { margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.coins-modal-rows > div { display: flex; justify-content: space-between; padding: 10px 12px; border-radius: var(--r-sm); background: var(--bg); font-size: 14px; }
+.coins-modal-rows dt { color: var(--muted); }
+.coins-modal-rows dd { margin: 0; font-weight: 600; }
+.coins-modal-note { margin: 0; font-size: 13px; }
+.coins-modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+@media (prefers-reduced-motion: reduce) { .paid-toast, .notif-panel { animation: none; } }

@@ -1,21 +1,25 @@
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Animated, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api, orientationOf, type Orientation } from '@/api';
 import { EngineView, type Insets } from '@/components/EngineView';
-import { ink } from '@/theme';
+import { formatCoins, gatePlay, OutOfCoins, type Charge } from '@/coins';
+import { floating, ink, radius } from '@/theme';
+import { PixelCoin, Txt } from '@/ui';
 import { Ionicons } from '@expo/vector-icons';
 
 /**
  * Full-screen player. Params: id (game), version, orientation? ("portrait" | "landscape").
  * Locks to the game's orientation (§11.1); without the param it reads the version's manifest
  * (absent = landscape, pre-v1 games). The engine gets the safe-area insets once the rotation settles.
+ * Coins (§11.6): callers gate with POST /play first and pass `gated=1` (+ `charged`, `earned` for the
+ * toast); opened any other way (workspace, links) this screen gates itself and shows "Out of coins" on 402.
  */
 export default function PlayScreen() {
-  const params = useLocalSearchParams<{ id: string; version: string; orientation?: string }>();
+  const params = useLocalSearchParams<{ id: string; version: string; orientation?: string; gated?: string; charged?: string; earned?: string }>();
   const { id } = params;
   const v = Number(params.version);
   const liveInsets = useSafeAreaInsets();
@@ -27,6 +31,26 @@ export default function PlayScreen() {
   const [orientation, setOrientation] = useState<Orientation | null>(fromParam);
   const [locked, setLocked] = useState(false);
   const [insets, setInsets] = useState<Insets | null>(null);
+
+  const fromCaller: Charge | null =
+    Number(params.charged) > 0 ? { price: Number(params.charged), earned: Number(params.earned) || 0 } : null;
+  const [gate, setGate] = useState<'ok' | 'checking' | { balance: number; price: number }>(params.gated === '1' ? 'ok' : 'checking');
+  const [charge, setCharge] = useState<Charge | null>(fromCaller);
+
+  useEffect(() => {
+    if (gate !== 'checking' || !(v > 0)) return;
+    let cancelled = false;
+    void gatePlay(id).then((r) => {
+      if (cancelled) return;
+      if (r.kind === 'out') return setGate({ balance: r.balance, price: r.price });
+      setCharge(r.charge);
+      setGate('ok');
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, v]);
 
   // Orientation from the manifest when the caller didn't pass it.
   useEffect(() => {
@@ -82,7 +106,13 @@ export default function PlayScreen() {
         <View style={[styles.fill, styles.center]}>
           <Text style={styles.note}>Nothing to play yet.</Text>
         </View>
-      ) : insets ? (
+      ) : typeof gate === 'object' ? (
+        <View style={[styles.fill, styles.center]}>
+          <View style={styles.outCard}>
+            <OutOfCoins balance={gate.balance} price={gate.price} onClose={close} />
+          </View>
+        </View>
+      ) : insets && gate === 'ok' ? (
         <EngineView gameId={id} version={v} insets={insets} style={styles.fill} onQuit={close} onError={setError} />
       ) : (
         <View style={[styles.fill, styles.center]}>
@@ -98,6 +128,7 @@ export default function PlayScreen() {
       >
         <Ionicons name="close" size={20} color={ink.accentFg} />
       </Pressable>
+      {charge && gate === 'ok' && <ChargeToast charge={charge} top={chrome.top + 10} onDone={() => setCharge(null)} />}
       {error && (
         <Pressable
           onPress={() => setError(null)}
@@ -112,7 +143,35 @@ export default function PlayScreen() {
   );
 }
 
+/** "−10K coins · creator earned 9K", fades in at the top, then out. */
+function ChargeToast({ charge, top, onDone }: { charge: Charge; top: number; onDone: () => void }) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const anim = Animated.sequence([
+      Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
+      Animated.delay(3000),
+      Animated.timing(opacity, { toValue: 0, duration: 300, useNativeDriver: true }),
+    ]);
+    anim.start(({ finished }) => finished && onDone());
+    return () => anim.stop();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return (
+    <Animated.View pointerEvents="none" style={[styles.toastWrap, { top, opacity }]}>
+      <View style={styles.toast}>
+        <PixelCoin size={13} color={ink.accentFg} />
+        <Txt variant="label" color={ink.accentFg} numberOfLines={1}>
+          {formatCoins(-charge.price, true)} · creator earned {formatCoins(charge.earned)}
+        </Txt>
+      </View>
+    </Animated.View>
+  );
+}
+
 const styles = StyleSheet.create({
+  outCard: { width: '86%', maxWidth: 380, borderRadius: radius.xl, backgroundColor: ink.card, ...floating },
+  toastWrap: { position: 'absolute', left: 60, right: 60, alignItems: 'center' },
+  toast: { flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 14, paddingVertical: 9, borderRadius: radius.pill, backgroundColor: ink.navy, ...floating },
   screen: { flex: 1, backgroundColor: '#0A1630' },
   fill: { flex: 1 },
   center: { alignItems: 'center', justifyContent: 'center' },

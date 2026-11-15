@@ -9,6 +9,7 @@ import {
   canAccessGame,
   canAccessVersion,
   commitVersion,
+  countPlay,
   decodeCursor,
   encodeCursor,
   feedGames,
@@ -27,6 +28,9 @@ import {
   type Game,
 } from "../services.js";
 import { packageResponse } from "./games.js";
+import { lockWallets, move } from "../economy.js";
+import { notifyRemixEarning } from "../notifications.js";
+import { pushAfterCommit } from "../push.js";
 
 const { games, likes, plays, follows, reports, purchases, users, gameVersions } = schema;
 
@@ -41,7 +45,7 @@ export const HIDE_AT_REPORTS = 3;
 const statsOf = (g: Game) => ({ plays: g.plays, likes: g.likes, remixes: g.remixes });
 
 /** DREAMSY.MD §11.2–11.7: feed, search, plays, likes, remix, reports, public links, marketplace. */
-export function socialRoutes({ db, storage, config }: Deps) {
+export function socialRoutes({ db, storage, config, pusher }: Deps) {
   const r = router();
   // /v1/games/* is already behind requireUser (registered in gameRoutes).
   r.use("/v1/feed", requireUser(config));
@@ -93,21 +97,14 @@ export function socialRoutes({ db, storage, config }: Deps) {
 
   // ---------- plays + likes ----------
 
-  /** Counts a play; deduped to one per user per game per UTC hour. */
+  /** Counts a play (no charge; kept for old clients, new ones call `POST /play`). Deduped 1/user/game/UTC hour. */
   r.post("/v1/games/:id/plays", async (c) => {
     const body = await parseJson(c.req.raw, Play);
     const userId = c.get("userId");
     const g = await getGame(db, c.req.param("id"));
     if (!(await canAccessVersion(db, g, userId, body.version))) fail(404, "version not found");
-    const hour = new Date(Math.floor(Date.now() / 3_600_000) * 3_600_000);
-    const updated = await db.transaction(async (tx) => {
-      const inserted = await tx.insert(plays).values({ userId, gameId: g.id, version: body.version, hour })
-        .onConflictDoNothing().returning({ id: plays.id });
-      if (!inserted.length) return null;
-      await tx.update(games).set({ plays: sql`${games.plays} + 1` }).where(eq(games.id, g.id));
-      await recomputeTrending(tx, g.id);
-      return getGame(tx, g.id);
-    });
+    const updated = await db.transaction(async (tx) =>
+      (await countPlay(tx, userId, g.id, body.version)) ? getGame(tx, g.id) : null);
     return c.json({ counted: !!updated, stats: statsOf(updated ?? g) });
   });
 
@@ -151,7 +148,10 @@ export function socialRoutes({ db, storage, config }: Deps) {
       pkg = await storePackage(storage, stripped.toZip());
     }
 
-    const game = await db.transaction(async (tx) => {
+    // §11.6: remixing someone else's game costs remixPrice, 100% to the original owner.
+    const price = isOwner ? 0 : config.remixPrice;
+    const { game, notes } = await db.transaction(async (tx) => {
+      if (price > 0) await lockWallets(tx, config, [userId, src.ownerId]);
       const [created] = await tx.insert(games).values({
         id: newId("g"),
         ownerId: userId,
@@ -168,9 +168,18 @@ export function socialRoutes({ db, storage, config }: Deps) {
       });
       await tx.update(games).set({ remixes: sql`${games.remixes} + 1` }).where(eq(games.id, src.id));
       await recomputeTrending(tx, src.id);
-      return getGame(tx, created!.id);
+      let notes: string[] = [];
+      if (price > 0) {
+        await move(tx, config, userId, -price, { kind: "remix", gameId: src.id });
+        await move(tx, config, src.ownerId, price, { kind: "remix_earning", gameId: src.id });
+        notes = await notifyRemixEarning(tx, {
+          ownerId: src.ownerId, remixerId: userId, gameId: src.id, gameName: src.name, remixGameId: created!.id, coins: price,
+        });
+      }
+      return { game: await getGame(tx, created!.id), notes };
     });
-    return c.json({ game: await viewGame(db, game, userId) }, 201);
+    pushAfterCommit(db, pusher, notes);
+    return c.json({ game: await viewGame(db, game, userId), charged: price, ownerEarned: price }, 201);
   });
 
   /** Published spin-offs (remixes) of a game, most trending first. */

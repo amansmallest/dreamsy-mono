@@ -9,7 +9,10 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { AuthProvider, useAuth } from '@/auth';
 import { takePendingJoin } from '@/groups';
+import { useNotificationsPoller } from '@/notifications';
+import { installPushHandlers, openLaunchPush, registerPush } from '@/push';
 import { font, ink } from '@/theme';
+import { ToastHost } from '@/toast';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 // The app is portrait; only the Play screen rotates (to the game's orientation) (app.config allows all orientations).
@@ -57,34 +60,49 @@ function RootNavigator() {
     if (ready) SplashScreen.hideAsync().catch(() => {});
   }, [ready]);
 
+  // Notifications: poll the unread count; push permission + token, and a push that launched the app.
+  const signedInId = ready && onboarded ? user.id : null;
+  useNotificationsPoller(!!signedInId);
+  useEffect(() => installPushHandlers(), []);
+  useEffect(() => {
+    if (!signedInId) return;
+    void registerPush();
+    const t = setTimeout(() => void openLaunchPush(), 400);
+    return () => clearTimeout(t);
+  }, [signedInId]);
+
   if (!ready) return null;
 
   return (
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: ink.bg } }}>
-      <Stack.Protected guard={onboarded}>
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="game/[id]" options={pushed} />
-        <Stack.Screen name="discover/[id]" options={pushed} />
-        <Stack.Screen name="user/[id]" options={pushed} />
-        <Stack.Screen name="groups/index" options={pushed} />
-        <Stack.Screen name="groups/[id]" options={pushed} />
-        <Stack.Screen name="avatar" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="scan" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
-        <Stack.Screen
-          name="play/[id]"
-          options={{ presentation: 'fullScreenModal', animation: 'fade', gestureEnabled: false }}
-        />
-      </Stack.Protected>
-      <Stack.Protected guard={status === 'signedIn' && !onboarded}>
-        <Stack.Screen name="onboarding" />
-      </Stack.Protected>
-      <Stack.Protected guard={status === 'signedOut'}>
-        <Stack.Screen name="sign-in" />
-      </Stack.Protected>
-      <Stack.Screen name="auth-callback" />
-      {/* Invite links work in any auth state; the screen defers the join until signed in. */}
-      <Stack.Screen name="join/[code]" options={{ animation: 'fade' }} />
-    </Stack>
+    <>
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: ink.bg } }}>
+        <Stack.Protected guard={onboarded}>
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="game/[id]" options={pushed} />
+          <Stack.Screen name="discover/[id]" options={pushed} />
+          <Stack.Screen name="user/[id]" options={pushed} />
+          <Stack.Screen name="groups/index" options={pushed} />
+          <Stack.Screen name="groups/[id]" options={pushed} />
+          <Stack.Screen name="notifications" options={pushed} />
+          <Stack.Screen name="avatar" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="scan" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
+          <Stack.Screen
+            name="play/[id]"
+            options={{ presentation: 'fullScreenModal', animation: 'fade', gestureEnabled: false }}
+          />
+        </Stack.Protected>
+        <Stack.Protected guard={status === 'signedIn' && !onboarded}>
+          <Stack.Screen name="onboarding" />
+        </Stack.Protected>
+        <Stack.Protected guard={status === 'signedOut'}>
+          <Stack.Screen name="sign-in" />
+        </Stack.Protected>
+        <Stack.Screen name="auth-callback" />
+        {/* Invite links work in any auth state; the screen defers the join until signed in. */}
+        <Stack.Screen name="join/[code]" options={{ animation: 'fade' }} />
+      </Stack>
+      <ToastHost />
+    </>
   );
 }
 

@@ -29,7 +29,7 @@ const playtest: Playtester = {
 
 // ---------- in-process API ----------
 
-const config: Config = { jwtSecret: "x".repeat(40), workerToken: "wt", dailyGenerationQuota: 100, leaseSeconds: 60, maxAttempts: 3, ssePollMs: 10, starterStars: 500, creatorShare: 0.5 };
+const config: Config = { jwtSecret: "x".repeat(40), workerToken: "wt", dailyGenerationQuota: 100, leaseSeconds: 60, maxAttempts: 3, ssePollMs: 10, starterStars: 500, creatorShare: 0.5, playPrice: 10000, playPassMinutes: 30, createPrice: 0, remixPrice: 0 };
 const identity: IdentityVerifier = { async verify() { throw new Error("unused"); } };
 const migrations = join(dirname(createRequire(import.meta.url).resolve("@dreamsy/api/app")), "../migrations");
 

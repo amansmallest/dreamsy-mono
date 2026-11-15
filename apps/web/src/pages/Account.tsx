@@ -1,12 +1,17 @@
 import { useEffect, useState } from 'react';
 import { Icon, Sparkle } from '../components/Icon';
 import { Avatar, Button, Chip, ErrorNote, ProgressPill } from '../components/ui';
-import { api, errorMessage } from '../lib/api';
+import { Link } from 'react-router-dom';
+import { api, errorMessage, isNotFound } from '../lib/api';
 import { useAuth, useUser } from '../lib/auth';
-import { timeAgo } from '../lib/format';
+import { coins, coinsToUsd, compactCoins, timeAgo, usd } from '../lib/format';
 import { invalidate, useResource } from '../lib/store';
 
-const LEDGER: Record<string, string> = { starter_grant: 'Welcome gift', purchase: 'Purchase', sale: 'Sale' };
+const LEDGER: Record<string, string> = {
+  starter_grant: 'Welcome gift', grant: 'Gift', purchase: 'Purchase', sale: 'Sale',
+  play: 'Played', play_earning: 'Play earnings',
+};
+const ledgerLabel = (kind: string) => LEDGER[kind] ?? kind.replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase());
 
 export function Account() {
   const user = useUser();
@@ -14,6 +19,7 @@ export function Account() {
   const quota = useResource('quota', api.quota);
   const wallet = useResource('wallet', api.wallet);
   const games = useResource('games', api.myGames);
+  const earnings = useResource('earnings', api.earnings);
   const [handle, setHandle] = useState(user.handle);
   const [bio, setBio] = useState(user.bio ?? '');
   const [saving, setSaving] = useState(false);
@@ -25,6 +31,9 @@ export function Account() {
   const list = games.data?.games;
   const sum = (k: 'plays' | 'likes') => list?.reduce((n, g) => n + (g.stats?.[k] ?? 0), 0);
   const stat = (n: number | undefined) => (n == null ? '—' : n.toLocaleString());
+  const earn = earnings.data;
+  const names = new Map([...(list ?? []).map((g) => [g.id, g.name] as const), ...(earn?.games ?? []).map((g) => [g.gameId, g.name] as const)]);
+  const gameName = (id: string) => names.get(id) ?? 'a game';
 
   return (
     <div className="page narrow">
@@ -90,27 +99,37 @@ export function Account() {
             )}
           </section>
 
-          <section className="card wallet-card">
-            <div className="wallet-head">
-              <span className="kicker">Stars</span>
-              <button className="icon-btn sm ghost" aria-label="Refresh wallet" title="Refresh" onClick={() => invalidate('wallet')}><Icon name="refresh" size={15} /></button>
-            </div>
-            {wallet.error ? <ErrorNote error={wallet.error} onRetry={wallet.refetch} /> : !wallet.data ? <div className="skeleton skel-num" /> : (
-              <>
-                <div className="big-num"><Sparkle size={22} className="blue" /><b>{wallet.data.wallet.balance.toLocaleString()}</b><span>stars</span></div>
-                <ol className="ledger">
-                  {wallet.data.recent.length === 0 && <li className="muted small">No transactions yet.</li>}
-                  {wallet.data.recent.map((e, i) => (
-                    <li key={i}>
-                      <span className={`ledger-delta ${e.delta >= 0 ? 'pos' : 'neg'}`}>{e.delta >= 0 ? '+' : '−'}{Math.abs(e.delta)}</span>
-                      <span className="ledger-kind">{LEDGER[e.kind] ?? e.kind}{e.itemId ? <span className="muted"> · {e.itemId}</span> : null}</span>
-                      <span className="ledger-time">{timeAgo(e.createdAt)}</span>
-                    </li>
-                  ))}
-                </ol>
-              </>
-            )}
-          </section>
+          {!isNotFound(wallet.error) && (
+            <section className="card wallet-card">
+              <div className="wallet-head">
+                <span className="kicker">Coins</span>
+                <button className="icon-btn sm ghost" aria-label="Refresh wallet" title="Refresh" onClick={() => { invalidate('wallet'); invalidate('earnings'); }}><Icon name="refresh" size={15} /></button>
+              </div>
+              {wallet.error ? <ErrorNote error={wallet.error} onRetry={wallet.refetch} /> : !wallet.data ? <div className="skeleton skel-num" /> : (
+                <>
+                  <div className="big-num"><Icon name="coin" size={22} className="blue" /><b title={`${wallet.data.wallet.balance.toLocaleString()} coins`}>{compactCoins(wallet.data.wallet.balance)}</b><span>coins · {usd(wallet.data.wallet.usd ?? coinsToUsd(wallet.data.wallet.balance))}</span></div>
+                  {earn && (
+                    <Link to="/insights" className="earn-line">
+                      <Sparkle size={11} className="blue" />
+                      <span>Earned <b>{usd(earn.usd.total)}</b> · {coins(earn.totalCoins)} from {earn.paidPlays.toLocaleString()} paid {earn.paidPlays === 1 ? 'play' : 'plays'}{earn.todayCoins > 0 ? <> · <b>{usd(earn.usd.today)}</b> today</> : null}</span>
+                      <Icon name="chevronRight" size={14} className="push" />
+                    </Link>
+                  )}
+                  <p className="tiny muted">10,000 coins = $0.10. Playing someone else's game costs 10K coins; creators keep 90%.</p>
+                  <ol className="ledger">
+                    {wallet.data.recent.length === 0 && <li className="muted small">No transactions yet.</li>}
+                    {wallet.data.recent.map((e, i) => (
+                      <li key={i}>
+                        <span className={`ledger-delta ${e.delta >= 0 ? 'pos' : 'neg'}`} title={`${e.delta.toLocaleString()} coins`}>{e.delta >= 0 ? '+' : '−'}{compactCoins(Math.abs(e.delta))}</span>
+                        <span className="ledger-kind">{ledgerLabel(e.kind)}{e.gameId ? <span className="muted"> · {gameName(e.gameId)}</span> : e.itemId ? <span className="muted"> · {e.itemId}</span> : null}</span>
+                        <span className="ledger-time">{timeAgo(e.createdAt)}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </>
+              )}
+            </section>
+          )}
         </div>
       </div>
     </div>

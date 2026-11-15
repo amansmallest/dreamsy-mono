@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActionSheetIOS, Alert, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { api, ApiError, type FeedGame, type Creator, type Game, type GameStats, type Orientation, type Players, type RemixOf } from '@/api';
 import { useAuth } from '@/auth';
+import { playLabel, priceOf, useEconomy, usePassActive, usePlayGate, usePlayStatus } from '@/coins';
 import { Avatar } from '@/components/Avatar';
 import { GameCard, PlayersBadge, RemixBadge } from '@/components/GameCard';
 import { LeaderboardSection } from '@/components/LeaderboardSection';
@@ -29,6 +30,10 @@ type Detail = {
   latestVersion: number | null;
   players: Players | null;
   multiplayer: boolean;
+  /** Coins to play when it isn't free (§11.6). */
+  playPrice: number;
+  /** Coins to remix (to the owner); null on APIs that don't charge for remixes. */
+  remixPrice: number | null;
 };
 
 /** Game page: cover, name and creator, big Play, actions, stats, about, spin-offs. */
@@ -44,6 +49,11 @@ export default function GameScreen() {
   const [familyOpen, setFamilyOpen] = useState(false);
   const [spinOffs, setSpinOffs] = useState<FeedGame[]>([]);
   const likeSeq = useRef(0);
+  const gate = usePlayGate();
+  const economy = useEconomy();
+  const pass = usePassActive(id);
+  // Server's answer (owner / draft / pass) when the API has GET /play; local owner + pass tracking otherwise.
+  const status = usePlayStatus(id);
 
   const load = useCallback(async () => {
     try {
@@ -69,6 +79,8 @@ export default function GameScreen() {
         // Authed view first: for owners / group members it falls back to the latest (playable) build.
         players: g?.players ?? p?.players ?? null,
         multiplayer: g?.multiplayer ?? p?.multiplayer ?? false,
+        playPrice: priceOf({ playPrice: g?.playPrice ?? p?.playPrice }),
+        remixPrice: g?.remixPrice ?? p?.remixPrice ?? null,
       });
       setLiked(!!viewer?.liked);
       setError(null);
@@ -96,15 +108,14 @@ export default function GameScreen() {
   // Published version; else the latest draft when we can see it (owner, or shared with one of my groups).
   const playVersion = game ? game.publishedVersion || game.latestVersion || null : null;
 
+  // POST /play charges (or not) and counts the play; on an older API fall back to the play counter.
   const play = () => {
     if (!game || !playVersion) return;
     const version = playVersion;
-    // Count it; the API dedupes per user per game per hour. Never blocks playing.
-    if (!isOwner && game.publishedVersion) api.countPlay(game.id, version).catch(() => {});
-    router.push({
-      pathname: '/play/[id]',
-      params: { id: game.id, version: String(version), orientation: game.orientation },
-    });
+    void gate.play(
+      { id: game.id, version, orientation: game.orientation },
+      { onLegacy: () => !isOwner && game.publishedVersion && api.countPlay(game.id, version).catch(() => {}) },
+    );
   };
 
   const toggleLike = async () => {
@@ -160,6 +171,7 @@ export default function GameScreen() {
   const canPlay = !!playVersion;
   const draft = canPlay && !game.publishedVersion;
   const portrait = game.orientation === 'portrait';
+  const cta = playLabel({ own: isOwner || !!status?.free, draft, pass, price: status?.price ?? game.playPrice, economy });
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={pull} tintColor={ink.accent} />}>
@@ -200,7 +212,15 @@ export default function GameScreen() {
 
         <PlayersBadge game={game} tone="sky" />
 
-        <Button label={draft ? 'Play draft' : canPlay ? 'Play' : 'Not published yet'} icon="play" disabled={!canPlay} onPress={play} style={styles.play} />
+        <Button
+          label={canPlay ? cta.label : 'Not published yet'}
+          price={canPlay ? cta.price : undefined}
+          icon="play"
+          disabled={!canPlay}
+          busy={gate.busy === game.id}
+          onPress={play}
+          style={styles.play}
+        />
         {game.multiplayer && (
           <View style={styles.online}>
             <Ionicons name="globe-outline" size={14} color={ink.muted} />
@@ -248,11 +268,15 @@ export default function GameScreen() {
         </View>
       )}
 
+      {gate.sheet}
+
       <ShareWithGroupSheet visible={familyOpen} game={game} onClose={() => setFamilyOpen(false)} />
 
       <SpinOffSheet
         visible={spinOffOpen}
         source={game}
+        price={isOwner ? 0 : game.remixPrice}
+        ownerHandle={game.creator?.handle}
         onClose={() => setSpinOffOpen(false)}
         onCreated={() => setGame((g) => g && { ...g, stats: { ...g.stats, remixes: g.stats.remixes + 1 } })}
       />

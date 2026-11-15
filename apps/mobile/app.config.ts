@@ -5,6 +5,9 @@ import type { ConfigContext, ExpoConfig } from 'expo/config';
 
 const bundleId = process.env.DREAMSY_IOS_BUNDLE_ID ?? 'com.dreamsy.app';
 const androidPackage = process.env.DREAMSY_ANDROID_PACKAGE ?? bundleId;
+// Expo push tokens need the EAS project id (`eas init` prints it). Without it src/push.ts skips push.
+// EAS project (push tokens): created with `eas init` under the apxrvs-team account.
+const easProjectId = process.env.EAS_PROJECT_ID ?? "4da22b8e-13c3-4cff-9880-6b9275245537";
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
@@ -46,6 +49,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     'expo-apple-authentication',
     // Google sign-in runs through Supabase OAuth in the system auth sheet (src/auth/supabase.ts).
     'expo-web-browser',
+    // Remote push (src/push.ts). Adds the iOS push entitlement; needs a fresh dev-client build.
+    'expo-notifications',
     [
       'expo-camera',
       {
@@ -62,6 +67,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       },
     ],
   ],
+  extra: {
+    ...config.extra,
+    ...(easProjectId ? { eas: { projectId: easProjectId } } : {}),
+  },
   experiments: {
     typedRoutes: true,
   },

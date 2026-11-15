@@ -37,7 +37,7 @@ afterAll(() => { server?.close(); });
 async function makeApp() {
   const d = drizzle(new PGlite(), { schema });
   await migrate(d, { migrationsFolder: fileURLToPath(new URL("../migrations", import.meta.url)) });
-  const config: Config = { jwtSecret: "x".repeat(40), workerToken: "w", dailyGenerationQuota: 5, leaseSeconds: 60, maxAttempts: 2, ssePollMs: 10, starterStars: 500, creatorShare: 0.5 };
+  const config: Config = { jwtSecret: "x".repeat(40), workerToken: "w", dailyGenerationQuota: 5, leaseSeconds: 60, maxAttempts: 2, ssePollMs: 10, starterStars: 500, creatorShare: 0.5, playPrice: 10000, playPassMinutes: 30, createPrice: 0, remixPrice: 0 };
   return createApp({ db: d as unknown as DB, storage: new MemoryStorage(), config, identity: jwksIdentityVerifier({ apple: [], google: [] }, { url: base }) });
 }
 

@@ -19,6 +19,10 @@ const config: Config = {
   ssePollMs: 10,
   starterStars: 500,
   creatorShare: 0.5,
+  playPrice: 10000,
+  playPassMinutes: 30,
+  createPrice: 0, // pricing of builds/remixes is covered in notifications.test.ts
+  remixPrice: 0,
 };
 
 /** Fake provider tokens look like "valid:<sub>". */

@@ -6,6 +6,7 @@ import { fail, parseJson, router, type Deps } from "../context.js";
 import { schema } from "../db/client.js";
 import { ACTIVE_GENERATION, TERMINAL_GENERATION } from "../db/schema.js";
 import { newId } from "../ids.js";
+import { chargeCreate, refundCreateIfUnbuilt } from "../economy.js";
 import {
   appendEvent,
   generationView,
@@ -50,7 +51,11 @@ export function generationRoutes({ db, config }: Deps) {
     };
   }
 
-  r.get("/v1/me/quota", requireUser(config), async (c) => c.json({ quota: await quota(db, c.get("userId")) }));
+  r.get("/v1/me/quota", requireUser(config), async (c) => c.json({
+    quota: { ...(await quota(db, c.get("userId"))), createPrice: config.createPrice },
+    createPrice: config.createPrice,
+    remixPrice: config.remixPrice,
+  }));
   r.use("/v1/generations/*", requireUser(config));
   r.use("/v1/games/:id/generations", requireUser(config));
 
@@ -73,6 +78,11 @@ export function generationRoutes({ db, config }: Deps) {
       const q = await quota(tx, userId);
       if (q.remaining <= 0) fail(429, "daily generation quota reached", { quota: q });
 
+      // §11.6: a game's first build costs createPrice (→ platform); edits of a built game are free.
+      // The game row lock above serializes this with other first builds of the same game.
+      const charged = game.latestVersion === 0 ? config.createPrice : 0;
+      if (charged > 0) await chargeCreate(tx, config, userId, game.id, charged);
+
       const [row] = await tx.insert(generations).values({
         id: newId("gen"),
         gameId: game.id,
@@ -83,11 +93,12 @@ export function generationRoutes({ db, config }: Deps) {
         selection: body.selection,
         provider: body.provider,
         baseVersion: game.latestVersion,
+        charged,
       }).returning();
       await appendEvent(tx, row!.id, "queued", {});
       return row!;
     });
-    return c.json({ generation: generationView(gen) }, 201);
+    return c.json({ generation: generationView(gen), charged: gen.charged }, 201);
   });
 
   r.get("/v1/games/:id/generations", async (c) => {
@@ -115,7 +126,8 @@ export function generationRoutes({ db, config }: Deps) {
         .where(eq(generations.id, g.id))
         .returning();
       await appendEvent(tx, g.id, "canceled", {});
-      return updated!;
+      await refundCreateIfUnbuilt(tx, config, updated!);
+      return (await getGeneration(tx, g.id))!;
     });
     return c.json({ generation: generationView(gen) });
   });

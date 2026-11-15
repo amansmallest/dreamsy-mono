@@ -20,9 +20,9 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { font, hairline, ink, radius } from '../theme';
-import { PixelSparkle } from './pixel';
+import { PixelCoin, PixelSparkle } from './pixel';
 
-export { PixelCloud, PixelSky, PixelSparkle } from './pixel';
+export { PixelCloud, PixelCoin, PixelSky, PixelSparkle } from './pixel';
 
 // The Sky kit (apps/DESIGN.md). Every screen builds from these.
 
@@ -118,6 +118,8 @@ type ButtonProps = {
   icon?: IconName;
   /** A pixel sparkle before the label (for the one hero action on a screen). */
   sparkles?: boolean;
+  /** Coin price after the label: "Play · ◎ 10K". */
+  price?: string;
   busy?: boolean;
   disabled?: boolean;
   size?: 'lg' | 'md' | 'sm';
@@ -127,14 +129,14 @@ type ButtonProps = {
 
 const HEIGHT = { lg: 52, md: 44, sm: 34 } as const;
 
-export function Button({ label, onPress, variant = 'solid', icon, sparkles, busy, disabled, size = 'lg', style, accessibilityLabel }: ButtonProps) {
+export function Button({ label, onPress, variant = 'solid', icon, sparkles, price, busy, disabled, size = 'lg', style, accessibilityLabel }: ButtonProps) {
   const bg = { solid: ink.accent, dark: ink.navy, outline: ink.card, ghost: 'transparent' }[variant];
   const fg = variant === 'solid' || variant === 'dark' ? ink.accentFg : variant === 'ghost' ? ink.accent : ink.fg;
   const off = disabled || busy;
   return (
     <Pressy
       accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel ?? label}
+      accessibilityLabel={accessibilityLabel ?? (price ? `${label}, ${price} coins` : label)}
       accessibilityState={{ disabled: !!off, busy: !!busy }}
       disabled={off}
       onPress={onPress}
@@ -159,7 +161,16 @@ export function Button({ label, onPress, variant = 'solid', icon, sparkles, busy
           {icon && <Ionicons name={icon} size={size === 'sm' ? 15 : 18} color={fg} />}
           <Txt variant="pixel" color={fg} style={size === 'sm' ? styles.buttonSm : size === 'md' ? styles.buttonMd : undefined} numberOfLines={1}>
             {label}
+            {price ? ' ·' : ''}
           </Txt>
+          {price ? (
+            <>
+              <PixelCoin size={size === 'sm' ? 12 : 14} color={fg} />
+              <Txt variant="pixel" color={fg} style={size === 'sm' ? styles.buttonSm : size === 'md' ? styles.buttonMd : undefined} numberOfLines={1}>
+                {price}
+              </Txt>
+            </>
+          ) : null}
         </View>
       )}
     </Pressy>

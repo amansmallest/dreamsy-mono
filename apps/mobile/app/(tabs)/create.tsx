@@ -4,10 +4,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, AppState, FlatList, RefreshControl, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { api, authHeader, isActiveGeneration, thumbnailUrlFor, type Game, type Generation } from '@/api';
+import { CREATE_PRICE, formatCoins, insufficientFrom, OutOfCoinsSheet, useCreatePrice } from '@/coins';
 import { Thumbnail } from '@/components/Thumbnail';
 import { etaFromGeneration, etaLine, useEtaRemaining } from '@/generationProgress';
 import { errorMessage, font, ink, radius } from '@/theme';
+import { showToast } from '@/toast';
 import { Badge, Button, Header, IconButton, Loading, PixelSky, Pressy, Txt } from '@/ui';
+import { walletChanged } from '@/wallet';
 
 /** Without `activeGeneration` on the Game view, ask per game for the most recent ones only. */
 const MAX_BUILD_LOOKUPS = 15;
@@ -90,8 +93,13 @@ export default function CreateScreen() {
   };
 
   const [idea, setIdea] = useState('');
+  const createPrice = useCreatePrice();
+  const [out, setOut] = useState<{ balance: number; price: number } | null>(null);
 
-  /** New game; with an idea, Claude starts building it straight away. */
+  /**
+   * New game; with an idea, Claude starts building it straight away. That first build costs
+   * createPrice coins (edits after it are free); a 402 shows "Out of coins" and keeps the idea.
+   */
   const newGame = async () => {
     if (creating) return;
     setCreating(true);
@@ -99,7 +107,25 @@ export default function CreateScreen() {
     try {
       const text = idea.trim();
       const { game } = await api.createGame({ name: text ? text.slice(0, 60) : 'Untitled game' });
-      if (text) await api.generate(game.id, { prompt: text }).catch(() => {});
+      if (text) {
+        try {
+          const r = await api.generate(game.id, { prompt: text });
+          if (r.charged) {
+            showToast({ kind: 'charge', title: formatCoins(-r.charged, true) });
+            walletChanged();
+          }
+        } catch (e) {
+          const broke = insufficientFrom(e, createPrice ?? CREATE_PRICE);
+          if (broke) {
+            // The empty game exists; it shows in the list and can be built later.
+            setOut(broke);
+            walletChanged();
+            void load();
+            return;
+          }
+          // Anything else: the workspace shows the game and the user can send the idea again.
+        }
+      }
       setIdea('');
       router.push({ pathname: '/game/[id]', params: { id: game.id } });
     } catch (e) {
@@ -139,7 +165,13 @@ export default function CreateScreen() {
                   maxLength={2000}
                   style={styles.idea}
                 />
-                <Button label={idea.trim() ? 'Build it' : 'Start empty'} sparkles={!!idea.trim()} busy={creating} onPress={newGame} />
+                <Button
+                  label={idea.trim() ? (createPrice ? 'Create' : 'Build it') : 'Start empty'}
+                  price={idea.trim() && createPrice ? formatCoins(createPrice, true) : undefined}
+                  sparkles={!!idea.trim()}
+                  busy={creating}
+                  onPress={newGame}
+                />
               </View>
               {error && (
                 <Txt variant="meta" color={ink.danger} center>
@@ -156,6 +188,7 @@ export default function CreateScreen() {
           renderItem={({ item }) => <GameRow game={item} build={builds[item.id]} headers={headers} />}
         />
       )}
+      <OutOfCoinsSheet state={out} what="Creating a game" onClose={() => setOut(null)} />
     </SafeAreaView>
   );
 }

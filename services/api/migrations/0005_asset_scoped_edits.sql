@@ -1,0 +1,1 @@
+ALTER TABLE "generations" ADD COLUMN "asset_ids" jsonb DEFAULT '[]'::jsonb NOT NULL;

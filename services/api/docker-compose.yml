@@ -1,0 +1,13 @@
+# Local dev dependency for services/api: just Postgres. Blobs (packages, uploads) go to
+# STORAGE_DIR on disk in dev; S3 in production.
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: dreamsy
+      POSTGRES_PASSWORD: dreamsy
+      POSTGRES_DB: dreamsy
+    ports: ["5432:5432"]
+    volumes: [pg:/var/lib/postgresql/data]
+volumes:
+  pg:

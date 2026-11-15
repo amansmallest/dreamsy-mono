@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { ApiError } from '@/api';
 import { isAppleSignInAvailable, isSupabaseConfigured, SignInCancelled, useAuth } from '@/auth';
 import { AvatarHero } from '@/components/AvatarMaker';
 import { hairline, ink } from '@/theme';
@@ -14,7 +15,7 @@ const RESEND_SECONDS = 60;
 
 /** Default: email + one-time code (Supabase). Google / Apple / guest below. */
 export default function SignInScreen() {
-  const { sendEmailCode, signInWithEmailCode, signInWithGoogle, signInWithApple, continueAsGuest } = useAuth();
+  const { sendEmailCode, signInWithEmailCode, signInWithGoogle, signInWithApple, continueAsGuest, signInAsDemo } = useAuth();
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [sentTo, setSentTo] = useState<string | null>(null);
@@ -39,15 +40,21 @@ export default function SignInScreen() {
     try {
       await fn();
     } catch (e) {
-      if (!(e instanceof SignInCancelled)) setError(e instanceof Error ? e.message : 'Something went wrong');
+      if (e instanceof SignInCancelled) return;
+      if (e instanceof ApiError && e.status === 403) setError('Use an email, or a username ending in _demo.');
+      else setError(e instanceof Error ? e.message : 'Something went wrong');
     } finally {
       setBusy(null);
     }
   };
 
   const address = email.trim().toLowerCase();
+  // No "@": a demo username (POST /v1/auth/demo), signed in straight away with no code step.
+  const demo = !!address && !address.includes('@');
+  const canSend = demo || EMAIL_RE.test(address);
   const send = () =>
     run('send', async () => {
+      if (demo) return signInAsDemo(address);
       await sendEmailCode(address);
       setSentTo(address);
       setCode('');
@@ -127,14 +134,14 @@ export default function SignInScreen() {
                 autoCapitalize="none"
                 autoCorrect={false}
                 returnKeyType="send"
-                onSubmitEditing={() => EMAIL_RE.test(address) && void send()}
+                onSubmitEditing={() => canSend && void send()}
               />
               <InkButton
-                label="Email me a code"
-                icon="mail-outline"
+                label={demo ? 'Continue' : 'Email me a code'}
+                icon={demo ? 'arrow-forward' : 'mail-outline'}
                 sparkles
                 busy={busy === 'send'}
-                disabled={!EMAIL_RE.test(address) || (!!busy && busy !== 'send')}
+                disabled={!canSend || (!!busy && busy !== 'send')}
                 onPress={() => void send()}
               />
               <View style={styles.or}>

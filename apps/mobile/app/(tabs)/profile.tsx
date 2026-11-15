@@ -6,8 +6,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { LedgerEntry } from '@/api';
 import { useAuth } from '@/auth';
 import { ProfileView } from '@/components/ProfileView';
-import { ink, radius } from '@/theme';
-import { IconButton, PixelSparkle, Txt } from '@/ui';
+import { hairline, ink, radius } from '@/theme';
+import { IconButton, PixelSparkle, Pressy, Txt, type IconName } from '@/ui';
 import { useWallet } from '@/wallet';
 
 const KIND_LABEL: Record<string, string> = {
@@ -62,6 +62,13 @@ export default function ProfileScreen() {
       <ProfileView
         userId={user.id}
         onRefresh={refresh}
+        footer={
+          <View style={styles.settings}>
+            <Row icon="person-circle-outline" label="Edit avatar" onPress={() => router.push('/avatar')} />
+            <Row icon="qr-code-outline" label="Scan a game" onPress={() => router.push('/scan')} />
+            <Row icon="log-out-outline" label="Sign out" danger last onPress={confirmSignOut} />
+          </View>
+        }
         header={
           <Pressable onPress={() => setOpen((o) => !o)} style={styles.wallet} accessibilityRole="button" accessibilityLabel="Stars">
             <View style={styles.walletRow}>
@@ -102,7 +109,23 @@ export default function ProfileScreen() {
   );
 }
 
+function Row({ icon, label, onPress, danger, last }: { icon: IconName; label: string; onPress: () => void; danger?: boolean; last?: boolean }) {
+  const color = danger ? ink.danger : ink.fg;
+  return (
+    <Pressy accessibilityRole="button" onPress={onPress} haptic={false} style={[styles.row, !last && styles.rowLine]}>
+      <Ionicons name={icon} size={20} color={color} />
+      <Txt variant="heading" color={color} style={styles.flex}>
+        {label}
+      </Txt>
+      {!danger && <Ionicons name="chevron-forward" size={16} color={ink.faint} />}
+    </Pressy>
+  );
+}
+
 const styles = StyleSheet.create({
+  settings: { marginTop: 28, borderRadius: radius.lg, backgroundColor: ink.bg, overflow: 'hidden' },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, height: 52 },
+  rowLine: { borderBottomWidth: hairline, borderBottomColor: ink.border },
   screen: { flex: 1, backgroundColor: ink.card },
   bar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, height: 48 },
   handle: { flex: 1, fontSize: 22 },

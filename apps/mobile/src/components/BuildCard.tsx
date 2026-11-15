@@ -4,7 +4,7 @@ import { ActivityIndicator, Animated, Easing, Pressable, StyleSheet, View } from
 import { isActiveGeneration, thumbnailUrlFor, type GameVersion, type Generation } from '../api';
 import { BUILD_STAGES, etaLine, summarizeBuild, useEtaRemaining, type Progress } from '../generationProgress';
 import { floating, hairline, ink, radius } from '../theme';
-import { Button as InkButton, PixelSky, ProgressBar, Sparkle, Txt } from '../ui';
+import { Button as InkButton, PixelSky, ProgressBar, Sparkle, Txt, useReducedMotion } from '../ui';
 import { Thumbnail } from './Thumbnail';
 
 const MAX_LOG = 4;
@@ -254,17 +254,19 @@ function Counts({ counts }: { counts: { edits: number; sprites: number; art: num
 
 /** Small breathing blue dot: "alive". */
 function Pulse() {
-  const v = useRef(new Animated.Value(0)).current;
+  const v = useRef(new Animated.Value(1)).current;
+  const reduced = useReducedMotion();
   useEffect(() => {
+    if (reduced) return;
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(v, { toValue: 1, duration: 700, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
         Animated.timing(v, { toValue: 0, duration: 700, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+        Animated.timing(v, { toValue: 1, duration: 700, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
       ]),
     );
     loop.start();
     return () => loop.stop();
-  }, [v]);
+  }, [v, reduced]);
   return (
     <Animated.View
       style={[

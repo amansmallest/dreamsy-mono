@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import type { FeedGame } from '../api';
 import { compact } from '../social';
@@ -31,7 +32,7 @@ export function GameStatsLine({ game, color = ink.muted }: { game: FeedGame; col
 }
 
 /** Marketplace tile: square cover, name, likes and plays. Shelves and grids. */
-export function GameCard({ game, width }: { game: FeedGame; width: number }) {
+export const GameCard = memo(function GameCard({ game, width }: { game: FeedGame; width: number }) {
   return (
     <Pressy accessibilityRole="button" accessibilityLabel={game.name} onPress={() => openGame(game.id)} haptic={false} style={{ width, gap: 6 }}>
       <View>
@@ -49,7 +50,7 @@ export function GameCard({ game, width }: { game: FeedGame; width: number }) {
       <GameStatsLine game={game} />
     </Pressy>
   );
-}
+});
 
 /** The big banner at the top of Home. */
 export function FeaturedGame({ game, width }: { game: FeedGame; width: number }) {

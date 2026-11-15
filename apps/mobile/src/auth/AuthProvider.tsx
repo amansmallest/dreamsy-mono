@@ -22,6 +22,8 @@ export type AuthContextValue = AuthState & {
   /** Step 2: verify the code and sign in. */
   signInWithEmailCode: (email: string, code: string) => Promise<void>;
   continueAsGuest: () => Promise<void>;
+  /** Demo account by username, no code step. */
+  signInAsDemo: (username: string) => Promise<void>;
   signOut: () => Promise<void>;
   getAccessToken: () => Promise<string | null>;
   /** Replace the signed-in user after a profile edit (PATCH /v1/me). */
@@ -76,6 +78,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setState(toState(await backend.signInAsGuest()));
   }, []);
 
+  const signInAsDemo = useCallback(async (username: string) => {
+    setState(toState(await backend.signInAsDemo(username)));
+  }, []);
+
   const updateUser = useCallback((user: User) => {
     setState((s) => (s.status === 'signedIn' ? { status: 'signedIn', user } : s));
   }, []);
@@ -88,11 +94,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       sendEmailCode,
       signInWithEmailCode,
       continueAsGuest,
+      signInAsDemo,
       signOut,
       getAccessToken: () => backend.getAccessToken(),
       updateUser,
     }),
-    [state, signInWithApple, signInWithGoogle, signInWithEmailCode, continueAsGuest, signOut, updateUser],
+    [state, signInWithApple, signInWithGoogle, signInWithEmailCode, continueAsGuest, signInAsDemo, signOut, updateUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

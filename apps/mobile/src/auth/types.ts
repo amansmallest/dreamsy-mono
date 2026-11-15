@@ -22,6 +22,8 @@ export interface AuthBackend {
   /** Trade a Supabase Auth access token (Google OAuth) for a session. */
   signInWithSupabase(accessToken: string): Promise<Session>;
   signInAsGuest(): Promise<Session>;
+  /** Demo account by username (no email step); the API allows usernames ending in _demo. */
+  signInAsDemo(username: string): Promise<Session>;
   signOut(): Promise<void>;
   /** Current bearer token for services/api, or null if signed out. May refresh. */
   getAccessToken(): Promise<string | null>;

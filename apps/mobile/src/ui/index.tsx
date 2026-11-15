@@ -1,9 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { useEffect, useRef, type ComponentProps, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ComponentProps, type ReactNode } from 'react';
 import {
+  AccessibilityInfo,
   ActivityIndicator,
   Animated,
+  Easing,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -65,19 +67,46 @@ export function Txt({
   );
 }
 
-/** Pressable that sinks a little when touched. */
-export function Pressy({ style, children, haptic = true, onPress, ...rest }: PressableProps & { style?: StyleProp<ViewStyle>; haptic?: boolean }) {
+/** Strong ease-out for UI (enter, exit, press). */
+export const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1);
+
+/** OS "reduce motion" setting, live. */
+export function useReducedMotion() {
+  const [reduced, setReduced] = useState(false);
+  useEffect(() => {
+    void AccessibilityInfo.isReduceMotionEnabled().then(setReduced, () => {});
+    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduced);
+    return () => sub.remove();
+  }, []);
+  return reduced;
+}
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+/** Pressable that sinks to 0.97 on touch-down (120ms ease-out) and springs back on release. */
+export function Pressy({ style, children, haptic = true, onPress, onPressIn, onPressOut, disabled, ...rest }: PressableProps & { style?: StyleProp<ViewStyle>; haptic?: boolean }) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const to = (v: number) => Animated.timing(scale, { toValue: v, duration: 120, easing: EASE_OUT, useNativeDriver: true }).start();
   return (
-    <Pressable
+    <AnimatedPressable
       {...rest}
+      disabled={disabled}
+      onPressIn={(e) => {
+        to(0.97);
+        onPressIn?.(e);
+      }}
+      onPressOut={(e) => {
+        to(1);
+        onPressOut?.(e);
+      }}
       onPress={(e) => {
         if (haptic) tap();
         onPress?.(e);
       }}
-      style={({ pressed }) => [style, { transform: [{ scale: pressed ? 0.97 : 1 }], opacity: pressed ? 0.92 : 1 }]}
+      style={[style, { transform: [{ scale }] }]}
     >
-      {children}
-    </Pressable>
+      {children as ReactNode}
+    </AnimatedPressable>
   );
 }
 
@@ -268,9 +297,11 @@ export function Pills<T extends string>({ options, value, onChange, style }: { o
 export function ProgressBar({ value, height = 8, style }: { value: number; height?: number; style?: StyleProp<ViewStyle> }) {
   const pct = Math.max(0, Math.min(1, value));
   const w = useRef(new Animated.Value(pct)).current;
+  const reduced = useReducedMotion();
   useEffect(() => {
-    Animated.timing(w, { toValue: pct, duration: 500, useNativeDriver: false }).start();
-  }, [pct, w]);
+    if (reduced) w.setValue(pct);
+    else Animated.timing(w, { toValue: pct, duration: 400, easing: EASE_OUT, useNativeDriver: false }).start();
+  }, [pct, w, reduced]);
   return (
     <View style={[styles.track, { height, borderRadius: height / 2 }, style]}>
       <Animated.View
@@ -321,17 +352,19 @@ export function Loading({ style }: { style?: StyleProp<ViewStyle> }) {
 
 /** Shimmering placeholder block. */
 export function Skeleton({ style }: { style?: StyleProp<ViewStyle> }) {
-  const v = useRef(new Animated.Value(0)).current;
+  const v = useRef(new Animated.Value(0.5)).current;
+  const reduced = useReducedMotion();
   useEffect(() => {
+    if (reduced) return;
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(v, { toValue: 1, duration: 700, useNativeDriver: true }),
-        Animated.timing(v, { toValue: 0, duration: 700, useNativeDriver: true }),
+        Animated.timing(v, { toValue: 1, duration: 800, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+        Animated.timing(v, { toValue: 0, duration: 800, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
       ]),
     );
     loop.start();
     return () => loop.stop();
-  }, [v]);
+  }, [v, reduced]);
   return <Animated.View style={[styles.skeleton, { opacity: v.interpolate({ inputRange: [0, 1], outputRange: [0.55, 1] }) }, style]} />;
 }
 

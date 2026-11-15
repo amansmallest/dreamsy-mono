@@ -49,6 +49,10 @@ export const dreamsyApiBackend: AuthBackend = {
     return store(await request<AuthResponse>('/v1/auth/guest', { method: 'POST', auth: false }));
   },
 
+  async signInAsDemo(username) {
+    return store(await request<AuthResponse>('/v1/auth/demo', { method: 'POST', body: { username }, auth: false }));
+  },
+
   async signOut() {
     cachedToken = null;
     await SecureStore.deleteItemAsync(TOKEN_KEY);

@@ -4,7 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import { useAuth } from '@/auth';
 import { Avatar } from '@/components/Avatar';
 import { font, hairline, ink, radius } from '@/theme';
-import type { IconName } from '@/ui';
+import { tap, type IconName } from '@/ui';
 
 const icon =
   (on: IconName, off: IconName) =>
@@ -33,7 +33,9 @@ function MeIcon({ focused }: { focused: boolean }) {
 export default function TabsLayout() {
   return (
     <Tabs
+      screenListeners={{ tabPress: () => tap() }}
       screenOptions={{
+        animation: 'none',
         headerShown: false,
         tabBarActiveTintColor: ink.accent,
         tabBarInactiveTintColor: ink.muted,

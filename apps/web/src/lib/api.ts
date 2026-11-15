@@ -153,6 +153,8 @@ const enc = encodeURIComponent;
 export const api = {
   // auth
   guest: () => request<{ user: User; token: string }>('/v1/auth/guest', { method: 'POST', auth: false }),
+  emailStart: (email: string) => request<{ ok: true }>('/v1/auth/email/start', { method: 'POST', auth: false, body: { email } }),
+  emailVerify: (email: string, code: string) => request<{ user: User; token: string }>('/v1/auth/email/verify', { method: 'POST', auth: false, body: { email, code } }),
   demo: (username: string) => request<{ user: User; token: string }>('/v1/auth/demo', { method: 'POST', auth: false, body: { username } }),
   exchangeSupabase: (accessToken: string) =>
     request<{ user: User; token: string }>('/v1/auth/supabase', { method: 'POST', body: { accessToken }, auth: false }),

@@ -1,5 +1,6 @@
 // Auth: Supabase (email OTP + OAuth) exchanged for a Dreamsy API token via POST /v1/auth/supabase,
 // or — only when VITE_SUPABASE_URL is unset — a dev guest account (POST /v1/auth/guest).
+// Email code: our API (Resend), stored like a guest token.
 // Demo bypass: a username ending in _demo (or a special name) signs in with no code (POST /v1/auth/demo).
 import { createClient, type Session, type SupabaseClient } from '@supabase/supabase-js';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
@@ -123,16 +124,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     state,
     mode: supabase ? 'supabase' : 'guest',
     providers,
+    // Email codes are ours (POST /v1/auth/email/*, sent via Resend), not Supabase's.
     async sendEmailCode(email) {
-      if (!supabase) throw new Error('Supabase is not configured');
-      const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin } });
-      if (error) throw error;
+      await api.emailStart(email);
     },
     async verifyEmailCode(email, code) {
-      if (!supabase) throw new Error('Supabase is not configured');
-      const { data, error } = await supabase.auth.verifyOtp({ email, token: code, type: 'email' });
-      if (error) throw error;
-      await exchange(data.session);
+      const { user, token: t } = await api.emailVerify(email, code);
+      token.current = t;
+      storage.set(GUEST_KEY, t);
+      setState({ status: 'signedIn', user });
     },
     async signInWithOAuth(provider) {
       if (!supabase) throw new Error('Supabase is not configured');

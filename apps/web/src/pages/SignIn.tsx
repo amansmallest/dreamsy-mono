@@ -66,7 +66,7 @@ export function SignIn() {
                   </form>
                 ) : (
                   <form className="stack" onSubmit={(e) => { e.preventDefault(); void run('verify', () => auth.verifyEmailCode(email.trim(), code.trim()))(); }}>
-                    <p className="small muted row-icon"><Icon name="mail" size={15} /><span>We sent a code and a magic link to <b>{email}</b>. Use either.</span></p>
+                    <p className="small muted row-icon"><Icon name="mail" size={15} /><span>We sent a 6-digit code to <b>{email}</b>. It expires in 10 minutes.</span></p>
                     <input className="input input-code" inputMode="numeric" autoComplete="one-time-code" placeholder="123456" value={code} onChange={(e) => setCode(e.target.value)} />
                     <Button size="lg" className="w-full" busy={busy === 'verify'} type="submit" disabled={code.trim().length < 6}>Verify & enter</Button>
                     <button type="button" className="link-btn" onClick={() => { setSent(false); setCode(''); }}>Use a different email</button>

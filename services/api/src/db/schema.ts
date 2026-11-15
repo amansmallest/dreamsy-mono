@@ -130,6 +130,8 @@ export const generations = pgTable("generations", {
   baseVersion: integer("base_version").notNull(),
   /** "queued" | "running" | "succeeded" | "failed" | "canceled" */
   status: text("status").notNull().default("queued"),
+  /** Model provider that builds it: "anthropic" (Claude) | "openai". Workers claim only their provider's jobs. */
+  provider: text("provider").notNull().default("anthropic"),
   workerId: text("worker_id"),
   leaseExpiresAt: timestamp("lease_expires_at", { withTimezone: true }),
   attempts: integer("attempts").notNull().default(0),
@@ -242,3 +244,15 @@ export const reports = pgTable("reports", {
 
 export const ACTIVE_GENERATION = ["queued", "running"] as const;
 export const TERMINAL_GENERATION = ["succeeded", "failed", "canceled"] as const;
+
+/** Pending email sign-in codes (one row per address; the latest code wins). Only a hash is stored. */
+export const emailCodes = pgTable("email_codes", {
+  email: text("email").primaryKey(),
+  codeHash: text("code_hash").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  attempts: integer("attempts").notNull().default(0),
+  /** Rate limit: codes sent in the current hour window. */
+  windowStart: timestamp("window_start", { withTimezone: true }).notNull(),
+  sendsInWindow: integer("sends_in_window").notNull().default(0),
+  lastSentAt: timestamp("last_sent_at", { withTimezone: true }).notNull(),
+});

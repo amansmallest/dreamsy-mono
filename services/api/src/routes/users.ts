@@ -1,3 +1,4 @@
+import { createHash, randomInt, timingSafeEqual } from "node:crypto";
 import { and, count, eq, ne, sql } from "drizzle-orm";
 import { z } from "zod";
 import { requireUser, signUserToken } from "../auth.js";
@@ -6,7 +7,7 @@ import { schema } from "../db/client.js";
 import { newId } from "../ids.js";
 import { feedGames, listed, pageGames, parseLimit, viewGames } from "../services.js";
 
-const { users, authIdentities, games, follows } = schema;
+const { users, authIdentities, games, follows, emailCodes } = schema;
 
 /** Ink avatar: part name -> option index. The app owns what the parts mean. */
 const Avatar = z.record(z.string().regex(/^[a-z]{1,16}$/), z.number().int().min(0).max(99))
@@ -31,6 +32,24 @@ const AppleSignIn = z.object({
 });
 const GoogleSignIn = z.object({ idToken: z.string().min(1) });
 const SupabaseSignIn = z.object({ accessToken: z.string().min(1) });
+const Email = z.string().trim().toLowerCase().pipe(z.email().max(254));
+const EmailStart = z.object({ email: Email });
+const EmailVerify = z.object({ email: Email, code: z.string().trim().regex(/^\d{6}$/, "code is 6 digits") });
+
+const CODE_TTL_MS = 10 * 60 * 1000;
+const RESEND_GAP_MS = 30 * 1000;
+const SENDS_PER_HOUR = 8;
+const MAX_ATTEMPTS = 5;
+
+function codeEmail(code: string) {
+  const text = `Your Dreamsy code is ${code}. It expires in 10 minutes. If you didn't ask for it, ignore this email.`;
+  const html = `<div style="font-family:system-ui,sans-serif;max-width:420px;margin:auto;padding:24px;color:#141414">
+<h2 style="margin:0 0 8px">Your Dreamsy code</h2><p style="margin:0 0 16px;color:#6f6a60">Enter it to sign in.</p>
+<p style="font-size:36px;font-weight:700;letter-spacing:8px;margin:0 0 16px">${code}</p>
+<p style="font-size:13px;color:#6f6a60">It expires in 10 minutes. If you didn't ask for it, ignore this email.</p></div>`;
+  return { subject: `Your Dreamsy code: ${code}`, text, html };
+}
+
 const DemoSignIn = z.object({ username: z.string().trim().toLowerCase().pipe(z.string().regex(/^[a-z0-9_]{3,20}$/, "username must be 3–20 chars of a-z, 0-9, _")) });
 
 /**
@@ -44,7 +63,7 @@ export function demoAllowed(username: string, env: NodeJS.ProcessEnv = process.e
   return username.endsWith("_demo") || special.includes(username);
 }
 
-export function userRoutes({ db, config, identity }: Deps) {
+export function userRoutes({ db, config, identity, mailer }: Deps) {
   const r = router();
 
   const newUser = () => {
@@ -86,6 +105,57 @@ export function userRoutes({ db, config, identity }: Deps) {
   r.post("/v1/auth/supabase", async (c) => {
     const body = await parseJson(c.req.raw, SupabaseSignIn);
     return c.json(await signIn("supabase", body.accessToken));
+  });
+
+  const hashCode = (email: string, code: string) =>
+    createHash("sha256").update(`${config.jwtSecret}:${email}:${code}`).digest();
+
+  /** Email sign-in, step 1: email a 6-digit code (Resend). 30 s between sends, 8 per hour per address. */
+  r.post("/v1/auth/email/start", async (c) => {
+    if (!mailer) fail(403, "email sign-in is not configured");
+    const { email } = await parseJson(c.req.raw, EmailStart);
+    const now = new Date();
+    const [row] = await db.select().from(emailCodes).where(eq(emailCodes.email, email));
+    if (row && now.getTime() - row.lastSentAt.getTime() < RESEND_GAP_MS) fail(429, "wait a few seconds before asking for another code");
+    const fresh = !row || now.getTime() - row.windowStart.getTime() > 60 * 60 * 1000;
+    if (!fresh && row!.sendsInWindow >= SENDS_PER_HOUR) fail(429, "too many codes for this email; try again later");
+    const code = String(randomInt(0, 1_000_000)).padStart(6, "0");
+    const values = {
+      email, codeHash: hashCode(email, code).toString("hex"), expiresAt: new Date(now.getTime() + CODE_TTL_MS), attempts: 0,
+      windowStart: fresh ? now : row!.windowStart, sendsInWindow: fresh ? 1 : row!.sendsInWindow + 1, lastSentAt: now,
+    };
+    await db.insert(emailCodes).values(values).onConflictDoUpdate({ target: emailCodes.email, set: values });
+    await mailer.send({ to: email, ...codeEmail(code) });
+    return c.json({ ok: true, expiresInSeconds: CODE_TTL_MS / 1000 });
+  });
+
+  /** Email sign-in, step 2: code → user + token. Reuses the account that already has this email (e.g. old Supabase sign-ins). */
+  r.post("/v1/auth/email/verify", async (c) => {
+    const { email, code } = await parseJson(c.req.raw, EmailVerify);
+    const [row] = await db.select().from(emailCodes).where(eq(emailCodes.email, email));
+    if (!row || row.expiresAt < new Date() || row.attempts >= MAX_ATTEMPTS) fail(400, "code expired; ask for a new one");
+    const ok = timingSafeEqual(Buffer.from(row.codeHash, "hex"), hashCode(email, code));
+    if (!ok) {
+      await db.update(emailCodes).set({ attempts: row.attempts + 1 }).where(eq(emailCodes.email, email));
+      fail(400, "wrong code");
+    }
+    // Single use: expire it (keep the row so the send rate limit still applies).
+    await db.update(emailCodes).set({ expiresAt: new Date(0) }).where(eq(emailCodes.email, email));
+    const user = await db.transaction(async (tx) => {
+      const find = () => tx.select({ user: users }).from(authIdentities)
+        .innerJoin(users, eq(users.id, authIdentities.userId))
+        .where(and(eq(authIdentities.provider, "email"), eq(authIdentities.subject, email)));
+      const [existing] = await find();
+      if (existing) return existing.user;
+      const [sameEmail] = await tx.select({ user: users }).from(authIdentities)
+        .innerJoin(users, eq(users.id, authIdentities.userId))
+        .where(sql`lower(${authIdentities.email}) = ${email}`).limit(1);
+      const target = sameEmail?.user ?? (await tx.insert(users).values(newUser()).returning())[0]!;
+      await tx.insert(authIdentities).values({ provider: "email", subject: email, userId: target.id, email }).onConflictDoNothing();
+      const [winner] = await find();
+      return winner!.user;
+    });
+    return c.json({ user, token: await signUserToken(config, user.id) });
   });
 
   /** Demo bypass: `{ username }` → the demo account with that handle (created on first use). */

@@ -25,11 +25,18 @@ export interface IdentityVerifier {
   verify(provider: IdentityProvider, token: string): Promise<{ subject: string; email: string | null }>;
 }
 
+/** Sends transactional email (sign-in codes). Resend in production; swappable in tests. */
+export interface Mailer {
+  send(msg: { to: string; subject: string; html: string; text: string }): Promise<void>;
+}
+
 export interface Deps {
   db: DB;
   storage: Storage;
   config: Config;
   identity: IdentityVerifier;
+  /** Email-code sign-in is disabled (503) without one. */
+  mailer?: Mailer;
 }
 
 export type Env = { Variables: { userId: string } };

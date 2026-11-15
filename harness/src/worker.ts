@@ -25,7 +25,8 @@ export class ApiClient {
   }
 
   async claim(): Promise<Claim | null> {
-    const res = await this.req("POST", "/v1/worker/claim", { workerId: this.workerId });
+    // Each worker builds with one model family; it only claims that provider's jobs (DREAMSY_PROVIDER).
+    const res = await this.req("POST", "/v1/worker/claim", { workerId: this.workerId, provider: process.env.DREAMSY_PROVIDER === "openai" ? "openai" : "anthropic" });
     if (res.status === 204) return null;
     if (!res.ok) throw new Error(`claim failed: ${res.status} ${await res.text()}`);
     return (await res.json()) as Claim;

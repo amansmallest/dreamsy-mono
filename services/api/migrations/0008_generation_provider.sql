@@ -1,0 +1,1 @@
+ALTER TABLE "generations" ADD COLUMN "provider" text DEFAULT 'anthropic' NOT NULL;

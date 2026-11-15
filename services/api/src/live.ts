@@ -18,7 +18,10 @@ const s = (x: unknown) => (typeof x === "string" ? x : "");
 export function liveText(type: string, d: D): string | null {
   switch (type) {
     case "started": return "Build started";
-    case "route": return d.kind === "reject" ? null : `Planning a ${String(d.kind).replace("_", " ")}`;
+    case "route": {
+      const what: Record<string, string> = { new_game: "a new game", feature: "a new feature", tweak: "a tweak", asset: "a sprite edit" };
+      return typeof d.kind === "string" && what[d.kind] ? `Planning ${what[d.kind]}` : null;
+    }
     case "template": return `Starting from the ${s(d.kit)} kit`;
     case "memory": return Array.isArray(d.ids) && d.ids.length ? `Recalled ${d.ids.length} lessons from past builds` : null;
     case "sprite": return `Drew sprite “${s(d.id)}”`;

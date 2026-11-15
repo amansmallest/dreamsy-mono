@@ -9,11 +9,16 @@ export const MODELS = {
 export type ModelId = (typeof MODELS)[keyof typeof MODELS];
 
 /** $ per million tokens (input, output, cache read). Approximate; for budgeting/telemetry only. */
-const PRICES: Record<ModelId, { in: number; out: number; cacheRead: number }> = {
+const PRICES: Record<string, { in: number; out: number; cacheRead: number }> = {
   "claude-opus-5-5": { in: 4, out: 20, cacheRead: 0.2 },
   "claude-sonnet-5-5": { in: 2, out: 10, cacheRead: 0.1 },
   "claude-haiku-5-5": { in: 0.1, out: 0.5, cacheRead: 0.01 },
 };
+
+/** Other providers' models (OpenAI builder) register their prices here. */
+export function registerPrice(model: string, p: { in: number; out: number; cacheRead: number }) {
+  PRICES[model] = p;
+}
 
 export interface Usage {
   input_tokens: number;
@@ -29,7 +34,7 @@ export class CostMeter {
   usd = 0;
 
   add(model: string, u: Usage & { speed?: string | null }) {
-    const base = PRICES[model as ModelId] ?? PRICES["claude-opus-5-5"];
+    const base = PRICES[model] ?? PRICES["claude-opus-5-5"]!;
     // Fast mode bills 2x ($8/$40 per MTok on Opus 5.5).
     const k = u.speed === "fast" ? 2 : 1;
     const p = { in: base.in * k, out: base.out * k, cacheRead: base.cacheRead * k };

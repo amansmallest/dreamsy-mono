@@ -24,6 +24,8 @@ const CreateGeneration = z.object({
   assetIds: z.array(z.string().regex(/^[a-z][a-z0-9_]{0,63}$/)).max(20).default([]),
   /** Entity IDs the user tapped in the preview to scope the edit. */
   selection: z.array(z.string().max(200)).max(100).default([]),
+  /** Which model family builds it (default Claude). */
+  provider: z.enum(["anthropic", "openai"]).default("anthropic"),
 });
 
 const isTerminal = (s: string) => (TERMINAL_GENERATION as readonly string[]).includes(s);
@@ -79,6 +81,7 @@ export function generationRoutes({ db, config }: Deps) {
         imageIds: body.imageIds,
         assetIds: body.assetIds,
         selection: body.selection,
+        provider: body.provider,
         baseVersion: game.latestVersion,
       }).returning();
       await appendEvent(tx, row!.id, "queued", {});

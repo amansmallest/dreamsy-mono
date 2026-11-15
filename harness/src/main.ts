@@ -5,7 +5,8 @@ import { Package } from "@dreamsy/format";
 import { anthropicKey, geminiKey, loadEnv } from "./env.js";
 import { generate } from "./generate.js";
 import { disabledImages, geminiImages } from "./images.js";
-import { anthropicLLM } from "./models.js";
+import { anthropicLLM, type AgentLLM } from "./models.js";
+import { openaiLLM } from "./openai.js";
 import { ApiClient, runWorker } from "./worker.js";
 import { enginePlaytester } from "./playtest.js";
 import { createMemory } from "./memory.js";
@@ -34,6 +35,12 @@ async function setup() {
   const key = anthropicKey();
   if (!key) throw new Error("ANTHROPIC_API_KEY (or ANTHROPIC_KEY) is not set; put it in the repo-root .env");
   const llm = anthropicLLM(new Anthropic({ apiKey: key }));
+  // DREAMSY_PROVIDER=openai: GPT builds (agent loop + content workers); Claude still routes, critiques, writes lessons.
+  let builder: AgentLLM = llm;
+  if (process.env.DREAMSY_PROVIDER === "openai") {
+    if (!process.env.OPENAI_API_KEY) throw new Error("DREAMSY_PROVIDER=openai needs OPENAI_API_KEY");
+    builder = openaiLLM(process.env.OPENAI_API_KEY);
+  }
   const gk = geminiKey();
   const images = gk ? await geminiImages(gk) : disabledImages;
   const playtest = await enginePlaytester({ browser: process.env.PLAYTEST_BROWSER !== "0" });
@@ -41,7 +48,7 @@ async function setup() {
   const memory = process.env.DREAMSY_MEMORY === "0" ? undefined : createMemory();
   const sprites = memory ? new SpriteLibrary(memory) : undefined;
   if (memory) console.error(`memory: ${memory.backend}`);
-  return { llm, images, playtest, memory, sprites };
+  return { llm, builder, images, playtest, memory, sprites };
 }
 
 async function loadPkg(path: string): Promise<Package> {
@@ -52,14 +59,14 @@ const MIME: Record<string, string> = { ".png": "image/png", ".jpg": "image/jpeg"
 
 const cmd = process.argv[2];
 if (cmd === "worker") {
-  const { llm, images, playtest, memory, sprites } = await setup();
+  const { llm, builder, images, playtest, memory, sprites } = await setup();
   const token = process.env.WORKER_TOKEN;
   if (!token) throw new Error("WORKER_TOKEN is required");
   const api = new ApiClient(process.env.DREAMSY_API_URL ?? "http://localhost:8787", token);
   const ctl = new AbortController();
   process.on("SIGINT", () => ctl.abort());
   console.log(`harness worker ${api.workerId} → ${process.env.DREAMSY_API_URL ?? "http://localhost:8787"}`);
-  await runWorker({ api, agentLLM: llm, jsonLLM: llm, images, playtest, memory, sprites, maxRounds: Number(process.env.WORKER_MAX_ROUNDS ?? 4) }, {
+  await runWorker({ api, agentLLM: builder, jsonLLM: llm, images, playtest, memory, sprites, maxRounds: Number(process.env.WORKER_MAX_ROUNDS ?? 4) }, {
     concurrency: Number(process.env.WORKER_CONCURRENCY ?? 2),
     idleMs: 1000,
     signal: ctl.signal,
@@ -68,7 +75,7 @@ if (cmd === "worker") {
   const prompt = arg("prompt");
   const out = arg("out");
   if (!prompt || !out) { console.error(USAGE); process.exit(1); }
-  const { llm, images, playtest, memory, sprites } = await setup();
+  const { llm, builder, images, playtest, memory, sprites } = await setup();
   const base = arg("base") ? await loadPkg(arg("base")!) : Package.empty();
   const refs = await Promise.all(args("image").map(async (p) => ({
     mediaType: MIME[extname(p).toLowerCase()] ?? "image/png",
@@ -88,7 +95,7 @@ if (cmd === "worker") {
   for (let round = 1; round <= rounds; round++) {
     const isFirst = round === 1;
     const result = await generate(
-      { agentLLM: llm, jsonLLM: llm, images, playtest, emit, signal: ctl.signal, memory, sprites },
+      { agentLLM: builder, jsonLLM: llm, images, playtest, emit, signal: ctl.signal, memory, sprites },
       {
         base: pkg,
         prompt: isFirst ? prompt : "continue: build the next unchecked milestones in notes.md with the same quality, playtest them, and update notes.md",

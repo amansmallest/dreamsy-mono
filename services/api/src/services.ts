@@ -173,6 +173,7 @@ export const generationView = (g: Generation) => ({
   imageIds: g.imageIds,
   assetIds: g.assetIds,
   selection: g.selection,
+  provider: g.provider,
   baseVersion: g.baseVersion,
   status: g.status,
   attempts: g.attempts,

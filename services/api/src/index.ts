@@ -5,6 +5,7 @@ import { createApp } from "./app.js";
 import type { Config } from "./context.js";
 import { connectPostgres } from "./db/client.js";
 import { FsStorage, S3Storage, type Storage } from "./storage.js";
+import { resendMailer } from "./mailer.js";
 import { fileURLToPath } from "node:url";
 
 function required(name: string): string {
@@ -39,7 +40,13 @@ const storage: Storage = process.env.S3_BUCKET
   : new FsStorage(process.env.STORAGE_DIR ?? fileURLToPath(new URL("../../../.data/blobs", import.meta.url)));
 
 const app = createApp(
-  { db: await connectPostgres(required("DATABASE_URL")), storage, config, identity },
+  {
+    db: await connectPostgres(required("DATABASE_URL")), storage, config, identity,
+    // Email-code sign-in (our own, not Supabase) via Resend.
+    mailer: process.env.RESEND_API_KEY
+      ? resendMailer(process.env.RESEND_API_KEY, process.env.EMAIL_FROM ?? "Dreamsy <noreply@thoughts.engineering>")
+      : undefined,
+  },
   { log: true, corsOrigins: (process.env.CORS_ORIGINS ?? "").split(",").map((s) => s.trim()).filter(Boolean) },
 );
 

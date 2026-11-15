@@ -29,6 +29,7 @@ const identity: IdentityVerifier = {
 let db: DB;
 let storage: MemoryStorage;
 let app: ReturnType<typeof createApp>;
+let outbox: { to: string; subject: string; text: string }[] = [];
 
 beforeEach(async () => {
   const pg = new PGlite();
@@ -36,7 +37,8 @@ beforeEach(async () => {
   await migrate(d, { migrationsFolder: fileURLToPath(new URL("../migrations", import.meta.url)) });
   db = d as unknown as DB;
   storage = new MemoryStorage();
-  app = createApp({ db, storage, config, identity });
+  outbox = [];
+  app = createApp({ db, storage, config, identity, mailer: { send: async (m) => { outbox.push(m); } } });
 });
 
 // ---------- helpers ----------
@@ -488,5 +490,38 @@ describe("demo sign-in bypass", () => {
     expect((await call("POST", "/v1/auth/demo", { json: { username: "demo" } })).status).toBe(200);
     expect((await call("POST", "/v1/auth/demo", { json: { username: "apoorv" } })).status).toBe(403);
     expect((await call("POST", "/v1/auth/demo", { json: { username: "x" } })).status).toBe(400);
+  });
+});
+
+describe("email code sign-in (own, via mailer)", () => {
+  const codeOf = (m: { text: string }) => m.text.match(/\b(\d{6})\b/)![1]!;
+
+  it("sends a code, verifies it once, same account next time, links an existing same-email user", async () => {
+    // Existing user from an old Supabase sign-in with this email.
+    const [old] = await db.insert(schema.users).values({ id: "u_old", handle: "oldtimer" }).returning();
+    await db.insert(schema.authIdentities).values({ provider: "supabase", subject: "sb-1", userId: old!.id, email: "Ada@Example.com" });
+
+    expect((await call("POST", "/v1/auth/email/start", { json: { email: " ada@example.com " } })).status).toBe(200);
+    expect(outbox).toHaveLength(1);
+    expect(outbox[0]!.to).toBe("ada@example.com");
+    const code = codeOf(outbox[0]!);
+    expect((await call("POST", "/v1/auth/email/verify", { json: { email: "ada@example.com", code: code === "000000" ? "000001" : "000000" } })).status).toBe(400);
+    const ok = await call("POST", "/v1/auth/email/verify", { json: { email: "ada@example.com", code } });
+    expect(ok.status).toBe(200);
+    expect(ok.data.user.id).toBe("u_old");
+    expect((await call("GET", "/v1/me", { token: ok.data.token })).data.user.handle).toBe("oldtimer");
+    // Code is single-use.
+    expect((await call("POST", "/v1/auth/email/verify", { json: { email: "ada@example.com", code } })).status).toBe(400);
+    // Immediate resend is rate limited.
+    expect((await call("POST", "/v1/auth/email/start", { json: { email: "ada@example.com" } })).status).toBe(429);
+  });
+
+  it("new email → new account; locks after 5 wrong tries", async () => {
+    await call("POST", "/v1/auth/email/start", { json: { email: "new@example.com" } });
+    const code = codeOf(outbox.at(-1)!);
+    const wrong = code === "111111" ? "222222" : "111111";
+    for (let i = 0; i < 5; i++) expect((await call("POST", "/v1/auth/email/verify", { json: { email: "new@example.com", code: wrong } })).status).toBe(400);
+    expect((await call("POST", "/v1/auth/email/verify", { json: { email: "new@example.com", code } })).status).toBe(400);
+    expect((await call("POST", "/v1/auth/email/start", { json: { email: "bad" } })).status).toBe(400);
   });
 });

@@ -26,6 +26,15 @@ services:
     volumes: [/srv/dreamsy/data:/app/.data]   # memory + sprite library (blobs dir shared, unused by worker)
     depends_on: [api]
     ipc: host                                   # Chromium shared memory
+  worker-openai:                              # GPT-built games (generations with provider=openai)
+    image: dreamsy:latest
+    restart: unless-stopped
+    command: ["pnpm", "-s", "-C", "harness", "worker"]
+    env_file: .env.prod
+    environment: { DREAMSY_API_URL: "http://api:8787", DREAMSY_PROVIDER: openai, WORKER_CONCURRENCY: "4" }
+    volumes: [/srv/dreamsy/data:/app/.data]
+    depends_on: [api]
+    ipc: host
   caddy:
     image: caddy:2
     restart: unless-stopped

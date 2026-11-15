@@ -26,7 +26,7 @@ import { blobResponse } from "./uploads.js";
 const { generations, uploads } = schema;
 
 const WorkerId = z.string().min(1).max(200);
-const Claim = z.object({ workerId: WorkerId });
+const Claim = z.object({ workerId: WorkerId, provider: z.enum(["anthropic", "openai"]).default("anthropic") });
 const Event = z.object({
   workerId: WorkerId,
   type: z.string().regex(/^[a-z][a-z0-9_.]*$/).max(64)
@@ -84,7 +84,7 @@ export function workerRoutes({ db, storage, config }: Deps) {
   const lease = () => new Date(Date.now() + config.leaseSeconds * 1000);
 
   r.post("/v1/worker/claim", async (c) => {
-    const { workerId } = await parseJson(c.req.raw, Claim);
+    const { workerId, provider } = await parseJson(c.req.raw, Claim);
 
     const claimed = await db.transaction(async (tx) => {
       // Jobs whose worker died too many times are given up on.
@@ -99,10 +99,10 @@ export function workerRoutes({ db, storage, config }: Deps) {
       for (const d of dead) await appendEvent(tx, d.id, "failed", { error: "worker lease expired too many times" });
 
       const [job] = await tx.select().from(generations)
-        .where(or(
+        .where(and(eq(generations.provider, provider), or(
           eq(generations.status, "queued"),
           and(eq(generations.status, "running"), lt(generations.leaseExpiresAt, new Date())),
-        ))
+        )))
         .orderBy(asc(generations.createdAt))
         .limit(1)
         .for("update", { skipLocked: true });

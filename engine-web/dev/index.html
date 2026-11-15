@@ -8,6 +8,8 @@
   <style>
     :root { color-scheme: dark; }
     html, body { margin: 0; height: 100%; background: #0d1117; color: #e6edf3; font: 14px/1.4 system-ui, -apple-system, sans-serif; overflow: hidden; overscroll-behavior: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+    /* text fields must stay editable (iOS won't focus/type into inputs that inherit user-select: none) */
+    input, textarea, [contenteditable] { -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; }
     #stage { position: fixed; inset: 0; }
     #hud { position: fixed; top: calc(env(safe-area-inset-top) + 6px); left: 50%; transform: translateX(-50%); z-index: 100001; font: 11px/1.3 ui-monospace, Menlo, monospace; background: rgba(0,0,0,.55); padding: 4px 8px; border-radius: 6px; pointer-events: auto; display: flex; gap: 8px; align-items: center; }
     #hud a, #hud button { color: #9ecbff; background: none; border: 0; font: inherit; cursor: pointer; padding: 0; text-decoration: none; }

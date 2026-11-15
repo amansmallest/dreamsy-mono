@@ -141,7 +141,8 @@ export function EngineView({ gameId, version, insets, style, onReady, onError, o
           allowsBackForwardNavigationGestures={false}
           allowsLinkPreview={false}
           setSupportMultipleWindows={false}
-          textInteractionEnabled={false}
+          // Don't set textInteractionEnabled={false}: on iOS it also blocks typing into the lobby code / name fields.
+          // The engine page's CSS already prevents text selection in games.
           webviewDebuggingEnabled={__DEV__}
         />
       )}

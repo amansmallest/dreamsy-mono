@@ -3,6 +3,7 @@ import { GameCard } from '../components/GameCard';
 import { Icon, PixelSky } from '../components/Icon';
 import { IDEAS, NewGameModal } from '../components/NewGame';
 import { LiveNow } from '../components/LiveNow';
+import { LivePlayersCard } from '../components/LivePlayers';
 import { Button, Empty, ErrorNote, Segmented } from '../components/ui';
 import { api, isActive } from '../lib/api';
 import { useUser } from '../lib/auth';
@@ -40,6 +41,8 @@ export function Home() {
           </div>
         </div>
       </PixelSky>
+
+      <LivePlayersCard />
 
       <div className="section-head">
         <div className="section-title">

@@ -2,20 +2,20 @@ import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ApiError } from '@/api';
-import { isAppleSignInAvailable, isSupabaseConfigured, SignInCancelled, useAuth } from '@/auth';
+import { isAppleSignInAvailable, SignInCancelled, useAuth } from '@/auth';
 import { AvatarHero } from '@/components/AvatarMaker';
 import { hairline, ink } from '@/theme';
 import { Button as InkButton, Field, PixelSky, Sparkle, Txt } from '@/ui';
 
-type Busy = 'send' | 'verify' | 'google' | 'apple' | 'guest';
+type Busy = 'send' | 'verify' | 'apple' | 'guest';
 
 const KNIGHT = { hat: 1, head: 0, eyes: 0, mouth: 0, extra: 3, body: 0 };
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const RESEND_SECONDS = 30; // services/api allows one send per 30 s per address
 
-/** Default: email + 6-digit code (services/api). Google (Supabase) / Apple / guest below. */
+/** Default: email + 6-digit code (services/api); a `_demo` username signs straight in. Apple (iOS) / guest below. */
 export default function SignInScreen() {
-  const { sendEmailCode, signInWithEmailCode, signInWithGoogle, signInWithApple, continueAsGuest, signInAsDemo } = useAuth();
+  const { sendEmailCode, signInWithEmailCode, signInWithApple, continueAsGuest, signInAsDemo } = useAuth();
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [sentTo, setSentTo] = useState<string | null>(null);
@@ -154,7 +154,7 @@ export default function SignInScreen() {
                 disabled={!canSend || (!!busy && busy !== 'send')}
                 onPress={() => void send()}
               />
-              {(isSupabaseConfigured || appleAvailable) && (
+              {appleAvailable && (
                 <View style={styles.or}>
                   <View style={styles.orLine} />
                   <Txt variant="label" muted>
@@ -162,17 +162,6 @@ export default function SignInScreen() {
                   </Txt>
                   <View style={styles.orLine} />
                 </View>
-              )}
-              {isSupabaseConfigured && (
-                <InkButton
-                  label="Continue with Google"
-                  icon="logo-google"
-                  variant="outline"
-                  size="md"
-                  busy={busy === 'google'}
-                  disabled={!!busy && busy !== 'google'}
-                  onPress={() => void run('google', signInWithGoogle)}
-                />
               )}
               {appleAvailable && (
                 <InkButton

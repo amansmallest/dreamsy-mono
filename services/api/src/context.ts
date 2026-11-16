@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import type { z } from "zod";
 import type { DB } from "./db/client.js";
-import type { PresenceFetcher } from "./presence.js";
+import type { LiveFetcher, PresenceFetcher } from "./presence.js";
 import type { Storage } from "./storage.js";
 
 export interface Config {
@@ -27,6 +27,8 @@ export interface Config {
   remixPrice: number;
   /** Coins from each paid play of a spin-off that go to the parent game's owner (taken from the spin-off creator's share). Default 1000. */
   spinoffRoyalty?: number;
+  /** The guided first experience's game (ONBOARDING_GAME_ID); default DEFAULT_ONBOARDING_GAME_ID. First play free until onboarded. */
+  onboardingGameId?: string;
 }
 
 export type IdentityProvider = "apple" | "google" | "supabase";
@@ -52,6 +54,8 @@ export interface Deps {
   pusher?: Pusher;
   /** Friend presence from the room server; defaults to HTTP GET $GAMESERVER_INTERNAL_URL/internal/presence. Swappable in tests. */
   presence?: PresenceFetcher;
+  /** Live rooms from the room server; defaults to HTTP GET $GAMESERVER_INTERNAL_URL/internal/live. Swappable in tests. */
+  live?: LiveFetcher;
 }
 
 /** One Expo push message (https://docs.expo.dev/push-notifications/sending-notifications/). */

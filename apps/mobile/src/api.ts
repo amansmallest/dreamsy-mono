@@ -10,6 +10,11 @@ export type User = {
   /** Ink avatar parts; null until the user makes one in onboarding. */
   avatar?: AvatarParts | null;
   createdAt: string;
+  /**
+   * Guided first experience done (the "Welcome to Dreamsy world" sheet was shown). null = new account
+   * that gets the onboarding game; undefined = older API without onboarding (never runs the flow).
+   */
+  onboardedAt?: string | null;
 };
 
 export type AvatarParts = Record<string, number>;
@@ -367,6 +372,29 @@ export type FriendRequest = { user: Creator; at: string };
 export type FriendStatus = 'none' | 'friends' | 'incoming' | 'outgoing';
 export type UserHit = Creator & { friendStatus: FriendStatus };
 
+// ---------- guided first experience + Live now (404 on older APIs) ----------
+
+/** GET /v1/onboarding: the game a new account plays first (free). */
+export type OnboardingGame = { gameId: string; gameName: string; version: number; message: string };
+
+/** One person in a room right now (GET /v1/live `playing`); never the caller. */
+export type LivePlayer = {
+  user: Creator;
+  gameId: string;
+  gameName: string;
+  mode?: 'duel' | 'party' | string;
+  players: number;
+  max: number;
+  roomCode: string;
+  status: 'in_room' | 'in_match';
+  spectatable: boolean;
+  /** Lobby with space. */
+  joinable: boolean;
+};
+
+/** GET /v1/live: who's online, who's in a game, and 6 trending games. */
+export type Live = { online: number; playing: LivePlayer[]; featured: FeedGame[] };
+
 // ---------- leaderboards, ghosts, groups (DREAMSY.MD §13) ----------
 
 export type BoardOrder = 'asc' | 'desc';
@@ -534,6 +562,13 @@ export const api = {
   addPushToken: (token: string, platform: 'ios' | 'android') =>
     request<{ ok: boolean }>('/v1/me/push-tokens', { method: 'POST', body: { token, platform } }),
   removePushToken: (token: string) => request<{ ok: boolean }>('/v1/me/push-tokens', { method: 'DELETE', body: { token } }),
+
+  // ---------- guided first experience (404 on older APIs) ----------
+
+  onboarding: () => request<OnboardingGame>('/v1/onboarding'),
+  /** Marks onboarding done (idempotent); called when the welcome sheet shows. */
+  finishOnboarding: () => request<{ user: User }>('/v1/me/onboarding', { method: 'POST', body: { done: true } }),
+  live: () => request<Live>('/v1/live'),
 
   // ---------- friends (404 on older APIs) ----------
 

@@ -4,6 +4,7 @@ import { Spinner } from './components/ui';
 import { AuthProvider, useAuth } from './lib/auth';
 import { Account } from './pages/Account';
 import { Activity } from './pages/Activity';
+import { Explore } from './pages/Explore';
 import { Groups, JoinGroup } from './pages/Groups';
 import { Home } from './pages/Home';
 import { Insights } from './pages/Insights';
@@ -18,6 +19,7 @@ function Gate() {
     <Routes>
       <Route element={<Layout />}>
         <Route index element={<Home />} />
+        <Route path="explore" element={<Explore />} />
         <Route path="games/:id" element={<Workspace />} />
         <Route path="activity" element={<Activity />} />
         <Route path="groups" element={<Groups />} />

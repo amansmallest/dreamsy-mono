@@ -646,3 +646,7 @@ players?, max?, spectatable?}`. "online" = connected to the room server's lobby 
 - **Invites**: the game must be visible to the inviter (own, published, or shared with one of their groups; 404 otherwise).
   `roomCode` is upper-cased, 4–12 letters/digits. The rate limit counts the sender's `game_invite` notifications in the
   last 60 s (DB, so it holds across API instances).
+
+
+#### Onboarding + live (2026-11-15)
+New accounts land in the onboarding game (Tidal Dash, `ONBOARDING_GAME_ID`) for a free first play; on the engine's `runEnd` host message (leaderboard finish/submit, Luau `platform.runEnded`, match end) the app/studio shows "Welcome to Dreamsy world" with `GET /v1/live` (people online + what they're playing, Join/Spectate) and featured games, then `POST /v1/me/onboarding`. The package format (§3) is unchanged; `platform.runEnded` is a runtime API addition (format/LUAU_API.md).

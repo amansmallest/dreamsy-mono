@@ -6,6 +6,7 @@ import { coinsToUsd, compactCoins, usd } from '../lib/format';
 import { invalidate, useResource } from '../lib/store';
 import { Icon, Sparkle } from './Icon';
 import { NotificationBell } from './Notifications';
+import { Onboarding } from './Onboarding';
 import { Avatar } from './ui';
 
 export function Logo() {
@@ -50,6 +51,7 @@ export function Layout() {
         <Logo />
         <nav className="nav">
           <NavLink to="/" end className="nav-link">Games</NavLink>
+          <NavLink to="/explore" className="nav-link">Explore</NavLink>
           <NavLink to="/activity" className="nav-link">Activity</NavLink>
           <NavLink to="/groups" className="nav-link">Groups</NavLink>
           <NavLink to="/insights" className="nav-link">Insights</NavLink>
@@ -76,6 +78,7 @@ export function Layout() {
         </div>
       </header>
       <main className="main"><Outlet /></main>
+      {user && <Onboarding />}
     </div>
   );
 }

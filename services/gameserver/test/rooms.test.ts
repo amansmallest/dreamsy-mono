@@ -343,3 +343,25 @@ describe("presence", () => {
     expect(rm.presence(["u_pa"]).u_pa!.status).toBe("offline");
   });
 });
+
+describe("live", () => {
+  it("lists rooms as lobby / running and counts distinct users online within 60 s", () => {
+    let now = 2_000_000;
+    const rm = new RoomManager({ now: () => now });
+    const a = peer("la"), b = peer("lb"), s = peer("ls"), a2 = { ...peer("la2"), userId: "u_la" };
+    for (const p of [a, a2, b, s]) rm.connect(p);
+    expect(rm.live()).toEqual({ online: 3, rooms: [] });
+    rm.handle(a, { t: "create", game: "g_l", max: 2, min: 2 });
+    const code = a.last("room")!.room.code;
+    expect(rm.live().rooms).toEqual([{ code, gameId: "g_l", mode: "party", state: "lobby", players: ["u_la"], max: 2, spectators: 0, spectatable: true }]);
+    rm.handle(b, { t: "join", code });
+    rm.handle(s, { t: "spectate", code });
+    rm.handle(b, { t: "ready", v: true });
+    rm.handle(a, { t: "start" });
+    expect(rm.live().rooms).toEqual([{ code, gameId: "g_l", mode: "party", state: "running", players: ["u_la", "u_lb"], max: 2, spectators: 1, spectatable: true }]);
+    rm.disconnect(s);
+    expect(rm.live().online).toBe(3); // within the grace window
+    now += 61_000;
+    expect(rm.live().online).toBe(2);
+  });
+});

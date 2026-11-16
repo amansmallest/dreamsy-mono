@@ -7,7 +7,7 @@ import { connectPostgres } from "./db/client.js";
 import { CREATE_PRICE, REMIX_PRICE } from "./economy.js";
 import { FsStorage, S3Storage, type Storage } from "./storage.js";
 import { resendMailer } from "./mailer.js";
-import { DEFAULT_GAMESERVER_INTERNAL_URL, httpPresence } from "./presence.js";
+import { DEFAULT_GAMESERVER_INTERNAL_URL, httpLive, httpPresence } from "./presence.js";
 import { fileURLToPath } from "node:url";
 
 function required(name: string): string {
@@ -30,6 +30,7 @@ const config: Config = {
   createPrice: Number(process.env.CREATE_PRICE ?? CREATE_PRICE),
   remixPrice: Number(process.env.REMIX_PRICE ?? REMIX_PRICE),
   spinoffRoyalty: Number(process.env.SPINOFF_ROYALTY ?? 1000),
+  onboardingGameId: process.env.ONBOARDING_GAME_ID || undefined,
 };
 if (config.jwtSecret.length < 32) throw new Error("JWT_SECRET must be at least 32 characters");
 
@@ -55,6 +56,8 @@ const app = createApp(
       : undefined,
     // Friend presence from the room server's internal endpoint (DREAMSY.MD §13.4).
     presence: httpPresence(process.env.GAMESERVER_INTERNAL_URL || DEFAULT_GAMESERVER_INTERNAL_URL, config.workerToken),
+    // Live rooms ("Live now") from the same room server (GET /v1/live).
+    live: httpLive(process.env.GAMESERVER_INTERNAL_URL || DEFAULT_GAMESERVER_INTERNAL_URL, config.workerToken),
   },
   { log: true, corsOrigins: (process.env.CORS_ORIGINS ?? "").split(",").map((s) => s.trim()).filter(Boolean) },
 );

@@ -554,6 +554,14 @@ leaderboard.result:connect(fn(rank: number, best: number, isPersonalBest: boolea
   The results card's "Race the #1 ghost" restarts the game and spawns that ghost at your next `leaderboard.start`.
 - A board with no runs, offline play and playtests all work: the engine falls back to a local in-memory leaderboard.
 
+**Run ended** — tell the host app a run is over (it may show "what to play next"; e.g. a new player's welcome sheet).
+`leaderboard.finish` / `leaderboard.submit` and a multiplayer match end (`room.ended`) already do this; call
+`platform.runEnded` at game over / round end in games without a leaderboard. Never stops or changes the game.
+
+```luau
+platform.runEnded(reason: string?)   -- "gameover" (default) | "finish" | "quit"; other strings count as "gameover"
+```
+
 ## Services (server, slice 2+)
 
 ```luau

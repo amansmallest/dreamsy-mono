@@ -5,10 +5,11 @@ import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api, orientationOf, type Orientation } from '@/api';
-import { EngineView, type Insets } from '@/components/EngineView';
+import { EngineView, type Insets, type RunEnd } from '@/components/EngineView';
 import { formatCoins, gatePlay, OutOfCoins, type Charge } from '@/coins';
+import { ONBOARDING_BANNER, ONBOARDING_FALLBACK_MS } from '@/onboarding';
 import { floating, ink, radius } from '@/theme';
-import { PixelCoin, Txt } from '@/ui';
+import { PixelCoin, PixelSparkle, Txt, useReducedMotion } from '@/ui';
 import { Ionicons } from '@expo/vector-icons';
 
 /**
@@ -19,13 +20,16 @@ import { Ionicons } from '@expo/vector-icons';
  * toast); opened any other way (workspace, links) this screen gates itself and shows "Out of coins" on 402.
  * Multiplayer: `room` (code) joins that room straight away; with `spectate=1` it watches instead, which
  * is free (no gate).
+ * First run (`onboarding=1`, src/onboarding.tsx): a dismissible banner on top; the first runEnd, Quit,
+ * the close button, or 120 s of play swap this screen for the Welcome sheet (app/welcome.tsx).
  */
 export default function PlayScreen() {
-  const params = useLocalSearchParams<{ id: string; version: string; orientation?: string; gated?: string; charged?: string; earned?: string; room?: string; spectate?: string }>();
+  const params = useLocalSearchParams<{ id: string; version: string; orientation?: string; gated?: string; charged?: string; earned?: string; room?: string; spectate?: string; onboarding?: string }>();
   const { id } = params;
   const v = Number(params.version);
   const room = typeof params.room === 'string' && params.room ? params.room : undefined;
   const spectate = !!room && params.spectate === '1';
+  const onboarding = params.onboarding === '1';
   const liveInsets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const [error, setError] = useState<string | null>(null);
@@ -102,7 +106,58 @@ export default function PlayScreen() {
     return () => clearTimeout(t);
   }, [locked, insets, liveInsets]);
 
-  const close = () => (router.canGoBack() ? router.back() : router.replace('/'));
+  // ---------- first run: on to the Welcome sheet ----------
+  const [banner, setBanner] = useState(onboarding);
+  const welcomed = useRef(false);
+  const welcomeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const toWelcome = (run?: RunEnd) => {
+    if (welcomed.current) return;
+    welcomed.current = true;
+    if (welcomeTimer.current) clearTimeout(welcomeTimer.current);
+    const str = (n: number | undefined) => (typeof n === 'number' ? String(n) : undefined);
+    const result = run && run.reason !== 'quit' ? { board: run.board, value: str(run.value), rank: str(run.rank) } : {};
+    const clean = Object.fromEntries(Object.entries({ ...result, game: id }).filter(([, x]) => x !== undefined)) as Record<string, string>;
+    router.replace({ pathname: '/welcome', params: clean });
+  };
+  /** Once: at most one pending hop, so a runEnd during the delay doesn't stack. */
+  const welcomeIn = (ms: number, run?: RunEnd) => {
+    if (welcomed.current || welcomeTimer.current) return;
+    welcomeTimer.current = setTimeout(() => {
+      welcomeTimer.current = null;
+      toWelcome(run);
+    }, ms);
+  };
+  const [engineReady, setEngineReady] = useState(false);
+  // 120 s of play (from the first frame) is enough: show the welcome anyway.
+  useEffect(() => {
+    if (!onboarding || !engineReady) return;
+    const t = setTimeout(() => toWelcome(), ONBOARDING_FALLBACK_MS);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onboarding, engineReady]);
+  useEffect(
+    () => () => {
+      if (welcomeTimer.current) clearTimeout(welcomeTimer.current);
+    },
+    [],
+  );
+  const onRunEnd = (run: RunEnd) => {
+    if (!onboarding) return;
+    // A beat to see the game-over screen; Quit goes straight on.
+    if (run.reason === 'quit') toWelcome(run);
+    else welcomeIn(1600, run);
+  };
+  const onEngineError = (message: string) => {
+    setError(message);
+    // The first game didn't load: don't strand a new player on an error, welcome them instead.
+    if (onboarding && !engineReady) welcomeIn(2500);
+  };
+
+  const close = () => {
+    if (onboarding) return toWelcome();
+    if (router.canGoBack()) router.back();
+    else router.replace('/');
+  };
   const chrome = insets ?? liveInsets;
 
   return (
@@ -119,7 +174,18 @@ export default function PlayScreen() {
           </View>
         </View>
       ) : insets && gate === 'ok' ? (
-        <EngineView gameId={id} version={v} insets={insets} room={room} spectate={spectate} style={styles.fill} onQuit={close} onError={setError} />
+        <EngineView
+          gameId={id}
+          version={v}
+          insets={insets}
+          room={room}
+          spectate={spectate}
+          style={styles.fill}
+          onQuit={close}
+          onError={onEngineError}
+          onReady={() => setEngineReady(true)}
+          onRunEnd={onRunEnd}
+        />
       ) : (
         <View style={[styles.fill, styles.center]}>
           <ActivityIndicator color={ink.sky} />
@@ -134,6 +200,9 @@ export default function PlayScreen() {
       >
         <Ionicons name="close" size={20} color={ink.accentFg} />
       </Pressable>
+      {banner && gate === 'ok' && (
+        <FirstGameBanner top={chrome.top + 10} left={chrome.left + 60} right={chrome.right + 12} onDismiss={() => setBanner(false)} />
+      )}
       {charge && gate === 'ok' && <ChargeToast charge={charge} top={chrome.top + 10} onDone={() => setCharge(null)} />}
       {error && (
         <Pressable
@@ -146,6 +215,52 @@ export default function PlayScreen() {
         </Pressable>
       )}
     </View>
+  );
+}
+
+/** First run: "Your first Dreamsy game — made by AI. Swim as far as you can!" Tap to dismiss; leaves on its own after 12 s. */
+function FirstGameBanner({ top, left, right, onDismiss }: { top: number; left: number; right: number; onDismiss: () => void }) {
+  const reduced = useReducedMotion();
+  const enter = useRef(new Animated.Value(0)).current;
+  const leaving = useRef(false);
+  const dismiss = () => {
+    if (leaving.current) return;
+    leaving.current = true;
+    Animated.timing(enter, { toValue: 0, duration: reduced ? 0 : 200, useNativeDriver: true }).start(() => onDismiss());
+  };
+  useEffect(() => {
+    const show = reduced
+      ? Animated.timing(enter, { toValue: 1, duration: 0, useNativeDriver: true })
+      : Animated.spring(enter, { toValue: 1, friction: 7, tension: 70, useNativeDriver: true });
+    // Let the game's first frame land before sliding in.
+    const t1 = setTimeout(() => show.start(), 500);
+    const t2 = setTimeout(dismiss, 12_000);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      show.stop();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const translateY = enter.interpolate({ inputRange: [0, 1], outputRange: [reduced ? 0 : -30, 0] });
+  return (
+    <Animated.View pointerEvents="box-none" style={[styles.firstWrap, { top, left, right, opacity: enter, transform: [{ translateY }] }]}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`${ONBOARDING_BANNER} Dismiss`}
+        accessibilityLiveRegion="polite"
+        onPress={dismiss}
+        style={styles.first}
+      >
+        <View style={styles.firstIcon}>
+          <PixelSparkle size={14} color={ink.accentFg} />
+        </View>
+        <Txt variant="label" color={ink.accentFg} numberOfLines={2} style={styles.firstText}>
+          {ONBOARDING_BANNER}
+        </Txt>
+        <Ionicons name="close" size={16} color={ink.sky} />
+      </Pressable>
+    </Animated.View>
   );
 }
 
@@ -175,6 +290,10 @@ function ChargeToast({ charge, top, onDone }: { charge: Charge; top: number; onD
 }
 
 const styles = StyleSheet.create({
+  firstWrap: { position: 'absolute', alignItems: 'center' },
+  first: { flexDirection: 'row', alignItems: 'center', gap: 10, maxWidth: 440, paddingLeft: 6, paddingRight: 12, paddingVertical: 6, borderRadius: radius.lg, backgroundColor: 'rgba(13,42,102,0.92)', ...floating },
+  firstIcon: { width: 30, height: 30, borderRadius: 15, backgroundColor: ink.accent, alignItems: 'center', justifyContent: 'center' },
+  firstText: { flexShrink: 1, lineHeight: 17 },
   outCard: { width: '86%', maxWidth: 380, borderRadius: radius.xl, backgroundColor: ink.card, ...floating },
   toastWrap: { position: 'absolute', left: 60, right: 60, alignItems: 'center' },
   toast: { flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 14, paddingVertical: 9, borderRadius: radius.pill, backgroundColor: ink.navy, ...floating },

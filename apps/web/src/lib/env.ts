@@ -22,3 +22,9 @@ export function deepLink(gameId: string): string {
 
 /** Public share page (DREAMSY.MD §11.5). */
 export const shareLink = (gameId: string) => `${env.shareUrl}/g/${encodeURIComponent(gameId)}`;
+
+/** App link into a live room: `${VITE_APP_DEEPLINK}/game/<id>?room=<code>[&spectate=1]` (join = paid play, spectate = free). */
+export function roomLink(gameId: string, roomCode: string, spectate: boolean): string {
+  const q = new URLSearchParams({ room: roomCode, ...(spectate ? { spectate: '1' } : {}) });
+  return `${deepLink(gameId)}?${q}`;
+}

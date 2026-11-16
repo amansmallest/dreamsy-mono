@@ -52,9 +52,9 @@ export function PlayersBadge({ game, tone = 'white', style }: {
 }
 
 /** Marketplace tile: square cover, name, likes and plays. Shelves and grids. */
-export const GameCard = memo(function GameCard({ game, width }: { game: FeedGame; width: number }) {
+export const GameCard = memo(function GameCard({ game, width, onPress }: { game: FeedGame; width: number; onPress?: (id: string) => void }) {
   return (
-    <Pressy accessibilityRole="button" accessibilityLabel={game.name} onPress={() => openGame(game.id)} haptic={false} style={{ width, gap: 6 }}>
+    <Pressy accessibilityRole="button" accessibilityLabel={game.name} onPress={() => (onPress ? onPress(game.id) : openGame(game.id))} haptic={false} style={{ width, gap: 6 }}>
       <View>
         <Thumbnail url={game.thumbnailUrl} seed={game.id} name={game.name} style={[styles.cover, { width, height: width }]} />
         {isNew(game) && <Badge label="new" tone="blue" style={styles.corner} />}

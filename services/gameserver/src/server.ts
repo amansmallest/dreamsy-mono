@@ -1,6 +1,7 @@
 // WebSocket front of the room server: GET /health, WS /rooms. Auth = the API's HS256 user token in the first
 // message ({t:"hello", token}); size + rate limits per connection; heartbeat pings.
 // GET /internal/presence?users=a,b (header x-internal-token = WORKER_TOKEN): friends presence for services/api.
+// GET /internal/live (same auth): online count + every room, for the API's GET /v1/live.
 import { createServer, type IncomingMessage, type Server } from "node:http";
 import { randomBytes, timingSafeEqual } from "node:crypto";
 import type { AddressInfo } from "node:net";
@@ -66,6 +67,12 @@ export async function startGameServer(opts: GameServerOptions): Promise<GameServ
       const users = [...new Set((url.searchParams.get("users") ?? "").split(",").map((s) => s.trim()).filter((s) => s && s.length <= 128))];
       if (users.length > MAX_PRESENCE_USERS) return json(400, { error: "too_many_users", max: MAX_PRESENCE_USERS });
       return json(200, { presence: rooms.presence(users) });
+    }
+    if (url.pathname === "/internal/live" && req.method === "GET") {
+      const json = (status: number, body: unknown) => { res.writeHead(status, { "content-type": "application/json", "cache-control": "no-store" }); res.end(JSON.stringify(body)); };
+      if (!opts.internalToken) return json(503, { error: "internal_disabled" });
+      if (!tokenOk(req.headers["x-internal-token"], opts.internalToken)) return json(401, { error: "unauthorized" });
+      return json(200, rooms.live());
     }
     res.writeHead(404).end();
   });

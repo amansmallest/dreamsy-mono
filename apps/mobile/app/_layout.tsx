@@ -8,8 +8,9 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { AuthProvider, useAuth } from '@/auth';
-import { takePendingJoin } from '@/groups';
+import { hasPendingJoin, takePendingJoin } from '@/groups';
 import { useNotificationsPoller } from '@/notifications';
+import { FirstRunCover, useFirstRun } from '@/onboarding';
 import { installPushHandlers, openLaunchPush, registerPush } from '@/push';
 import { font, ink } from '@/theme';
 import { ToastHost } from '@/toast';
@@ -56,6 +57,10 @@ function RootNavigator() {
     return () => clearTimeout(t);
   }, [ready, onboarded]);
 
+  // A brand-new account (onboardedAt null) goes straight into the onboarding game, then the Welcome
+  // sheet (src/onboarding.tsx). An invite link waiting to be joined wins over it.
+  const firstRunCover = useFirstRun(status === 'signedIn' ? user : null, ready && onboarded, hasPendingJoin);
+
   useEffect(() => {
     if (ready) SplashScreen.hideAsync().catch(() => {});
   }, [ready]);
@@ -88,6 +93,10 @@ function RootNavigator() {
           <Stack.Screen name="avatar" options={{ presentation: 'modal' }} />
           <Stack.Screen name="scan" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
           <Stack.Screen
+            name="welcome"
+            options={{ presentation: 'transparentModal', animation: 'none', gestureEnabled: false, contentStyle: { backgroundColor: 'transparent' } }}
+          />
+          <Stack.Screen
             name="play/[id]"
             options={{ presentation: 'fullScreenModal', animation: 'fade', gestureEnabled: false }}
           />
@@ -102,6 +111,7 @@ function RootNavigator() {
         {/* Invite links work in any auth state; the screen defers the join until signed in. */}
         <Stack.Screen name="join/[code]" options={{ animation: 'fade' }} />
       </Stack>
+      {firstRunCover && <FirstRunCover />}
       <ToastHost />
     </>
   );

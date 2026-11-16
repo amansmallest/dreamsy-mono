@@ -39,6 +39,8 @@ export interface NetHooks {
   log(level: "info" | "warn" | "error", text: string): void;
   /** Hide an entity (and disable its physics body). */
   hide(e: Entity): void;
+  /** A match result arrived (room.ended), before scripts see it. */
+  ended?(r: MatchResult): void;
 }
 
 interface Disc { scene: string; flip: number; anim: string; vis: number; tpl: string }
@@ -136,6 +138,7 @@ export class NetSession {
         case "ended":
           if (this.result && this.result.match === m.r.match) break;
           this.result = m.r;
+          this.hooks.ended?.(m.r);
           this.dispatch("ended", m.r);
           break;
         default: break;

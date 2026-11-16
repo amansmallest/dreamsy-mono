@@ -99,6 +99,13 @@
       "when": 1794787221088,
       "tag": "0013_friends",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1794788542244,
+      "tag": "0014_onboarding",
+      "breakpoints": true
     }
   ]
 }

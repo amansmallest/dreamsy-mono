@@ -99,6 +99,14 @@ export class GameLoadError extends Error {}
 export interface LeaderboardEvent { board: string; order: BoardOrder; value: number; finished: boolean; result?: SubmitResult; error?: string }
 interface LbRun { board: string; t0: number; seq: number; rec: GhostRecorder | null; track: Entity | null; explicitTrack: boolean }
 interface LbGhost { ghost: Ghost; board: string; entity: Entity | null; t0: number; tex: string[]; offset: [number, number]; endAt: number }
+/**
+ * "A run is over" for the host app (guided first experience: show what to play next). Sent when a leaderboard
+ * finish/submit resolves, when a script calls platform.runEnded, and when a multiplayer match ends.
+ */
+export interface RunEnd { reason: "finish" | "submit" | "gameover" | "quit"; board?: string; value?: number; rank?: number }
+/** At most one RunEnd per this many ms (wall clock); later ones inside the window are dropped. */
+export const RUN_END_GAP_MS = 3000;
+const SCRIPT_RUN_END = new Set(["gameover", "finish", "quit"]);
 /** Same as the API (DREAMSY.MD §13): lowercase letters, digits, underscore; ≤ 40 chars. */
 const BOARD_RE = /^[a-z0-9_]{1,40}$/;
 /** Ghost display alpha. */
@@ -144,6 +152,8 @@ export class Game {
   private lbInFlight = 0;
   private lbQueue: SubmitResult[] = [];
   private lbListeners = new Set<(ev: LeaderboardEvent) => void>();
+  private runEndListeners = new Set<(ev: RunEnd) => void>();
+  private lastRunEndAt = -Infinity;
   /** Ghost waiting for its data / scene / run start ("armed" = spawn at the next leaderboard.start). */
   private lbPendingGhost: { which: string; board: string; armed: boolean; ghost: Ghost | null; token: number } | null = null;
   private lbGhost: LbGhost | null = null;
@@ -333,6 +343,20 @@ export class Game {
     return () => this.lbListeners.delete(fn);
   }
 
+  /** Subscribe to run ends (host bridge: {type:"runEnd"}). At most one per RUN_END_GAP_MS. Returns an unsubscribe function. */
+  onRunEnd(fn: (ev: RunEnd) => void): () => void {
+    this.runEndListeners.add(fn);
+    return () => this.runEndListeners.delete(fn);
+  }
+
+  private emitRunEnd(ev: RunEnd) {
+    if (this.disposed) return;
+    const now = Date.now();
+    if (now - this.lastRunEndAt < RUN_END_GAP_MS) return;
+    this.lastRunEndAt = now;
+    for (const fn of [...this.runEndListeners]) { try { fn(ev); } catch (e) { this.log("warn", `[platform] runEnd listener: ${(e as Error).message}`); } }
+  }
+
   /** Running timers: board → game seconds elapsed. */
   get leaderboardRuns(): Record<string, number> {
     const o: Record<string, number> = {};
@@ -461,11 +485,14 @@ export class Game {
         if (this.disposed) return;
         this.lbQueue.push(r);
         this.emitLb({ board, order, value, finished, result: r });
+        this.emitRunEnd({ reason: finished ? "finish" : "submit", board, value, rank: r.rank });
       },
       (e) => {
         const msg = (e as Error)?.message ?? String(e);
         this.log("warn", `[leaderboard] submit to "${board}" failed: ${msg}`);
         if (!this.disposed) this.emitLb({ board, order, value, finished, error: msg });
+        // the run still ended (offline / API down): no rank
+        this.emitRunEnd({ reason: finished ? "finish" : "submit", board, value });
       },
     ).finally(() => this.lbInFlight--);
   }
@@ -624,6 +651,7 @@ export class Game {
       call: (ref, nargs, push) => this.callRef(ref, null, nargs, push), entityArg: (L, i) => this.entityArg(L, i),
       readJSON: (L, i) => this.readJSON(L, i), pushJSON: (L, v) => this.pushJSON(L, v), log: (level, text) => this.log(level, text),
       hide: (e) => { if (e.props.visible !== false) { e.props.visible = false; e.rev++; } this.physics?.applyEnabled(e); },
+      ended: () => { if (!this.net.spectating) this.emitRunEnd({ reason: "finish" }); },
     });
     const L = this.vm.L;
     const err = this.vm.load(L, "=dreamsy", PRELUDE);
@@ -2028,6 +2056,14 @@ export class Game {
         throw new Error(`store: unknown call ${what}`);
       }
       case OP.LEADERBOARD: return this.leaderboardOp(L);
+      case OP.PLATFORM: {
+        const what = vm.toString(L, 2);
+        if (what !== "runEnded") throw new Error(`platform: unknown call ${what}`);
+        const r = vm.isNil(L, 3) ? "gameover" : vm.toString(L, 3) ?? "gameover";
+        // unknown reasons still end the run (AI-written games say "dead", "win", …)
+        this.emitRunEnd({ reason: (SCRIPT_RUN_END.has(r) ? r : "gameover") as RunEnd["reason"] });
+        return 0;
+      }
       case OP.TWEEN: {
         const what = vm.toString(L, 2);
         if (what === "cancel") {

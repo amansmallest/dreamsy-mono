@@ -229,3 +229,35 @@ describe("GET /internal/presence", () => {
     await other.close();
   });
 });
+
+describe("GET /internal/live", () => {
+  const live = (tok?: string) => fetch(`http://127.0.0.1:${gs.port}/internal/live`, { headers: tok ? { "x-internal-token": tok } : {} });
+
+  it("needs the worker token", async () => {
+    expect((await live()).status).toBe(401);
+    expect((await live("wrong")).status).toBe(401);
+    expect((await live(ITOKEN)).status).toBe(200);
+    const other = await startGameServer({ jwtSecret: SECRET, port: 0, host: "127.0.0.1", log: () => {} });
+    expect((await fetch(`http://127.0.0.1:${other.port}/internal/live`, { headers: { "x-internal-token": "x" } })).status).toBe(503);
+    await other.close();
+  });
+
+  it("lists rooms (lobby / running) and counts distinct online users", async () => {
+    const before = (await (await live(ITOKEN)).json()) as { online: number };
+    const [a, a2, b, c] = await Promise.all([
+      RoomClient.connect(url, await token("u_live_a"), "A"), RoomClient.connect(url, await token("u_live_a"), "A2"),
+      RoomClient.connect(url, await token("u_live_b"), "B"), RoomClient.connect(url, await token("u_live_c"), "C"),
+    ]);
+    const created = a.waitFor((m): m is Extract<ServerMsg, { t: "room" }> => m.t === "room");
+    a.create("g_live", 4);
+    const code = (await created).room.code;
+    const res = await live(ITOKEN);
+    expect(res.headers.get("cache-control")).toBe("no-store");
+    const body = (await res.json()) as { online: number; rooms: { gameId: string }[] };
+    expect(body.online).toBe(before.online + 3); // a's two tabs count once
+    expect(body.rooms.filter((r) => r.gameId === "g_live")).toEqual([
+      { code, gameId: "g_live", mode: "party", state: "lobby", players: ["u_live_a"], max: 4, spectators: 0, spectatable: true },
+    ]);
+    a.close(); a2.close(); b.close(); c.close();
+  });
+});

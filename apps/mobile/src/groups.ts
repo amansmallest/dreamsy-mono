@@ -23,6 +23,7 @@ let pending: string | null = null;
 export const setPendingJoin = (code: string | null) => {
   pending = code;
 };
+export const hasPendingJoin = () => pending !== null;
 export const takePendingJoin = (): string | null => {
   const c = pending;
   pending = null;

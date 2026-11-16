@@ -9,7 +9,8 @@ import { formatCoins, formatUsd } from '@/coins';
 import { Avatar } from '@/components/Avatar';
 import { FeaturedGame, GameCard } from '@/components/GameCard';
 import { NotificationBell } from '@/components/NotificationBell';
-import { useFriendsAvailable, useFriendsState } from '@/friends';
+import { useFriendsAvailable, useFriendsState, useRoomJoin } from '@/friends';
+import { LiveHeader, LivePeopleList, useLive } from '@/live';
 import { errorMessage, ink, radius } from '@/theme';
 import { Button, Empty, IconButton, PixelCoin, PixelSparkle, Pressy, Skeleton, Txt } from '@/ui';
 import { useWallet } from '@/wallet';
@@ -133,6 +134,7 @@ export default function HomeScreen() {
                 <FeaturedGame game={featured} width={width - PAD * 2} />
               </View>
             )}
+            <LiveNow />
             {SHELVES.map((s) => {
               const games = s.key === 'trending' ? trending.slice(1) : shelves[s.key];
               if (!games?.length) return null;
@@ -212,6 +214,26 @@ function Shelf({ title, subtitle, tab, multiplayer, games, card }: {
         contentContainerStyle={styles.shelfRow}
         renderItem={({ item }) => <GameCard game={item} width={card} />}
       />
+    </View>
+  );
+}
+
+/** "Live now": N online + people in games (Join / Spectate). Hidden when nobody is playing or on older APIs. */
+function LiveNow() {
+  const { available, data } = useLive();
+  const { join, spectate, busy, sheet } = useRoomJoin();
+  if (available !== true || !data?.playing.length) return null;
+  return (
+    <View style={styles.shelf}>
+      <LiveHeader online={data.online} style={styles.pad} compactCount />
+      <LivePeopleList
+        playing={data.playing}
+        busy={busy}
+        onJoin={(p) => void join(p.gameId, p.roomCode)}
+        onSpectate={(p) => void spectate(p.gameId, p.roomCode)}
+        padding={PAD}
+      />
+      {sheet}
     </View>
   );
 }

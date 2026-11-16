@@ -4,9 +4,11 @@
 // (skipping the menu; + &spectate=1 watches it instead),
 // ?solo=1 skips the lobby, ?rooms=<ws url> overrides the room server (default: derived from the API base).
 // Embed mode (?embed=1, or inside a react-native-webview): no dev UI; talks to the host app with JSON
-// messages via window.ReactNativeWebView.postMessage:
+// messages via window.ReactNativeWebView.postMessage, and (inside an iframe) window.parent.postMessage(msg, "*"):
 //   {type:"ready"} | {type:"error", message} | {type:"quit"} | {type:"purchase", itemId, balance}
 //   | {type:"save", key, data}   (save.set; debounced — the app may sync it to the API)
+//   | {type:"runEnd", reason:"finish"|"submit"|"gameover"|"quit", board?, value?, rank?}
+//     (leaderboard finish/submit resolved, platform.runEnded, or a match ended; at most one per 3 s)
 // ?clock=<unix seconds> fixes clock.now() (playtests). ?insets=top,right,bottom,left (CSS px) adds the host's safe-area insets to env(safe-area-inset-*).
 import { Package, parseManifest, parseMusic, parseSfx } from "@dreamsy/format";
 import { Game, GameLoadError, MemorySaveHost, saveKey, type SaveHost, type ScriptError } from "../core/index.js";
@@ -17,6 +19,7 @@ import { Lobby } from "../net/lobby.js";
 import { roomsUrl } from "../net/protocol.js";
 import { resolveTheme } from "../render/theme.js";
 import { ApiLeaderboardHost } from "./leaderboard.js";
+import { postToHost, runEndMessage, type BridgeMessage } from "./bridge.js";
 
 const $ = (id: string) => document.getElementById(id)!;
 const params = new URLSearchParams(location.search);
@@ -43,16 +46,9 @@ window.__dreamsy = {
 
 const embed = params.get("embed") === "1" || !!window.ReactNativeWebView || params.has("public") || /\/g\/[^/]+/.test(location.pathname);
 
-type BridgeMessage =
-  | { type: "ready" }
-  | { type: "error"; message: string }
-  | { type: "quit" }
-  | { type: "purchase"; itemId: string; balance: number | null }
-  | { type: "save"; key: string; data: unknown };
-
 function post(msg: BridgeMessage) {
   if (!embed) return;
-  try { window.ReactNativeWebView?.postMessage(JSON.stringify(msg)); } catch { /* host gone */ }
+  postToHost(window, msg);
 }
 
 // Errors to the host: identical messages at most every 30s, anything at most every 2s (latest wins).
@@ -173,6 +169,7 @@ async function start(pkg: Package, label: string, net?: NetLink) {
     return;
   }
   document.title = `${game.manifest.name} — Dreamsy`;
+  game.onRunEnd((ev) => post(runEndMessage(ev)));
   let errCount = -1, lastHud = 0;
   view = new GameView(stage, game, {
     touch: params.has("touch") ? params.get("touch") !== "0" : undefined,

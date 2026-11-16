@@ -20,6 +20,8 @@ export const users = pgTable("users", {
   bio: text("bio").notNull().default(""),
   /** Ink avatar parts picked in the app (`{ part: index }`); null until onboarding is done. */
   avatar: jsonb("avatar").$type<Record<string, number>>(),
+  /** Guided first experience done (welcome sheet shown). Null = new account, gets the onboarding game (free first play). */
+  onboardedAt: timestamp("onboarded_at", { withTimezone: true }),
   createdAt: createdAt(),
 }, (t) => [uniqueIndex("users_handle_idx").on(t.handle)]);
 

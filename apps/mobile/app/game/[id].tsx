@@ -34,6 +34,7 @@ import {
 } from '@/api';
 import { CREATE_PRICE, formatCoins, insufficientFrom, OutOfCoinsSheet, useCreatePrice } from '@/coins';
 import { BuildTurn } from '@/components/BuildCard';
+import { openInvite } from '@/friends';
 import { PlayersBadge, RemixBadge } from '@/components/GameCard';
 import { GamePreview } from '@/components/GamePreview';
 import { PublishSheet } from '@/components/PublishSheet';
@@ -75,8 +76,38 @@ const STARTERS = [
   'Endless runner through a neon city',
 ];
 
+/**
+ * `dreamsy://game/<id>?room=CODE[&spectate=1]` (the web studio's Join / Spectate QR codes, cold start or
+ * while running): straight into the player in that room instead of the workspace. Join goes through the
+ * play gate, Spectate is free (src/friends.tsx `openInvite` -> joinRoom / spectateRoom).
+ */
+export default function GameRoute() {
+  const { id, room, spectate } = useLocalSearchParams<{ id: string; room?: string; spectate?: string }>();
+  if (typeof room === 'string' && room.trim()) return <RoomHandoff gameId={id} code={room.trim().toUpperCase()} spectate={spectate === '1' || spectate === 'true'} />;
+  return <GameWorkspaceScreen />;
+}
+
+function RoomHandoff({ gameId, code, spectate }: { gameId: string; code: string; spectate: boolean }) {
+  const started = useRef(false);
+  useEffect(() => {
+    if (started.current) return;
+    started.current = true;
+    // Swap this route for the player: leave it first, then open the room on top of whatever was there.
+    if (router.canGoBack()) router.back();
+    else router.replace('/');
+    const t = setTimeout(() => void openInvite({ gameId, roomCode: code, spectate }), 0);
+    return () => clearTimeout(t);
+  }, [gameId, code, spectate]);
+  return (
+    <View style={{ flex: 1, backgroundColor: ink.bg, alignItems: 'center', justifyContent: 'center' }}>
+      <Stack.Screen options={{ title: '' }} />
+      <Loading />
+    </View>
+  );
+}
+
 /** Create workspace: live preview on top, the conversation with Claude below, composer at the bottom. */
-export default function GameWorkspaceScreen() {
+function GameWorkspaceScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
 

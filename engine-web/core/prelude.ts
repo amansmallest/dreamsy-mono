@@ -6,7 +6,7 @@ export const OP = {
   ONTICK: 9, AFTER: 10, EVERY: 11, CANCEL: 12, RANDOM: 13, TIME: 14,
   CONNECT: 15, DISCONNECT: 16, AXIS: 17, PRESSED: 18, HELD: 19, POINTER: 20,
   TOAST: 21, SCREEN: 22, AVATAR: 23, FROMENTITY: 24, REQUIRE: 25, ERROR: 26, SOUND: 27,
-  LOADSCENE: 28, STORE: 29, AUDIO: 30, SETTINGS: 31, TWEEN: 32, SAVE: 33, DIALOG: 34, CAMERA: 35, FILES: 36, CLOCK: 37, GAMEPROP: 38, ALIVE: 39, UNTICK: 40, LEADERBOARD: 41,
+  LOADSCENE: 28, STORE: 29, AUDIO: 30, SETTINGS: 31, TWEEN: 32, SAVE: 33, DIALOG: 34, CAMERA: 35, FILES: 36, CLOCK: 37, GAMEPROP: 38, ALIVE: 39, UNTICK: 40, LEADERBOARD: 41, PLATFORM: 42,
   NET: 60,
 } as const;
 
@@ -22,7 +22,7 @@ local OP_TOAST, OP_SCREEN, OP_AVATAR, OP_FROMENTITY, OP_REQUIRE, OP_ERROR, OP_SO
 local OP_LOADSCENE, OP_STORE, OP_AUDIO, OP_SETTINGS = ${OP.LOADSCENE}, ${OP.STORE}, ${OP.AUDIO}, ${OP.SETTINGS}
 local OP_TWEEN, OP_SAVE, OP_DIALOG, OP_CAMERA = ${OP.TWEEN}, ${OP.SAVE}, ${OP.DIALOG}, ${OP.CAMERA}
 local OP_FILES, OP_CLOCK, OP_GAMEPROP, OP_ALIVE, OP_UNTICK = ${OP.FILES}, ${OP.CLOCK}, ${OP.GAMEPROP}, ${OP.ALIVE}, ${OP.UNTICK}
-local OP_LEADERBOARD = ${OP.LEADERBOARD}
+local OP_LEADERBOARD, OP_PLATFORM = ${OP.LEADERBOARD}, ${OP.PLATFORM}
 local OP_NET = ${OP.NET}
 
 local traceback = debug.traceback
@@ -810,6 +810,15 @@ leaderboard = freeze({
 		H(OP_LEADERBOARD, "raceGhost", which, lbBoard(board, "raceGhost"))
 	end,
 	result = setmetatable({ _h = 0, _name = "leaderboardResult" }, SignalM),
+})
+
+-- ---------- platform (host app) ----------
+platform = freeze({
+	-- "this run is over" (game over / round done): the host app may show what to play next. reason default "gameover".
+	runEnded = function(reason)
+		if reason ~= nil and type_(reason) ~= "string" then error("platform.runEnded expects an optional reason string like \\"gameover\\"", 2) end
+		H(OP_PLATFORM, "runEnded", reason)
+	end,
 })
 
 -- math.random goes through the platform's seeded RNG

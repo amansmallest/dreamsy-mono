@@ -47,3 +47,58 @@ export async function presenceFor(fetcher: PresenceFetcher, userIds: string[]): 
   } catch { /* room server unreachable: offline */ }
   return out;
 }
+
+// ---------------------------------------------------------------- live rooms (GET /v1/live)
+
+/** One room from the room server's GET /internal/live. */
+export interface LiveRoom {
+  code: string;
+  gameId: string;
+  mode: "duel" | "party";
+  state: "lobby" | "running";
+  /** Player user ids. */
+  players: string[];
+  max: number;
+  spectators: number;
+  spectatable: boolean;
+}
+
+/** online = distinct users connected to the room server in the last 60 s. */
+export interface LiveSnapshot { online: number; rooms: LiveRoom[] }
+
+/** Snapshot of every room. May throw. */
+export type LiveFetcher = () => Promise<LiveSnapshot>;
+
+/** GET {baseUrl}/internal/live with `x-internal-token`, 1.5 s timeout. */
+export function httpLive(baseUrl: string, token: string): LiveFetcher {
+  const base = baseUrl.replace(/\/+$/, "");
+  return async () => {
+    const res = await fetch(`${base}/internal/live`, { headers: { "x-internal-token": token }, signal: AbortSignal.timeout(TIMEOUT_MS) });
+    if (!res.ok) throw new Error(`live: HTTP ${res.status}`);
+    return (await res.json()) as LiveSnapshot;
+  };
+}
+
+const EMPTY_LIVE: LiveSnapshot = { online: 0, rooms: [] };
+
+/** Validated snapshot; any failure (down, > 1.5 s, junk) → `{online: 0, rooms: []}`. Never throws. */
+export async function liveSnapshot(fetcher: LiveFetcher): Promise<LiveSnapshot> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const got = await Promise.race([
+      fetcher(),
+      new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error("live: timeout")), TIMEOUT_MS); }),
+    ]);
+    if (!got || typeof got !== "object" || !Array.isArray(got.rooms)) return EMPTY_LIVE;
+    const rooms = got.rooms.filter((r): r is LiveRoom =>
+      !!r && typeof r === "object" && typeof r.code === "string" && typeof r.gameId === "string"
+      && (r.state === "lobby" || r.state === "running") && Array.isArray(r.players) && typeof r.max === "number")
+      .map((r) => ({ ...r, mode: r.mode === "duel" ? "duel" as const : "party" as const, players: r.players.filter((p) => typeof p === "string"), spectatable: r.spectatable === true }));
+    const online = Number.isFinite(got.online) && got.online > 0 ? Math.floor(got.online) : 0;
+    return { online, rooms };
+  } catch {
+    return EMPTY_LIVE;
+  } finally {
+    clearTimeout(timer);
+  }
+}

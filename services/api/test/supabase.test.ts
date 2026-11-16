@@ -55,7 +55,7 @@ describe("Supabase sign-in exchange (web dashboard + app)", () => {
     expect(b2.user.id).toBe(b1.user.id);
     const me = await app.request("/v1/me", { headers: { authorization: `Bearer ${b1.token}` } });
     expect(me.status).toBe(200);
-  });
+  }, 20_000); // network-free but JWKS + PGlite are slow under parallel load
 
   it("rejects tokens with the wrong audience, issuer or signature", async () => {
     const app = await makeApp();

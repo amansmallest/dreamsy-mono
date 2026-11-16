@@ -31,7 +31,7 @@ function LiveNowInner() {
     <section className="live card">
       <header className="live-head">
         <span className={`live-dot${feed.running.length ? ' on' : ''}`} aria-hidden />
-        <h2 className="h3">Live now</h2>
+        <h2 className="h3">Live builds</h2>
         <span className="label muted">
           {feed.running.length} building · {feed.stats.succeeded} shipped all-time
         </span>

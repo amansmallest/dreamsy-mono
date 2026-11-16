@@ -8,6 +8,7 @@ import { PLATFORM_USER_ID } from "../db/schema.js";
 import { newId } from "../ids.js";
 import { notifyPlayEarning, notifyRoyalty } from "../notifications.js";
 import { pushAfterCommit } from "../push.js";
+import { isOnboardingPlay } from "./onboarding.js";
 import { canAccessGame, canAccessVersion, countPlay, getGame, type Game, type Q } from "../services.js";
 
 const { games, ledger, playPasses } = schema;
@@ -28,7 +29,8 @@ function freeReason(g: Game, userId: string): "owner" | "draft" | null {
  * Pay-per-play (DREAMSY.MD §11.6). Starting someone else's published game costs `playPrice` coins:
  * creator `creatorShare`, platform the rest. A paid start opens a `playPassMinutes` pass for
  * (user, game); starts while it's valid are free and return the same pass. Owners and group members
- * on shared drafts play free. v1 gate is client-side: package fetch does not check passes.
+ * on shared drafts play free, and so does a new account's onboarding game until its welcome sheet is shown
+ * (reason "onboarding"; a later paid start doesn't reuse that free pass). v1 gate is client-side: package fetch does not check passes.
  */
 export function playRoutes({ db, config, pusher }: Deps) {
   const r = router();
@@ -38,8 +40,10 @@ export function playRoutes({ db, config, pusher }: Deps) {
   async function resolve(c: { req: { param(k: "id"): string } }, userId: string, version?: number) {
     const g = await getGame(db, c.req.param("id"));
     if (!(await canAccessGame(db, g, userId))) fail(404, "game not found");
-    const reason = freeReason(g, userId);
-    const v = version ?? (reason ? g.latestVersion : g.publishedVersion);
+    const testing = freeReason(g, userId);
+    // A new account's first play of the onboarding game is free (guided first experience) until onboarding is done.
+    const reason = testing ?? (g.status === "published" && (await isOnboardingPlay(db, config, userId, g.id)) ? "onboarding" as const : null);
+    const v = version ?? (testing ? g.latestVersion : g.publishedVersion);
     if (!v || !(await canAccessVersion(db, g, userId, v))) fail(404, "version not found");
     return { g, reason, version: v };
   }
@@ -91,7 +95,7 @@ export function playRoutes({ db, config, pusher }: Deps) {
       const existing = await validPass(tx, userId, g.id, now, !reason);
       if (existing) {
         await countPlay(tx, userId, g.id, version);
-        return { charged: false, balance: wallet.balance, pass: existing, creatorEarned: 0, notes: [] as string[] };
+        return { charged: false, reason: reason ?? "pass", balance: wallet.balance, pass: existing, creatorEarned: 0, notes: [] as string[] };
       }
       const charge = !reason && price > 0;
       if (charge && wallet.balance < price) fail(402, "insufficient_coins", { balance: wallet.balance, price });
@@ -123,12 +127,14 @@ export function playRoutes({ db, config, pusher }: Deps) {
         }
       }
       await countPlay(tx, userId, g.id, version);
-      return { charged: charge, balance, pass: pass!, creatorEarned, notes };
+      return { charged: charge, reason: charge ? null : reason, balance, pass: pass!, creatorEarned, notes };
     });
     pushAfterCommit(db, pusher, result.notes);
 
     return c.json({
       charged: result.charged,
+      /** Why it was free: "owner" | "draft" | "onboarding" | "pass"; null when charged (or price 0). */
+      reason: result.reason,
       price,
       balance: result.balance,
       pass: passView(result.pass),

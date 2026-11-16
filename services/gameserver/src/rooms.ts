@@ -2,7 +2,8 @@
 // The server is authoritative for room membership, teams, host, shared state, scores and match results;
 // game simulation runs on the players' devices (DREAMSY.MD §4.5, multiplayer v1 = relayed state sync).
 // Spectators watch a room (not players, not counted in max, ≤ 16): they receive everything players receive and can't
-// send gameplay messages. Presence (per userId: online / in a room / in a match) feeds GET /internal/presence.
+// send gameplay messages. Presence (per userId: online / in a room / in a match) feeds GET /internal/presence;
+// live() feeds GET /internal/live.
 import { randomInt } from "node:crypto";
 import {
   CODE_ALPHABET, LIMITS, matchResult, normalizeCode,
@@ -36,6 +37,20 @@ const MAX_RESULTS = 20;
 /** A user counts as "online" for this long after their last room-server connection closed. */
 export const ONLINE_GRACE_MS = 60_000;
 const bytes = (v: unknown) => Buffer.byteLength(JSON.stringify(v ?? null));
+
+export interface LiveRoom {
+  code: string;
+  gameId: string;
+  mode: "duel" | "party";
+  state: "lobby" | "running";
+  /** User ids of the players (deduped). */
+  players: string[];
+  max: number;
+  spectators: number;
+  spectatable: boolean;
+}
+
+export interface LiveSnapshot { online: number; rooms: LiveRoom[] }
 
 export class RoomManager {
   readonly rooms = new Map<string, Room>();
@@ -104,6 +119,23 @@ export class RoomManager {
       out[u] = best ?? { status: this.lastSeen.has(u) ? "online" : "offline" };
     }
     return out;
+  }
+
+  /** Snapshot for GET /internal/live: distinct users online (connected or within 60 s of leaving) + every room. */
+  live(): LiveSnapshot {
+    const now = this.now();
+    for (const [u, at] of this.lastSeen) if (now - at > ONLINE_GRACE_MS) this.lastSeen.delete(u);
+    const users = new Set<string>([...this.online.keys(), ...this.lastSeen.keys()]);
+    const rooms: LiveRoom[] = [];
+    for (const r of this.rooms.values()) {
+      rooms.push({
+        code: r.info.code, gameId: r.info.game, mode: r.info.mode,
+        state: r.info.status === "playing" ? "running" : "lobby",
+        players: [...new Set(r.info.players.map((p) => p.userId))],
+        max: r.info.max, spectators: r.watchers.size, spectatable: r.watchers.size < LIMITS.maxSpectators,
+      });
+    }
+    return { online: users.size, rooms };
   }
 
   handle(peer: Peer, msg: ClientMsg) {

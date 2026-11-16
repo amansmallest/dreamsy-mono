@@ -8,6 +8,8 @@ import { walletChanged } from '../wallet';
 // The game player: a WebView running the engine-web page in embed mode, which loads the package
 // for (gameId, version) from services/api and posts JSON messages back (see engine-web/dev/main.ts):
 //   {type:"ready"} | {type:"error", message} | {type:"quit"} | {type:"purchase", itemId, balance}
+//   | {type:"runEnd", reason, board?, value?, rank?} (a run finished: leaderboard finish/submit, the
+//     script's platform.runEnded(), or a multiplayer match ended; at most one per 3 s)
 
 // react-native-webview's types default P = undefined, and `WebViewProps & undefined` is never under
 // current TS; instantiate with {} instead.
@@ -15,6 +17,13 @@ const Web = WebView<{}>;
 type Web = WebView<{}>;
 
 const ENGINE_BG = '#0d1117'; // engine-web page background, so loading doesn't flash white
+
+export type RunEnd = {
+  reason: 'finish' | 'submit' | 'gameover' | 'quit' | string;
+  board?: string;
+  value?: number;
+  rank?: number;
+};
 
 export type Insets = { top: number; right: number; bottom: number; left: number };
 
@@ -30,6 +39,8 @@ export type EngineViewProps = {
   /** Pause menu "Quit". */
   onQuit?: () => void;
   onPurchase?: (itemId: string, balance: number | null) => void;
+  /** A run ended (game over, round finished, score submitted, match over). */
+  onRunEnd?: (run: RunEnd) => void;
   /** Multiplayer room code to join straight away (skips the lobby menu). */
   room?: string;
   /** With `room`: watch as a spectator (no avatar, no controls). */
@@ -54,7 +65,7 @@ export function engineUrl(gameId: string, version: number, token: string | null,
   return `${base}${base.includes('?') ? '&' : '?'}${q}`;
 }
 
-export function EngineView({ gameId, version, insets, style, onReady, onError, onQuit, onPurchase, room, spectate }: EngineViewProps) {
+export function EngineView({ gameId, version, insets, style, onReady, onError, onQuit, onPurchase, onRunEnd, room, spectate }: EngineViewProps) {
   const { getAccessToken } = useAuth();
   const [token, setToken] = useState<string | null | undefined>(undefined);
   const [ready, setReady] = useState(false);
@@ -62,8 +73,8 @@ export function EngineView({ gameId, version, insets, style, onReady, onError, o
   const webview = useRef<Web>(null);
 
   // Latest callbacks without re-creating the message handler.
-  const cb = useRef({ onReady, onError, onQuit, onPurchase });
-  cb.current = { onReady, onError, onQuit, onPurchase };
+  const cb = useRef({ onReady, onError, onQuit, onPurchase, onRunEnd });
+  cb.current = { onReady, onError, onQuit, onPurchase, onRunEnd };
 
   useEffect(() => {
     let cancelled = false;
@@ -89,7 +100,7 @@ export function EngineView({ gameId, version, insets, style, onReady, onError, o
   };
 
   const onMessage = (e: WebViewMessageEvent) => {
-    let msg: { type?: unknown; message?: unknown; itemId?: unknown; balance?: unknown };
+    let msg: { type?: unknown; message?: unknown; itemId?: unknown; balance?: unknown; reason?: unknown; board?: unknown; value?: unknown; rank?: unknown };
     try {
       msg = JSON.parse(e.nativeEvent.data);
     } catch {
@@ -115,6 +126,16 @@ export function EngineView({ gameId, version, insets, style, onReady, onError, o
           typeof msg.balance === 'number' ? msg.balance : null,
         );
         break;
+      case 'runEnd': {
+        const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : undefined);
+        cb.current.onRunEnd?.({
+          reason: typeof msg.reason === 'string' ? msg.reason : 'gameover',
+          board: typeof msg.board === 'string' ? msg.board : undefined,
+          value: num(msg.value),
+          rank: num(msg.rank),
+        });
+        break;
+      }
     }
   };
 

@@ -1,7 +1,11 @@
 // Typed client for services/api. Shapes mirror services/api/src/routes/* (and apps/mobile/src/api.ts).
 import { env } from './env';
 
-export type User = { id: string; handle: string; bio?: string; avatar?: Record<string, number>; createdAt: string };
+export type User = {
+  id: string; handle: string; bio?: string; avatar?: Record<string, number>; createdAt: string;
+  /** null = brand-new account that hasn't seen the guided first experience; undefined = older API. */
+  onboardedAt?: string | null;
+};
 
 export type GenerationStatus = 'queued' | 'running' | 'succeeded' | 'failed' | 'canceled';
 export const isActive = (s: GenerationStatus) => s === 'queued' || s === 'running';
@@ -141,6 +145,32 @@ export type Group = { id: string; name: string; ownerId: string; inviteCode: str
 export type GroupMember = { user: UserBrief; role: 'owner' | 'member'; joinedAt: string };
 export type SharedGame = Game & { creator?: UserBrief; sharedBy: UserBrief; sharedAt: string };
 
+// ---------- onboarding + live (guided first experience) ----------
+export type OnboardingGame = { gameId: string; gameName: string; version: number; message: string };
+export type LivePlayer = {
+  user: UserBrief;
+  gameId: string;
+  gameName: string;
+  mode: string;
+  players: number;
+  max: number;
+  roomCode: string;
+  status: 'in_room' | 'in_match';
+  spectatable: boolean;
+  joinable: boolean;
+};
+export type Live = { online: number; playing: LivePlayer[]; featured: (Game & { creator?: UserBrief })[] };
+
+// ---------- explore (public feed / search / remix) ----------
+/** DREAMSY.MD §11.2 FeedGame: the public view of a published game (no owner-only fields). */
+export type FeedGame = Pick<Game, 'id' | 'name' | 'description' | 'orientation' | 'thumbnailUrl' | 'players' | 'multiplayer' | 'stats' | 'playPrice' | 'remixPrice' | 'publishedAt'> & {
+  creator?: UserBrief;
+  remixOf?: { gameId: string; name: string; version: number } | null;
+  viewer?: { liked: boolean };
+};
+export type FeedTab = 'trending' | 'new' | 'following';
+export type FeedPage = { games: FeedGame[]; next: string | null };
+
 export class ApiError extends Error {
   constructor(readonly status: number, message: string, readonly body: Record<string, unknown> | null = null) {
     super(message);
@@ -208,6 +238,9 @@ export const api = {
     request<{ user: User; token: string }>('/v1/auth/supabase', { method: 'POST', body: { accessToken }, auth: false }),
   me: () => request<{ user: User }>('/v1/me'),
   updateMe: (body: { handle?: string; bio?: string }) => request<{ user: User }>('/v1/me', { method: 'PATCH', body }),
+  onboarding: () => request<OnboardingGame>('/v1/onboarding'),
+  completeOnboarding: () => request<{ user: User }>('/v1/me/onboarding', { method: 'POST', body: { done: true } }),
+  live: () => request<Live>('/v1/live'),
   quota: () => request<{ quota: Quota; createPrice?: number }>('/v1/me/quota'),
   wallet: () => request<{ wallet: Wallet; recent: LedgerEntry[]; createPrice?: number }>('/v1/me/wallet'),
   earnings: () => request<Earnings>('/v1/me/earnings'),
@@ -257,6 +290,14 @@ export const api = {
   generate: (gameId: string, body: { prompt: string; imageIds?: string[]; assetIds?: string[] }) =>
     request<{ generation: Generation; charged?: number }>(`/v1/games/${enc(gameId)}/generations`, { method: 'POST', body }),
   cancel: (id: string) => request<{ generation: Generation }>(`/v1/generations/${enc(id)}/cancel`, { method: 'POST', body: {} }),
+
+  // explore
+  feed: (tab: FeedTab, opts: { multiplayer?: boolean; cursor?: string | null; signal?: AbortSignal } = {}) =>
+    request<FeedPage>(`/v1/feed?tab=${tab}${opts.multiplayer ? '&multiplayer=1' : ''}${opts.cursor ? `&cursor=${enc(opts.cursor)}` : ''}`, { signal: opts.signal }),
+  search: (q: string, opts: { multiplayer?: boolean; cursor?: string | null; signal?: AbortSignal } = {}) =>
+    request<FeedPage>(`/v1/search?q=${enc(q)}${opts.multiplayer ? '&multiplayer=1' : ''}${opts.cursor ? `&cursor=${enc(opts.cursor)}` : ''}`, { signal: opts.signal }),
+  /** New draft copy owned by you; costs remixPrice (100% to the owner) unless it's your own game. */
+  remix: (id: string) => request<{ game: Game; charged: number; ownerEarned: number }>(`/v1/games/${enc(id)}/remix`, { method: 'POST', body: {} }),
 
   upload: (file: File) => {
     const form = new FormData();

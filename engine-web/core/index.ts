@@ -1,4 +1,4 @@
-export { Game, GameLoadError, GHOST_ALPHA, type LeaderboardEvent, DEFAULT_SETTINGS, PLAYTEST_EPOCH, SWIPE_MIN_DIST, SWIPE_MAX_TIME, type AudioEvent, type Settings, type GameOptions, type ScriptError, type LogLine, type Toast, type SoundEvent } from "./game.js";
+export { Game, GameLoadError, GHOST_ALPHA, RUN_END_GAP_MS, type RunEnd, type LeaderboardEvent, DEFAULT_SETTINGS, PLAYTEST_EPOCH, SWIPE_MIN_DIST, SWIPE_MAX_TIME, type AudioEvent, type Settings, type GameOptions, type ScriptError, type LogLine, type Toast, type SoundEvent } from "./game.js";
 export { InputState, type Axis, type Button } from "./input.js";
 export { World, Entity, global2D, parseColor, type Mat2D, type RGBA } from "./world.js";
 export {

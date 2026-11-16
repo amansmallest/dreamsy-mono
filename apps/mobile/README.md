@@ -62,7 +62,9 @@ app/                 expo-router routes
                      new code (owner)
   join/[code].tsx    invite link dreamsy://join/<code> or https://dreamsy.dev/join/<code> (also from the QR
                      scanner). Joins when signed in; otherwise the code waits until sign-in + onboarding
-  game/[id].tsx      Create workspace: chat + preview, publish, round/ETA card, checkpoint reloads;
+  game/[id].tsx      with `room` (+ `spectate=1`), e.g. dreamsy://game/<id>?room=CODE from the web studio's QR: straight
+                     into the player in that room (Join = play gate, Spectate free). Otherwise the
+                     Create workspace: chat + preview, publish, round/ETA card, checkpoint reloads;
                      first build costs CREATE_PRICE coins (402 -> "Out of coins"), edits free
   notifications.tsx  inbox (earnings, build done, family joins): tap opens the game/group and marks read,
                      "Mark all read". Bell + unread badge on Home and Profile; hidden when the API has no
@@ -70,6 +72,9 @@ app/                 expo-router routes
   play/[id].tsx      full-screen player (params id, version, orientation?, room?, spectate?); locks to the
                      game's orientation and passes safe-area insets to the engine (`&insets=t,r,b,l`);
                      `room` joins that room (`&room=CODE`), `spectate=1` watches it (free, no POST /play)
+  welcome.tsx        "Welcome to Dreamsy world" sheet after the first game (transparent modal): result line, Live now
+                     (polled 20 s; Join / Spectate / Play), 6 trending games, Make your own game, Explore.
+                     Showing it calls POST /v1/me/onboarding
   friends.tsx        Friends: search by handle + Add, requests (Accept/Decline, Cancel), friends with presence
                      (Online / In X lobby + Join / Playing X · 1v1 + Spectate), long-press to unfriend; polls
                      every 15 s while focused. Reached from Profile ("Friends" row) and Home's people menu;
@@ -82,6 +87,10 @@ src/
   wallet.ts          useWallet() + walletChanged() (refetch after in-game purchases)
   coins.tsx          coin formatting, play gate, create/remix prices, "Out of coins" sheet
   notifications.ts   unread store, 30 s foreground poll, "You got paid" toast, game-invite banner, tap -> screen
+  onboarding.tsx     first run: user.onboardedAt === null -> GET /v1/onboarding -> player with `onboarding=1`
+                     (banner; runEnd / Quit / close / 120 s -> app/welcome.tsx). Skipped if /v1/onboarding or
+                     /v1/live 404, or onboardedAt is missing (older API)
+  live.tsx           GET /v1/live store (404 hides it), 20 s focus polling, Live now header + people cards
   friends.tsx        friends store + presence lines, join (play gate) / spectate (free) a room, open a game_invite
   push.ts            expo-notifications: permission + Expo token -> POST /v1/me/push-tokens, foreground
                      presentation, push taps. Skipped in Expo Go on Android and without a projectId
@@ -137,6 +146,7 @@ mode, and posts JSON back via `window.ReactNativeWebView.postMessage`:
 | `{type:"error", message}` | banner (load errors + script errors, rate-limited) |
 | `{type:"quit"}` | pause-menu Quit: closes the Play screen |
 | `{type:"purchase", itemId, balance}` | Coins purchase in the engine's sheet: wallet refetch |
+| `{type:"runEnd", reason, board?, value?, rank?}` | `onRunEnd`; the first-run player moves on to the Welcome sheet |
 
 The workspace preview is keyed by `latestVersion`, so a finished generation (or a restore)
 reloads it. Production will point `EXPO_PUBLIC_ENGINE_URL` at a hosted build of the engine page.

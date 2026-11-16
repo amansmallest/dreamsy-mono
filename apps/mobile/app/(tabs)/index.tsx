@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActionSheetIOS, Alert, FlatList, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { ActionSheetIOS, Alert, FlatList, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { api, type FeedGame, type FeedTab } from '@/api';
 import { useAuth } from '@/auth';
@@ -11,6 +11,8 @@ import { FeaturedGame, GameCard } from '@/components/GameCard';
 import { NotificationBell } from '@/components/NotificationBell';
 import { useFriendsAvailable, useFriendsState, useRoomJoin } from '@/friends';
 import { LiveHeader, LivePeopleList, useLive } from '@/live';
+import { InstallBanner } from '@/install';
+import { canScan, useAppDimensions } from '@/platform';
 import { errorMessage, ink, radius } from '@/theme';
 import { Button, Empty, IconButton, PixelCoin, PixelSparkle, Pressy, Skeleton, Txt } from '@/ui';
 import { useWallet } from '@/wallet';
@@ -32,7 +34,7 @@ type Shelves = Partial<Record<ShelfKey, FeedGame[]>>;
 export default function HomeScreen() {
   const { user } = useAuth();
   const { wallet, live, refresh: refreshWallet } = useWallet();
-  const { width } = useWindowDimensions();
+  const { width } = useAppDimensions();
   const [shelves, setShelves] = useState<Shelves | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -103,7 +105,7 @@ export default function HomeScreen() {
           )}
           <NotificationBell />
           <PeopleButton />
-          <IconButton icon="qr-code-outline" label="Scan a game QR code" size={36} onPress={() => router.push('/scan')} />
+          {canScan && <IconButton icon="qr-code-outline" label="Scan a game QR code" size={36} onPress={() => router.push('/scan')} />}
         </View>
       </View>
 
@@ -112,6 +114,8 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={pull} tintColor={ink.accent} />}
       >
+        {/* Web app only, after the first game + Welcome (onboardedAt set). */}
+        <InstallBanner ready={!!user && user.onboardedAt !== null} />
         <Pressy onPress={() => router.navigate('/search')} haptic={false} style={styles.search} accessibilityRole="search">
           <Ionicons name="search" size={17} color={ink.muted} />
           <Txt variant="body" color={ink.faint}>

@@ -66,6 +66,7 @@ export const gameView = (g: Game, x: GameExtras) => ({
   name: g.name,
   description: g.description,
   status: g.status,
+  visibility: g.visibility,
   latestVersion: g.latestVersion,
   publishedVersion: g.publishedVersion,
   publishedAt: g.publishedAt,
@@ -327,11 +328,21 @@ export async function commitVersion(
     playersMax: players.max,
     createdBy: meta.createdBy,
   }).returning();
+  // §11.8: a public game's newest version goes live automatically.
+  const live = game.visibility === "public";
   await tx.update(games)
-    .set({ latestVersion: version, updatedAt: sql`now()` })
+    .set({ latestVersion: version, updatedAt: sql`now()`, ...(live ? publishFields(version) : {}) })
     .where(eq(games.id, game.id));
+  if (live) await recomputeTrending(tx, game.id);
   return row!;
 }
+
+/** Columns that make `version` the live (published) one. `publishedAt` is set once, never cleared. */
+export const publishFields = (version: number) => ({
+  status: "published",
+  publishedVersion: version,
+  publishedAt: sql`coalesce(${games.publishedAt}, now())`,
+});
 
 // ---------- stats ----------
 

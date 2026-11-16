@@ -1,11 +1,12 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, View } from 'react-native';
-import { api, thumbnailUrlFor, type Game } from '../api';
+import { api, thumbnailUrlFor, type Game, type Visibility } from '../api';
 import { shareGame } from '../social';
 import { errorMessage, ink, radius } from '../theme';
 import { Button as InkButton, Field, Header, PixelSky, Sparkle, SquareButton, Txt } from '../ui';
 import { Thumbnail } from './Thumbnail';
+import { VisibilitySwitch } from './VisibilitySwitch';
 
 type Props = {
   visible: boolean;
@@ -23,6 +24,9 @@ export function PublishSheet({ visible, game, headers, onClose, onChange }: Prop
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [live, setLive] = useState<Game | null>(null);
+  // §11.8: APIs that send `visibility` get the Public/Private switch; opening the sheet means "go public".
+  const hasVisibility = game.visibility !== undefined;
+  const [visibility, setVisibility] = useState<Visibility>('public');
 
   useEffect(() => {
     if (!visible) return;
@@ -30,6 +34,7 @@ export function PublishSheet({ visible, game, headers, onClose, onChange }: Prop
     setDescription(game.description);
     setError(null);
     setLive(null);
+    setVisibility('public');
     // Only when opening.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
@@ -46,7 +51,13 @@ export function PublishSheet({ visible, game, headers, onClose, onChange }: Prop
       if (name.trim() !== game.name || description.trim() !== game.description) {
         g = (await api.updateGame(game.id, { name: name.trim(), description: description.trim() })).game;
       }
-      g = (await api.publish(game.id)).game;
+      if (hasVisibility && visibility === 'private') {
+        g = (await api.updateGame(game.id, { visibility: 'private' })).game;
+        onChange(g);
+        onClose();
+        return;
+      }
+      g = (await api.publish(game.id)).game; // also makes the game public
       onChange(g);
       setLive(g);
     } catch (e) {
@@ -118,7 +129,8 @@ export function PublishSheet({ visible, game, headers, onClose, onChange }: Prop
                 maxLength={500}
                 placeholder="One or two lines"
               />
-              {wasLive && (
+              {hasVisibility && <VisibilitySwitch value={visibility} onChange={setVisibility} disabled={busy} style={styles.visibility} />}
+              {wasLive && (!hasVisibility || visibility === 'public') && (
                 <Txt variant="meta" muted>
                   Live now: v{game.publishedVersion}. Publishing switches players to v{v}.
                 </Txt>
@@ -131,11 +143,11 @@ export function PublishSheet({ visible, game, headers, onClose, onChange }: Prop
             </ScrollView>
             <View style={styles.footer}>
               <InkButton
-                label={wasLive ? `Update to v${v}` : 'Publish'}
+                label={hasVisibility && visibility === 'private' ? 'Keep private' : wasLive ? `Update to v${v}` : 'Publish'}
                 icon="rocket-outline"
                 sparkles
                 busy={busy}
-                disabled={!name.trim() || v === 0}
+                disabled={!name.trim() || (v === 0 && !(hasVisibility && visibility === 'private'))}
                 onPress={publish}
               />
             </View>
@@ -153,6 +165,7 @@ const styles = StyleSheet.create({
   body: { padding: 20, gap: 10 },
   cover: { aspectRatio: 16 / 10, borderRadius: radius.lg },
   footer: { padding: 20, paddingBottom: 36 },
+  visibility: { marginTop: 8 },
   done: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, gap: 12 },
   doneSky: { position: 'absolute', top: 0, left: 0, right: 0, height: '45%' },
   marks: { flexDirection: 'row', gap: 6 },

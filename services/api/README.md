@@ -30,12 +30,13 @@ All JSON, camelCase. Errors: `{ "error": string }`. User routes need `Authorizat
 **Games** — versions are immutable; every edit = `latestVersion + 1`
 | | |
 |---|---|
-| `POST /v1/games` `{name, description?}` | create draft |
+| `POST /v1/games` `{name, description?, visibility?}` | create; `visibility` defaults to `"public"` (see Visibility below) |
 | `GET /v1/games?limit&before` | discover (published) |
 | `GET /v1/me/games` | my games |
 | `GET /v1/games/:id` | owner sees everything; others only if published (hidden games stay reachable by direct link) |
-| `PATCH /v1/games/:id` | rename / describe |
-| `POST /v1/games/:id/publish` `{version?}` / `unpublish` | |
+| `PATCH /v1/games/:id` `{name?, description?, visibility?}` | rename / describe / switch visibility: `"public"` puts the latest version live, `"private"` unpublishes |
+| `POST /v1/games/:id/publish` `{version?}` | make public + put that version (default latest) live; pins an older version until the next commit |
+| `POST /v1/games/:id/unpublish` | same as `PATCH {visibility: "private"}` |
 | `GET /v1/games/:id/versions` | owner only |
 | `GET /v1/games/:id/versions/:v` · `/package` | metadata · zip (owner, or the published version) |
 | `POST /v1/games/:id/revert` `{version}` | undo: new version with an old package (+ its thumbnail) |
@@ -44,7 +45,14 @@ All JSON, camelCase. Errors: `{ "error": string }`. User routes need `Authorizat
 Game views now also carry `publishedAt`, `orientation` (from the shown version's manifest; absent =
 `"landscape"`; `null` if no version), `thumbnailUrl` (relative URL or `null`), `creator {id, handle}`,
 `stats {plays, likes, remixes}`, `remixOf {gameId, name, version} | null`, `viewer {liked}`. Owner
-view: thumbnail/orientation of the latest version, plus `hidden`. Others: the published version.
+view: thumbnail/orientation of the latest version, plus `hidden` and `visibility`. Others: the published version.
+
+**Visibility** (DREAMSY.MD §11.8) — `games.visibility = "public" | "private"`, default `"public"`.
+Public games auto-publish: every committed version (worker checkpoint/complete, revert, the copied v1
+of a remix) becomes `publishedVersion` (status `published`, `publishedAt` set once, trending
+recomputed) inside `commitVersion`. Private games are never published. `hidden` (moderation) is
+separate. Migration 0015 maps existing games: `published` → public, everything else → private (old
+drafts are not auto-published).
 
 **Platform v1** (DREAMSY.MD §11)
 | | |
@@ -62,7 +70,7 @@ view: thumbnail/orientation of the latest version, plus `hidden`. Others: the pu
 | `DELETE /v1/me/push-tokens` `{token}` | `{ok}` |
 | `GET /v1/me/earnings` | `{totalCoins, todayCoins, paidPlays, usd: {total, today}, games: [{gameId, name, coins, plays}]}` |
 | `PUT` / `DELETE /v1/games/:id/like` | idempotent → `{liked, stats}` |
-| `POST /v1/games/:id/remix` | 201 `{game, charged, ownerEarned}`: new draft, v1 = source published version (latest if yours), store stripped. Costs `REMIX_PRICE` (25,000) → 100% to the source's owner (+ `remix_earning` notification); free on your own game; 402 `{error: "insufficient_coins", balance, price}` |
+| `POST /v1/games/:id/remix` | 201 `{game, charged, ownerEarned}`: new game (public by default, so v1 goes live), v1 = source published version (latest if yours), store stripped. Costs `REMIX_PRICE` (25,000) → 100% to the source's owner (+ `remix_earning` notification); free on your own game; 402 `{error: "insufficient_coins", balance, price}` |
 | `POST /v1/games/:id/report` `{reason}` | `{ok}`; one per user; ≥3 distinct reporters ⇒ `hidden` |
 | `POST /v1/friends/requests` `{handle}` | 201 `{request: {id, user, status: "pending", direction: "outgoing"}}`; 200 `{friend}` if they already asked you (auto-accept); 404 unknown handle, 409 already friends, 400 self |
 | `POST /v1/friends/requests/:userId/accept` · `/decline` | `{friend}` · `{ok}`; 404 if no request from them, accept 409 if already friends |

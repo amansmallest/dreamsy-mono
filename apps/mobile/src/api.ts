@@ -102,6 +102,8 @@ export async function request<T>(path: string, opts: RequestOptions = {}): Promi
 // ---------- shapes (mirror services/api views; timestamps are ISO strings) ----------
 
 export type GameStatus = 'draft' | 'published';
+/** DREAMSY.MD §11.8: public = newest version auto-live; private = never published. */
+export type Visibility = 'public' | 'private';
 
 export type Game = {
   id: string;
@@ -109,6 +111,8 @@ export type Game = {
   name: string;
   description: string;
   status: GameStatus;
+  /** Owner views; absent on older APIs (then the explicit Publish UI is used). */
+  visibility?: Visibility;
   /** Highest committed version; 0 = empty game, no package yet. */
   latestVersion: number;
   publishedVersion: number | null;
@@ -460,9 +464,9 @@ export const api = {
   /** Owners get a full Game; anyone else gets a PublicGame (published only). §11.2: plus `viewer`. */
   game: (id: string) =>
     request<{ game: (Game | PublicGame) & { viewer?: Viewer }; viewer?: Viewer }>(`/v1/games/${enc(id)}`),
-  createGame: (body: { name: string; description?: string }) =>
+  createGame: (body: { name: string; description?: string; visibility?: Visibility }) =>
     request<{ game: Game }>('/v1/games', { method: 'POST', body }),
-  updateGame: (id: string, body: { name?: string; description?: string }) =>
+  updateGame: (id: string, body: { name?: string; description?: string; visibility?: Visibility }) =>
     request<{ game: Game }>(`/v1/games/${enc(id)}`, { method: 'PATCH', body }),
   publish: (id: string, version?: number) =>
     request<{ game: Game }>(`/v1/games/${enc(id)}/publish`, {

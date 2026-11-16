@@ -40,6 +40,17 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       },
     ],
   },
+  // Web app (PWA at https://pwa.dreamsy.dev): `npx expo export --platform web` -> dist/, a single-page
+  // app. public/index.html (meta, safe areas, desktop phone column) + public/manifest.webmanifest.
+  web: {
+    output: 'single',
+    bundler: 'metro',
+    name: 'Dreamsy',
+    shortName: 'Dreamsy',
+    description: 'Say a game. Play it today.',
+    themeColor: '#EFEFED',
+    backgroundColor: '#EFEFED',
+  },
   plugins: [
     'expo-router',
     'expo-splash-screen',

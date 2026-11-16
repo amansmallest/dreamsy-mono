@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
+import { selection } from '../haptics';
 import { useEffect, useRef, useState, type ComponentProps, type ReactNode } from 'react';
 import {
   AccessibilityInfo,
@@ -28,7 +28,7 @@ export { PixelCloud, PixelCoin, PixelSky, PixelSparkle } from './pixel';
 
 export type IconName = ComponentProps<typeof Ionicons>['name'];
 
-export const tap = () => void Haptics.selectionAsync().catch(() => {});
+export const tap = selection;
 
 /** Brand sparkle (pixel). Kept under its old name; `color` defaults to the accent. */
 export function Sparkle({ size = 16, color, style }: { size?: number; color?: string; style?: StyleProp<ViewStyle> }) {

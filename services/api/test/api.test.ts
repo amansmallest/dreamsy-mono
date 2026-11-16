@@ -95,7 +95,7 @@ function completeForm(workerId: string, zip: Uint8Array, summary = "built it") {
 }
 
 async function newGameWithGeneration(token: string, prompt = "make a tower defense") {
-  const { data: g } = await call("POST", "/v1/games", { token, json: { name: "My game" } });
+  const { data: g } = await call("POST", "/v1/games", { token, json: { name: "My game", visibility: "private" } });
   const { data: gen, status } = await call("POST", `/v1/games/${g.game.id}/generations`, { token, json: { prompt } });
   expect(status).toBe(201);
   return { gameId: g.game.id as string, genId: gen.generation.id as string };
@@ -152,7 +152,7 @@ describe("full generation flow", () => {
     const up = await call("POST", "/v1/uploads", { token: owner, form });
     expect(up.status).toBe(201);
 
-    const { data: g } = await call("POST", "/v1/games", { token: owner, json: { name: "Tiny Clash" } });
+    const { data: g } = await call("POST", "/v1/games", { token: owner, json: { name: "Tiny Clash", visibility: "private" } });
     const gameId = g.game.id;
     const gen = await call("POST", `/v1/games/${gameId}/generations`, {
       token: owner,

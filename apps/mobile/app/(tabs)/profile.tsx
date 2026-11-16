@@ -11,6 +11,8 @@ import { NotificationBell } from '@/components/NotificationBell';
 import { ProfileView } from '@/components/ProfileView';
 import { useFriendsAvailable, useFriendsState } from '@/friends';
 import { unregisterPush } from '@/push';
+import { useInstall } from '@/install';
+import { canScan } from '@/platform';
 import { hairline, ink, radius } from '@/theme';
 import { IconButton, PixelCoin, Pressy, Txt, type IconName } from '@/ui';
 import { useWallet } from '@/wallet';
@@ -38,6 +40,7 @@ const describe = (e: LedgerEntry) => {
 /** Me: handle bar with a menu, Instagram profile, coins wallet, creator earnings. */
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
+  const installer = useInstall();
   const { wallet, recent, error, refresh, live } = useWallet();
   const [open, setOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
@@ -63,10 +66,17 @@ export default function ProfileScreen() {
     ]);
 
   const menu = () => {
-    const items = ['Family & friends', 'Edit avatar', 'Scan a game', 'Sign out'];
-    const pick = (i: number) => (i === 0 ? router.push('/groups') : i === 1 ? router.push('/avatar') : i === 2 ? router.push('/scan') : confirmSignOut());
+    const entries: [string, () => void][] = [
+      ['Family & friends', () => router.push('/groups')],
+      ['Edit avatar', () => router.push('/avatar')],
+      ...(canScan ? [['Scan a game', () => router.push('/scan')] as [string, () => void]] : []),
+      ['Sign out', confirmSignOut],
+    ];
+    const items = entries.map(([t]) => t);
+    const pick = (i: number) => entries[i]?.[1]();
+    const n = items.length;
     if (Platform.OS === 'ios') {
-      ActionSheetIOS.showActionSheetWithOptions({ options: [...items, 'Cancel'], cancelButtonIndex: 4, destructiveButtonIndex: 3 }, (i) => i < 4 && pick(i));
+      ActionSheetIOS.showActionSheetWithOptions({ options: [...items, 'Cancel'], cancelButtonIndex: n, destructiveButtonIndex: n - 1 }, (i) => i < n && pick(i));
     } else {
       Alert.alert('Menu', undefined, [...items.map((t, i) => ({ text: t, onPress: () => pick(i) })), { text: 'Cancel', style: 'cancel' as const }]);
     }
@@ -91,7 +101,8 @@ export default function ProfileScreen() {
             {hasFriends && <Row icon="person-add-outline" label="Friends" count={requests} onPress={() => router.push('/friends')} />}
             <Row icon="people-outline" label="Family & friends" onPress={() => router.push('/groups')} />
             <Row icon="person-circle-outline" label="Edit avatar" onPress={() => router.push('/avatar')} />
-            <Row icon="qr-code-outline" label="Scan a game" onPress={() => router.push('/scan')} />
+            {canScan && <Row icon="qr-code-outline" label="Scan a game" onPress={() => router.push('/scan')} />}
+            {installer.canInstall && <Row icon="download-outline" label="Install Dreamsy" onPress={installer.install} />}
             <Row icon="log-out-outline" label="Sign out" danger last onPress={confirmSignOut} />
           </View>
         }

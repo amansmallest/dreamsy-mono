@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { FlatList, Pressable, RefreshControl, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
+import { FlatList, Pressable, RefreshControl, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { api, type FeedGame, type FeedTab } from '@/api';
 import { GameCard, GameRow } from '@/components/GameCard';
+import { useAppDimensions } from '@/platform';
 import { font, ink, radius } from '@/theme';
 import { Chip, Empty, Pills, Skeleton, Txt } from '@/ui';
 import { usePaged } from '@/usePaged';
@@ -22,7 +23,7 @@ const idOf = (g: FeedGame) => g.id;
 /** Discover: search, then charts by sort in a two-column grid. */
 export default function DiscoverScreen() {
   const params = useLocalSearchParams<{ sort?: string; multiplayer?: string }>();
-  const { width } = useWindowDimensions();
+  const { width } = useAppDimensions();
   const card = (width - PAD * 2 - GAP) / 2;
   const [sort, setSort] = useState<FeedTab>('trending');
   const [multiplayer, setMultiplayer] = useState(false);

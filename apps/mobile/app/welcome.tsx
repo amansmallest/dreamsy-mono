@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Animated, Easing, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api, type FeedGame, type LivePlayer } from '@/api';
 import { useAuth } from '@/auth';
@@ -9,6 +9,7 @@ import { GameCard, openGame } from '@/components/GameCard';
 import { openInvite } from '@/friends';
 import { LiveHeader, LivePeopleList, useLive } from '@/live';
 import { finishOnboarding } from '@/onboarding';
+import { useAppDimensions } from '@/platform';
 import { floating, hairline, ink, radius } from '@/theme';
 import { Button, IconButton, PixelSky, Skeleton, Txt, useReducedMotion } from '@/ui';
 
@@ -38,7 +39,7 @@ export default function WelcomeScreen() {
   const params = useLocalSearchParams<{ game?: string; board?: string; value?: string; rank?: string }>();
   const { user, updateUser } = useAuth();
   const insets = useSafeAreaInsets();
-  const { width, height } = useWindowDimensions();
+  const { width, height } = useAppDimensions();
   const reduced = useReducedMotion();
   const live = useLive();
   const result = resultLine(params.board, params.value, params.rank);

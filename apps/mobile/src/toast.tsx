@@ -4,7 +4,7 @@
 // replaces the current one. <ToastHost /> is mounted once in app/_layout.tsx.
 
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
+import { success as hapticSuccess } from './haptics';
 import { useEffect, useRef, useSyncExternalStore } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -69,7 +69,7 @@ function ToastView({ toast, onDone }: { toast: Toast & { key: number }; onDone: 
   const invite = toast.kind === 'invite';
 
   useEffect(() => {
-    if (paid || invite) void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    if (paid || invite) hapticSuccess();
     const duration = toast.duration ?? (paid ? 4000 : invite ? 8000 : 2600);
     const show = Animated.timing(enter, { toValue: 1, duration: reduced ? 0 : 260, easing: EASE_OUT, useNativeDriver: true });
     const out = Animated.timing(enter, { toValue: 0, duration: reduced ? 0 : 220, easing: Easing.in(Easing.quad), useNativeDriver: true });

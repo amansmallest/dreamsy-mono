@@ -3,6 +3,7 @@
 #   ./scripts/deploy.sh                 everything (restarts workers: running builds are interrupted!)
 #   ./scripts/deploy.sh --keep-workers  API + web + engine only; build workers keep running their jobs
 #   --no-engine                         don't republish the engine at play.dreamsy.dev
+# Static sites built here and rsynced: dashboard → dreamsy.dev, phone app PWA → pwa.dreamsy.dev.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 KEEP=0; ENGINE=1; for a in "$@"; do case "$a" in --keep-workers) KEEP=1;; --no-engine) ENGINE=0;; esac; done
@@ -11,6 +12,12 @@ grep -q "^VITE_API_URL=https://api.dreamsy.dev" apps/web/.env.local || { echo "a
 pnpm -s -C apps/web exec vite build --logLevel warn
 ssh dreamsy-ec2 'mkdir -p /srv/dreamsy/web'
 rsync -az --delete apps/web/dist/ dreamsy-ec2:/srv/dreamsy/web/
+# Phone app as a PWA → pwa.dreamsy.dev. Prod URLs passed here (they win over apps/mobile/.env.local,
+# which dev.sh rewrites with LAN IPs).
+(cd apps/mobile && rm -rf dist && EXPO_PUBLIC_API_URL=https://api.dreamsy.dev EXPO_PUBLIC_ENGINE_URL=https://play.dreamsy.dev/ \
+  npx expo export --platform web --output-dir dist >/dev/null)
+ssh dreamsy-ec2 'mkdir -p /srv/dreamsy/pwa'
+rsync -az --delete apps/mobile/dist/ dreamsy-ec2:/srv/dreamsy/pwa/
 rsync -az --delete --exclude node_modules --exclude .git --exclude apps --exclude .dev-logs --exclude .data \
   --exclude '*credentials*' --exclude '.env' --exclude '.env.local' --exclude 'harness/.env' --exclude 'services/api/.env' \
   --exclude engine-web/dist ./ dreamsy-ec2:dreamsy/

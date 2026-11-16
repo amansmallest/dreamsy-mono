@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActionSheetIOS, Alert, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { ActionSheetIOS, Alert, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { api, ApiError, type FeedGame, type Creator, type Game, type GameStats, type Orientation, type Players, type RemixOf } from '@/api';
 import { useAuth } from '@/auth';
 import { playLabel, priceOf, useEconomy, usePassActive, usePlayGate, usePlayStatus } from '@/coins';
@@ -12,6 +12,7 @@ import { ShareWithGroupSheet } from '@/components/ShareWithGroupSheet';
 import { SpinOffSheet } from '@/components/SpinOffSheet';
 import { Thumbnail } from '@/components/Thumbnail';
 import { compact, REPORT_REASONS, shareGame } from '@/social';
+import { useAppDimensions } from '@/platform';
 import { errorMessage, hairline, ink, radius } from '@/theme';
 import { Button, Empty, Loading, Pressy, Txt, type IconName } from '@/ui';
 
@@ -39,7 +40,7 @@ type Detail = {
 /** Game page: cover, name and creator, big Play, actions, stats, about, spin-offs. */
 export default function GameScreen() {
   const { id, spin } = useLocalSearchParams<{ id: string; spin?: string }>();
-  const { width } = useWindowDimensions();
+  const { width } = useAppDimensions();
   const { user } = useAuth();
   const [game, setGame] = useState<Detail | null>(null);
   const [liked, setLiked] = useState(false);

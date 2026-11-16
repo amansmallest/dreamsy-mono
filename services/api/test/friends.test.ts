@@ -284,7 +284,7 @@ describe("game invites", () => {
     const ann = await user("ann");
     const bob = await user("bob");
     await befriend(ann, bob);
-    const draft = (await call("POST", "/v1/games", { token: bob.token, json: { name: "Secret" } })).data.game;
+    const draft = (await call("POST", "/v1/games", { token: bob.token, json: { name: "Secret", visibility: "private" } })).data.game;
     expect((await call("POST", "/v1/invites", { token: ann.token, json: { userId: bob.id, gameId: draft.id, roomCode: "ABC234" } })).status).toBe(404);
   });
 });

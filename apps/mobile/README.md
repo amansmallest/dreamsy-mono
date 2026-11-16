@@ -29,6 +29,23 @@ Apple only fully works on a real device signed with a team that has the capabili
 Rerun `npx expo prebuild --clean` after changing `app.config.ts`, env vars it reads, or
 native dependencies.
 
+## Web app (PWA, https://pwa.dreamsy.dev)
+
+The same app, built for the browser for people without the native app (phones and laptops):
+`pnpm -C apps/mobile build:web` → `apps/mobile/dist` (SPA, prod API + engine URLs passed on the command
+line, so `.env.local` doesn't leak in). `scripts/deploy.sh` builds it and rsyncs it to
+`/srv/dreamsy/pwa` (Caddy `pwa.dreamsy.dev`). Shell, manifest and icons are in `public/`.
+
+Web-only files (`*.web.ts(x)`, picked by Metro on web): `EngineView.web.tsx` (the player in an
+`<iframe>`, engine messages via `postMessage`, keyboard focus), `auth/tokenStore.web.ts` (token in
+localStorage), `auth/native.web.ts` (no Apple), `haptics.web.ts` (no-op), `dialogs.web.tsx`
+(in-app `Alert.alert` + `Share.share` → share sheet or copy link), `playerWindow.web.ts` (desktop:
+full-window player at the game's aspect + keys hint; phones: full screen / "turn sideways" for
+landscape), `mouseScroll.web.ts` (drag-scroll shelves), `install.web.tsx` (install banner/row, iOS
+"Add to Home Screen" sheet, after the first game), `app/scan.web.tsx` (no camera; entry points
+hidden). Push is skipped on web (`src/push.ts`); the inbox still polls. On wide screens the app
+sits in a 480 px column (`useAppDimensions`).
+
 ## Env
 
 | Var | Used by | What |

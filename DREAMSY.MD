@@ -423,7 +423,7 @@ unless marked **public**.
 - Thumbnails: the worker uploads `thumbnail` (JPEG, multipart field on `/complete`) taken from the harness playtest; stored per version. `GET /v1/games/:id/versions/:v/thumbnail` (public for the published version) — `thumbnailUrl` points at it.
 
 ### 11.3 Remix (fork)
-- `POST /v1/games/:id/remix` → creates a new **draft** game owned by the caller whose version 1 is a
+- `POST /v1/games/:id/remix` → creates a new game (public by default, §11.8, so v1 goes live) owned by the caller whose version 1 is a
   copy of the source's published version (or latest, if the caller owns the source).
   `remixOf = {gameId, version}` stored; source `remixes` +1. Name "<source> (remix)".
 - Remixes keep a credit line in their public view; store items are removed from the copy's manifest
@@ -500,6 +500,23 @@ currency, shown to users as **coins**. 10,000 coins = $0.10 (1,000,000 = $10); n
 
 ### 11.7 Safety
 - `POST /v1/games/:id/report {reason}`; games with ≥3 distinct reports are hidden from feeds pending review (`hidden` flag).
+
+### 11.8 Visibility (public by default, 2026-11-15)
+- `games.visibility = "public" | "private"`, default `"public"`: "all games are public until you set it".
+- **Public** ⇒ auto-publish: every committed version (worker checkpoint/complete, revert, a remix's copied
+  v1) becomes the live one in the same transaction (`status = published`, `publishedVersion = v`,
+  `publishedAt` set once, trending recomputed). Everyone plays the newest version.
+- **Private** ⇒ never published; only the owner and groups it's shared with (§13) can play it.
+- `PATCH /v1/games/:id {visibility}` (owner): `private` unpublishes; `public` publishes the latest version
+  (an empty game just turns public and its first commit goes live). `POST /publish {version?}` = public +
+  that version live (pin an older version; the next commit moves live to the newest again).
+  `POST /unpublish` = private. `POST /v1/games {visibility?}` may create private up front.
+- Owner views include `visibility`. `hidden` (moderation) stays separate: hidden games never show in feeds.
+- Migration 0015: existing games `published` → public, everything else → private (nothing private gets
+  exposed; old drafts are not auto-published).
+- Clients: a Public/Private switch replaces Publish/Unpublish ("Public: everyone can play the newest
+  version" / "Private: only you (and groups you share with)"); "Make vN live" pins an older version of a
+  public game. Clients fall back to the old publish UI if the API omits `visibility`.
 
 ## 12. Genre kits + big-game pipeline (spec, 2026-11-15)
 

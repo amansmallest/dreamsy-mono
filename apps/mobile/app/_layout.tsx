@@ -8,7 +8,11 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { AuthProvider, useAuth } from '@/auth';
+import { DialogHost } from '@/dialogs';
+// Web: mouse drag scrolls horizontal shelves (src/mouseScroll.web.ts); nothing on iOS / Android.
+import '@/mouseScroll';
 import { hasPendingJoin, takePendingJoin } from '@/groups';
+import { InstallHost } from '@/install';
 import { useNotificationsPoller } from '@/notifications';
 import { FirstRunCover, useFirstRun } from '@/onboarding';
 import { installPushHandlers, openLaunchPush, registerPush } from '@/push';
@@ -113,6 +117,10 @@ function RootNavigator() {
       </Stack>
       {firstRunCover && <FirstRunCover />}
       <ToastHost />
+      {/* Web only: in-app Alert dialogs (src/dialogs.web.tsx); renders nothing on iOS / Android. */}
+      <DialogHost />
+      {/* Web only: iOS "Add to Home Screen" sheet (src/install.web.tsx). */}
+      <InstallHost />
     </>
   );
 }

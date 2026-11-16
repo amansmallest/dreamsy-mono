@@ -7,6 +7,7 @@ import { api, authHeader, isActiveGeneration, thumbnailUrlFor, type Game, type G
 import { CREATE_PRICE, formatCoins, insufficientFrom, OutOfCoinsSheet, useCreatePrice } from '@/coins';
 import { Thumbnail } from '@/components/Thumbnail';
 import { etaFromGeneration, etaLine, useEtaRemaining } from '@/generationProgress';
+import { canScan } from '@/platform';
 import { errorMessage, font, ink, radius } from '@/theme';
 import { showToast } from '@/toast';
 import { Badge, Button, Header, IconButton, Loading, PixelSky, Pressy, Txt } from '@/ui';
@@ -137,7 +138,7 @@ export default function CreateScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
-      <Header title="Create" right={<IconButton icon="qr-code-outline" label="Scan from dashboard" onPress={() => router.push('/scan')} />} />
+      <Header title="Create" right={canScan ? <IconButton icon="qr-code-outline" label="Scan from dashboard" onPress={() => router.push('/scan')} /> : undefined} />
       {sorted === null && !error ? (
         <Loading />
       ) : (
@@ -172,6 +173,9 @@ export default function CreateScreen() {
                   busy={creating}
                   onPress={newGame}
                 />
+                <Txt variant="meta" muted center>
+                  Public · you can make it private later
+                </Txt>
               </View>
               {error && (
                 <Txt variant="meta" color={ink.danger} center>

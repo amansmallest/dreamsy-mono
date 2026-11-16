@@ -65,12 +65,16 @@ export type Insights = {
   totals: { builds: number; succeeded: number; avgArtScore: number | null; avgCostUsd: number | null; memoryItems?: number };
 };
 
+export type Visibility = 'public' | 'private';
+
 export type Game = {
   id: string;
   ownerId: string;
   name: string;
   description: string;
   status: 'draft' | 'published';
+  /** Owner views (DREAMSY.MD §11.8). Public = newest version auto-live. Absent on older APIs. */
+  visibility?: Visibility;
   latestVersion: number;
   publishedVersion: number | null;
   publishedAt: string | null;
@@ -262,6 +266,7 @@ export const api = {
   renameGame: (id: string, name: string) => request<{ game: Game }>(`/v1/games/${enc(id)}`, { method: 'PATCH', body: { name } }),
   publish: (id: string, version: number) => request<{ game: Game }>(`/v1/games/${enc(id)}/publish`, { method: 'POST', body: { version } }),
   unpublish: (id: string) => request<{ game: Game }>(`/v1/games/${enc(id)}/unpublish`, { method: 'POST', body: {} }),
+  setVisibility: (id: string, visibility: Visibility) => request<{ game: Game }>(`/v1/games/${enc(id)}`, { method: 'PATCH', body: { visibility } }),
   versions: (id: string) => request<{ versions: GameVersion[] }>(`/v1/games/${enc(id)}/versions`),
   revert: (id: string, version: number) => request<{ version: GameVersion }>(`/v1/games/${enc(id)}/revert`, { method: 'POST', body: { version } }),
   assets: (id: string, v: number) => request<{ assets: Asset[] }>(`/v1/games/${enc(id)}/versions/${v}/assets`),

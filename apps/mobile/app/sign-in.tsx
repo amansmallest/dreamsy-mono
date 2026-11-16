@@ -76,7 +76,7 @@ export default function SignInScreen() {
 
   return (
     <SafeAreaView style={styles.screen}>
-      <PixelSky dense style={styles.sky} />
+      <PixelSky style={styles.sky} />
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
           <View style={styles.top}>
@@ -87,7 +87,7 @@ export default function SignInScreen() {
           </View>
 
           <View style={styles.hero}>
-            <AvatarHero avatar={KNIGHT} seed="dreamsy" size={sentTo ? 150 : 200} />
+            {!sentTo && <AvatarHero avatar={KNIGHT} seed="dreamsy" size={112} />}
             <Txt variant="display" center style={styles.title}>
               {sentTo ? 'Check your email' : 'Dream it.\nPlay it.'}
             </Txt>
@@ -215,19 +215,19 @@ function friendly(what: Busy, e: unknown): string {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: ink.card },
-  sky: { position: 'absolute', top: 0, left: 0, right: 0, height: '52%' },
+  sky: { position: 'absolute', top: 0, left: 0, right: 0, height: '38%', opacity: 0.85 },
   flex: { flex: 1 },
   scroll: { flexGrow: 1, paddingHorizontal: 24, paddingBottom: 12 },
   top: { paddingTop: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
   logo: { fontSize: 22 },
-  hero: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 16 },
-  title: { fontSize: 38, lineHeight: 42, marginTop: 4, color: ink.navy },
+  hero: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8, paddingTop: 24, paddingBottom: 28 },
+  title: { fontSize: 32, lineHeight: 36, marginTop: 6, color: ink.navy },
   subtitle: { maxWidth: 320 },
-  form: { gap: 12 },
+  form: { gap: 12, width: '100%', maxWidth: 420, alignSelf: 'center' },
   code: { minHeight: 58 },
   row: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 4, paddingTop: 2 },
   or: { flexDirection: 'row', alignItems: 'center', gap: 10, marginVertical: 2 },
   orLine: { flex: 1, height: hairline, backgroundColor: ink.border },
   error: { marginTop: 12 },
-  guest: { height: 44, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
+  guest: { height: 44, alignItems: 'center', justifyContent: 'center', marginTop: 8, marginBottom: 8 },
 });

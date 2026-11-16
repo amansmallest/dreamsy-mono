@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
-import { apiBaseUrl } from '../api';
 import { useAuth } from '../auth';
 import { walletChanged } from '../wallet';
+import { ENGINE_BG, engineUrl, type EngineViewProps } from './engineShared';
 
 // The game player: a WebView running the engine-web page in embed mode, which loads the package
 // for (gameId, version) from services/api and posts JSON messages back (see engine-web/dev/main.ts):
@@ -16,54 +16,7 @@ import { walletChanged } from '../wallet';
 const Web = WebView<{}>;
 type Web = WebView<{}>;
 
-const ENGINE_BG = '#0d1117'; // engine-web page background, so loading doesn't flash white
-
-export type RunEnd = {
-  reason: 'finish' | 'submit' | 'gameover' | 'quit' | string;
-  board?: string;
-  value?: number;
-  rank?: number;
-};
-
-export type Insets = { top: number; right: number; bottom: number; left: number };
-
-export type EngineViewProps = {
-  gameId: string;
-  /** Safe-area insets (CSS px) for the engine's UI anchors / touch controls (§11.1). Full-screen only. */
-  insets?: Insets;
-  /** Version to play; must be >= 1. */
-  version: number;
-  style?: StyleProp<ViewStyle>;
-  onReady?: () => void;
-  onError?: (message: string) => void;
-  /** Pause menu "Quit". */
-  onQuit?: () => void;
-  onPurchase?: (itemId: string, balance: number | null) => void;
-  /** A run ended (game over, round finished, score submitted, match over). */
-  onRunEnd?: (run: RunEnd) => void;
-  /** Multiplayer room code to join straight away (skips the lobby menu). */
-  room?: string;
-  /** With `room`: watch as a spectator (no avatar, no controls). */
-  spectate?: boolean;
-};
-
-export type RoomOpts = { room?: string; spectate?: boolean };
-
-/** Engine page URL, or null if EXPO_PUBLIC_ENGINE_URL / EXPO_PUBLIC_API_URL isn't set. */
-export function engineUrl(gameId: string, version: number, token: string | null, insets?: Insets, roomOpts: RoomOpts = {}): string | null {
-  const base = (process.env.EXPO_PUBLIC_ENGINE_URL ?? '').trim();
-  if (!base || !apiBaseUrl) return null;
-  const params: Record<string, string> = { api: apiBaseUrl, game: gameId, version: String(version), token: token ?? '', embed: '1' };
-  if (insets) params.insets = [insets.top, insets.right, insets.bottom, insets.left].map((n) => Math.round(n)).join(',');
-  if (roomOpts.room) {
-    params.room = roomOpts.room;
-    if (roomOpts.spectate) params.spectate = '1';
-  }
-  const q = Object.entries(params)
-    .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
-    .join('&');
-  return `${base}${base.includes('?') ? '&' : '?'}${q}`;
-}
+export { engineUrl, type EngineViewProps, type Insets, type RoomOpts, type RunEnd } from './engineShared';
 
 export function EngineView({ gameId, version, insets, style, onReady, onError, onQuit, onPurchase, onRunEnd, room, spectate }: EngineViewProps) {
   const { getAccessToken } = useAuth();

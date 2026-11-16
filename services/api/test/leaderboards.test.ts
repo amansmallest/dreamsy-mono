@@ -102,7 +102,7 @@ function resultForm(workerId: string, zip: Uint8Array, opts: { summary?: string;
 }
 
 async function startGeneration(token: string, name = "My game") {
-  const { data: g } = await call("POST", "/v1/games", { token, json: { name } });
+  const { data: g } = await call("POST", "/v1/games", { token, json: { name, visibility: "private" } });
   const gen = await call("POST", `/v1/games/${g.game.id}/generations`, { token, json: { prompt: "make it" } });
   await call("POST", "/v1/worker/claim", { ...W, json: { workerId: "w1" } });
   return { gameId: g.game.id as string, genId: gen.data.generation.id as string };

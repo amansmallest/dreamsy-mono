@@ -1,6 +1,6 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import type { BetaMessageStreamParams } from "@anthropic-ai/sdk/resources/beta/messages/messages";
-import { MODELS, registerPrice, type AgentLLM } from "./models.js";
+import { MODELS, registerPrice, type AgentLLM, type StructuredLLM } from "./models.js";
 
 /**
  * OpenAI as the BUILDER (agent loop + content workers) behind the same AgentLLM seam as Claude.
@@ -54,6 +54,42 @@ function toInput(messages: BetaMessageStreamParams["messages"]): Item[] {
   return out;
 }
 
+/** Typed OpenAI API failure (status + error code) so the key failover can tell "out of credits" apart. */
+export class OpenAIError extends Error {
+  constructor(readonly status: number, readonly code: string | null, message: string) { super(message); this.name = "OpenAIError"; }
+}
+
+/** Structured JSON calls (router, critic, lessons) on OpenAI — used only when the Claude account can't serve them. */
+export function openaiJson(apiKey: string): StructuredLLM {
+  return {
+    async json({ model, system, content, schema, effort }) {
+      const { z } = await import("zod");
+      const jsonSchema = z.toJSONSchema(schema as never, { target: "draft-7" }) as Record<string, unknown>;
+      delete jsonSchema.$schema;
+      const res = await fetch("https://api.openai.com/v1/responses", {
+        method: "POST",
+        headers: { authorization: `Bearer ${apiKey}`, "content-type": "application/json" },
+        body: JSON.stringify({
+          model: mapModel(model),
+          instructions: system,
+          input: toInput([{ role: "user", content: content as never }]),
+          reasoning: { effort: effort === "low" || effort === "high" ? effort : "medium" },
+          max_output_tokens: 4000,
+          store: false,
+          text: { format: { type: "json_schema", name: "output", schema: jsonSchema, strict: false } },
+        }),
+        signal: AbortSignal.timeout(5 * 60_000),
+      });
+      const data = (await res.json()) as any;
+      if (!res.ok || data.error) throw new OpenAIError(res.status, data.error?.code ?? null, `openai ${res.status}: ${data.error?.message ?? "request failed"}`);
+      const text = (data.output ?? []).flatMap((o: any) => (o.type === "message" ? o.content ?? [] : [])).find((c: any) => c.type === "output_text")?.text ?? "";
+      const value = schema.parse(JSON.parse(text));
+      const cached = data.usage?.input_tokens_details?.cached_tokens ?? 0;
+      return { value, model: mapModel(model), usage: { input_tokens: (data.usage?.input_tokens ?? 0) - cached, output_tokens: data.usage?.output_tokens ?? 0, cache_read_input_tokens: cached } };
+    },
+  };
+}
+
 export function openaiLLM(apiKey: string): AgentLLM {
   const fast = process.env.OPENAI_FAST !== "0";
   return {
@@ -86,7 +122,7 @@ export function openaiLLM(apiKey: string): AgentLLM {
         await new Promise((r) => setTimeout(r, 2000 * 2 ** attempt));
       }
       const data = (await res!.json()) as any;
-      if (!res!.ok || data.error) throw new Error(`openai ${res!.status}: ${data.error?.message ?? "request failed"}`);
+      if (!res!.ok || data.error) throw new OpenAIError(res!.status, data.error?.code ?? null, `openai ${res!.status}: ${data.error?.message ?? "request failed"}`);
       const content: Anthropic.Beta.BetaContentBlock[] = [];
       for (const o of data.output ?? []) {
         if (o.type === "reasoning" && o.encrypted_content) {

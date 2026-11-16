@@ -46,6 +46,11 @@ export const games = pgTable("games", {
   description: text("description").notNull().default(""),
   /** "draft" | "published" */
   status: text("status").notNull().default("draft"),
+  /**
+   * "public" | "private" (DREAMSY.MD §11.8). Public games auto-publish every new version;
+   * private games are never published. Separate from `hidden` (moderation).
+   */
+  visibility: text("visibility").notNull().default("public"),
   /** Highest committed version; 0 = empty game, no package yet. */
   latestVersion: integer("latest_version").notNull().default(0),
   publishedVersion: integer("published_version"),

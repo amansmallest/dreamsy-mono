@@ -75,7 +75,7 @@ function makePackage(m: string) {
 }
 
 async function makeGame(token: string, name: string, publish = true) {
-  const { data: g } = await call("POST", "/v1/games", { token, json: { name } });
+  const { data: g } = await call("POST", "/v1/games", { token, json: { name, visibility: "private" } });
   const gen = await call("POST", `/v1/games/${g.game.id}/generations`, { token, json: { prompt: "make it" } });
   await call("POST", "/v1/worker/claim", { ...W, json: { workerId: "w1" } });
   const f = new FormData();

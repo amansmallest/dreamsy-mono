@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, lt, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, lt } from "drizzle-orm";
 import { z } from "zod";
 import { optionalUser, requireUser } from "../auth.js";
 import { fail, parseJson, router, type Deps } from "../context.js";
@@ -14,6 +14,7 @@ import {
   getVersion,
   multiplayerFilter,
   parseLimit,
+  publishFields,
   sharedWithUser,
   readPackage,
   recomputeTrending,
@@ -25,9 +26,12 @@ import {
 
 const { games, gameVersions } = schema;
 
+const Visibility = z.enum(["public", "private"]);
 const CreateGame = z.object({
   name: z.string().trim().min(1).max(80),
   description: z.string().max(2000).optional(),
+  /** §11.8: default "public" (every new version goes live). */
+  visibility: Visibility.optional(),
 });
 const UpdateGame = CreateGame.partial();
 const Publish = z.object({ version: z.number().int().positive().optional() });
@@ -58,6 +62,7 @@ export function gameRoutes({ db, storage, config }: Deps) {
       ownerId: c.get("userId"),
       name: body.name,
       description: body.description ?? "",
+      ...(body.visibility ? { visibility: body.visibility } : {}),
     }).returning();
     return c.json({ game: await viewGame(db, game!, c.get("userId")) }, 201);
   });
@@ -95,36 +100,59 @@ export function gameRoutes({ db, storage, config }: Deps) {
     return c.json({ game: await viewGame(db, g, userId) });
   });
 
+  /** Rename / describe / switch visibility (§11.8). Public ⇒ latest version goes live; private ⇒ unpublished. */
   r.patch("/v1/games/:id", async (c) => {
-    const body = await parseJson(c.req.raw, UpdateGame);
-    await getOwnedGame(db, c.req.param("id"), c.get("userId"));
-    const [g] = await db.update(games)
-      .set({ ...body, updatedAt: new Date() })
-      .where(eq(games.id, c.req.param("id")))
-      .returning();
-    return c.json({ game: await viewGame(db, g!, c.get("userId")) });
+    const { visibility, ...body } = await parseJson(c.req.raw, UpdateGame);
+    const g = await getOwnedGame(db, c.req.param("id"), c.get("userId"));
+    if (Object.keys(body).length > 0) {
+      await db.update(games).set({ ...body, updatedAt: new Date() }).where(eq(games.id, g.id));
+    }
+    if (visibility === "public") await setLive(g.id, null);
+    else if (visibility === "private") await makePrivate(g.id);
+    return c.json({ game: await viewGame(db, await getGame(db, g.id), c.get("userId")) });
   });
 
+  /**
+   * Make the game public and put `version` (default: latest) live. With no versions yet it just
+   * turns public; the first commit then goes live by itself.
+   */
+  async function setLive(id: string, requested: number | null) {
+    await db.transaction(async (tx) => {
+      const g = await getGame(tx, id, { lock: true });
+      const version = requested ?? g.latestVersion;
+      if (version < 1) {
+        await tx.update(games).set({ visibility: "public", updatedAt: new Date() }).where(eq(games.id, id));
+        return;
+      }
+      await getVersion(tx, id, version);
+      await tx.update(games)
+        .set({ visibility: "public", ...publishFields(version), updatedAt: new Date() })
+        .where(eq(games.id, id));
+      await recomputeTrending(tx, id);
+    });
+  }
+
+  async function makePrivate(id: string) {
+    await db.update(games)
+      .set({ visibility: "private", status: "draft", publishedVersion: null, updatedAt: new Date() })
+      .where(eq(games.id, id));
+  }
+
+  /** Public + this version live (pin an older version: the next commit moves live to the newest again). */
   r.post("/v1/games/:id/publish", async (c) => {
     const body = await parseJson(c.req.raw, Publish);
     const g = await getOwnedGame(db, c.req.param("id"), c.get("userId"));
     const version = body.version ?? g.latestVersion;
     if (version < 1) fail(409, "game has no versions yet");
-    await getVersion(db, g.id, version);
-    await db.update(games)
-      .set({ status: "published", publishedVersion: version, publishedAt: sql`coalesce(${games.publishedAt}, now())`, updatedAt: new Date() })
-      .where(eq(games.id, g.id));
-    await recomputeTrending(db, g.id);
+    await setLive(g.id, version);
     return c.json({ game: await viewGame(db, await getGame(db, g.id), c.get("userId")) });
   });
 
+  /** Same as PATCH {visibility: "private"}. */
   r.post("/v1/games/:id/unpublish", async (c) => {
     const g = await getOwnedGame(db, c.req.param("id"), c.get("userId"));
-    const [updated] = await db.update(games)
-      .set({ status: "draft", publishedVersion: null, updatedAt: new Date() })
-      .where(eq(games.id, g.id))
-      .returning();
-    return c.json({ game: await viewGame(db, updated!, c.get("userId")) });
+    await makePrivate(g.id);
+    return c.json({ game: await viewGame(db, await getGame(db, g.id), c.get("userId")) });
   });
 
   r.get("/v1/games/:id/versions", async (c) => {

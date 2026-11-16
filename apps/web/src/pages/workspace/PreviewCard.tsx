@@ -3,8 +3,8 @@ import { PlayOnPhone, QrCode } from '../../components/PlayOnPhone';
 import { PlayInStudio } from '../../components/PlayInStudio';
 import { Icon, PixelCloud } from '../../components/Icon';
 import { BuildRing } from '../../components/GameCard';
-import { AuthedImg, Button, Chip, IconButton } from '../../components/ui';
-import { api, errorMessage, type Game, type GameVersion } from '../../lib/api';
+import { AuthedImg, Button, Chip, IconButton, Segmented } from '../../components/ui';
+import { api, errorMessage, type Game, type GameVersion, type Visibility } from '../../lib/api';
 import { deepLink } from '../../lib/env';
 import { timeAgo } from '../../lib/format';
 import { invalidate } from '../../lib/store';
@@ -35,6 +35,18 @@ export function PreviewCard({ game, versions, version, onVersion, building }: {
     try { await api.unpublish(game.id); invalidate(`game:${game.id}`); invalidate('games'); }
     catch (e) { alert(errorMessage(e)); } finally { setBusy(false); }
   };
+
+  const setVisibility = async (next: Visibility) => {
+    if (next === game.visibility) return;
+    if (next === 'private' && game.status === 'published'
+      && !confirm('Make private? The game leaves feeds and its share link stops working.')) return;
+    setBusy(true);
+    try { await api.setVisibility(game.id, next); invalidate(`game:${game.id}`); invalidate('games'); }
+    catch (e) { alert(errorMessage(e)); } finally { setBusy(false); }
+  };
+  // Older APIs don't send `visibility`: keep the explicit Publish/Unpublish UI there.
+  const hasVisibility = game.visibility !== undefined;
+  const isPublic = game.visibility === 'public';
 
   return (
     <div className="preview card">
@@ -71,7 +83,18 @@ export function PreviewCard({ game, versions, version, onVersion, building }: {
         {version > 0 && (
           <Button size="lg" className="w-full" icon="play" onClick={() => setPlaying(true)}>Play v{version}</Button>
         )}
-        {game.latestVersion > 0 && (isLiveVersion ? (
+        {hasVisibility ? (
+          <div className="visibility">
+            <Segmented<Visibility> value={game.visibility!} onChange={(v) => { if (!busy) void setVisibility(v); }}
+              options={[{ value: 'public', label: 'Public' }, { value: 'private', label: 'Private' }]} />
+            <p className="visibility-hint">
+              {isPublic ? 'Public: everyone can play the newest version' : 'Private: only you (and groups you share with)'}
+            </p>
+            {isPublic && version > 0 && !isLiveVersion && (
+              <Button variant="outline" className="w-full" icon="upload" busy={busy} onClick={publish}>Make v{version} live</Button>
+            )}
+          </div>
+        ) : game.latestVersion > 0 && (isLiveVersion ? (
           <Button variant="outline" className="w-full" icon="check" disabled>Live · v{version}</Button>
         ) : (
           <Button className="w-full" icon="upload" busy={busy} onClick={publish}>
@@ -86,7 +109,7 @@ export function PreviewCard({ game, versions, version, onVersion, building }: {
           </span>
           <Icon name="chevronRight" size={18} className="muted" />
         </button>
-        {game.status === 'published' && (
+        {!hasVisibility && game.status === 'published' && (
           <button className="link-btn danger center" onClick={unpublish}>Unpublish</button>
         )}
       </div>

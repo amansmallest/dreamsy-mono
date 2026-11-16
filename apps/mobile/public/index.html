@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="%LANG_ISO_CODE%">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <!-- viewport-fit=cover: draw under the notch; screens pad with env(safe-area-inset-*) via react-native-safe-area-context. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <title>%WEB_TITLE%</title>
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon.png" type="image/png" sizes="48x48" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Dreamsy" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="format-detection" content="telephone=no" />
+    <style id="expo-reset">
+      /* Dreamsy app shell: full-height (dynamic viewport), no page scroll or rubber-band bounce;
+         screens scroll inside their own ScrollViews. */
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        overscroll-behavior: none;
+        background: #efefed;
+        -webkit-text-size-adjust: 100%;
+        -webkit-tap-highlight-color: transparent;
+      }
+      body {
+        position: fixed;
+        inset: 0;
+        touch-action: manipulation;
+      }
+      #root {
+        display: flex;
+        flex: 1;
+        height: 100%;
+        height: 100dvh;
+        width: 100%;
+        margin: 0 auto;
+        background: #efefed;
+        overflow: hidden;
+      }
+      /* Fields draw their own border, like the native app; no browser focus ring. */
+      input:focus,
+      textarea:focus {
+        outline: none;
+      }
+      /* Mouse drag-scrolling a shelf (src/mouseScroll.web.ts): no text selection, grabbing cursor. */
+      body.dreamsy-dragging,
+      body.dreamsy-dragging * {
+        user-select: none !important;
+        cursor: grabbing !important;
+      }
+      /* Desktop / tablet: the app in a phone-width column on a soft sky backdrop. */
+      @media (min-width: 560px) {
+        body {
+          background: radial-gradient(1200px 700px at 50% -10%, #dce8fa 0%, rgba(220, 232, 250, 0) 70%), #e6e6e2;
+        }
+        #root {
+          max-width: 480px;
+          box-shadow: 0 0 0 1px #e3e3df, 0 24px 60px rgba(13, 42, 102, 0.12);
+        }
+        /* The player with a landscape game takes the whole window (src/playerWindow.web.ts). */
+        body.dreamsy-wide #root {
+          max-width: none;
+          box-shadow: none;
+        }
+      }
+      :fullscreen #root,
+      body.dreamsy-wide #root {
+        background: #0a1630;
+      }
+    </style>
+    <script>
+      // Chrome can fire its install prompt before the app's JS loads; keep it for src/install.web.tsx.
+      window.__dreamsyInstall = null;
+      window.addEventListener('beforeinstallprompt', function (e) {
+        e.preventDefault();
+        window.__dreamsyInstall = e;
+      });
+    </script>
+  </head>
+
+  <body>
+    <noscript>You need to enable JavaScript to run Dreamsy.</noscript>
+    <div id="root"></div>
+  </body>
+</html>

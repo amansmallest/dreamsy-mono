@@ -10,11 +10,11 @@ import {
   RefreshControl,
   ScrollView,
   StyleSheet,
-  useWindowDimensions,
   View,
 } from 'react-native';
 import { api, ApiError, type FeedGame, type UserProfile } from '../api';
 import { useAuth } from '../auth';
+import { useAppDimensions } from '../platform';
 import { compact } from '../social';
 import { errorMessage, hairline, ink, radius } from '../theme';
 import { Button, Empty, Field, Loading, ProgressBar, Txt } from '../ui';
@@ -32,7 +32,7 @@ const PAD = 16;
 export function ProfileView({ userId, header, footer, onRefresh }: { userId: string; header?: ReactNode; footer?: ReactNode; onRefresh?: () => Promise<void> }) {
   const { user: me, updateUser } = useAuth();
   const isSelf = me?.id === userId;
-  const { width } = useWindowDimensions();
+  const { width } = useAppDimensions();
   const tile = (width - PAD * 2 - GAP) / 2;
 
   const [profile, setProfile] = useState<UserProfile | null>(null);

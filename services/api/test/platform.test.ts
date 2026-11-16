@@ -1,8 +1,11 @@
 import { PGlite } from "@electric-sql/pglite";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
+import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createApp } from "../src/app.js";
@@ -102,7 +105,7 @@ function resultForm(workerId: string, zip: Uint8Array, opts: { summary?: string;
 }
 
 async function startGeneration(token: string, name = "My game") {
-  const { data: g } = await call("POST", "/v1/games", { token, json: { name } });
+  const { data: g } = await call("POST", "/v1/games", { token, json: { name, visibility: "private" } });
   const gen = await call("POST", `/v1/games/${g.game.id}/generations`, { token, json: { prompt: "make it" } });
   await call("POST", "/v1/worker/claim", { ...W, json: { workerId: "w1" } });
   return { gameId: g.game.id as string, genId: gen.data.generation.id as string };
@@ -254,7 +257,7 @@ describe("remix", () => {
     expect(res.status).toBe(201);
     const remix = res.data.game;
     expect(remix).toMatchObject({
-      name: "Cat Clash (remix)", ownerId: fan.id, status: "draft", latestVersion: 1,
+      name: "Cat Clash (remix)", ownerId: fan.id, status: "published", visibility: "public", latestVersion: 1, publishedVersion: 1,
       remixOf: { gameId: src, name: "Cat Clash", version: 1 },
       thumbnailUrl: `/v1/games/${remix.id}/versions/1/thumbnail`,
     });
@@ -358,6 +361,8 @@ describe("thumbnails", () => {
     await call("POST", "/v1/worker/claim", { ...W, json: { workerId: "w1" } });
     const thumb2 = new Uint8Array([0xff, 0xd8, 0xff, 9, 9]);
     await call("POST", `/v1/worker/generations/${gen.data.generation.id}/complete`, { ...W, form: resultForm("w1", makePackage(manifest("Thumb v2")), { thumbnail: thumb2 }) });
+    // public games auto-publish v2; pin v1 live so v2 is unpublished
+    await call("POST", `/v1/games/${g}/publish`, { token: owner.token, json: { version: 1 } });
     expect((await call("GET", `/v1/games/${g}/versions/2/thumbnail`)).status).toBe(404);
     expect((await call("GET", `/v1/games/${g}/versions/2/thumbnail`, { token: owner.token })).status).toBe(200);
     expect((await call("GET", `/v1/games/${g}`, { token: owner.token })).data.game.thumbnailUrl).toBe(`/v1/games/${g}/versions/2/thumbnail`);
@@ -587,7 +592,7 @@ describe("multiplayer marker", () => {
     expect(shared.find((g: any) => g.id === draft)).toMatchObject({ multiplayer: true, players: { min: 2, max: 8 } });
   });
 
-  it("the published version decides: a solo v2 doesn't change the listing until published", async () => {
+  it("the published version decides: a solo v2 doesn't change the listing while v1 is pinned live", async () => {
     const alice = await guest();
     const bob = await guest();
     const duel = await makeGame(alice.token, "Duel", { toml: mpManifest("Duel", 1, 4) });
@@ -597,6 +602,7 @@ describe("multiplayer marker", () => {
       return { genId: gen.data.generation.id as string };
     })();
     await call("POST", `/v1/worker/generations/${genId}/complete`, { ...W, form: resultForm("w1", makePackage(manifest("Duel"))) });
+    await call("POST", `/v1/games/${duel}/publish`, { token: alice.token, json: { version: 1 } }); // pin v1 live
     expect((await call("GET", `/v1/games/${duel}`, { token: bob.token })).data.game.players).toEqual({ min: 1, max: 4 });
     expect((await call("GET", `/v1/games/${duel}`, { token: alice.token })).data.game.multiplayer).toBe(true); // published v1
     await call("POST", `/v1/games/${duel}/publish`, { token: alice.token, json: { version: 2 } });
@@ -623,5 +629,128 @@ describe("multiplayer marker", () => {
     expect(ids((await call("GET", "/v1/search?q=Run", { token: alice.token })).data.games)).toHaveLength(3);
     expect(ids((await call("GET", "/v1/games?multiplayer=true", { token: alice.token })).data.games).sort()).toEqual([duel, party].sort());
     expect(ids((await call("GET", "/v1/games", { token: alice.token })).data.games)).toHaveLength(3);
+  });
+});
+
+describe("visibility (public by default)", () => {
+  /** New game (default visibility) whose generation is claimed; returns ids + a checkpoint/complete helper. */
+  async function build(token: string, json: Record<string, unknown> = {}) {
+    const { data: g } = await call("POST", "/v1/games", { token, json: { name: "Vis", ...json } });
+    const gameId = g.game.id as string;
+    const gen = await call("POST", `/v1/games/${gameId}/generations`, { token, json: { prompt: "make it" } });
+    await call("POST", "/v1/worker/claim", { ...W, json: { workerId: "w1" } });
+    const genId = gen.data.generation.id as string;
+    const push = (kind: "checkpoint" | "complete", n: number) =>
+      call("POST", `/v1/worker/generations/${genId}/${kind}`, { ...W, form: resultForm("w1", makePackage(manifest(`Vis ${n}`))) });
+    return { game: g.game, gameId, push };
+  }
+  const view = async (token: string, id: string) => (await call("GET", `/v1/games/${id}`, { token })).data.game;
+  const inFeed = async (token: string, id: string) => ids((await feed(token, "new")).data.games).includes(id);
+
+  it("a new game is public and its first version goes live by itself", async () => {
+    const owner = await guest();
+    const { game, gameId, push } = await build(owner.token);
+    expect(game).toMatchObject({ visibility: "public", status: "draft", publishedVersion: null });
+    expect((await push("complete", 1)).status).toBe(201);
+    const g = await view(owner.token, gameId);
+    expect(g).toMatchObject({ visibility: "public", status: "published", publishedVersion: 1 });
+    expect(g.publishedAt).toBeTruthy();
+    const stranger = await guest();
+    expect(await inFeed(stranger.token, gameId)).toBe(true);
+    expect((await call("GET", `/v1/public/games/${gameId}`)).status).toBe(200);
+  });
+
+  it("checkpoints move the live version; publishedAt is kept", async () => {
+    const owner = await guest();
+    const { gameId, push } = await build(owner.token);
+    await push("checkpoint", 1);
+    const first = await view(owner.token, gameId);
+    expect(first.publishedVersion).toBe(1);
+    await push("checkpoint", 2);
+    await push("complete", 3);
+    const g = await view(owner.token, gameId);
+    expect(g).toMatchObject({ publishedVersion: 3, latestVersion: 3 });
+    expect(g.publishedAt).toBe(first.publishedAt);
+    // revert is a commit too: goes live
+    await call("POST", `/v1/games/${gameId}/revert`, { token: owner.token, json: { version: 1 } });
+    expect((await view(owner.token, gameId)).publishedVersion).toBe(4);
+  });
+
+  it("a private game stays a draft", async () => {
+    const owner = await guest();
+    const { game, gameId, push } = await build(owner.token, { visibility: "private" });
+    expect(game.visibility).toBe("private");
+    await push("checkpoint", 1);
+    await push("complete", 2);
+    expect(await view(owner.token, gameId)).toMatchObject({ visibility: "private", status: "draft", publishedVersion: null });
+    const stranger = await guest();
+    expect((await call("GET", `/v1/games/${gameId}`, { token: stranger.token })).status).toBe(404);
+    expect(await inFeed(stranger.token, gameId)).toBe(false);
+  });
+
+  it("PATCH visibility: private unpublishes, public publishes the latest; unpublish/publish map onto it", async () => {
+    const owner = await guest();
+    const stranger = await guest();
+    const { gameId, push } = await build(owner.token);
+    await push("checkpoint", 1);
+    await push("complete", 2);
+
+    const priv = await call("PATCH", `/v1/games/${gameId}`, { token: owner.token, json: { visibility: "private" } });
+    expect(priv.status).toBe(200);
+    expect(priv.data.game).toMatchObject({ visibility: "private", status: "draft", publishedVersion: null });
+    expect((await call("GET", `/v1/games/${gameId}`, { token: stranger.token })).status).toBe(404);
+
+    const pub = await call("PATCH", `/v1/games/${gameId}`, { token: owner.token, json: { visibility: "public" } });
+    expect(pub.data.game).toMatchObject({ visibility: "public", status: "published", publishedVersion: 2 });
+    expect(await inFeed(stranger.token, gameId)).toBe(true);
+
+    expect((await call("PATCH", `/v1/games/${gameId}`, { token: owner.token, json: { visibility: "secret" } })).status).toBe(400);
+    expect((await call("PATCH", `/v1/games/${gameId}`, { token: stranger.token, json: { visibility: "private" } })).status).toBe(404);
+
+    const un = await call("POST", `/v1/games/${gameId}/unpublish`, { token: owner.token });
+    expect(un.data.game).toMatchObject({ visibility: "private", status: "draft" });
+    const pin = await call("POST", `/v1/games/${gameId}/publish`, { token: owner.token, json: { version: 1 } });
+    expect(pin.data.game).toMatchObject({ visibility: "public", status: "published", publishedVersion: 1 });
+
+    // an empty private game turned public has nothing to publish yet
+    const empty = (await call("POST", "/v1/games", { token: owner.token, json: { name: "E", visibility: "private" } })).data.game;
+    const e = await call("PATCH", `/v1/games/${empty.id}`, { token: owner.token, json: { visibility: "public" } });
+    expect(e.data.game).toMatchObject({ visibility: "public", status: "draft", publishedVersion: null });
+  });
+
+  it("a remix is public by default: its copied v1 is live", async () => {
+    const owner = await guest();
+    const src = await makeGame(owner.token, "Source");
+    const fan = await guest();
+    const r = (await call("POST", `/v1/games/${src}/remix`, { token: fan.token })).data.game;
+    expect(r).toMatchObject({ visibility: "public", status: "published", publishedVersion: 1 });
+    expect(ids((await call("GET", `/v1/games/${src}/remixes`, { token: owner.token })).data.games)).toEqual([r.id]);
+  });
+
+  it("migration 0015 maps published → public, everything else → private (no auto-publish)", async () => {
+    const MIGRATIONS = fileURLToPath(new URL("../migrations", import.meta.url));
+    const dir = mkdtempSync(join(tmpdir(), "dreamsy-mig-"));
+    try {
+      cpSync(MIGRATIONS, dir, { recursive: true });
+      const journalPath = join(dir, "meta", "_journal.json");
+      const journal = JSON.parse(readFileSync(journalPath, "utf8"));
+      journal.entries = journal.entries.filter((e: { tag: string }) => e.tag < "0015");
+      writeFileSync(journalPath, JSON.stringify(journal));
+
+      const d = drizzle(new PGlite(), { schema });
+      await migrate(d, { migrationsFolder: dir });
+      await d.execute(sql`insert into users (id, handle) values ('u_a', 'a')`);
+      await d.execute(sql`insert into games (id, owner_id, name, status, latest_version, published_version) values
+        ('g_pub', 'u_a', 'Pub', 'published', 2, 1), ('g_draft', 'u_a', 'Draft', 'draft', 3, null), ('g_empty', 'u_a', 'Empty', 'draft', 0, null)`);
+
+      await migrate(d, { migrationsFolder: MIGRATIONS });
+      const rows = await d.select().from(schema.games);
+      const by = (id: string) => rows.find((g) => g.id === id)!;
+      expect([by("g_pub").visibility, by("g_draft").visibility, by("g_empty").visibility]).toEqual(["public", "private", "private"]);
+      expect(by("g_draft")).toMatchObject({ status: "draft", publishedVersion: null });
+      expect(by("g_pub")).toMatchObject({ status: "published", publishedVersion: 1 });
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

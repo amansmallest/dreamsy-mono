@@ -52,6 +52,7 @@ export function NewGameModal({ open, onClose, initialPrompt = '' }: { open: bool
             }} />
         </div>
         {error && <p className="form-error">{error}</p>}
+        <p className="muted new-game-cost">Public · change anytime</p>
         {price != null && <p className="muted new-game-cost">The first build costs {coins(price)} ({usd(coinsToUsd(price))}). Edits after that are free.</p>}
       </div>
     </Modal>

@@ -8,6 +8,7 @@ import { api, orientationOf, type Orientation } from '@/api';
 import { EngineView, type Insets, type RunEnd } from '@/components/EngineView';
 import { formatCoins, gatePlay, OutOfCoins, type Charge } from '@/coins';
 import { ONBOARDING_BANNER, ONBOARDING_FALLBACK_MS } from '@/onboarding';
+import { usePlayerWindow } from '@/playerWindow';
 import { floating, ink, radius } from '@/theme';
 import { PixelCoin, PixelSparkle, Txt, useReducedMotion } from '@/ui';
 import { Ionicons } from '@expo/vector-icons';
@@ -39,6 +40,8 @@ export default function PlayScreen() {
   const [orientation, setOrientation] = useState<Orientation | null>(fromParam);
   const [locked, setLocked] = useState(false);
   const [insets, setInsets] = useState<Insets | null>(null);
+  // Web: landscape games go full screen (playerWindow.web.ts); a no-op in the native apps.
+  const win = usePlayerWindow(orientation);
 
   const fromCaller: Charge | null =
     Number(params.charged) > 0 ? { price: Number(params.charged), earned: Number(params.earned) || 0 } : null;
@@ -93,7 +96,7 @@ export default function PlayScreen() {
 
   // Snapshot the insets once the window matches the locked orientation (insets update a frame or
   // two after the rotation). Changing them later would reload the WebView, and the lock holds.
-  const settled = locked && orientation !== null && (orientation === 'landscape' ? width > height : height >= width);
+  const settled = locked && orientation !== null && (win.desktop || (orientation === 'landscape' ? width > height : height >= width));
   useEffect(() => {
     if (!settled || insets) return;
     const t = setTimeout(() => setInsets({ ...liveInsets }), 150);
@@ -173,6 +176,23 @@ export default function PlayScreen() {
             <OutOfCoins balance={gate.balance} price={gate.price} onClose={close} />
           </View>
         </View>
+      ) : insets && gate === 'ok' && win.desktop ? (
+        // Desktop browser: the whole window, a centered player at the game's aspect ratio
+        // (landscape fills the width), room for the keyboard hint below.
+        <View style={[styles.fill, styles.center]}>
+          <EngineView
+            gameId={id}
+            version={v}
+            insets={insets}
+            room={room}
+            spectate={spectate}
+            style={desktopStage(orientation, width, height)}
+            onQuit={close}
+            onError={onEngineError}
+            onReady={() => setEngineReady(true)}
+            onRunEnd={onRunEnd}
+          />
+        </View>
       ) : insets && gate === 'ok' ? (
         <EngineView
           gameId={id}
@@ -200,6 +220,34 @@ export default function PlayScreen() {
       >
         <Ionicons name="close" size={20} color={ink.accentFg} />
       </Pressable>
+      {win.canFullscreen && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Full screen"
+          onPress={win.enterFullscreen}
+          hitSlop={10}
+          style={[styles.close, { top: chrome.top + 10, left: chrome.left + 58 }]}
+        >
+          <Ionicons name="expand" size={18} color={ink.accentFg} />
+        </Pressable>
+      )}
+      {win.desktop && gate === 'ok' && !spectate && (
+        <View pointerEvents="none" style={styles.keysWrap}>
+          <Text style={styles.keys} numberOfLines={1}>
+            Arrows/WASD move · Space = A · X = B · C = C · Esc pause
+          </Text>
+        </View>
+      )}
+      {win.rotateHint && gate === 'ok' && (
+        <View pointerEvents="none" style={[styles.toastWrap, { bottom: chrome.bottom + 16 }]}>
+          <View style={styles.toast}>
+            <Ionicons name="phone-landscape-outline" size={15} color={ink.accentFg} />
+            <Txt variant="label" color={ink.accentFg} numberOfLines={1}>
+              Turn your phone sideways
+            </Txt>
+          </View>
+        </View>
+      )}
       {banner && gate === 'ok' && (
         <FirstGameBanner top={chrome.top + 10} left={chrome.left + 60} right={chrome.right + 12} onDismiss={() => setBanner(false)} />
       )}
@@ -216,6 +264,16 @@ export default function PlayScreen() {
       )}
     </View>
   );
+}
+
+const KEYS_ROW = 36;
+
+/** Desktop player box: as large as the window allows at 16:9 / 9:16, keeping a row for the keys hint. */
+function desktopStage(orientation: Orientation | null, width: number, height: number) {
+  const ar = orientation === 'portrait' ? 9 / 16 : 16 / 9;
+  const h = Math.max(200, height - KEYS_ROW * 2);
+  const w = Math.min(width, h * ar);
+  return { width: Math.floor(w), height: Math.floor(w / ar) };
 }
 
 /** First run: "Your first Dreamsy game — made by AI. Swim as far as you can!" Tap to dismiss; leaves on its own after 12 s. */
@@ -310,6 +368,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  keysWrap: { position: 'absolute', left: 0, right: 0, bottom: 0, height: KEYS_ROW, alignItems: 'center', justifyContent: 'center' },
+  keys: { color: 'rgba(168,203,245,0.75)', fontSize: 12, letterSpacing: 0.2 },
   banner: { position: 'absolute', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: ink.danger },
   bannerText: { color: '#fff', fontSize: 12 },
 });

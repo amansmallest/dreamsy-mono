@@ -31,6 +31,7 @@ import {
   type Generation,
   type LocalImage,
   type Quota,
+  type Visibility,
 } from '@/api';
 import { CREATE_PRICE, formatCoins, insufficientFrom, OutOfCoinsSheet, useCreatePrice } from '@/coins';
 import { BuildTurn } from '@/components/BuildCard';
@@ -39,6 +40,7 @@ import { PlayersBadge, RemixBadge } from '@/components/GameCard';
 import { GamePreview } from '@/components/GamePreview';
 import { PublishSheet } from '@/components/PublishSheet';
 import { ShareWithGroupSheet } from '@/components/ShareWithGroupSheet';
+import { VisibilitySwitch } from '@/components/VisibilitySwitch';
 import { VersionsSheet } from '@/components/VersionsSheet';
 import { useGenerationProgress } from '@/generationProgress';
 import { shareGame } from '@/social';
@@ -215,7 +217,12 @@ function GameWorkspaceScreen() {
       // The event stream replays history on connect; only versions newer than what we show count.
       if (version <= latestRef.current) return;
       latestRef.current = version;
-      setGame((g) => (g && version > g.latestVersion ? { ...g, latestVersion: version } : g));
+      // Public games auto-publish every commit (§11.8): mirror that locally until the next reload.
+      setGame((g) =>
+        g && version > g.latestVersion
+          ? { ...g, latestVersion: version, ...(g.visibility === 'public' ? { status: 'published' as const, publishedVersion: version } : {}) }
+          : g,
+      );
       setToast({ version, text: `Version ${version} ready — play it while I keep building` });
       void loadVersions().catch(() => {});
     },
@@ -361,6 +368,40 @@ function GameWorkspaceScreen() {
     }
   };
 
+  const [visBusy, setVisBusy] = useState(false);
+  const applyVisibility = async (next: Visibility) => {
+    setVisBusy(true);
+    try {
+      const { game: g } = await api.updateGame(id, { visibility: next });
+      setGame(g);
+    } catch (e) {
+      Alert.alert("Couldn't change visibility", errorMessage(e));
+    } finally {
+      setVisBusy(false);
+    }
+  };
+  const changeVisibility = (next: Visibility) => {
+    if (visBusy || next === game?.visibility) return;
+    if (next === 'private' && game?.status === 'published') {
+      Alert.alert('Make private?', 'The game leaves the feed and its share link stops working.', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Make private', style: 'destructive', onPress: () => void applyVisibility(next) },
+      ]);
+      return;
+    }
+    void applyVisibility(next);
+  };
+  const makeLatestLive = async () => {
+    setVisBusy(true);
+    try {
+      setGame((await api.publish(id)).game);
+    } catch (e) {
+      Alert.alert("Couldn't publish", errorMessage(e));
+    } finally {
+      setVisBusy(false);
+    }
+  };
+
   const cancel = async () => {
     if (!active || canceling) return;
     setCanceling(true);
@@ -497,19 +538,47 @@ function GameWorkspaceScreen() {
           />
         )}
 
-        {game.latestVersion > 0 && (
-          <View style={styles.statusRow}>
-            <View style={styles.status}>
-              <View style={[styles.statusDot, live && styles.statusDotLive]} />
-              <Txt variant="label">{live ? (upToDate ? `Live · v${game.publishedVersion}` : `Live v${game.publishedVersion} · new v${game.latestVersion}`) : `Draft · v${game.latestVersion}`}</Txt>
-              <PlayersBadge game={game} tone="sky" />
-            </View>
-            {upToDate ? (
-              <InkButton label="Share" icon="share-outline" size="sm" variant="outline" onPress={() => void shareGame(game)} />
-            ) : (
-              <InkButton label={live ? 'Update' : 'Publish'} icon="rocket-outline" size="sm" disabled={!!active} onPress={() => setPublishOpen(true)} />
+        {game.visibility ? (
+          <>
+            {game.latestVersion > 0 && (
+              <View style={styles.statusRow}>
+                <View style={styles.status}>
+                  <View style={[styles.statusDot, live && styles.statusDotLive]} />
+                  <Txt variant="label">
+                    {live
+                      ? upToDate
+                        ? `Live · v${game.publishedVersion}`
+                        : `Live v${game.publishedVersion} · new v${game.latestVersion}`
+                      : `Private · v${game.latestVersion}`}
+                  </Txt>
+                  <PlayersBadge game={game} tone="sky" />
+                </View>
+                {live && upToDate ? (
+                  <InkButton label="Share" icon="share-outline" size="sm" variant="outline" onPress={() => void shareGame(game)} />
+                ) : live ? (
+                  <InkButton label={`Make v${game.latestVersion} live`} icon="rocket-outline" size="sm" busy={visBusy} onPress={() => void makeLatestLive()} />
+                ) : (
+                  <InkButton label="Publish" icon="rocket-outline" size="sm" onPress={() => setPublishOpen(true)} />
+                )}
+              </View>
             )}
-          </View>
+            <VisibilitySwitch value={game.visibility} onChange={changeVisibility} disabled={visBusy} style={styles.visibility} />
+          </>
+        ) : (
+          game.latestVersion > 0 && (
+            <View style={styles.statusRow}>
+              <View style={styles.status}>
+                <View style={[styles.statusDot, live && styles.statusDotLive]} />
+                <Txt variant="label">{live ? (upToDate ? `Live · v${game.publishedVersion}` : `Live v${game.publishedVersion} · new v${game.latestVersion}`) : `Draft · v${game.latestVersion}`}</Txt>
+                <PlayersBadge game={game} tone="sky" />
+              </View>
+              {upToDate ? (
+                <InkButton label="Share" icon="share-outline" size="sm" variant="outline" onPress={() => void shareGame(game)} />
+              ) : (
+                <InkButton label={live ? 'Update' : 'Publish'} icon="rocket-outline" size="sm" disabled={!!active} onPress={() => setPublishOpen(true)} />
+              )}
+            </View>
+          )
         )}
         {remixOf && (
           <RemixBadge
@@ -778,6 +847,7 @@ const styles = StyleSheet.create({
   status: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 },
   statusDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: ink.faint },
   statusDotLive: { backgroundColor: ink.ok },
+  visibility: { paddingHorizontal: 4 },
   toast: { position: 'absolute', top: 14, left: 22, right: 22, borderRadius: radius.pill, backgroundColor: ink.navy, ...floating },
   toastInner: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingVertical: 10 },
   starters: { padding: 20, gap: 10, alignItems: 'stretch' },

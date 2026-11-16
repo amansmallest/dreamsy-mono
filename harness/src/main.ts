@@ -6,7 +6,8 @@ import { anthropicKey, geminiKey, loadEnv } from "./env.js";
 import { generate } from "./generate.js";
 import { disabledImages, geminiImages } from "./images.js";
 import { anthropicLLM, type AgentLLM } from "./models.js";
-import { openaiLLM } from "./openai.js";
+import { openaiJson, openaiLLM } from "./openai.js";
+import { failoverLLM, type Provider } from "./failover.js";
 import { ApiClient, runWorker } from "./worker.js";
 import { enginePlaytester } from "./playtest.js";
 import { createMemory } from "./memory.js";
@@ -34,12 +35,19 @@ function args(name: string): string[] {
 async function setup() {
   const key = anthropicKey();
   if (!key) throw new Error("ANTHROPIC_API_KEY (or ANTHROPIC_KEY) is not set; put it in the repo-root .env");
-  const llm = anthropicLLM(new Anthropic({ apiKey: key }));
-  // DREAMSY_PROVIDER=openai: GPT builds (agent loop + content workers); Claude still routes, critiques, writes lessons.
+  const claude = anthropicLLM(new Anthropic({ apiKey: key }));
+  // Account failover (so builds never stop on credits): Claude → OPENAI_API_KEY → OPENAI_API_KEY_BACKUP.
+  const anth: Provider = { name: "anthropic", kind: "anthropic", agent: claude, json: claude };
+  const oai = [process.env.OPENAI_API_KEY, process.env.OPENAI_API_KEY_BACKUP]
+    .filter((k): k is string => !!k)
+    .map((k, i): Provider => ({ name: i === 0 ? "openai" : "openai-backup", kind: "openai", agent: openaiLLM(k), json: openaiJson(k) }));
+  // Router / critic / lessons (structured JSON) and the default builder: Claude first.
+  const llm = failoverLLM([anth, ...oai]);
+  // DREAMSY_PROVIDER=openai: GPT builds first (then the backup key, then Claude).
   let builder: AgentLLM = llm;
   if (process.env.DREAMSY_PROVIDER === "openai") {
-    if (!process.env.OPENAI_API_KEY) throw new Error("DREAMSY_PROVIDER=openai needs OPENAI_API_KEY");
-    builder = openaiLLM(process.env.OPENAI_API_KEY);
+    if (!oai.length) throw new Error("DREAMSY_PROVIDER=openai needs OPENAI_API_KEY");
+    builder = failoverLLM([...oai, anth]);
   }
   const gk = geminiKey();
   const images = gk ? await geminiImages(gk) : disabledImages;

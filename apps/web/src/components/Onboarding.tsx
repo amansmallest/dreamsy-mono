@@ -17,7 +17,7 @@ import { Button, Modal, Spinner } from './ui';
  */
 
 const FALLBACK_MS = 120_000;
-const DEFAULT_MESSAGE = 'Your first Dreamsy game — made by AI. Swim as far as you can!';
+const DEFAULT_MESSAGE = 'Your first Dreamsy game — made by AI.';
 
 type Phase =
   | { k: 'idle' }

@@ -47,8 +47,10 @@ function RootNavigator() {
   });
   const ready = status !== 'loading' && (fontsLoaded || !!fontError);
 
-  // Signed in without an avatar = onboarding not finished (handle + avatar).
-  const onboarded = status === 'signedIn' && user.avatar != null;
+  // In the app when the account is set up (handle + avatar) — OR it's brand new (onboardedAt null):
+  // new players go straight from sign-up into the onboarding game (Nope.) → Welcome; finishing it sets
+  // onboardedAt, and an account still without an avatar then lands on the name + avatar steps.
+  const onboarded = status === 'signedIn' && (user.avatar != null || user.onboardedAt === null);
 
   // A group invite opened while signed out / onboarding (app/join/[code].tsx): join once in the app.
   useEffect(() => {

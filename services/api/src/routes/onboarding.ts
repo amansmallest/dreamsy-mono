@@ -10,7 +10,7 @@ const { users, games } = schema;
 
 /** Tidal Dash (diver ocean runner). Override with ONBOARDING_GAME_ID. */
 export const DEFAULT_ONBOARDING_GAME_ID = "g_01m7ggga6ks9nt0ce6chvtnav3";
-export const ONBOARDING_MESSAGE = "Your first Dreamsy game — made by AI. Swim as far as you can!";
+export const ONBOARDING_MESSAGE = process.env.ONBOARDING_MESSAGE ?? "Your first Dreamsy game — made by AI. Swim as far as you can!";
 /** GET /v1/live limits. */
 export const LIVE_MAX_PLAYING = 30;
 export const LIVE_FEATURED = 6;
@@ -35,7 +35,8 @@ export function onboardingRoutes({ db, config, live }: Deps) {
   r.get("/v1/onboarding", async (c) => {
     const id = onboardingGameId(config);
     const [g] = await db.select().from(games).where(eq(games.id, id));
-    if (!g || g.status !== "published" || g.hidden || !g.publishedVersion) fail(404, "onboarding game not found");
+    // The onboarding game may be hidden (kept out of feeds/search) — it's served only here.
+    if (!g || g.status !== "published" || !g.publishedVersion) fail(404, "onboarding game not found");
     return c.json({ gameId: g.id, gameName: g.name, version: g.publishedVersion, message: ONBOARDING_MESSAGE });
   });
 

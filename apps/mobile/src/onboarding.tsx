@@ -15,7 +15,7 @@ import { EASE_OUT, PixelSky, PixelSparkle, Txt, useReducedMotion } from './ui';
 
 /** Seconds of play before the welcome sheet shows anyway. */
 export const ONBOARDING_FALLBACK_MS = 120_000;
-export const ONBOARDING_BANNER = 'Your first Dreamsy game — made by AI. Swim as far as you can!';
+export const ONBOARDING_BANNER = 'Your first Dreamsy game — made by AI.';
 
 /** Users whose first run was started (or skipped) this session: never twice. */
 const handled = new Set<string>();
@@ -54,7 +54,7 @@ async function startFirstRun(): Promise<boolean> {
   if (live.status === 'rejected' && is404(live.reason)) return false;
   const g = game.value;
   if (!g?.gameId || !(Number(g.version) > 0)) return false;
-  router.push({ pathname: '/play/[id]', params: { id: g.gameId, version: String(g.version), onboarding: '1' } });
+  router.push({ pathname: '/play/[id]', params: { id: g.gameId, version: String(g.version), onboarding: '1', ...(g.message ? { banner: g.message } : {}) } });
   return true;
 }
 

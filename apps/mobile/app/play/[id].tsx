@@ -25,7 +25,7 @@ import { Ionicons } from '@expo/vector-icons';
  * the close button, or 120 s of play swap this screen for the Welcome sheet (app/welcome.tsx).
  */
 export default function PlayScreen() {
-  const params = useLocalSearchParams<{ id: string; version: string; orientation?: string; gated?: string; charged?: string; earned?: string; room?: string; spectate?: string; onboarding?: string }>();
+  const params = useLocalSearchParams<{ id: string; version: string; orientation?: string; gated?: string; charged?: string; earned?: string; room?: string; spectate?: string; onboarding?: string; banner?: string }>();
   const { id } = params;
   const v = Number(params.version);
   const room = typeof params.room === 'string' && params.room ? params.room : undefined;
@@ -249,7 +249,7 @@ export default function PlayScreen() {
         </View>
       )}
       {banner && gate === 'ok' && (
-        <FirstGameBanner top={chrome.top + 10} left={chrome.left + 60} right={chrome.right + 12} onDismiss={() => setBanner(false)} />
+        <FirstGameBanner text={params.banner || undefined} top={chrome.top + 10} left={chrome.left + 60} right={chrome.right + 12} onDismiss={() => setBanner(false)} />
       )}
       {charge && gate === 'ok' && <ChargeToast charge={charge} top={chrome.top + 10} onDone={() => setCharge(null)} />}
       {error && (
@@ -276,8 +276,8 @@ function desktopStage(orientation: Orientation | null, width: number, height: nu
   return { width: Math.floor(w), height: Math.floor(w / ar) };
 }
 
-/** First run: "Your first Dreamsy game — made by AI. Swim as far as you can!" Tap to dismiss; leaves on its own after 12 s. */
-function FirstGameBanner({ top, left, right, onDismiss }: { top: number; left: number; right: number; onDismiss: () => void }) {
+/** First run: the server's onboarding line (e.g. "Your first Dreamsy game. Reach the door. Easy."). Tap to dismiss; leaves on its own after 5 s. */
+function FirstGameBanner({ top, left, right, onDismiss, text = ONBOARDING_BANNER }: { top: number; left: number; right: number; onDismiss: () => void; text?: string }) {
   const reduced = useReducedMotion();
   const enter = useRef(new Animated.Value(0)).current;
   const leaving = useRef(false);
@@ -292,7 +292,7 @@ function FirstGameBanner({ top, left, right, onDismiss }: { top: number; left: n
       : Animated.spring(enter, { toValue: 1, friction: 7, tension: 70, useNativeDriver: true });
     // Let the game's first frame land before sliding in.
     const t1 = setTimeout(() => show.start(), 500);
-    const t2 = setTimeout(dismiss, 12_000);
+    const t2 = setTimeout(dismiss, 5_000); // short: it sits over the game's own HUD
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
@@ -305,7 +305,7 @@ function FirstGameBanner({ top, left, right, onDismiss }: { top: number; left: n
     <Animated.View pointerEvents="box-none" style={[styles.firstWrap, { top, left, right, opacity: enter, transform: [{ translateY }] }]}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${ONBOARDING_BANNER} Dismiss`}
+        accessibilityLabel={`${text} Dismiss`}
         accessibilityLiveRegion="polite"
         onPress={dismiss}
         style={styles.first}
@@ -314,7 +314,7 @@ function FirstGameBanner({ top, left, right, onDismiss }: { top: number; left: n
           <PixelSparkle size={14} color={ink.accentFg} />
         </View>
         <Txt variant="label" color={ink.accentFg} numberOfLines={2} style={styles.firstText}>
-          {ONBOARDING_BANNER}
+          {text}
         </Txt>
         <Ionicons name="close" size={16} color={ink.sky} />
       </Pressable>

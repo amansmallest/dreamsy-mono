@@ -1,6 +1,7 @@
 // Dev page: ?game=<path under games/> | ?zip=<url> | ?api=<base>&game=<id>&version=<n>[&token=..] | drag-drop a .zip
 // With ?api=&game= the store and leaderboards (runs, ghosts) use the API; otherwise in-memory hosts.
-// Multiplayer games ([server] mode = "rooms", [players] max > 1) open the engine lobby first: ?room=<code> joins a room,
+// Multiplayer games ([server] mode = "rooms", [players] max > 1) open the engine lobby first: ?room=<code> joins a room
+// (skipping the menu; + &spectate=1 watches it instead),
 // ?solo=1 skips the lobby, ?rooms=<ws url> overrides the room server (default: derived from the API base).
 // Embed mode (?embed=1, or inside a react-native-webview): no dev UI; talks to the host app with JSON
 // messages via window.ReactNativeWebView.postMessage:
@@ -284,7 +285,15 @@ function openLobby(pkg: Package, label: string): boolean {
       return u.toString();
     },
     initialCode: params.get("room"),
+    initialSpectate: params.get("spectate") === "1",
+    // "Invite friends": signed-in users only (a ?token= from the app, or the web login), API games only
+    invites: (() => {
+      const userToken = params.get("token") ?? localStorage.getItem("dreamsy_token");
+      const gameId = publicId ?? (params.get("api") && apiGame ? apiGame : null);
+      return userToken && gameId ? { api, token: userToken, gameId } : null;
+    })(),
     onStart: (client) => { stop(); void start(pkg, label, client.link()); },
+    onFocus: (id) => game?.net.setFocus(id),
     onSolo: () => { lobby = null; void start(pkg, label); },
     onStop: stop,
   });

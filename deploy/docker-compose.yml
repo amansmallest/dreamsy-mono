@@ -15,6 +15,7 @@ services:
     environment:
       DATABASE_URL: "postgres://dreamsy:${PG_PASSWORD}@postgres:5432/dreamsy"
       STORAGE_DIR: /data/blobs
+      GAMESERVER_INTERNAL_URL: "http://gameserver:8790"   # friend presence (DREAMSY.MD §13.4)
     volumes: [/srv/dreamsy/data:/data]
     depends_on: { postgres: { condition: service_healthy } }
   worker:

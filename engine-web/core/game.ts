@@ -623,6 +623,7 @@ export class Game {
       destroy: (e) => this.destroyEntity(e), playAnim: (e, name) => this.playAnim(e, name, false),
       call: (ref, nargs, push) => this.callRef(ref, null, nargs, push), entityArg: (L, i) => this.entityArg(L, i),
       readJSON: (L, i) => this.readJSON(L, i), pushJSON: (L, v) => this.pushJSON(L, v), log: (level, text) => this.log(level, text),
+      hide: (e) => { if (e.props.visible !== false) { e.props.visible = false; e.rev++; } this.physics?.applyEnabled(e); },
     });
     const L = this.vm.L;
     const err = this.vm.load(L, "=dreamsy", PRELUDE);
@@ -652,12 +653,23 @@ export class Game {
   /** Instantiate this.scene: entities, tiles, physics, then attached scripts in tree order. */
   private buildScene() {
     const created = this.world.loadScene(this.scene, (m) => this.log("warn", `[scene] ${m}`));
+    // spectators have no avatar: the scene's "player" entities stay hidden (no physics) and their scripts don't run;
+    // they remain the visual template for the other players' puppets
+    const skip = new Set<Entity>();
+    if (this.net?.spectating) {
+      for (const e of created) {
+        if (!e.tags.has("player")) continue;
+        e.props.visible = false;
+        e.rev++;
+        for (const x of this.world.walk(e)) skip.add(x);
+      }
+    }
     for (const e of created) {
       if (e.type === "TileMap2D") this.loadTiles(e, false);
       this.physics!.markDirty(e);
     }
     this.physics!.flush();
-    for (const e of created) if (e.alive) for (const p of e.scripts) this.runScript(p, e);
+    for (const e of created) if (e.alive && !skip.has(e)) for (const p of e.scripts) this.runScript(p, e);
   }
 
   private processSceneChange() {
@@ -975,7 +987,9 @@ export class Game {
     } else {
       const zoom = Math.max(0.05, cam.get<number>("zoom"));
       const followId = cam.get<string | undefined>("follow");
-      const target = followId ? this.world.byId.get(followId) : undefined;
+      // spectators: a camera that follows an avatar follows the watched player's puppet instead
+      const watched = followId && this.net?.spectating ? this.net.focusPuppet() : null;
+      const target = watched ?? (followId ? this.world.byId.get(followId) : undefined);
       const m = global2D(target ?? cam);
       let x = m[4], y = m[5];
       if (!snap && c.init && cam === c.entity && target) {

@@ -10,3 +10,8 @@ pnpm -C services/gameserver start   # :8790 (GAMESERVER_PORT), WS /rooms, GET /h
 pnpm -C services/gameserver test
 ```
 Prod: `gameserver` service in deploy/docker-compose.yml; Caddy routes `api.dreamsy.dev/rooms*` here.
+
+Spectators: `{t:"spectate", code}` watches a room (≤ 16, not counted in max, receive-only).
+Presence for services/api: `GET /internal/presence?users=id1,id2` with header `x-internal-token: $WORKER_TOKEN`
+→ `{presence: {[userId]: {status: "offline"|"online"|"in_room"|"in_match", gameId?, roomCode?, mode?, players?, max?, spectatable?}}}`
+(503 when WORKER_TOKEN is unset; not routed publicly by Caddy).

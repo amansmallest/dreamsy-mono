@@ -3,12 +3,15 @@ import { Stack } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import { api, type AppNotification } from '@/api';
-import { isEarning, markAllRead, markRead, openNotificationTarget, setUnread, useNotificationsState } from '@/notifications';
+import { isEarning, isFriendKind, markAllRead, markRead, openNotificationTarget, setUnread, useNotificationsState } from '@/notifications';
 import { usePaged } from '@/usePaged';
 import { errorMessage, ink, radius } from '@/theme';
 import { Button, Empty, Loading, PixelCoin, PixelSparkle, Pressy, Txt } from '@/ui';
 
-/** Inbox: earnings, finished builds, family joins. Tap opens the game / group and marks it read. */
+/**
+ * Inbox: earnings, finished builds, family joins, friend requests, game invites. Tap opens the game /
+ * group / Friends (or joins the invite's room) and marks it read.
+ */
 export default function NotificationsScreen() {
   const { unread } = useNotificationsState();
   const [marking, setMarking] = useState(false);
@@ -73,7 +76,7 @@ export default function NotificationsScreen() {
           ListEmptyComponent={
             <Empty
               title={error ? "Couldn't load notifications" : 'Nothing yet'}
-              body={error ?? 'When someone plays or remixes your games, or a build finishes, it shows up here.'}
+              body={error ?? 'When someone plays or remixes your games, a friend invites you, or a build finishes, it shows up here.'}
               action={error ? <Button label="Try again" size="sm" variant="outline" onPress={refresh} /> : undefined}
             />
           }
@@ -106,7 +109,7 @@ function Row({ n, onPress }: { n: AppNotification; onPress: () => void }) {
   );
 }
 
-/** Coin for money in, sparkle for a finished build, people for family. */
+/** Coin for money in, sparkle for a finished build, gamepad for an invite, people for family / friends. */
 function KindIcon({ kind, onWash }: { kind: string; onWash: boolean }) {
   if (isEarning(kind)) {
     return (
@@ -120,7 +123,11 @@ function KindIcon({ kind, onWash }: { kind: string; onWash: boolean }) {
       {kind === 'build_done' ? (
         <PixelSparkle size={18} />
       ) : (
-        <Ionicons name={kind === 'group_join' ? 'people' : 'notifications'} size={20} color={ink.navy} />
+        <Ionicons
+          name={kind === 'game_invite' ? 'game-controller' : kind === 'group_join' || isFriendKind(kind) ? 'people' : 'notifications'}
+          size={20}
+          color={ink.navy}
+        />
       )}
     </View>
   );

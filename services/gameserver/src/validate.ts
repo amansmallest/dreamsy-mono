@@ -29,6 +29,7 @@ export function parseClientMsg(raw: string): ClientMsg | null {
       if (o.mode !== undefined && o.mode !== "duel" && o.mode !== "party") return null;
       return { t: "create", game: o.game, max: o.max, min: o.min as number | undefined, mode: o.mode as "duel" | "party" | undefined };
     case "join": return isStr(o.code, 16, 1) && (o.game === undefined || (isStr(o.game, 128) && GAME_RE.test(o.game))) ? { t: "join", code: o.code, game: o.game as string | undefined } : null;
+    case "spectate": return isStr(o.code, 16, 1) && (o.game === undefined || (isStr(o.game, 128) && GAME_RE.test(o.game))) ? { t: "spectate", code: o.code, game: o.game as string | undefined } : null;
     case "quick": return isStr(o.game, 128) && GAME_RE.test(o.game) ? { t: "quick", game: o.game } : null;
     case "cancel": case "start": case "leave": return { t: o.t };
     case "ready": return typeof o.v === "boolean" ? { t: "ready", v: o.v } : null;

@@ -14,6 +14,8 @@ export class RoomClient {
   userId = "";
   name = "";
   room: RoomInfo | null = null;
+  /** This connection watches its room (spectate) instead of playing. */
+  spectator = false;
   closed = false;
   private listeners = new Set<(m: ServerMsg) => void>();
   private queue: ServerMsg[] = [];
@@ -72,8 +74,8 @@ export class RoomClient {
   }
 
   private receive(m: ServerMsg) {
-    if (m.t === "room" || m.t === "start") this.room = m.room;
-    if (m.t === "left") this.room = null;
+    if (m.t === "room" || m.t === "start") { this.room = m.room; this.spectator = m.spectator === true; }
+    if (m.t === "left") { this.room = null; this.spectator = false; }
     if (this.linked && m.t !== "pong" && m.t !== "welcome" && m.t !== "queued") {
       this.queue.push(m);
       if (this.queue.length > MAX_QUEUE) {
@@ -90,6 +92,8 @@ export class RoomClient {
 
   create(game: string, max: number, opts: { min?: number; mode?: "duel" | "party" } = {}) { this.raw({ t: "create", game, max, ...opts }); }
   join(code: string, game?: string) { this.raw({ t: "join", code, game }); }
+  /** Watch a room: no seat, no avatar; receives everything players receive. */
+  spectate(code: string, game?: string) { this.raw({ t: "spectate", code, game }); }
   quick(game: string) { this.raw({ t: "quick", game }); }
   cancel() { this.raw({ t: "cancel" }); }
   ready(v: boolean) { this.raw({ t: "ready", v }); }
@@ -105,7 +109,7 @@ export class RoomClient {
     this.linked = true;
     const room = structuredClone(this.room);
     return {
-      room, self: this.self,
+      room, self: this.self, spectator: this.spectator,
       poll: () => { const q = this.queue; this.queue = []; return q; },
       send: (m) => this.raw(m),
       now: () => (typeof performance !== "undefined" ? performance.now() : Date.now()),

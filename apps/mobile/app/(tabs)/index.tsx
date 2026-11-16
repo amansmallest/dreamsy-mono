@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { ActionSheetIOS, Alert, FlatList, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { api, type FeedGame, type FeedTab } from '@/api';
 import { useAuth } from '@/auth';
@@ -9,6 +9,7 @@ import { formatCoins, formatUsd } from '@/coins';
 import { Avatar } from '@/components/Avatar';
 import { FeaturedGame, GameCard } from '@/components/GameCard';
 import { NotificationBell } from '@/components/NotificationBell';
+import { useFriendsAvailable, useFriendsState } from '@/friends';
 import { errorMessage, ink, radius } from '@/theme';
 import { Button, Empty, IconButton, PixelCoin, PixelSparkle, Pressy, Skeleton, Txt } from '@/ui';
 import { useWallet } from '@/wallet';
@@ -100,7 +101,7 @@ export default function HomeScreen() {
             </Pressy>
           )}
           <NotificationBell />
-          <IconButton icon="people-outline" label="Family & friends" size={36} onPress={() => router.push('/groups')} />
+          <PeopleButton />
           <IconButton icon="qr-code-outline" label="Scan a game QR code" size={36} onPress={() => router.push('/scan')} />
         </View>
       </View>
@@ -145,6 +146,31 @@ export default function HomeScreen() {
         )}
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+/**
+ * Header people icon. With friends on this API: a small menu (Friends / Family & friends) and a dot
+ * for pending friend requests; without: straight to groups, as before.
+ */
+function PeopleButton() {
+  const hasFriends = useFriendsAvailable();
+  const requests = useFriendsState().data?.incoming.length ?? 0;
+  const open = () => {
+    if (!hasFriends) return router.push('/groups');
+    const items = [requests ? `Friends (${requests} new)` : 'Friends', 'Family & friends'];
+    const pick = (i: number) => (i === 0 ? router.push('/friends') : i === 1 ? router.push('/groups') : undefined);
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions({ options: [...items, 'Cancel'], cancelButtonIndex: 2 }, pick);
+    } else {
+      Alert.alert('People', undefined, [...items.map((t, i) => ({ text: t, onPress: () => pick(i) })), { text: 'Cancel', style: 'cancel' as const }]);
+    }
+  };
+  return (
+    <IconButton label={hasFriends ? `Friends and family${requests ? `, ${requests} friend requests` : ''}` : 'Family & friends'} size={36} onPress={open}>
+      <Ionicons name={requests ? 'people' : 'people-outline'} size={24} color={ink.fg} />
+      {requests > 0 && <View style={styles.peopleDot} />}
+    </IconButton>
   );
 }
 
@@ -251,4 +277,5 @@ const styles = StyleSheet.create({
   create: { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: PAD, marginTop: 30, padding: 16, borderRadius: radius.lg, backgroundColor: ink.wash },
   createIcon: { width: 40, height: 40, borderRadius: radius.sm, backgroundColor: ink.accent, alignItems: 'center', justifyContent: 'center' },
   flex: { flex: 1 },
+  peopleDot: { position: 'absolute', top: 5, right: 3, width: 10, height: 10, borderRadius: 5, backgroundColor: ink.accent, borderWidth: 2, borderColor: ink.bg },
 });

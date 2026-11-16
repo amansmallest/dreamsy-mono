@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import type { z } from "zod";
 import type { DB } from "./db/client.js";
+import type { PresenceFetcher } from "./presence.js";
 import type { Storage } from "./storage.js";
 
 export interface Config {
@@ -49,6 +50,8 @@ export interface Deps {
   mailer?: Mailer;
   /** Sends Expo push messages; defaults to the Expo push API. Swappable so tests capture pushes. */
   pusher?: Pusher;
+  /** Friend presence from the room server; defaults to HTTP GET $GAMESERVER_INTERNAL_URL/internal/presence. Swappable in tests. */
+  presence?: PresenceFetcher;
 }
 
 /** One Expo push message (https://docs.expo.dev/push-notifications/sending-notifications/). */

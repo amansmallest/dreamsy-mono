@@ -28,7 +28,8 @@ end)
 after(0.3, function() net.sync:fireServer() end)
 
 onTick(function()
-	local me = players["local"].avatar
+	local lp = players["local"] -- nil while spectating
+	local me = lp and lp.avatar
 	if not me then return end
 	for id, e in orbs do
 		if not claimed[id] and not e.destroyed and (e.position - me.position):length() < 34 then

@@ -17,11 +17,15 @@ import { Ionicons } from '@expo/vector-icons';
  * (absent = landscape, pre-v1 games). The engine gets the safe-area insets once the rotation settles.
  * Coins (§11.6): callers gate with POST /play first and pass `gated=1` (+ `charged`, `earned` for the
  * toast); opened any other way (workspace, links) this screen gates itself and shows "Out of coins" on 402.
+ * Multiplayer: `room` (code) joins that room straight away; with `spectate=1` it watches instead, which
+ * is free (no gate).
  */
 export default function PlayScreen() {
-  const params = useLocalSearchParams<{ id: string; version: string; orientation?: string; gated?: string; charged?: string; earned?: string }>();
+  const params = useLocalSearchParams<{ id: string; version: string; orientation?: string; gated?: string; charged?: string; earned?: string; room?: string; spectate?: string }>();
   const { id } = params;
   const v = Number(params.version);
+  const room = typeof params.room === 'string' && params.room ? params.room : undefined;
+  const spectate = !!room && params.spectate === '1';
   const liveInsets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +38,9 @@ export default function PlayScreen() {
 
   const fromCaller: Charge | null =
     Number(params.charged) > 0 ? { price: Number(params.charged), earned: Number(params.earned) || 0 } : null;
-  const [gate, setGate] = useState<'ok' | 'checking' | { balance: number; price: number }>(params.gated === '1' ? 'ok' : 'checking');
+  const [gate, setGate] = useState<'ok' | 'checking' | { balance: number; price: number }>(
+    params.gated === '1' || spectate ? 'ok' : 'checking',
+  );
   const [charge, setCharge] = useState<Charge | null>(fromCaller);
 
   useEffect(() => {
@@ -113,7 +119,7 @@ export default function PlayScreen() {
           </View>
         </View>
       ) : insets && gate === 'ok' ? (
-        <EngineView gameId={id} version={v} insets={insets} style={styles.fill} onQuit={close} onError={setError} />
+        <EngineView gameId={id} version={v} insets={insets} room={room} spectate={spectate} style={styles.fill} onQuit={close} onError={setError} />
       ) : (
         <View style={[styles.fill, styles.center]}>
           <ActivityIndicator color={ink.sky} />

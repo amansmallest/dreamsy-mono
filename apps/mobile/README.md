@@ -67,8 +67,13 @@ app/                 expo-router routes
   notifications.tsx  inbox (earnings, build done, family joins): tap opens the game/group and marks read,
                      "Mark all read". Bell + unread badge on Home and Profile; hidden when the API has no
                      /v1/me/notifications (404)
-  play/[id].tsx      full-screen player (params id, version, orientation?); locks to the game's
-                     orientation and passes safe-area insets to the engine (`&insets=t,r,b,l`)
+  play/[id].tsx      full-screen player (params id, version, orientation?, room?, spectate?); locks to the
+                     game's orientation and passes safe-area insets to the engine (`&insets=t,r,b,l`);
+                     `room` joins that room (`&room=CODE`), `spectate=1` watches it (free, no POST /play)
+  friends.tsx        Friends: search by handle + Add, requests (Accept/Decline, Cancel), friends with presence
+                     (Online / In X lobby + Join / Playing X · 1v1 + Spectate), long-press to unfriend; polls
+                     every 15 s while focused. Reached from Profile ("Friends" row) and Home's people menu;
+                     hidden when the API has no /v1/me/friends (404)
 src/
   api.ts             typed client for services/api; takes its bearer token from auth
   runtime.ts         isExpoGo
@@ -76,7 +81,8 @@ src/
   usePaged.ts        cursor pagination for feeds/search/market
   wallet.ts          useWallet() + walletChanged() (refetch after in-game purchases)
   coins.tsx          coin formatting, play gate, create/remix prices, "Out of coins" sheet
-  notifications.ts   unread store, 30 s foreground poll, "You got paid" toast, tap -> screen
+  notifications.ts   unread store, 30 s foreground poll, "You got paid" toast, game-invite banner, tap -> screen
+  friends.tsx        friends store + presence lines, join (play gate) / spectate (free) a room, open a game_invite
   push.ts            expo-notifications: permission + Expo token -> POST /v1/me/push-tokens, foreground
                      presentation, push taps. Skipped in Expo Go on Android and without a projectId
   toast.tsx          app-wide top toasts (<ToastHost /> in app/_layout.tsx)

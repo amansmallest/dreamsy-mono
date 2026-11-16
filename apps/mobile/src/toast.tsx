@@ -1,22 +1,31 @@
 // App-wide toasts at the top of the screen, above every route: "You got paid" (from the
-// notifications poller) and coin deductions after a paid create / remix. One at a time; a new one
+// notifications poller), coin deductions after a paid create / remix, game invites from friends
+// ("@x invited you to Orb Duel · Join"), and short notes ("Invite expired"). One at a time; a new one
 // replaces the current one. <ToastHost /> is mounted once in app/_layout.tsx.
 
+import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useRef, useSyncExternalStore } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { floating, ink, radius } from './theme';
-import { EASE_OUT, PixelCoin, Txt, useReducedMotion } from './ui';
+import { EASE_OUT, PixelCoin, Txt, useReducedMotion, type IconName } from './ui';
 
 export type Toast = {
-  /** paid = incoming coins (coin drops in and flips); charge = coins spent. */
-  kind: 'paid' | 'charge';
+  /**
+   * paid = incoming coins (coin drops in and flips); charge = coins spent; invite = a friend's game
+   * invite with an action pill ("Join"); info = a short note with an optional icon.
+   */
+  kind: 'paid' | 'charge' | 'invite' | 'info';
   title: string;
   /** Second line (paid) or text after the title (charge). */
   detail?: string;
+  /** invite: the pill label (default "Join"). */
+  action?: string;
+  /** info: leading icon. */
+  icon?: IconName;
   onPress?: () => void;
-  /** ms on screen; default 4000 (paid) / 2600 (charge). */
+  /** ms on screen; default 4000 (paid) / 8000 (invite) / 2600 (charge, info). */
   duration?: number;
 };
 
@@ -57,10 +66,11 @@ function ToastView({ toast, onDone }: { toast: Toast & { key: number }; onDone: 
   const coinY = useRef(new Animated.Value(reduced ? 0 : -18)).current;
   const flip = useRef(new Animated.Value(0)).current;
   const paid = toast.kind === 'paid';
+  const invite = toast.kind === 'invite';
 
   useEffect(() => {
-    if (paid) void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-    const duration = toast.duration ?? (paid ? 4000 : 2600);
+    if (paid || invite) void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    const duration = toast.duration ?? (paid ? 4000 : invite ? 8000 : 2600);
     const show = Animated.timing(enter, { toValue: 1, duration: reduced ? 0 : 260, easing: EASE_OUT, useNativeDriver: true });
     const out = Animated.timing(enter, { toValue: 0, duration: reduced ? 0 : 220, easing: Easing.in(Easing.quad), useNativeDriver: true });
     const coin =
@@ -98,9 +108,23 @@ function ToastView({ toast, onDone }: { toast: Toast & { key: number }; onDone: 
             onDone();
             toast.onPress?.();
           }}
-          style={[styles.toast, paid ? styles.paid : styles.charge]}
+          style={[styles.toast, paid ? styles.paid : invite ? styles.invite : styles.charge]}
         >
-          {paid ? (
+          {invite ? (
+            <>
+              <View style={styles.coin}>
+                <Ionicons name="game-controller" size={18} color={ink.accentFg} />
+              </View>
+              <Txt variant="heading" color={ink.accentFg} numberOfLines={2} style={styles.shrink}>
+                {toast.title}
+              </Txt>
+              <View style={styles.action}>
+                <Txt variant="label" color={ink.accentFg}>
+                  {toast.action ?? 'Join'}
+                </Txt>
+              </View>
+            </>
+          ) : paid ? (
             <>
               <Animated.View style={[styles.coin, { transform: [{ translateY: coinY }, { perspective: 400 }, { rotateY }] }]}>
                 <PixelCoin size={16} color={ink.accentFg} />
@@ -118,7 +142,11 @@ function ToastView({ toast, onDone }: { toast: Toast & { key: number }; onDone: 
             </>
           ) : (
             <>
-              <PixelCoin size={13} color={ink.accentFg} />
+              {toast.kind === 'info' ? (
+                toast.icon ? <Ionicons name={toast.icon} size={15} color={ink.accentFg} /> : null
+              ) : (
+                <PixelCoin size={13} color={ink.accentFg} />
+              )}
               <Txt variant="label" color={ink.accentFg} numberOfLines={1} style={styles.shrink}>
                 {toast.title}
                 {toast.detail ? ` · ${toast.detail}` : ''}
@@ -136,6 +164,8 @@ const styles = StyleSheet.create({
   toast: { flexDirection: 'row', alignItems: 'center', backgroundColor: ink.navy, borderRadius: radius.pill, ...floating },
   paid: { gap: 10, paddingLeft: 8, paddingRight: 18, paddingVertical: 8, minWidth: 220 },
   charge: { gap: 7, paddingHorizontal: 14, paddingVertical: 9 },
+  invite: { gap: 10, paddingLeft: 8, paddingRight: 8, paddingVertical: 8, minWidth: 240 },
+  action: { paddingHorizontal: 14, height: 32, borderRadius: radius.pill, backgroundColor: ink.accent, alignItems: 'center', justifyContent: 'center' },
   coin: { width: 34, height: 34, borderRadius: 17, backgroundColor: ink.accent, alignItems: 'center', justifyContent: 'center' },
   text: { flexShrink: 1 },
   shrink: { flexShrink: 1 },

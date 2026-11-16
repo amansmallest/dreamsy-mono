@@ -1,6 +1,6 @@
 import { orientationOf } from "@dreamsy/format";
 import type { Game, Insets } from "../core/index.js";
-import { detectInputUsage, isTouchDevice, KeyboardInput, PointerInput, TouchControls } from "../input/index.js";
+import { detectInputUsage, KeyboardInput, touchControlsEnabled, PointerInput, TouchControls } from "../input/index.js";
 import { AudioEngine } from "./audio.js";
 import { Renderer2D, type Renderer2DOptions } from "./renderer2d.js";
 import { loadSettings, Shell } from "./shell.js";
@@ -78,7 +78,7 @@ export class GameView {
     this.renderer = new Renderer2D(container, game, opts);
     const usage = detectInputUsage(game);
     this.keyboard = new KeyboardInput(game, usage);
-    if (opts.touch ?? isTouchDevice()) this.touch = new TouchControls(container, game, usage, orientationOf(game.manifest));
+    if (touchControlsEnabled(game, opts.touch)) this.touch = new TouchControls(container, game, usage, orientationOf(game.manifest));
     game.settings = loadSettings();
     this.touch?.setScale(game.settings.touchSize);
     this.audio = new AudioEngine(game);

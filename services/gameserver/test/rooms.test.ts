@@ -1,6 +1,6 @@
 // RoomManager: lifecycle, quick match, teams, ready/start, relay routing, state/scores, results.
 import { describe, expect, it } from "vitest";
-import type { ServerMsg } from "@dreamsy/engine/net";
+import type { ClientMsg, ServerMsg } from "@dreamsy/engine/net";
 import { RoomManager, type Peer } from "../src/rooms.js";
 
 type FakePeer = Peer & { inbox: ServerMsg[]; last<T extends ServerMsg["t"]>(t: T): Extract<ServerMsg, { t: T }> | undefined; clear(): void };
@@ -184,5 +184,162 @@ describe("rooms: in-match relay", () => {
     b.clear();
     rm.handle(a, { t: "st", s: ["s", 0, 0, 0, 0, "", 1, "h"] });
     expect(b.last("st")).toBeUndefined();
+  });
+});
+
+describe("rooms: spectators", () => {
+  function match() {
+    const rm = new RoomManager();
+    const a = peer(), b = peer();
+    rm.handle(a, { t: "create", game: "g", max: 2, min: 2 });
+    const code = a.last("room")!.room.code;
+    rm.handle(b, { t: "join", code });
+    return { rm, a, b, code };
+  }
+
+  it("spectate joins as a watcher: not a player, not counted in max, sees spectators in room messages", () => {
+    const { rm, a, b, code } = match();
+    const s = peer("watcher"), late = peer();
+    rm.handle(s, { t: "spectate", code: code.toLowerCase() });
+    const rs = s.last("room")!;
+    expect(rs.spectator).toBe(true);
+    expect(rs.you).toBe(s.id);
+    expect(rs.room.players.map((p) => p.id)).toEqual([a.id, b.id]);
+    expect(rs.room.spectators).toBe(1);
+    expect(a.last("room")!.room.spectators).toBe(1);
+    expect(a.last("room")!.spectator).toBeUndefined();
+    // the room is full for players (2/2) but the spectator didn't take a seat
+    rm.handle(late, { t: "join", code });
+    expect(late.last("error")!.code).toBe("full");
+    rm.handle(s, { t: "spectate", code });
+    expect(s.last("error")!.code).toBe("in_room");
+    rm.handle(s, { t: "join", code });
+    expect(s.last("error")!.code).toBe("in_room");
+    rm.handle(late, { t: "spectate", code: "ZZZZZZ" });
+    expect(late.last("error")!.code).toBe("not_found");
+    rm.handle(late, { t: "spectate", code, game: "other" });
+    expect(late.last("error")!.code).toBe("wrong_game");
+    // leave: count goes down
+    rm.handle(s, { t: "leave" });
+    expect(s.last("left")).toBeTruthy();
+    expect(a.last("room")!.room.spectators).toBe(0);
+    expect(rm.room(code)!.players).toHaveLength(2);
+  });
+
+  it("a spectator can't send gameplay messages", () => {
+    const { rm, a, b, code } = match();
+    const s = peer();
+    rm.handle(s, { t: "spectate", code });
+    for (const m of [{ t: "ready", v: true }, { t: "start" }, { t: "team", team: "blue" }] as const) {
+      s.clear();
+      rm.handle(s, m);
+      expect(s.last("error")!.code).toBe("spectator");
+    }
+    rm.handle(b, { t: "ready", v: true });
+    rm.handle(a, { t: "start" });
+    expect(rm.room(code)!.status).toBe("playing");
+    a.clear(); b.clear();
+    const msgs: ClientMsg[] = [
+      { t: "ev", n: "x", to: "others", a: [] }, { t: "ev", n: "x", to: "host", a: [] }, { t: "kv", k: "k", v: 1 },
+      { t: "score", k: "red", d: 5 }, { t: "end", w: "red" },
+    ];
+    for (const m of msgs) { s.clear(); rm.handle(s, m); expect(s.last("error")!.code).toBe("spectator"); }
+    rm.handle(s, { t: "st", s: ["s", 1, 1, 0, 0, "", 1, "h"] }); // dropped quietly
+    expect(a.inbox).toEqual([]);
+    expect(b.inbox).toEqual([]);
+    expect(rm.room(code)!.scores).toEqual({});
+    expect(rm.room(code)!.status).toBe("playing");
+  });
+
+  it("receives everything players receive: start, st, ev to others, kv, score, ended, room", () => {
+    const { rm, a, b, code } = match();
+    const s = peer();
+    rm.handle(s, { t: "spectate", code });
+    rm.handle(b, { t: "ready", v: true });
+    rm.handle(a, { t: "start" });
+    const st = s.last("start")!;
+    expect(st).toMatchObject({ spectator: true, you: s.id, room: { status: "playing", match: 1 } });
+    rm.handle(a, { t: "st", s: ["s", 1, 2, 0, 0, "", 1, "h"] });
+    expect(s.last("st")).toMatchObject({ id: a.id });
+    rm.handle(a, { t: "ev", n: "orb", to: "others", a: [1] });
+    expect(s.last("ev")).toMatchObject({ from: a.id, n: "orb" });
+    s.clear();
+    rm.handle(b, { t: "ev", n: "grab", to: "host", a: [1] });
+    expect(s.last("ev")).toBeUndefined(); // host-only events stay with the host
+    rm.handle(a, { t: "kv", k: "round", v: 3 });
+    expect(s.last("kv")).toMatchObject({ k: "round", v: 3 });
+    rm.handle(a, { t: "score", k: a.id, d: 2 });
+    expect(s.last("score")).toEqual({ t: "score", k: a.id, v: 2 });
+    rm.handle(a, { t: "end", w: a.id });
+    expect(s.last("ended")!.r).toMatchObject({ winner: a.id, scores: { [a.id]: 2 } });
+    expect(s.last("room")!.room.status).toBe("lobby");
+  });
+
+  it("late spectators get the running match, then the current state and scores at once", () => {
+    const { rm, a, b, code } = match();
+    rm.handle(b, { t: "ready", v: true });
+    rm.handle(a, { t: "start" });
+    rm.handle(a, { t: "kv", k: "round", v: 2 });
+    rm.handle(b, { t: "score", k: "blue", d: 4 });
+    const s = peer();
+    rm.handle(s, { t: "spectate", code });
+    const kinds = s.inbox.map((m) => m.t);
+    expect(kinds).toEqual(["room", "start", "kv", "score"]);
+    expect(s.last("start")!.room.state).toEqual({ round: 2 });
+    expect(s.last("kv")).toMatchObject({ k: "round", v: 2 });
+    expect(s.last("score")).toEqual({ t: "score", k: "blue", v: 4 });
+  });
+
+  it("caps spectators at 16 per room; a forfeit counts only players; spectators leave with the last player", () => {
+    const { rm, a, b, code } = match();
+    const ws = Array.from({ length: 16 }, () => peer());
+    for (const w of ws) rm.handle(w, { t: "spectate", code });
+    expect(rm.room(code)!.spectators).toBe(16);
+    const x = peer();
+    rm.handle(x, { t: "spectate", code });
+    expect(x.last("error")!.code).toBe("full");
+    rm.disconnect(ws[0]!);
+    expect(rm.room(code)!.spectators).toBe(15);
+    rm.handle(x, { t: "spectate", code });
+    expect(x.last("room")!.room.spectators).toBe(16);
+    rm.handle(b, { t: "ready", v: true });
+    rm.handle(a, { t: "start" });
+    rm.disconnect(b);
+    expect(x.last("ended")!.r).toMatchObject({ winner: a.id, reason: "forfeit" });
+    rm.disconnect(a);
+    expect(x.last("left")).toBeTruthy();
+    expect(rm.rooms.size).toBe(0);
+    expect(rm.spectatorCount).toBe(0);
+  });
+});
+
+describe("presence", () => {
+  it("online / in_room / in_match per user id, offline 60 s after the last connection closes", () => {
+    let now = 1_000_000;
+    const rm = new RoomManager({ now: () => now });
+    const a = peer("pa"), b = peer("pb"), s = peer("ps"), a2 = { ...peer("pa2"), userId: "u_pa" };
+    expect(rm.presence(["u_pa"])).toEqual({ u_pa: { status: "offline" } });
+    for (const p of [a, a2, b, s]) rm.connect(p);
+    expect(rm.presence(["u_pa", "u_zz"])).toEqual({ u_pa: { status: "online" }, u_zz: { status: "offline" } });
+    rm.handle(a, { t: "create", game: "g_duel", max: 2, min: 2 });
+    const code = a.last("room")!.room.code;
+    expect(rm.presence(["u_pa"]).u_pa).toEqual({ status: "in_room", gameId: "g_duel", roomCode: code, mode: "party", players: 1, max: 2, spectatable: true });
+    rm.handle(b, { t: "join", code });
+    rm.handle(s, { t: "spectate", code });
+    rm.handle(b, { t: "ready", v: true });
+    rm.handle(a, { t: "start" });
+    const pr = rm.presence(["u_pa", "u_pb", "u_ps"]);
+    expect(pr.u_pa).toMatchObject({ status: "in_match", roomCode: code, players: 2, max: 2 });
+    expect(pr.u_pb!.status).toBe("in_match");
+    expect(pr.u_ps).toEqual({ status: "online" }); // watching isn't playing
+    // the second tab closing doesn't matter; the last connection closing → online for 60 s, then offline
+    rm.disconnect(a2);
+    expect(rm.presence(["u_pa"]).u_pa!.status).toBe("in_match");
+    rm.disconnect(a);
+    expect(rm.presence(["u_pa"]).u_pa).toEqual({ status: "online" });
+    now += 59_000;
+    expect(rm.presence(["u_pa"]).u_pa!.status).toBe("online");
+    now += 2_000;
+    expect(rm.presence(["u_pa"]).u_pa!.status).toBe("offline");
   });
 });

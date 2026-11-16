@@ -84,6 +84,7 @@ function RootNavigator() {
           <Stack.Screen name="groups/index" options={pushed} />
           <Stack.Screen name="groups/[id]" options={pushed} />
           <Stack.Screen name="notifications" options={pushed} />
+          <Stack.Screen name="friends" options={pushed} />
           <Stack.Screen name="avatar" options={{ presentation: 'modal' }} />
           <Stack.Screen name="scan" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
           <Stack.Screen

@@ -30,21 +30,31 @@ export type EngineViewProps = {
   /** Pause menu "Quit". */
   onQuit?: () => void;
   onPurchase?: (itemId: string, balance: number | null) => void;
+  /** Multiplayer room code to join straight away (skips the lobby menu). */
+  room?: string;
+  /** With `room`: watch as a spectator (no avatar, no controls). */
+  spectate?: boolean;
 };
 
+export type RoomOpts = { room?: string; spectate?: boolean };
+
 /** Engine page URL, or null if EXPO_PUBLIC_ENGINE_URL / EXPO_PUBLIC_API_URL isn't set. */
-export function engineUrl(gameId: string, version: number, token: string | null, insets?: Insets): string | null {
+export function engineUrl(gameId: string, version: number, token: string | null, insets?: Insets, roomOpts: RoomOpts = {}): string | null {
   const base = (process.env.EXPO_PUBLIC_ENGINE_URL ?? '').trim();
   if (!base || !apiBaseUrl) return null;
   const params: Record<string, string> = { api: apiBaseUrl, game: gameId, version: String(version), token: token ?? '', embed: '1' };
   if (insets) params.insets = [insets.top, insets.right, insets.bottom, insets.left].map((n) => Math.round(n)).join(',');
+  if (roomOpts.room) {
+    params.room = roomOpts.room;
+    if (roomOpts.spectate) params.spectate = '1';
+  }
   const q = Object.entries(params)
     .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
     .join('&');
   return `${base}${base.includes('?') ? '&' : '?'}${q}`;
 }
 
-export function EngineView({ gameId, version, insets, style, onReady, onError, onQuit, onPurchase }: EngineViewProps) {
+export function EngineView({ gameId, version, insets, style, onReady, onError, onQuit, onPurchase, room, spectate }: EngineViewProps) {
   const { getAccessToken } = useAuth();
   const [token, setToken] = useState<string | null | undefined>(undefined);
   const [ready, setReady] = useState(false);
@@ -66,7 +76,7 @@ export function EngineView({ gameId, version, insets, style, onReady, onError, o
     };
   }, [getAccessToken]);
 
-  const src = token === undefined ? null : engineUrl(gameId, version, token, insets);
+  const src = token === undefined ? null : engineUrl(gameId, version, token, insets, { room, spectate });
 
   useEffect(() => {
     setReady(false);

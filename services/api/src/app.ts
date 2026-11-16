@@ -17,6 +17,7 @@ import { groupRoutes } from "./routes/groups.js";
 import { playRoutes } from "./routes/play.js";
 import { setPrices } from "./services.js";
 import { notificationRoutes } from "./routes/notifications.js";
+import { friendRoutes } from "./routes/friends.js";
 
 export function createApp(deps: Deps, opts: { log?: boolean; corsOrigins?: string[] } = {}) {
   setPrices(deps.config);
@@ -32,6 +33,8 @@ export function createApp(deps: Deps, opts: { log?: boolean; corsOrigins?: strin
   }));
 
   app.get("/health", (c) => c.json({ ok: true }));
+  // Before userRoutes: GET /v1/users/search must win over GET /v1/users/:id.
+  app.route("/", friendRoutes(deps));
   app.route("/", userRoutes(deps));
   app.route("/", gameRoutes(deps));
   app.route("/", uploadRoutes(deps));

@@ -7,6 +7,7 @@ import { connectPostgres } from "./db/client.js";
 import { CREATE_PRICE, REMIX_PRICE } from "./economy.js";
 import { FsStorage, S3Storage, type Storage } from "./storage.js";
 import { resendMailer } from "./mailer.js";
+import { DEFAULT_GAMESERVER_INTERNAL_URL, httpPresence } from "./presence.js";
 import { fileURLToPath } from "node:url";
 
 function required(name: string): string {
@@ -52,6 +53,8 @@ const app = createApp(
     mailer: process.env.RESEND_API_KEY
       ? resendMailer(process.env.RESEND_API_KEY, process.env.EMAIL_FROM ?? "Dreamsy <noreply@thoughts.engineering>")
       : undefined,
+    // Friend presence from the room server's internal endpoint (DREAMSY.MD §13.4).
+    presence: httpPresence(process.env.GAMESERVER_INTERNAL_URL || DEFAULT_GAMESERVER_INTERNAL_URL, config.workerToken),
   },
   { log: true, corsOrigins: (process.env.CORS_ORIGINS ?? "").split(",").map((s) => s.trim()).filter(Boolean) },
 );

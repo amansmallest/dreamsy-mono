@@ -367,7 +367,7 @@ Both start mid-game with `opts.scene` + `opts.sceneParams`, preloaded `opts.save
 ## Players & avatar
 
 ```luau
-players.local : Player                 -- this device's player (`players["local"]` in code: `local` is a keyword)
+players.local : Player?                -- this device's player (`players["local"]` in code: `local` is a keyword); nil while spectating
 players.all() : { Player }             -- everyone in the room, room order (offline: just players.local)
 players.get(id: string) : Player?      players.onTeam("red" | "blue") : { Player }
 players.fromEntity(e: Entity) : Player?   -- e or an ancestor is my avatar (tag "player" / replicated) or a remote avatar
@@ -425,6 +425,17 @@ room.ended:connect(fn(r: { winner: Player?, team: "red"|"blue"|nil, draw: boolea
 room.teamColor(team) : Color
 ```
 A 1v1 whose opponent leaves ends as a forfeit for the one who stayed. Rematch = a fresh game start with the same room.
+
+**Spectators** (`room.isSpectator == true`, `room.spectators : number` = how many watch). Anyone can watch a room (lobby
+or running, up to 16 per room) from a friend's presence or a `?room=<code>&spectate=1` link. A spectating device runs the
+whole package too, but has **no local player**: `players.local == nil`, `room.isHost == false`, and `players.all()` lists
+only the players. The engine guards the common cases so games written for players don't crash:
+- entities tagged `"player"` in a scene stay hidden (no physics) and **their attached scripts don't run** — put avatar
+  logic (`room.replicate`, movement, `players.local.team`) in the avatar's own script;
+- `room.replicate(e)` hides `e`; `fireServer` / `fireClient` / `fireAll`, `room.setState`, `room.addScore` and
+  `room.finish` do nothing (the players' devices decide everything); `remoteFunction:invoke` errors;
+- puppets appear for every player; a Camera2D with `follow` follows the watched player's puppet (HUD name chips switch it).
+Other scripts that read `players.local` must check it: `local me = players["local"]; if not me then return end`.
 
 ## Platform menu, theme, audio
 

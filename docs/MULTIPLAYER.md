@@ -2,7 +2,7 @@
 
 ## What players get
 - **Quick match 1v1:** two players are paired automatically, **red vs blue**.
-- **Rooms:** *Create room* gives a 6-character code. Friends tap *Join* and type the code (lowercase works). Up to **8 players** in a party room, with balanced teams. Late joiners can come in on games that allow it.
+- **Rooms:** *Create room* gives a 6-character code. Friends tap *Join with a code* and tap it in on the on-screen keypad (no phone keyboard; *Paste code* works; it joins by itself after the 6th character). Signed-in players can also tap *Invite friends* in the room. Up to **8 players** in a party room, with balanced teams. Late joiners can come in on games that allow it.
 - **Lobby:**
   - set your name
   - player list with team colours
@@ -15,6 +15,7 @@
   - a winner card
   - if one player leaves, the other wins by forfeit
 - **Solo:** the same games work offline against bots.
+- **Spectate:** watch any room (up to 16 watchers) from a friend's "Spectate" button or a `?room=<code>&spectate=1` link: no avatar, no controls, a SPECTATING chip, tap a player's name chip to follow them. The room screen shows how many are watching.
 
 ## Games to play now (all published, all with a fix pass after a real 2-player test)
 | Game | Players | Type |
@@ -43,6 +44,7 @@ Any game built on the **racing kit** also gets a versus mode.
 - Clients are trusted for their own position. A server-authoritative simulation comes in v2.
 - Pausing freezes your avatar on other screens.
 - You can't reconnect to the same seat after dropping.
+- A late spectator doesn't see objects the host announced before it arrived unless the game keeps them in `room.setState` (Orb Duel: orbs show up as new ones spawn).
 - The display name is cosmetic and typed in the lobby.
 
 ## Debug notes

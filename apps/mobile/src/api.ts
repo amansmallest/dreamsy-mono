@@ -314,7 +314,16 @@ export type Earnings = {
 // ---------- notifications + push ----------
 
 /** Open-ended; these are the ones the app knows how to draw. */
-export type NotificationKind = 'play_earning' | 'remix_earning' | 'sale' | 'build_done' | 'group_join' | (string & {});
+export type NotificationKind =
+  | 'play_earning'
+  | 'remix_earning'
+  | 'sale'
+  | 'build_done'
+  | 'group_join'
+  | 'friend_request'
+  | 'friend_accept'
+  | 'game_invite'
+  | (string & {});
 export type NotificationData = {
   gameId?: string;
   remixGameId?: string;
@@ -322,6 +331,10 @@ export type NotificationData = {
   fromUserId?: string;
   coins?: number;
   version?: number;
+  /** game_invite: the room to join, and when the invite stops working (ISO). */
+  roomCode?: string;
+  expiresAt?: string;
+  spectate?: boolean;
   [k: string]: unknown;
 };
 export type AppNotification = {
@@ -335,6 +348,24 @@ export type AppNotification = {
 };
 
 export type LocalImage = { uri: string; mimeType: string; fileName: string };
+
+// ---------- friends + presence (404 on older APIs) ----------
+
+/** Where a friend is right now, from the room server. "online" = in the lobby in the last 60 s. */
+export type Presence = {
+  status: 'offline' | 'online' | 'in_room' | 'in_match';
+  gameId?: string;
+  gameName?: string;
+  roomCode?: string;
+  mode?: 'duel' | 'party';
+  players?: number;
+  max?: number;
+  spectatable?: boolean;
+};
+export type Friend = { user: Creator; since: string; presence: Presence };
+export type FriendRequest = { user: Creator; at: string };
+export type FriendStatus = 'none' | 'friends' | 'incoming' | 'outgoing';
+export type UserHit = Creator & { friendStatus: FriendStatus };
 
 // ---------- leaderboards, ghosts, groups (DREAMSY.MD §13) ----------
 
@@ -503,6 +534,22 @@ export const api = {
   addPushToken: (token: string, platform: 'ios' | 'android') =>
     request<{ ok: boolean }>('/v1/me/push-tokens', { method: 'POST', body: { token, platform } }),
   removePushToken: (token: string) => request<{ ok: boolean }>('/v1/me/push-tokens', { method: 'DELETE', body: { token } }),
+
+  // ---------- friends (404 on older APIs) ----------
+
+  friends: () => request<{ friends: Friend[]; incoming: FriendRequest[]; outgoing: FriendRequest[] }>('/v1/me/friends'),
+  /** Handle prefix, up to 20, never me. */
+  searchUsers: (q: string) => request<{ users: UserHit[] }>(`/v1/users/search${qs({ q })}`),
+  /** 201 {request} = sent; 200 {friend} = they had asked me (auto-accepted). 404 unknown, 409 already friends, 400 self. */
+  requestFriend: (handle: string) =>
+    request<{ request?: { id: string; user: Creator; status: 'pending'; direction: 'outgoing' }; friend?: Friend }>('/v1/friends/requests', {
+      method: 'POST',
+      body: { handle },
+    }),
+  acceptFriend: (userId: string) => request<{ friend: Friend }>(`/v1/friends/requests/${enc(userId)}/accept`, { method: 'POST' }),
+  declineFriend: (userId: string) => request<{ ok: true }>(`/v1/friends/requests/${enc(userId)}/decline`, { method: 'POST' }),
+  /** Unfriend, or cancel my outgoing request. */
+  removeFriend: (userId: string) => request<{ ok: true }>(`/v1/friends/${enc(userId)}`, { method: 'DELETE' }),
 };
 
 /**

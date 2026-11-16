@@ -1,7 +1,8 @@
 // WebSocket front of the room server: GET /health, WS /rooms. Auth = the API's HS256 user token in the first
 // message ({t:"hello", token}); size + rate limits per connection; heartbeat pings.
+// GET /internal/presence?users=a,b (header x-internal-token = WORKER_TOKEN): friends presence for services/api.
 import { createServer, type IncomingMessage, type Server } from "node:http";
-import { randomBytes } from "node:crypto";
+import { randomBytes, timingSafeEqual } from "node:crypto";
 import type { AddressInfo } from "node:net";
 import { jwtVerify } from "jose";
 import { WebSocketServer, type RawData, type WebSocket } from "ws";
@@ -20,6 +21,17 @@ export interface GameServerOptions {
   helloTimeoutMs?: number;
   heartbeatMs?: number;
   log?: (msg: string) => void;
+  /** Shared secret for /internal/* (env WORKER_TOKEN). Unset: /internal/* answers 503. */
+  internalToken?: string;
+}
+
+/** Max user ids per /internal/presence call. */
+export const MAX_PRESENCE_USERS = 500;
+
+function tokenOk(given: string | string[] | undefined, want: string): boolean {
+  if (typeof given !== "string") return false;
+  const a = Buffer.from(given), b = Buffer.from(want);
+  return a.length === b.length && timingSafeEqual(a, b);
 }
 
 export interface GameServer {
@@ -43,8 +55,17 @@ export async function startGameServer(opts: GameServerOptions): Promise<GameServ
   const server = createServer((req, res) => {
     if (req.url === "/health" || req.url === "/rooms/health") {
       res.writeHead(200, { "content-type": "application/json" });
-      res.end(JSON.stringify({ ok: true, rooms: rooms.rooms.size, players: rooms.playerCount }));
+      res.end(JSON.stringify({ ok: true, rooms: rooms.rooms.size, players: rooms.playerCount, spectators: rooms.spectatorCount }));
       return;
+    }
+    const url = new URL(req.url ?? "/", "http://gameserver");
+    if (url.pathname === "/internal/presence" && req.method === "GET") {
+      const json = (status: number, body: unknown) => { res.writeHead(status, { "content-type": "application/json", "cache-control": "no-store" }); res.end(JSON.stringify(body)); };
+      if (!opts.internalToken) return json(503, { error: "internal_disabled" });
+      if (!tokenOk(req.headers["x-internal-token"], opts.internalToken)) return json(401, { error: "unauthorized" });
+      const users = [...new Set((url.searchParams.get("users") ?? "").split(",").map((s) => s.trim()).filter((s) => s && s.length <= 128))];
+      if (users.length > MAX_PRESENCE_USERS) return json(400, { error: "too_many_users", max: MAX_PRESENCE_USERS });
+      return json(200, { presence: rooms.presence(users) });
     }
     res.writeHead(404).end();
   });
@@ -122,6 +143,7 @@ export async function startGameServer(opts: GameServerOptions): Promise<GameServ
         clearTimeout(helloTimer);
         const id = `p_${(++seq).toString(36)}${randomBytes(3).toString("hex")}`;
         peer = { id, userId, name, send };
+        rooms.connect(peer);
         send({ t: "welcome", id, userId, name });
         return;
       }

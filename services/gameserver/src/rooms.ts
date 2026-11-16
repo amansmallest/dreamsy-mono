@@ -1,10 +1,12 @@
 // Room state machine (no sockets): create / join by code / quick-match 1v1 / ready / start / relay / end.
 // The server is authoritative for room membership, teams, host, shared state, scores and match results;
 // game simulation runs on the players' devices (DREAMSY.MD §4.5, multiplayer v1 = relayed state sync).
+// Spectators watch a room (not players, not counted in max, ≤ 16): they receive everything players receive and can't
+// send gameplay messages. Presence (per userId: online / in a room / in a match) feeds GET /internal/presence.
 import { randomInt } from "node:crypto";
 import {
   CODE_ALPHABET, LIMITS, matchResult, normalizeCode,
-  type ClientMsg, type ErrorCode, type MatchResult, type RoomInfo, type RoomPlayer, type ServerMsg, type Team,
+  type ClientMsg, type ErrorCode, type MatchResult, type Presence, type RoomInfo, type RoomPlayer, type ServerMsg, type Team,
 } from "@dreamsy/engine/net";
 
 export interface Peer {
@@ -18,6 +20,8 @@ export interface Peer {
 interface Room {
   info: RoomInfo;
   peers: Map<string, Peer>;
+  /** Spectators (peer id → peer). */
+  watchers: Map<string, Peer>;
   t0: number;
   results: MatchResult[];
 }
@@ -29,6 +33,8 @@ export interface RoomManagerOptions {
 }
 
 const MAX_RESULTS = 20;
+/** A user counts as "online" for this long after their last room-server connection closed. */
+export const ONLINE_GRACE_MS = 60_000;
 const bytes = (v: unknown) => Buffer.byteLength(JSON.stringify(v ?? null));
 
 export class RoomManager {
@@ -37,6 +43,12 @@ export class RoomManager {
   readonly queue = new Map<string, Peer>();
   private roomOf = new Map<string, Room>();
   private queuedFor = new Map<string, string>();
+  /** Spectator peer id → the room it watches. */
+  private watching = new Map<string, Room>();
+  /** userId → its connected peers (presence). */
+  private online = new Map<string, Set<Peer>>();
+  /** userId → when its last connection closed. */
+  private lastSeen = new Map<string, number>();
   private now: () => number;
   private maxRooms: number;
   /** Finished matches (latest last), for logs/metrics. */
@@ -51,17 +63,56 @@ export class RoomManager {
   room(code: string): RoomInfo | null { return this.rooms.get(code)?.info ?? null; }
   results(code: string): MatchResult[] { return this.rooms.get(code)?.results ?? []; }
 
+  get spectatorCount(): number { return this.watching.size; }
+
+  /** An authenticated connection (presence: online). */
+  connect(peer: Peer) {
+    let set = this.online.get(peer.userId);
+    if (!set) this.online.set(peer.userId, (set = new Set()));
+    set.add(peer);
+    this.lastSeen.delete(peer.userId);
+  }
+
   disconnect(peer: Peer) {
     this.unqueue(peer);
     this.removeFromRoom(peer);
+    this.unwatch(peer);
+    const set = this.online.get(peer.userId);
+    if (set?.delete(peer) && !set.size) {
+      this.online.delete(peer.userId);
+      this.lastSeen.set(peer.userId, this.now());
+    }
+  }
+
+  /** Presence per user id: in a match > in a room lobby > online (connected, or within 60 s of leaving) > offline. */
+  presence(userIds: readonly string[]): Record<string, Presence> {
+    const now = this.now();
+    for (const [u, at] of this.lastSeen) if (now - at > ONLINE_GRACE_MS) this.lastSeen.delete(u);
+    const out: Record<string, Presence> = {};
+    for (const u of userIds) {
+      let best: Presence | null = null;
+      for (const p of this.online.get(u) ?? []) {
+        const r = this.roomOf.get(p.id);
+        if (!r) { best ??= { status: "online" }; continue; }
+        const playing = r.info.status === "playing";
+        if (best && (best.status === "in_match" || (best.status === "in_room" && !playing))) continue;
+        best = {
+          status: playing ? "in_match" : "in_room", gameId: r.info.game, roomCode: r.info.code, mode: r.info.mode,
+          players: r.info.players.length, max: r.info.max, spectatable: r.watchers.size < LIMITS.maxSpectators,
+        };
+      }
+      out[u] = best ?? { status: this.lastSeen.has(u) ? "online" : "offline" };
+    }
+    return out;
   }
 
   handle(peer: Peer, msg: ClientMsg) {
     const room = this.roomOf.get(peer.id) ?? null;
+    const watched = this.watching.get(peer.id) ?? null;
     switch (msg.t) {
       case "ping": peer.send({ t: "pong", c: msg.c, s: this.now() }); return;
       case "create": {
-        if (room) return this.err(peer, "in_room", "leave your room first");
+        if (room || watched) return this.err(peer, "in_room", "leave your room first");
         if (this.rooms.size >= this.maxRooms) return this.err(peer, "full", "the server is full, try again soon");
         this.unqueue(peer);
         const max = clamp(Math.floor(msg.max), 2, LIMITS.maxPlayers);
@@ -71,7 +122,7 @@ export class RoomManager {
         return;
       }
       case "join": {
-        if (room) return this.err(peer, "in_room", "leave your room first");
+        if (room || watched) return this.err(peer, "in_room", "leave your room first");
         const r = this.rooms.get(normalizeCode(msg.code));
         if (!r) return this.err(peer, "not_found", "no room with that code");
         if (msg.game && msg.game !== r.info.game) return this.err(peer, "wrong_game", "that room is playing a different game");
@@ -83,8 +134,27 @@ export class RoomManager {
         if (r.info.status === "playing") peer.send({ t: "start", room: r.info, you: peer.id });
         return;
       }
+      case "spectate": {
+        if (room || watched) return this.err(peer, "in_room", "leave your room first");
+        const r = this.rooms.get(normalizeCode(msg.code));
+        if (!r) return this.err(peer, "not_found", "no room with that code");
+        if (msg.game && msg.game !== r.info.game) return this.err(peer, "wrong_game", "that room is playing a different game");
+        if (r.watchers.size >= LIMITS.maxSpectators) return this.err(peer, "full", "too many people are watching that room");
+        this.unqueue(peer);
+        r.watchers.set(peer.id, peer);
+        this.watching.set(peer.id, r);
+        r.info.spectators = r.watchers.size;
+        this.broadcastRoom(r);
+        if (r.info.status === "playing") {
+          // late spectator: the running match, then the current shared state and scores as regular updates
+          peer.send({ t: "start", room: r.info, you: peer.id, spectator: true });
+          for (const [k, v] of Object.entries(r.info.state)) peer.send({ t: "kv", from: r.info.host, k, v });
+          for (const [k, v] of Object.entries(r.info.scores)) peer.send({ t: "score", k, v });
+        }
+        return;
+      }
       case "quick": {
-        if (room) return this.err(peer, "in_room", "leave your room first");
+        if (room || watched) return this.err(peer, "in_room", "leave your room first");
         const waiting = this.queue.get(msg.game);
         if (waiting && waiting.id !== peer.id) {
           if (this.rooms.size >= this.maxRooms) return this.err(peer, "full", "the server is full, try again soon");
@@ -109,8 +179,13 @@ export class RoomManager {
       case "leave":
         this.unqueue(peer);
         this.removeFromRoom(peer);
+        this.unwatch(peer);
         peer.send({ t: "left" });
         return;
+    }
+    if (watched) {
+      if (msg.t === "st") return; // never sent by a spectating engine; drop quietly
+      return this.err(peer, "spectator", "spectators can only watch");
     }
     if (!room) return this.err(peer, "not_in_room", "join a room first");
     const info = room.info;
@@ -144,13 +219,13 @@ export class RoomManager {
     switch (msg.t) {
       case "st": {
         const out: ServerMsg = { t: "st", id: peer.id, ts: this.now() - room.t0, s: msg.s };
-        for (const p of room.peers.values()) if (p.id !== peer.id) p.send(out);
+        this.toOthers(room, peer, out);
         return;
       }
       case "ev": {
         if (bytes(msg.a) > LIMITS.maxEventBytes) return this.err(peer, "too_large", `remote event args > ${LIMITS.maxEventBytes} bytes`);
         const out: ServerMsg = { t: "ev", from: peer.id, n: msg.n, to: msg.to, a: msg.a };
-        if (msg.to === "others") { for (const p of room.peers.values()) if (p.id !== peer.id) p.send(out); }
+        if (msg.to === "others") this.toOthers(room, peer, out);
         else if (msg.to === "host") room.peers.get(info.host)?.send(out);
         else {
           const target = room.peers.get(msg.to);
@@ -163,15 +238,14 @@ export class RoomManager {
         if (bytes(msg.v) > LIMITS.maxStateValueBytes) return this.err(peer, "too_large", `state value > ${LIMITS.maxStateValueBytes} bytes`);
         if (!(msg.k in info.state) && Object.keys(info.state).length >= LIMITS.maxStateKeys) return this.err(peer, "too_large", "too many state keys");
         info.state[msg.k] = msg.v;
-        const out: ServerMsg = { t: "kv", from: peer.id, k: msg.k, v: msg.v };
-        for (const p of room.peers.values()) if (p.id !== peer.id) p.send(out);
+        this.toOthers(room, peer, { t: "kv", from: peer.id, k: msg.k, v: msg.v });
         return;
       }
       case "score": {
         if (msg.k !== "red" && msg.k !== "blue" && !room.peers.has(msg.k)) return this.err(peer, "bad_message", "score key must be a player id, red or blue");
         const v = (info.scores[msg.k] ?? 0) + msg.d;
         info.scores[msg.k] = v;
-        for (const p of room.peers.values()) p.send({ t: "score", k: msg.k, v });
+        this.toAll(room, { t: "score", k: msg.k, v });
         return;
       }
       case "end": {
@@ -195,8 +269,8 @@ export class RoomManager {
     let code: string;
     do code = Array.from({ length: 6 }, () => CODE_ALPHABET[randomInt(CODE_ALPHABET.length)]).join(""); while (this.rooms.has(code));
     const r: Room = {
-      info: { code, game, mode, status: "lobby", min, max, host: "", players: [], match: 0, seed: 0, state: {}, scores: {} },
-      peers: new Map(), t0: this.now(), results: [],
+      info: { code, game, mode, status: "lobby", min, max, host: "", players: [], match: 0, seed: 0, state: {}, scores: {}, spectators: 0 },
+      peers: new Map(), watchers: new Map(), t0: this.now(), results: [],
     };
     this.rooms.set(code, r);
     return r;
@@ -218,7 +292,13 @@ export class RoomManager {
     this.roomOf.delete(peer.id);
     r.peers.delete(peer.id);
     r.info.players = r.info.players.filter((p) => p.id !== peer.id);
-    if (!r.info.players.length) { this.rooms.delete(r.info.code); return; }
+    if (!r.info.players.length) {
+      // nobody left to watch: spectators go back to their menu
+      for (const w of r.watchers.values()) { this.watching.delete(w.id); w.send({ t: "left" }); }
+      r.watchers.clear();
+      this.rooms.delete(r.info.code);
+      return;
+    }
     if (r.info.host === peer.id) r.info.host = r.info.players[0]!.id;
     // the last player standing wins by forfeit (1v1s, and parties that drop to one player)
     if (r.info.status === "playing" && r.info.players.length < 2) {
@@ -226,6 +306,26 @@ export class RoomManager {
       return;
     }
     this.broadcastRoom(r);
+  }
+
+  private unwatch(peer: Peer) {
+    const r = this.watching.get(peer.id);
+    if (!r) return;
+    this.watching.delete(peer.id);
+    r.watchers.delete(peer.id);
+    r.info.spectators = r.watchers.size;
+    if (this.rooms.has(r.info.code)) this.broadcastRoom(r);
+  }
+
+  /** Players except `from`, and every spectator. */
+  private toOthers(r: Room, from: Peer, m: ServerMsg) {
+    for (const p of r.peers.values()) if (p.id !== from.id) p.send(m);
+    for (const w of r.watchers.values()) w.send(m);
+  }
+
+  private toAll(r: Room, m: ServerMsg) {
+    for (const p of r.peers.values()) p.send(m);
+    for (const w of r.watchers.values()) w.send(m);
   }
 
   private unqueue(peer: Peer) {
@@ -245,6 +345,7 @@ export class RoomManager {
     for (const p of i.players) p.ready = false;
     r.t0 = this.now();
     for (const p of r.peers.values()) p.send({ t: "start", room: i, you: p.id });
+    for (const w of r.watchers.values()) w.send({ t: "start", room: i, you: w.id, spectator: true });
   }
 
   private endMatch(r: Room, w: string | null, reason: MatchResult["reason"]) {
@@ -252,13 +353,14 @@ export class RoomManager {
     r.info.status = "lobby";
     r.results.push(res);
     if (r.results.length > MAX_RESULTS) r.results.shift();
-    for (const p of r.peers.values()) p.send({ t: "ended", r: res });
+    this.toAll(r, { t: "ended", r: res });
     for (const fn of this.onResult) fn(r.info, res);
     this.broadcastRoom(r);
   }
 
   private broadcastRoom(r: Room) {
     for (const p of r.peers.values()) p.send({ t: "room", room: r.info, you: p.id });
+    for (const w of r.watchers.values()) w.send({ t: "room", room: r.info, you: w.id, spectator: true });
   }
 }
 

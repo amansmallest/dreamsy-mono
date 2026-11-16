@@ -36,6 +36,8 @@ export interface RoomInfo {
   state: Record<string, unknown>;
   /** room.addScore totals: player id or "red" / "blue" → value (reset at each start). */
   scores: Record<string, number>;
+  /** Spectators watching (not players, not counted in max; ≤ LIMITS.maxSpectators). */
+  spectators: number;
 }
 
 /** Replicated avatar sample: [scene, x, y, rotationDeg, flipH 0|1, anim, visible 0|1, template entity id]. */
@@ -61,6 +63,8 @@ export type ClientMsg =
   | { t: "hello"; token: string; name?: string }
   | { t: "create"; game: string; max: number; min?: number; mode?: RoomMode }
   | { t: "join"; code: string; game?: string }
+  /** Watch a room (lobby or running) instead of joining: no avatar, can't send st/ev/kv/score/ready/start/end. */
+  | { t: "spectate"; code: string; game?: string }
   | { t: "quick"; game: string }
   | { t: "cancel" }
   | { t: "ready"; v: boolean }
@@ -78,10 +82,11 @@ export type ClientMsg =
 // ---------------------------------------------------------------- server → client
 export type ServerMsg =
   | { t: "welcome"; id: string; userId: string; name: string }
-  | { t: "room"; room: RoomInfo; you: string }
+  /** `spectator: true` when this connection watches the room (then `you` is not in room.players). */
+  | { t: "room"; room: RoomInfo; you: string; spectator?: boolean }
   | { t: "queued"; game: string }
   | { t: "left" }
-  | { t: "start"; room: RoomInfo; you: string }
+  | { t: "start"; room: RoomInfo; you: string; spectator?: boolean }
   | { t: "pong"; c: number; s: number }
   | { t: "error"; code: ErrorCode; message: string }
   // in a match
@@ -93,7 +98,7 @@ export type ServerMsg =
 
 export type ErrorCode =
   | "unauthorized" | "bad_message" | "not_found" | "full" | "wrong_game" | "in_room" | "not_in_room"
-  | "not_host" | "not_ready" | "rate_limited" | "too_large" | "bad_state";
+  | "not_host" | "not_ready" | "rate_limited" | "too_large" | "bad_state" | "spectator";
 
 // ---------------------------------------------------------------- limits
 export const LIMITS = {
@@ -109,6 +114,8 @@ export const LIMITS = {
   maxStateValueBytes: 2 * 1024,
   maxStateKeys: 64,
   maxPlayers: 8,
+  /** Spectators per room. */
+  maxSpectators: 16,
   nameLength: 20,
   /** Avatar sample rate (Hz). */
   stateHz: 15,
@@ -133,4 +140,16 @@ export function roomsUrl(api: string): string {
   u.pathname = "/rooms";
   u.search = "";
   return u.toString();
+}
+
+/** Friends presence (room server GET /internal/presence → services/api GET /v1/me/friends). */
+export interface Presence {
+  status: "offline" | "online" | "in_room" | "in_match";
+  gameId?: string;
+  gameName?: string;
+  roomCode?: string;
+  mode?: RoomMode;
+  players?: number;
+  max?: number;
+  spectatable?: boolean;
 }

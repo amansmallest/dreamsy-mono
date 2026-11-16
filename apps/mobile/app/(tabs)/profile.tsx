@@ -9,6 +9,7 @@ import { formatCoins, formatUsd } from '@/coins';
 import { EarningsCard } from '@/components/EarningsCard';
 import { NotificationBell } from '@/components/NotificationBell';
 import { ProfileView } from '@/components/ProfileView';
+import { useFriendsAvailable, useFriendsState } from '@/friends';
 import { unregisterPush } from '@/push';
 import { hairline, ink, radius } from '@/theme';
 import { IconButton, PixelCoin, Pressy, Txt, type IconName } from '@/ui';
@@ -40,6 +41,8 @@ export default function ProfileScreen() {
   const { wallet, recent, error, refresh, live } = useWallet();
   const [open, setOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const hasFriends = useFriendsAvailable();
+  const requests = useFriendsState().data?.incoming.length ?? 0;
   const pull = useCallback(async () => {
     setReloadKey((k) => k + 1);
     await refresh();
@@ -85,6 +88,7 @@ export default function ProfileScreen() {
         onRefresh={pull}
         footer={
           <View style={styles.settings}>
+            {hasFriends && <Row icon="person-add-outline" label="Friends" count={requests} onPress={() => router.push('/friends')} />}
             <Row icon="people-outline" label="Family & friends" onPress={() => router.push('/groups')} />
             <Row icon="person-circle-outline" label="Edit avatar" onPress={() => router.push('/avatar')} />
             <Row icon="qr-code-outline" label="Scan a game" onPress={() => router.push('/scan')} />
@@ -139,7 +143,7 @@ export default function ProfileScreen() {
   );
 }
 
-function Row({ icon, label, onPress, danger, last }: { icon: IconName; label: string; onPress: () => void; danger?: boolean; last?: boolean }) {
+function Row({ icon, label, onPress, danger, last, count }: { icon: IconName; label: string; onPress: () => void; danger?: boolean; last?: boolean; count?: number }) {
   const color = danger ? ink.danger : ink.fg;
   return (
     <Pressy accessibilityRole="button" onPress={onPress} haptic={false} style={[styles.row, !last && styles.rowLine]}>
@@ -147,6 +151,13 @@ function Row({ icon, label, onPress, danger, last }: { icon: IconName; label: st
       <Txt variant="heading" color={color} style={styles.flex}>
         {label}
       </Txt>
+      {!!count && (
+        <View style={styles.count}>
+          <Txt variant="label" color={ink.accentFg} style={styles.countText}>
+            {count > 99 ? '99+' : count}
+          </Txt>
+        </View>
+      )}
       {!danger && <Ionicons name="chevron-forward" size={16} color={ink.faint} />}
     </Pressy>
   );
@@ -155,6 +166,8 @@ function Row({ icon, label, onPress, danger, last }: { icon: IconName; label: st
 const styles = StyleSheet.create({
   settings: { marginTop: 28, borderRadius: radius.lg, backgroundColor: ink.bg, overflow: 'hidden' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, height: 52 },
+  count: { minWidth: 20, height: 20, paddingHorizontal: 6, borderRadius: 10, backgroundColor: ink.accent, alignItems: 'center', justifyContent: 'center' },
+  countText: { fontSize: 11, lineHeight: 13 },
   rowLine: { borderBottomWidth: hairline, borderBottomColor: ink.border },
   screen: { flex: 1, backgroundColor: ink.card },
   bar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, height: 48 },

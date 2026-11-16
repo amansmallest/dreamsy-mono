@@ -8,7 +8,8 @@
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { api } from './api';
-import { isEarning, markRead, onUnreadChange, openNotificationTarget, refreshUnread } from './notifications';
+import { inviteExpired } from './friends';
+import { isEarning, markRead, onUnreadChange, openNotificationTarget, refreshUnread, showInviteBanner } from './notifications';
 import { isExpoGo } from './runtime';
 
 type NotificationsModule = typeof import('expo-notifications');
@@ -36,8 +37,9 @@ const projectId = (): string | undefined => {
 let handlersInstalled = false;
 
 /**
- * Once, at startup: how pushes show while the app is open, and the tap handler. Earnings in the
- * foreground skip the system banner because the in-app "You got paid" toast covers them.
+ * Once, at startup: how pushes show while the app is open, and the tap handler. Earnings and game
+ * invites in the foreground skip the system banner because the in-app toasts ("You got paid",
+ * "@x invited you to … · Join") cover them.
  */
 export function installPushHandlers(): () => void {
   const N = notifications();
@@ -47,11 +49,18 @@ export function installPushHandlers(): () => void {
     N.setNotificationHandler({
       handleNotification: async (n) => {
         const kind = (n.request.content.data as { kind?: unknown } | null)?.kind;
-        const earning = typeof kind === 'string' && isEarning(kind);
-        return { shouldShowBanner: !earning, shouldShowList: true, shouldPlaySound: !earning, shouldSetBadge: true };
+        const quiet = typeof kind === 'string' && (isEarning(kind) || kind === 'game_invite');
+        return { shouldShowBanner: !quiet, shouldShowList: true, shouldPlaySound: !quiet, shouldSetBadge: true };
       },
     });
-    const received = N.addNotificationReceivedListener(() => void refreshUnread());
+    const received = N.addNotificationReceivedListener((n) => {
+      const data = (n.request.content.data ?? {}) as Record<string, unknown>;
+      // Without a notificationId the poller's banner (after refreshUnread) covers it.
+      if (data.kind === 'game_invite' && typeof data.notificationId === 'string' && !inviteExpired(data)) {
+        showInviteBanner({ id: data.notificationId, body: n.request.content.body ?? 'You got a game invite', data });
+      }
+      void refreshUnread();
+    });
     const tapped = N.addNotificationResponseReceivedListener((r) => openFromPush(r.notification.request.identifier, r.notification.request.content.data));
     const badge = onUnreadChange((n) => void N.setBadgeCountAsync(n).catch(() => {}));
     return () => {

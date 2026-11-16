@@ -6,7 +6,8 @@ import type { Q } from "./services.js";
 
 const { notifications, users } = schema;
 
-export type NotificationKind = "royalty" | "play_earning" | "remix_earning" | "sale" | "build_done" | "group_join";
+export type NotificationKind = "royalty" | "play_earning" | "remix_earning" | "sale" | "build_done" | "group_join"
+  | "friend_request" | "friend_accept" | "game_invite";
 
 /**
  * Insert one in-app notification inside `tx`; returns its id. Push it after commit with
@@ -85,4 +86,24 @@ export async function notifyGroupJoin(tx: Q, a: { memberIds: string[]; joinerId:
     ids.push(await notify(tx, m, "group_join", "New family member", `@${who} joined ${a.groupName}`, { groupId: a.groupId }));
   }
   return ids;
+}
+
+export async function notifyFriendRequest(tx: Q, a: { toUserId: string; fromUserId: string }) {
+  const who = await handleOf(tx, a.fromUserId);
+  return [await notify(tx, a.toUserId, "friend_request", "Friend request", `@${who} wants to be friends`, { fromUserId: a.fromUserId })];
+}
+
+export async function notifyFriendAccept(tx: Q, a: { toUserId: string; fromUserId: string }) {
+  const who = await handleOf(tx, a.fromUserId);
+  return [await notify(tx, a.toUserId, "friend_accept", "New friend", `@${who} accepted your friend request`, { fromUserId: a.fromUserId })];
+}
+
+/** Invite a friend into a room. `data.expiresAt` = 10 min from now (ISO). */
+export async function notifyGameInvite(tx: Q, a: {
+  toUserId: string; fromUserId: string; gameId: string; gameName: string; version?: number; roomCode: string; expiresAt: Date;
+}) {
+  const who = await handleOf(tx, a.fromUserId);
+  const data: Record<string, unknown> = { gameId: a.gameId, roomCode: a.roomCode, fromUserId: a.fromUserId, spectate: false, expiresAt: a.expiresAt.toISOString() };
+  if (a.version !== undefined) data.version = a.version;
+  return [await notify(tx, a.toUserId, "game_invite", "Game invite", `@${who} invited you to play ${a.gameName}`, data)];
 }

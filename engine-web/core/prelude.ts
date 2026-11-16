@@ -452,7 +452,7 @@ sound = freeze({
 -- ---------- players + rooms (multiplayer, DREAMSY.MD §4.5) ----------
 -- Offline (no room): one local player, events stay in-process. In a room: players/teams from the room server,
 -- fireServer goes to the room host's device, fireClient/fireAll are relayed, avatars replicate via room.replicate.
-local net = { online = H(OP_NET, "active"), objs = {} }
+local net = { online = H(OP_NET, "active"), spectator = H(OP_NET, "prop", "isSpectator") == true, objs = {} }
 local PlayerM = {}
 local localPlayer
 function net.playerOf(id)
@@ -472,7 +472,9 @@ PlayerM.__index = function(p, k)
 	return nil
 end
 PlayerM.__tostring = function(p) return "Player(" .. p.name .. ")" end
-localPlayer = net.playerOf(H(OP_NET, "self").id)
+-- spectators have no local player: players.local == nil
+local selfInfo = if net.spectator then nil else H(OP_NET, "self")
+localPlayer = if selfInfo then net.playerOf(selfInfo.id) else nil
 local joined, left = localSignal(), localSignal()
 function net.all()
 	local out = {}
@@ -548,14 +550,17 @@ function net.send(name, to, ...)
 	H(OP_NET, "send", name, to, a)
 end
 function RemoteEventM.__index.fireServer(r, ...)
+	if net.spectator then return end -- spectators only watch
 	if net.online and H(OP_NET, "host") ~= localPlayer.id then net.send(r.name, "host", ...) return end
 	table.insert(queue, { r.server, true, pack(...) })
 end
 function RemoteEventM.__index.fireClient(r, player, ...)
+	if net.spectator then return end
 	if net.online and getmetatable(player) == PlayerM and player ~= localPlayer then net.send(r.name, rawget(player, "id"), ...) return end
 	table.insert(queue, { r.client, false, pack(...) })
 end
 function RemoteEventM.__index.fireAll(r, ...)
+	if net.spectator then return end
 	if net.online then net.send(r.name, "others", ...) end
 	table.insert(queue, { r.client, false, pack(...) })
 end
@@ -575,7 +580,7 @@ function RemoteFunctionM.__index.invoke(r, ...)
 		if net.online then error("remoteFunction \\"" .. r.name .. "\\": invoke only works on the room host in multiplayer v1 — use a remoteEvent and reply with fireClient", 2) end
 		error("remoteFunction \\"" .. r.name .. "\\" has no onInvoke handler", 2)
 	end
-	if net.online and H(OP_NET, "host") ~= localPlayer.id then
+	if net.online and (net.spectator or H(OP_NET, "host") ~= localPlayer.id) then
 		error("remoteFunction \\"" .. r.name .. "\\": invoke only works on the room host in multiplayer v1 — use a remoteEvent and reply with fireClient", 2)
 	end
 	return r.handler(localPlayer, ...)
@@ -659,10 +664,11 @@ do
 		host = function() return net.playerOf(H(OP_NET, "host")) end,
 		stateChanged = stateChanged, scoreChanged = scoreChanged, ended = ended, avatarSpawned = avatarSpawned,
 	})
-	local PROPS = { code = true, mode = true, max = true, min = true, isHost = true, match = true, seed = true }
+	local PROPS = { code = true, mode = true, max = true, min = true, isHost = true, match = true, seed = true, spectators = true }
 	room = setmetatable({}, {
 		__index = function(_, k)
 			if k == "active" then return net.online end
+			if k == "isSpectator" then return net.spectator end
 			if PROPS[k] then return H(OP_NET, "prop", k) end
 			return fields[k]
 		end,

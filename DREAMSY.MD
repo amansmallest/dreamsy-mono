@@ -301,7 +301,7 @@ physical interaction between players (puppets have no bodies), shared objects ne
   lobby, else the API handle (`GET /v1/me`).
 - **Limits**: 8 KB/message (socket closes > 16 KB), 40 msg/s sustained + 80 burst (excess dropped with `rate_limited`;
   > 400 drops → close 4008), event args ≤ 4 KB, state values ≤ 2 KB, ≤ 64 state keys, 20 s heartbeat.
-- **Protocol** (`engine-web/net/protocol.ts`, JSON over one WebSocket): client `hello · create · join · quick · cancel ·
+- **Protocol** (`engine-web/net/protocol.ts`, JSON over one WebSocket): client `hello · create · join · spectate · quick · cancel ·
   ready · team · start · leave · ping` and in a match `st (avatar sample) · ev (event → host | others | player id) · kv ·
   score · end`; server `welcome · room · queued · start · left · error · pong` and `st (+ server ts) · ev · kv · score ·
   ended`.
@@ -317,6 +317,17 @@ physical interaction between players (puppets have no bodies), shared objects ne
   replicated entity props — the §4.2 design), reconnect/resume to the same seat, cross-device physical contact,
   spectators, persistent matchmaking (skill, regions), several gameserver processes (rooms pinned by code), match
   results to the API (`runs`/leaderboards from rooms), moderation of display names.
+- **Spectators + presence (2026-11-15)**: `spectate {code}` watches a room (lobby or running): not a player, not counted
+  in max, ≤ 16 per room (`LIMITS.maxSpectators`), receives everything players receive (`room`/`start` carry
+  `spectator: true`; late spectators get the current `kv` + `score` right after `start`), can't send `st/ev/kv/score/ready/
+  team/start/end` (error code `spectator`). `RoomInfo.spectators` = count. Engine: `?room=<code>&spectate=1`, no local
+  player (`players.local == nil`, `room.isSpectator`), "player"-tagged entities hidden with their scripts skipped, no touch
+  controls, SPECTATING HUD chip + player chips that switch the followed puppet. Presence: the room server tracks each
+  userId (in_match > in_room > online, online until 60 s after the last connection closes) and answers
+  `GET /internal/presence?users=a,b` (header `x-internal-token` = `WORKER_TOKEN`) → `{presence:{[userId]: Presence}}` for
+  services/api's friends list. Lobby: room codes are typed on an on-screen keypad (no system keyboard; paste; auto-join
+  at 6), the name field stays above the keyboard (visualViewport), and the room screen has "Invite friends"
+  (`GET /v1/me/friends`, `POST /v1/invites`; signed-in users with an API game only).
 
 ## 5. Generation
 
@@ -597,3 +608,41 @@ Four parties: platform (Dreamsy), creator, spin-off creator, player. A paid play
 platform 1,000 · the spin-off's creator 8,000 · the **direct parent's** owner 1,000 royalty (`royalty` ledger kind + "royalty"
 notification). One level only: a spin-off of a spin-off pays the first spin-off's creator, not the grandparent. No royalty when the
 parent is your own game (you keep 9,000). `SPINOFF_ROYALTY` (default 1000) is taken from the creator's 90% share.
+
+### 13.4 Friends, invites, presence (2026-11-15)
+Mutual friends (not follows), invites into a live room, and "what is my friend doing" from the room server. Spectating and
+the engine/app sides (keypad, `room=`/`spectate=1` URL params, invite panel, Friends screen) are specced in the same
+contract; this section is the API part.
+
+```
+POST   /v1/friends/requests {handle}            → 201 {request:{id(=other user id), user, status:"pending", direction:"outgoing"}}
+                                                  | 200 {friend} when they had already asked you (auto-accept)
+                                                  | 404 unknown handle | 409 already friends | 400 self
+POST   /v1/friends/requests/:userId/accept      → {friend}          (404 no request from them, 409 already friends)
+POST   /v1/friends/requests/:userId/decline     → {ok}              (404 no request from them)
+DELETE /v1/friends/:userId                      → {ok}              unfriend, cancel my request, or drop theirs (404 none)
+GET    /v1/me/friends                           → {friends:[{user:{id,handle,avatar}, since, presence}], incoming:[{user, at}], outgoing:[{user, at}]}
+GET    /v1/users/search?q=<prefix>              → {users:[{id, handle, avatar, friendStatus:"none"|"friends"|"incoming"|"outgoing"}]}
+POST   /v1/invites {userId, gameId, roomCode}   → {ok}              friends only (403), ≤ 10/min per sender (429)
+```
+`Presence = {status: "offline"|"online"|"in_room"|"in_match", gameId?, gameName?, roomCode?, mode?: "duel"|"party",
+players?, max?, spectatable?}`. "online" = connected to the room server's lobby in the last 60 s.
+
+- **Model**: `friendships(user_a, user_b, status "pending"|"accepted", requested_by, created_at, accepted_at)`, one row per
+  pair with ids sorted (`user_a < user_b`, primary key), so a request and its reverse are the same row. Migration `0013_friends`.
+  Requests insert first (`ON CONFLICT DO NOTHING`), then lock the row: a repeat request is idempotent (201, no new
+  notification); a request to someone who already asked you accepts it.
+- **Presence** comes from the room server: `GET $GAMESERVER_INTERNAL_URL/internal/presence?users=id1,id2` with
+  `x-internal-token: $WORKER_TOKEN` → `{presence: {[userId]: Presence}}`; 1.5 s timeout; any failure or an unknown
+  id → `offline`. Default URL `http://gameserver:8790` (set in deploy/docker-compose.yml). `Deps.presence` swaps the
+  fetcher (tests). Friends are sorted in_room, in_match, online, offline, then by handle.
+- **Search**: handle prefix, case-insensitive, leading `@` ignored, `%`/`_` matched literally, excludes the caller, ≤ 20,
+  ordered by handle. Empty `q` → `[]`.
+- **Notifications** (existing notify + Expo push, §11.6): `friend_request` ("Friend request" / "@x wants to be friends"),
+  `friend_accept` ("New friend" / "@x accepted your friend request"), both with `data.fromUserId`; `game_invite`
+  ("Game invite" / "@x invited you to play <game name>", `data {gameId, version?, roomCode, fromUserId, spectate: false,
+  expiresAt}`; `expiresAt` = now + 10 min, ISO). `version` = the request's optional `version`, else the game's published
+  version, else absent.
+- **Invites**: the game must be visible to the inviter (own, published, or shared with one of their groups; 404 otherwise).
+  `roomCode` is upper-cased, 4–12 letters/digits. The rate limit counts the sender's `game_invite` notifications in the
+  last 60 s (DB, so it holds across API instances).

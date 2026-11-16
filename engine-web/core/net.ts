@@ -3,6 +3,8 @@
 // avatar samples (15 Hz), remote events, room state, scores and the match result. Remote avatars are visual
 // "puppets" (scripts and physics stripped) interpolated 100 ms in the past. No DOM: runs in Node too.
 // Without a link (single player, playtests) the same API works offline: one local player, in-process events.
+// Spectator links (link.spectator): no local player (players.local == nil), the scene's "player" avatar is hidden and its
+// scripts don't run, nothing gameplay-related is sent; puppets for every player; the camera can follow one of them.
 import type { LuauVM, LuaState } from "../luau/index.js";
 import { ClockSync, SnapshotBuffer } from "../net/interp.js";
 import { LIMITS, TEAM_COLORS, type AvatarState, type ClientMsg, type MatchResult, type RoomInfo, type ServerMsg, type Team } from "../net/protocol.js";
@@ -12,8 +14,10 @@ import { global2D, parseColor, type Entity, type RGBA, type World } from "./worl
 export interface NetLink {
   /** Room at match start. */
   readonly room: RoomInfo;
-  /** This device's player id. */
+  /** This device's player id (a spectator: its connection id, not in room.players). */
   readonly self: string;
+  /** Watching, not playing: no local player, nothing gameplay-related is sent. */
+  readonly spectator?: boolean;
   /** Drain messages received since the last call. */
   poll(): ServerMsg[];
   send(msg: ClientMsg): void;
@@ -33,6 +37,8 @@ export interface NetHooks {
   readJSON(L: LuaState, i: number): unknown;
   pushJSON(L: LuaState, v: unknown): void;
   log(level: "info" | "warn" | "error", text: string): void;
+  /** Hide an entity (and disable its physics body). */
+  hide(e: Entity): void;
 }
 
 interface Disc { scene: string; flip: number; anim: string; vis: number; tpl: string }
@@ -47,8 +53,12 @@ function bytes(v: unknown): number {
 
 export class NetSession {
   readonly online: boolean;
+  /** Watching a room (spectate): no local player, sends nothing. */
+  readonly spectating: boolean;
   room: RoomInfo;
   readonly self: string;
+  /** Spectators: the player the camera follows (null = the first player). */
+  private focus: string | null = null;
   private dispatchRef = 0;
   /** Messages for scripts, processed at the start of the next tick (never re-entrantly inside a host call). */
   private inbox: ServerMsg[] = [];
@@ -66,15 +76,31 @@ export class NetSession {
 
   constructor(private link: NetLink | null, private hooks: NetHooks) {
     this.online = !!link;
+    this.spectating = link?.spectator === true;
     this.self = link?.self ?? OFFLINE_ID;
     this.room = link ? structuredClone(link.room) : {
-      code: "", game: "", mode: "party", status: "playing", min: 1, max: 1, host: OFFLINE_ID, match: 1, seed: 1, state: {}, scores: {},
+      code: "", game: "", mode: "party", status: "playing", min: 1, max: 1, host: OFFLINE_ID, match: 1, seed: 1, state: {}, scores: {}, spectators: 0,
       players: [{ id: OFFLINE_ID, userId: OFFLINE_ID, name: "Player", team: null, ready: true }],
     };
   }
 
   get isHost(): boolean { return this.room.host === this.self; }
-  get me() { return this.room.players.find((p) => p.id === this.self) ?? null; }
+  get me() { return this.spectating ? null : this.room.players.find((p) => p.id === this.self) ?? null; }
+
+  /** Spectators: the player id the camera follows (the chosen one while it's in the room, else the first player). */
+  get focusId(): string | null {
+    if (this.focus && this.room.players.some((p) => p.id === this.focus)) return this.focus;
+    return this.room.players[0]?.id ?? null;
+  }
+
+  /** Spectators: follow this player (HUD name chips). */
+  setFocus(id: string | null) { this.focus = id; }
+
+  /** Spectators: the followed player's puppet (null until its first sample arrives). */
+  focusPuppet(): Entity | null {
+    const id = this.focusId;
+    return id ? this.puppet(id) : null;
+  }
   teamOf(id: string): Team | null { return this.room.players.find((p) => p.id === id)?.team ?? null; }
 
   /** Remote avatar puppets (tests/tools). */
@@ -195,8 +221,10 @@ export class NetSession {
     w.attach(holder, w.root);
     const sprites: Entity[] = [];
     let body: Entity;
-    if (src) body = this.copyVisual(src, holder, sprites);
-    else {
+    if (src) {
+      body = this.copyVisual(src, holder, sprites);
+      body.props.visible = true; // the holder carries visibility (a spectator's own copy of the avatar is hidden)
+    } else {
       body = w.create(null, "Sprite2D");
       body.props.size = [24, 24];
       w.attach(body, holder);
@@ -286,7 +314,8 @@ export class NetSession {
         const k = str(3);
         const r = this.room;
         const v = k === "code" ? (this.online ? r.code : null) : k === "mode" ? (this.online ? r.mode : null) : k === "max" ? r.max : k === "min" ? r.min
-          : k === "isHost" ? this.isHost : k === "match" ? r.match : k === "seed" ? r.seed : null;
+          : k === "isHost" ? this.isHost : k === "match" ? r.match : k === "seed" ? r.seed
+          : k === "isSpectator" ? this.spectating : k === "spectators" ? (r.spectators ?? 0) : null;
         this.hooks.pushJSON(L, v);
         return 1;
       }
@@ -295,7 +324,7 @@ export class NetSession {
       case "host": vm.pushString(L, this.room.host); return 1;
       case "avatar": {
         const id = str(3);
-        const e = id === this.self ? (this.replicated?.alive ? this.replicated : this.hooks.avatar()) : this.puppet(id);
+        const e = id === this.self ? (this.spectating ? null : this.replicated?.alive ? this.replicated : this.hooks.avatar()) : this.puppet(id);
         if (e) vm.pushNumber(L, e.handle); else vm.pushNil(L);
         return 1;
       }
@@ -303,13 +332,13 @@ export class NetSession {
         const e = this.hooks.entityArg(L, 3);
         for (let x: Entity | null = e; x; x = x.parent) {
           for (const [id, r] of this.remotes) if (r.puppet === x) { vm.pushString(L, id); return 1; }
-          if (x === this.replicated || x.tags.has("player")) { vm.pushString(L, this.self); return 1; }
+          if (!this.spectating && (x === this.replicated || x.tags.has("player"))) { vm.pushString(L, this.self); return 1; }
         }
         vm.pushNil(L);
         return 1;
       }
       case "send": {
-        if (!this.link) return 0;
+        if (!this.link || this.spectating) return 0;
         const n = str(3), to = str(4);
         const a = this.hooks.readJSON(L, 5);
         const args = Array.isArray(a) ? a : [];
@@ -320,6 +349,8 @@ export class NetSession {
       }
       case "replicate": {
         const e = this.hooks.entityArg(L, 3);
+        // spectators have no avatar: whatever a script tries to replicate stays hidden on this device
+        if (this.spectating) { this.hooks.hide(e); return 0; }
         this.replicated = e;
         this.tint = vm.toBoolean(L, 4);
         this.lastSent = "";
@@ -328,6 +359,7 @@ export class NetSession {
         return 0;
       }
       case "setState": {
+        if (this.spectating) return 0; // spectators watch: shared state comes from the players
         const k = str(3);
         const v = this.hooks.readJSON(L, 4);
         if (!/^[A-Za-z0-9_.:-]{1,64}$/.test(k)) throw new Error(`room.setState: key must be a short name like "round" (got "${k}")`);
@@ -340,6 +372,7 @@ export class NetSession {
       }
       case "state": this.hooks.pushJSON(L, this.room.state[str(3)] ?? null); return 1;
       case "addScore": {
+        if (this.spectating) return 0;
         const k = str(3), d = vm.toNumber(L, 4);
         if (!Number.isFinite(d) || Math.abs(d) > 1e6) throw new Error("room.addScore: amount must be a number (|n| ≤ 1e6)");
         if (this.link) this.link.send({ t: "score", k, d });
@@ -353,7 +386,7 @@ export class NetSession {
       case "score": vm.pushNumber(L, this.room.scores[str(3)] ?? 0); return 1;
       case "scores": this.hooks.pushJSON(L, { ...this.room.scores }); return 1;
       case "finish": {
-        if (this.result || this.finishing) return 0;
+        if (this.result || this.finishing || this.spectating) return 0;
         const w = vm.isNil(L, 3) ? null : str(3);
         if (w !== null && w !== "draw" && w !== "red" && w !== "blue" && !this.room.players.some((p) => p.id === w)) throw new Error(`room.finish: winner must be a Player, "red", "blue", "draw" or nil (got "${w}")`);
         if (this.link) { this.finishing = true; this.link.send({ t: "end", w }); return 0; }

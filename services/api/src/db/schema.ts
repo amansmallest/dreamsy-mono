@@ -354,7 +354,7 @@ export const groupGames = pgTable("group_games", {
 
 // ---------- Notifications + push (DREAMSY.MD §11.6) ----------
 
-/** In-app inbox. `kind`: play_earning | remix_earning | sale | build_done | group_join. */
+/** In-app inbox. `kind`: play_earning | remix_earning | royalty | sale | build_done | group_join | friend_request | friend_accept | game_invite. */
 export const notifications = pgTable("notifications", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => users.id),
@@ -374,3 +374,21 @@ export const pushTokens = pgTable("push_tokens", {
   platform: text("platform").notNull(),
   createdAt: createdAt(),
 }, (t) => [index("push_tokens_user_idx").on(t.userId)]);
+
+// ---------- Friends (DREAMSY.MD §13.4) ----------
+
+/**
+ * One row per pair of users, ids sorted (`userA < userB`), so a pair is unique whoever asked first.
+ * `status`: "pending" (requestedBy asked the other) | "accepted".
+ */
+export const friendships = pgTable("friendships", {
+  userA: text("user_a").notNull().references(() => users.id),
+  userB: text("user_b").notNull().references(() => users.id),
+  status: text("status").notNull().default("pending"),
+  requestedBy: text("requested_by").notNull().references(() => users.id),
+  createdAt: createdAt(),
+  acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+}, (t) => [
+  primaryKey({ columns: [t.userA, t.userB] }),
+  index("friendships_user_b_idx").on(t.userB),
+]);

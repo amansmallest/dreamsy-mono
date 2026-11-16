@@ -55,7 +55,7 @@ view: thumbnail/orientation of the latest version, plus `hidden`. Others: the pu
 | `POST /v1/games/:id/play` `{version?}` | pay-per-play start (DREAMSY.MD §11.6): `{charged, price, balance, pass: {id, expiresAt}, creatorEarned}`; 402 `{error: "insufficient_coins", balance, price}`; also counts the play |
 | `GET /v1/games/:id/play` | quote, no side effects: `{free, reason: "owner"\|"draft"\|"pass"\|null, price, balance, pass\|null}` |
 | `GET /v1/me/quota` · `GET /v1/me/wallet` | also carry `createPrice` (top level and inside `quota` / `wallet`) and `remixPrice`; game views carry `playPrice` + `remixPrice` |
-| `GET /v1/me/notifications?cursor&limit` | newest first: `{items: [{id, kind, title, body, data, read, createdAt}], unread, next}`; kinds `play_earning`, `remix_earning`, `sale`, `build_done`, `group_join` |
+| `GET /v1/me/notifications?cursor&limit` | newest first: `{items: [{id, kind, title, body, data, read, createdAt}], unread, next}`; kinds `play_earning`, `remix_earning`, `royalty`, `sale`, `build_done`, `group_join`, `friend_request`, `friend_accept`, `game_invite` |
 | `GET /v1/me/notifications/unread` | `{unread}` |
 | `POST /v1/me/notifications/read` `{ids?, all?}` | `{unread}` |
 | `POST /v1/me/push-tokens` `{token: "ExponentPushToken[…]", platform: "ios"\|"android"}` | `{ok}`; a token belongs to its last registrant |
@@ -64,6 +64,12 @@ view: thumbnail/orientation of the latest version, plus `hidden`. Others: the pu
 | `PUT` / `DELETE /v1/games/:id/like` | idempotent → `{liked, stats}` |
 | `POST /v1/games/:id/remix` | 201 `{game, charged, ownerEarned}`: new draft, v1 = source published version (latest if yours), store stripped. Costs `REMIX_PRICE` (25,000) → 100% to the source's owner (+ `remix_earning` notification); free on your own game; 402 `{error: "insufficient_coins", balance, price}` |
 | `POST /v1/games/:id/report` `{reason}` | `{ok}`; one per user; ≥3 distinct reporters ⇒ `hidden` |
+| `POST /v1/friends/requests` `{handle}` | 201 `{request: {id, user, status: "pending", direction: "outgoing"}}`; 200 `{friend}` if they already asked you (auto-accept); 404 unknown handle, 409 already friends, 400 self |
+| `POST /v1/friends/requests/:userId/accept` · `/decline` | `{friend}` · `{ok}`; 404 if no request from them, accept 409 if already friends |
+| `DELETE /v1/friends/:userId` | `{ok}`: unfriend or cancel/drop a request; 404 if none |
+| `GET /v1/me/friends` | `{friends: [{user {id, handle, avatar}, since, presence}], incoming: [{user, at}], outgoing: [{user, at}]}`; friends online first |
+| `GET /v1/users/search?q=<prefix>` | `{users: [{id, handle, avatar, friendStatus: "none"\|"friends"\|"incoming"\|"outgoing"}]}`; handle prefix, ≤20, not self |
+| `POST /v1/invites` `{userId, gameId, roomCode, version?}` | `{ok}`; friends only (403), ≤10/min (429); `game_invite` notification + push |
 | `GET /v1/users/:id` | `{user, stats {games, plays, likes, followers, following}, viewer {following}}` |
 | `GET /v1/users/:id/games?cursor&limit` | `{games, next}`: published FeedGames; self = all own games (owner views) |
 | `PUT` / `DELETE /v1/users/:id/follow` | idempotent → `{following}` |
@@ -94,6 +100,13 @@ as the event that caused it, then pushed after commit through Expo
 blocks the request). Message: `{to, title, body, data: {...data, kind, notificationId}, sound:
 "default", badge: unread}`. Tokens Expo reports as `DeviceNotRegistered` are deleted. Tests inject
 `Deps.pusher`. Env: `CREATE_PRICE` (100000), `REMIX_PRICE` (25000).
+
+Friends, invites, presence (DREAMSY.MD §13.4, `routes/friends.ts`, `presence.ts`): `Presence = {status:
+"offline"|"online"|"in_room"|"in_match", gameId?, gameName?, roomCode?, mode?, players?, max?, spectatable?}`, read
+from the room server (`GET $GAMESERVER_INTERNAL_URL/internal/presence?users=…`, header `x-internal-token:
+$WORKER_TOKEN`, 1.5 s timeout; failure → everyone `offline`). Env `GAMESERVER_INTERNAL_URL` (default
+`http://gameserver:8790`). Tests inject `Deps.presence`. `game_invite` data: `{gameId, version?, roomCode, fromUserId,
+spectate: false, expiresAt}` (10 min).
 
 **Uploads** — `POST /v1/uploads` (multipart `file`, png/jpeg/webp/heic ≤10MB) · `GET /v1/uploads/:id`
 

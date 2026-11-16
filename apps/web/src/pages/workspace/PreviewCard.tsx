@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { PlayOnPhone, QrCode } from '../../components/PlayOnPhone';
+import { PlayInStudio } from '../../components/PlayInStudio';
 import { Icon, PixelCloud } from '../../components/Icon';
 import { BuildRing } from '../../components/GameCard';
 import { AuthedImg, Button, Chip, IconButton } from '../../components/ui';
@@ -16,6 +17,8 @@ export function PreviewCard({ game, versions, version, onVersion, building }: {
   building: boolean;
 }) {
   const [phone, setPhone] = useState(false);
+  const [playing, setPlaying] = useState(false);
+  const closePlay = useCallback(() => setPlaying(false), []);
   const [busy, setBusy] = useState(false);
   const v = versions.find((x) => x.version === version);
   const isLiveVersion = game.status === 'published' && game.publishedVersion === version;
@@ -45,6 +48,7 @@ export function PreviewCard({ game, versions, version, onVersion, building }: {
             <span>{building ? 'First version on its way' : 'No versions yet'}</span>
           </div>
         )}
+        {version > 0 && <button className="preview-play-hit" aria-label={`Play v${version}`} onClick={() => setPlaying(true)} />}
         <span className="preview-badges">
           {isLiveVersion && <Chip tone="ok">Live</Chip>}
           {building && <Chip tone="live">Building</Chip>}
@@ -64,6 +68,9 @@ export function PreviewCard({ game, versions, version, onVersion, building }: {
       {v?.summary && <p className="preview-summary">{v.summary}</p>}
 
       <div className="preview-actions">
+        {version > 0 && (
+          <Button size="lg" className="w-full" icon="play" onClick={() => setPlaying(true)}>Play v{version}</Button>
+        )}
         {game.latestVersion > 0 && (isLiveVersion ? (
           <Button variant="outline" className="w-full" icon="check" disabled>Live · v{version}</Button>
         ) : (
@@ -91,6 +98,7 @@ export function PreviewCard({ game, versions, version, onVersion, building }: {
         </div>
       )}
       <PlayOnPhone game={game} open={phone} onClose={() => setPhone(false)} />
+      {version > 0 && <PlayInStudio game={game} version={version} open={playing} onClose={closePlay} />}
     </div>
   );
 }

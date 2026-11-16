@@ -7,6 +7,8 @@ export const env = {
   supabaseKey: v(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY),
   appDeeplink: v(import.meta.env.VITE_APP_DEEPLINK) || 'dreamsy://',
   convexUrl: v(import.meta.env.VITE_CONVEX_URL),
+  /** Game player (engine) used for in-studio play. */
+  engineUrl: noSlash(v(import.meta.env.VITE_ENGINE_URL) || 'https://play.dreamsy.dev'),
   shareUrl: noSlash(v(import.meta.env.VITE_SHARE_URL) || 'https://dreamsy.app'),
 };
 

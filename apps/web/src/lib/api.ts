@@ -154,6 +154,8 @@ type Hooks = {
 };
 let hooks: Hooks = { getToken: () => null, onUnauthorized: async () => null };
 export const setApiHooks = (h: Hooks) => { hooks = h; };
+/** Current API token (the in-studio player passes it to the engine iframe). */
+export const currentToken = () => hooks.getToken();
 
 /** Relative API paths ("/v1/...") → absolute; absolute URLs pass through. */
 export const absUrl = (u: string) => (/^https?:\/\//.test(u) ? u : `${env.apiUrl}${u.startsWith('/') ? '' : '/'}${u}`);
@@ -195,6 +197,8 @@ async function request<T>(path: string, opts: { method?: string; body?: unknown;
 const enc = encodeURIComponent;
 
 export const api = {
+  /** Pay-per-play start (free for your own games / within a pass). */
+  playStart: (gameId: string) => request<{ charged: boolean; price: number; balance: number; creatorEarned: number }>(`/v1/games/${encodeURIComponent(gameId)}/play`, { method: 'POST', body: {} }),
   // auth
   guest: () => request<{ user: User; token: string }>('/v1/auth/guest', { method: 'POST', auth: false }),
   emailStart: (email: string) => request<{ ok: true }>('/v1/auth/email/start', { method: 'POST', auth: false, body: { email } }),

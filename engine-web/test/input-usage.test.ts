@@ -47,3 +47,15 @@ describe("InputState.recentlyRead", () => {
     expect(s.recentlyRead("jump")).toBe(false);
   });
 });
+
+import { shapeStick } from "../input/index.js";
+describe("shapeStick", () => {
+  it("drops the small axis when the thumb clearly pushes the other way", () => {
+    const [x, y] = shapeStick(0.9, 0.35);   // steering right with a thumb drifting down
+    expect(x).toBeGreaterThan(0.8); expect(y).toBe(0);
+    expect(shapeStick(0.1, 0.1)).toEqual([0, 0]);  // dead zone
+    const [dx, dy] = shapeStick(0.6, 0.6);  // real diagonal passes through
+    expect(dx).toBeGreaterThan(0.3); expect(dy).toBeGreaterThan(0.3);
+    expect(shapeStick(1, 0)[0]).toBeCloseTo(1, 5);
+  });
+});

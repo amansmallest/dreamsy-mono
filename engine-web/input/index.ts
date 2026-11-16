@@ -70,6 +70,12 @@ export function isTouchDevice(): boolean {
   return typeof window !== "undefined" && ("ontouchstart" in window || navigator.maxTouchPoints > 0);
 }
 
+/** On-screen controls for this game: never while spectating (no local avatar), else `force` or touch devices. */
+export function touchControlsEnabled(game: Pick<Game, "net">, force?: boolean): boolean {
+  if (game.net?.spectating) return false;
+  return force ?? isTouchDevice();
+}
+
 /** Touch-control layout per orientation (container CSS px, before the touch-size setting). */
 export interface TouchLayout {
   stick: number;
@@ -289,12 +295,27 @@ export class TouchControls {
     const len = Math.hypot(dx, dy);
     if (len > max) { dx = (dx / len) * max; dy = (dy / len) * max; }
     this.knob.style.transform = `translate(${dx / this.scale}px, ${dy / this.scale}px)`;
-    const ax = dx / max, ay = dy / max;
-    this.game.input.setAxis("move_x", Math.abs(ax) < 0.2 ? 0 : ax);
-    this.game.input.setAxis("move_y", Math.abs(ay) < 0.2 ? 0 : ay);
+    const [ax, ay] = shapeStick(dx / max, dy / max);
+    this.game.input.setAxis("move_x", ax);
+    this.game.input.setAxis("move_y", ay);
   }
 
   dispose() { if (this.game.input.onFirstRead) this.game.input.onFirstRead = null; this.root.remove(); }
+}
+
+/**
+ * Thumb-friendly stick shaping: radial dead zone, then a secondary axis is dropped while the thumb is
+ * clearly pushing along the other one (a thumb steering left/right drifts down — that must not brake
+ * a car or press "down" in a platformer). Diagonals (both axes similar) pass through.
+ */
+export function shapeStick(x: number, y: number): [number, number] {
+  const len = Math.hypot(x, y);
+  if (len < 0.18) return [0, 0];
+  const k = Math.min(1, (len - 0.18) / 0.82) / len; // rescale so the edge of the dead zone reads ~0
+  let ax = x * k, ay = y * k;
+  if (Math.abs(ay) < Math.abs(ax) * 0.5) ay = 0;
+  else if (Math.abs(ax) < Math.abs(ay) * 0.5) ax = 0;
+  return [ax, ay];
 }
 
 /** Right-side aim stick feeding look_x / look_y (released = 0). */

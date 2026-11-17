@@ -252,8 +252,11 @@ data: entries in index order, each at its offset, zero-padded to 16 bytes; the f
 Limits (reader): ≤ 20,000 entries, ≤ 64 MB per file, ≤ 200 MB total, paths ≤ 1024 bytes.
 Reader/writer: `engine/src/pkg/pack.cpp`; `dreamsy-tool pack <dir|zip> <out.dpk>` (validates first),
 `dreamsy-tool unpack`, `dreamsy-tool info` (prints the content hash). The C++ engine never reads zips;
-the tool converts legacy zip builds. **Still TODO:** a TS reader/writer in `format/src/package.ts`, then
-the API, harness and `engine-web` switch from zip to `.dpk`.
+the tool converts legacy zip builds. TS reader/writer: `format/src/pack.ts` (`Package.fromPack`, `toPack`,
+`contentHash`; pure-TS synchronous SHA-256 so it runs in browsers), byte-identical with the C++ writer (cross-checked
+in `format/test/pack.test.ts` against `dreamsy-tool` for every 2D example/showcase game); the format CLI packs to
+`.dpk` when the output ends in `.dpk` and reads `.dpk` in `validate`/`unpack`/`apply`. **Still TODO:** the API,
+harness and `engine-web` still move zips; switch them to `.dpk`.
 
 ## 4. Runtime & multiplayer
 

@@ -1,6 +1,8 @@
 export * from "./catalog.js";
 export * from "./ops.js";
 export * from "./package.js";
+export { PackError, PACK_LIMITS } from "./pack.js";
+export { sha256, toHex } from "./sha256.js";
 export * from "./schema.js";
 export * from "./styles.js";
 export * from "./tilemap.js";

@@ -167,6 +167,42 @@ target_include_directories(dreamsy_check PRIVATE src)
 target_compile_options(dreamsy_check PRIVATE -frtti)
 target_link_libraries(dreamsy_check PUBLIC dreamsy_pkg PRIVATE dreamsy_script dreamsy_script_data Luau.Analysis)
 
+# Rendering, CPU side (E4): draw list, depth sorting, view math, image decoding, atlas, fonts,
+# batching. No GPU, so it builds everywhere (tests, headless tools); the sokol renderer is below.
+# stb_image / stb_rect_pack / stb_truetype / nanosvg compile in one C file, warnings off (vendored).
+add_library(dreamsy_media_libs STATIC src/render/third_party_impl.c)
+target_include_directories(dreamsy_media_libs SYSTEM PUBLIC ${THIRD_PARTY}/stb ${THIRD_PARTY}/nanosvg)
+target_compile_options(dreamsy_media_libs PRIVATE -w)
+
+# The bundled theme fonts (third_party/fonts), embedded as byte arrays. Order matters:
+# pixel, rounded, bold, serif (render/font.cpp bundled_font).
+set(DREAMSY_FONT_FILES
+  ${THIRD_PARTY}/fonts/press-start-2p/PressStart2P-Regular.ttf
+  ${THIRD_PARTY}/fonts/nunito/Nunito-ExtraBold-Latin1.ttf
+  ${THIRD_PARTY}/fonts/inter/Inter-Bold-Latin1.ttf
+  ${THIRD_PARTY}/fonts/source-serif-4/SourceSerif4-Bold-Latin1.ttf)
+set(DREAMSY_FONTS_CPP ${CMAKE_BINARY_DIR}/generated/fonts.cpp)
+string(JOIN "|" DREAMSY_FONT_FILES_ARG ${DREAMSY_FONT_FILES})  # "|": a ";" list would split the argument
+add_custom_command(
+  OUTPUT ${DREAMSY_FONTS_CPP}
+  COMMAND ${CMAKE_COMMAND} "-DFILES=${DREAMSY_FONT_FILES_ARG}" -DNAMESPACE=dreamsy::render::embedded
+          -DOUT=${DREAMSY_FONTS_CPP} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/embed_files.cmake
+  DEPENDS ${DREAMSY_FONT_FILES} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/embed_files.cmake
+  COMMENT "Embedding the bundled fonts"
+  VERBATIM)
+
+add_library(dreamsy_render STATIC
+  src/render/atlas.cpp
+  src/render/font.cpp
+  src/render/geometry.cpp
+  src/render/image.cpp
+  src/render/sort.cpp
+  src/render/textures.cpp
+  src/render/view.cpp
+  ${DREAMSY_FONTS_CPP})
+dreamsy_target_defaults(dreamsy_render)
+target_link_libraries(dreamsy_render PUBLIC dreamsy_pkg PRIVATE dreamsy_media_libs)
+
 add_library(dreamsy_zip_import STATIC src/pkg/zip_import.cpp)
 dreamsy_target_defaults(dreamsy_zip_import)
 target_link_libraries(dreamsy_zip_import PUBLIC dreamsy_pkg PRIVATE miniz)
@@ -228,12 +264,12 @@ endif()
 
 if(DREAMSY_BUILD_TESTS)
   enable_testing()
-  add_executable(dreamsy-tests tests/main.cpp tests/base_test.cpp tests/smoke_test.cpp tests/pkg_test.cpp tests/pack_test.cpp tests/script_test.cpp tests/dmath_test.cpp)
+  add_executable(dreamsy-tests tests/main.cpp tests/base_test.cpp tests/smoke_test.cpp tests/pkg_test.cpp tests/pack_test.cpp tests/script_test.cpp tests/dmath_test.cpp tests/render_test.cpp)
   dreamsy_target_defaults(dreamsy-tests)
   # doctest needs RTTI; tests are not engine code.
   target_compile_options(dreamsy-tests PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-frtti>)
   target_include_directories(dreamsy-tests PRIVATE ${THIRD_PARTY}/doctest)
-  target_link_libraries(dreamsy-tests PRIVATE dreamsy_dev dreamsy_zip_import dreamsy_script miniz)
+  target_link_libraries(dreamsy-tests PRIVATE dreamsy_dev dreamsy_zip_import dreamsy_script dreamsy_render miniz)
   dreamsy_link_dmath(dreamsy-tests)
   target_compile_definitions(dreamsy-tests PRIVATE DREAMSY_REPO_ROOT="${CMAKE_CURRENT_SOURCE_DIR}/..")
   if(EMSCRIPTEN)

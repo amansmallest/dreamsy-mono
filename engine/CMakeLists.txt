@@ -146,10 +146,26 @@ target_include_directories(dreamsy_script_data PRIVATE src)
 add_library(dreamsy_script STATIC
   src/script/host.cpp
   src/script/json_value.cpp
+  src/script/require_path.cpp
   src/script/theme.cpp
   src/script/vm.cpp)
 dreamsy_target_defaults(dreamsy_script)
 target_link_libraries(dreamsy_script PUBLIC dreamsy_pkg Luau.Compiler Luau.VM PRIVATE dreamsy_script_data)
+
+# Type checking (tools only): Luau's analyzer + the API definitions (format/dreamsy.d.luau with
+# Entity props generated from format/catalog.json).
+set(DREAMSY_DEFS ${CMAKE_CURRENT_SOURCE_DIR}/../format/dreamsy.d.luau)
+set(DREAMSY_DEFS_CPP ${CMAKE_BINARY_DIR}/generated/defs.cpp)
+add_custom_command(
+  OUTPUT ${DREAMSY_DEFS_CPP}
+  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/gen_defs.py ${DREAMSY_DEFS} ${DREAMSY_CATALOG} ${DREAMSY_DEFS_CPP}
+  DEPENDS ${DREAMSY_DEFS} ${DREAMSY_CATALOG} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/gen_defs.py
+  COMMENT "Building the Luau API definitions")
+add_library(dreamsy_check STATIC src/check/check.cpp ${DREAMSY_DEFS_CPP})
+target_include_directories(dreamsy_check PRIVATE src)
+# Luau.Analysis uses RTTI and exceptions; this tool-only module is the boundary (see check.cpp).
+target_compile_options(dreamsy_check PRIVATE -frtti)
+target_link_libraries(dreamsy_check PUBLIC dreamsy_pkg PRIVATE dreamsy_script dreamsy_script_data Luau.Analysis)
 
 add_library(dreamsy_zip_import STATIC src/pkg/zip_import.cpp)
 dreamsy_target_defaults(dreamsy_zip_import)
@@ -157,7 +173,7 @@ target_link_libraries(dreamsy_zip_import PUBLIC dreamsy_pkg PRIVATE miniz)
 
 add_executable(dreamsy-tool apps/tool/main.cpp)
 dreamsy_target_defaults(dreamsy-tool)
-target_link_libraries(dreamsy-tool PRIVATE dreamsy_dev dreamsy_zip_import dreamsy_script)
+target_link_libraries(dreamsy-tool PRIVATE dreamsy_dev dreamsy_zip_import dreamsy_script dreamsy_check)
 dreamsy_link_dmath(dreamsy-tool)
 if(EMSCRIPTEN)
   target_link_options(dreamsy-tool PRIVATE -sENVIRONMENT=node -sALLOW_MEMORY_GROWTH=1 -sNODERAWFS=1)

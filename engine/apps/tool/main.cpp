@@ -6,6 +6,8 @@
 //   dreamsy-tool pack <package> <out.dpk>      validate, then write a Dreamsy pack
 //   dreamsy-tool unpack <pack.dpk> <dir>       extract a pack into a directory
 //   dreamsy-tool run <package> [--ticks N] [--seed S] [--budget MS]   run scripts headless
+//   dreamsy-tool check <package> [--strict] [--json]   type-check scripts; exit 1 on errors
+//   dreamsy-tool check --print-defs                    print the Luau API definitions
 //   dreamsy-tool smoke [--seed N] [--bodies N] [--steps N]
 //
 // <package> is a directory, a .dpk pack, or a legacy .zip (converted on the fly).
@@ -26,6 +28,7 @@
 #include "pkg/text.h"
 #include "pkg/validate.h"
 #include "pkg/zip_import.h"
+#include "check/check.h"
 #include "script/host.h"
 
 using namespace dreamsy;
@@ -42,6 +45,7 @@ int usage() {
                "  dreamsy-tool pack <package> <out.dpk>\n"
                "  dreamsy-tool unpack <pack.dpk> <dir>\n"
                "  dreamsy-tool run <package> [--ticks N] [--seed S] [--budget MS]\n"
+               "  dreamsy-tool check <package> [--strict] [--json] | --print-defs\n"
                "  dreamsy-tool smoke [--seed N] [--bodies N] [--steps N]\n"
                "<package> is a directory, a .dpk pack or a .zip\n");
   return 2;
@@ -197,6 +201,54 @@ int cmd_unpack(int argc, char** argv) {
 
 bool parse_int(const char* text, int64_t min, int64_t max, int64_t* out);
 
+int cmd_check(int argc, char** argv) {
+  if (argc >= 3 && std::string_view(argv[2]) == "--print-defs") {
+    std::fwrite(check::definitions().data(), 1, check::definitions().size(), stdout);
+    return 0;
+  }
+  if (argc < 3) return usage();
+  check::Options opts;
+  bool json = false;
+  for (int i = 3; i < argc; ++i) {
+    std::string_view a = argv[i];
+    if (a == "--strict") opts.strict = true;
+    else if (a == "--json") json = true;
+    else return usage();
+  }
+  auto files = load_files(argv[2]);
+  if (!files) {
+    std::fprintf(stderr, "✗ %s\n", files.error().c_str());
+    return 1;
+  }
+  pkg::LoadResult loaded = pkg::load_package(std::move(files).value());
+  if (!loaded.ok) {
+    print_issues(loaded.issues);
+    return 1;
+  }
+  auto report = check::check_package(*loaded.package, opts);
+  if (!report) {
+    std::fprintf(stderr, "✗ %s\n", report.error().c_str());
+    return 1;
+  }
+  const check::Report& r = report.value();
+  if (json) {
+    std::string out = "{\"errors\":" + std::to_string(r.errors) + ",\"warnings\":" + std::to_string(r.warnings) + ",\"issues\":[";
+    for (size_t k = 0; k < r.issues.size(); ++k) {
+      const check::Issue& i = r.issues[k];
+      out += std::string(k ? "," : "") + "{\"file\":" + pkg::quote(i.file) + ",\"line\":" + std::to_string(i.line) +
+             ",\"column\":" + std::to_string(i.column) + ",\"severity\":" + pkg::quote(i.severity) +
+             ",\"kind\":" + pkg::quote(i.kind) + ",\"message\":" + pkg::quote(i.message) + "}";
+    }
+    std::printf("%s]}\n", out.c_str());
+  } else {
+    for (const check::Issue& i : r.issues) {
+      std::printf("%s:%d:%d: %s [%s] %s\n", i.file.c_str(), i.line, i.column, i.severity.c_str(), i.kind.c_str(), i.message.c_str());
+    }
+    std::fprintf(stderr, "%s %d errors, %d warnings\n", r.errors ? "✗" : "✓", r.errors, r.warnings);
+  }
+  return r.errors ? 1 : 0;
+}
+
 // Runs the package's scripts for N ticks with a fixed clock and prints the same report as
 // engine/tests/conformance/ts_run.mts does for engine-web.
 int cmd_run(int argc, char** argv) {
@@ -293,6 +345,7 @@ int main(int argc, char** argv) {
   if (cmd == "pack") return cmd_pack(argc, argv);
   if (cmd == "unpack") return cmd_unpack(argc, argv);
   if (cmd == "run") return cmd_run(argc, argv);
+  if (cmd == "check") return cmd_check(argc, argv);
   if (cmd == "smoke") return cmd_smoke(argc, argv);
   return usage();
 }

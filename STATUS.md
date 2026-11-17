@@ -55,8 +55,13 @@ Spec: DREAMSY.MD §14 (stack, code style, determinism, 2.5D views, netcode, migr
   1.7x because every vec2 allocates a table → evidence for the OPEN fast-vectors item). No Luau codegen yet.
 - Contract mismatches found (engine-web behavior kept for now): `random(min)` returns `min` (API says [min,max));
   LUAU_API "Not available" says only scripts/ can be required, but `@kit/` works and is documented.
-- Still TODO in E2: `dreamsy-tool check` (Luau type checking against a dreamsy.d.luau), Luau native codegen
-  on desktop/Android/server, per-script profiling, hot reload.
+- `dreamsy-tool check <pkg>`: Luau type checking against `format/dreamsy.d.luau` (Entity props generated from
+  the catalog), requires resolved like the runtime. Catches misspelled globals, wrong argument types/counts,
+  Vec2 misuse, entity prop typos (strict scripts). Valid games: 0 errors (56 warnings across 30 games).
+  The new Luau solver crashed on kit-puzzle, so the old solver is used.
+- Still TODO in E2: Luau native codegen on desktop/Android/server, per-script profiling, hot reload.
+- format: `Package.fromPack/toPack/contentHash` in TS, byte-identical with the C++ tool on 25 games
+  (CLI `pack x.dpk`). API/harness/engine-web still move zips.
 
 Next: finish E2 (type checking), then E3 world + physics with 2.5D (z, height, view modes) built in.
 

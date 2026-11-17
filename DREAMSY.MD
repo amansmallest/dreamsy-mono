@@ -1007,6 +1007,9 @@ The Luau API contract (`format/LUAU_API.md`) is unchanged: every kit and game ru
   `engine/script/dreamsy.d.luau` (typed declarations of the whole API, kept in sync with `LUAU_API.md`) and
   reports `path:line: message`. The harness runs it before playtests, so wrong field names, missing
   arguments and nil mistakes are fixed before a game ever boots. Non-strict scripts get warnings; `--!strict`
-  scripts get errors.
+  scripts get errors. (Built 2026-11-17: declarations in `format/dreamsy.d.luau`, Entity props generated from the
+  catalog; Luau's old solver, since the new one crashes in Luau 0.747. Lenient by design: possibly-nil values,
+  mixed list literals and untyped `{}` tables are warnings even in strict scripts, because they rarely fail at
+  runtime. Every valid game in the repo checks with zero errors. `--strict` analyzes every script strictly.)
 - **Per-script profiling.** CPU time per script and callback, shown in the dev overlay (§14.12).
 - **Hot reload** (dev builds): a changed script re-runs without restarting the game.

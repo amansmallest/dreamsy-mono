@@ -21,6 +21,7 @@ ctest --preset debug                                   # run the tests
 ./build/debug/dreamsy-tool pack ../games/examples/feature-demo /tmp/fd.dpk   # also converts .zip builds
 ./build/debug/dreamsy-tool info /tmp/fd.dpk            # summary + content hash
 ./build/debug/dreamsy-tool run tests/scripts/basics    # run scripts headless (logs, errors, save)
+./build/debug/dreamsy-tool check ../games/examples/feature-demo   # type-check scripts (format/dreamsy.d.luau)
 ./build/debug/dreamsy-player                           # window (Metal on macOS)
 ```
 
@@ -42,6 +43,7 @@ ctest --preset web                                     # tests run under Node
 | `src/base/` | `Result`/`Status` errors, `Pool`/`Id` handles, `Arena`, `Rng` (bit-identical to the TS engine), `Hasher`, logging, checks |
 | `src/pkg/` | packages: `Files` (packs, dirs), `pack.cpp` (.dpk), `catalog` (embedded `format/catalog.json` + kit list), `manifest` (TOML), `formats` (tilesets, levels, anims, sfx, music, SVG), `validate` (`load_package()`), `zip_import` (tools only) |
 | `src/script/` | Luau host (§14.13): `vm` (sandbox, memory cap, CPU budget, tracebacks), `host` (scripts, require, kits, scheduler, host ops), prelude + kits embedded from engine-web at build time |
+| `src/check/` | `dreamsy-tool check`: Luau analyzer over a package's scripts against `format/dreamsy.d.luau` (tools only) |
 | `src/dmath/` | deterministic math: musl libm linked into every executable (see its README) |
 | `src/platform/` | sokol implementation unit; web link settings |
 | `src/dev/` | E0 smoke checks (Luau, Box2D); replaced by `src/script` (E2) and `src/physics` (E3) |

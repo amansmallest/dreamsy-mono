@@ -5,6 +5,7 @@
 #include <set>
 #include <tuple>
 
+#include "Luau/AstQuery.h"
 #include "Luau/BuiltinDefinitions.h"
 #include "Luau/Frontend.h"
 #include "Luau/Linter.h"
@@ -90,13 +91,32 @@ class Config : public Luau::ConfigResolver {
   Luau::Config config_;
 };
 
+// Findings that are warnings even in --!strict scripts, because they rarely fail at runtime.
 // "X? could be nil" and "expected X, got X?": the value is optional where it's used. Real games do this
 // constantly with entities they know exist (entity("hud").text); the engine raises a clear runtime error
 // if one is missing, so these are warnings even in --!strict scripts.
 bool maybe_nil_only(const Luau::TypeError& e) {
   if (Luau::get_if<Luau::OptionalValueAccess>(&e.data)) return true;
+  // Indexing a value the solver couldn't type (`local list = {}` filled later with table.insert):
+  // an inference gap, not a likely runtime failure.
+  if (const auto* p = Luau::get_if<Luau::UnknownProperty>(&e.data)) return Luau::toString(p->table) == "unknown";
   if (const auto* m = Luau::get_if<Luau::TypeMismatch>(&e.data)) {
     return Luau::toString(m->givenType) == Luau::toString(m->wantedType) + "?";
+  }
+  return false;
+}
+
+// A type mismatch on an element of a positional list literal ({ 1, 10, "max" }, { "Map", onClick }): the
+// old solver types such lists from their first element, so valid mixed lists are flagged. The engine
+// accepts them, so these are warnings.
+bool in_mixed_list(const Luau::SourceModule* sm, const Luau::TypeError& e) {
+  if (!sm || !Luau::get_if<Luau::TypeMismatch>(&e.data)) return false;
+  for (Luau::AstNode* node : Luau::findAstAncestryOfPosition(*sm, e.location.begin)) {
+    auto* table = node->as<Luau::AstExprTable>();
+    if (!table) continue;
+    for (const Luau::AstExprTable::Item& item : table->items) {
+      if (item.kind == Luau::AstExprTable::Item::Kind::List && item.value->location.encloses(e.location)) return true;
+    }
   }
   return false;
 }
@@ -147,7 +167,8 @@ Result<Report> check_package(const pkg::Package& package, const Options& options
         if (const auto* syntax = Luau::get_if<Luau::SyntaxError>(&e.data)) {
           add(e.moduleName, e.location, "error", "syntax", syntax->message);
         } else {
-          add(e.moduleName, e.location, strict && !maybe_nil_only(e) ? "error" : "warning", "type",
+          bool lenient = maybe_nil_only(e) || in_mixed_list(sm, e);
+          add(e.moduleName, e.location, strict && !lenient ? "error" : "warning", "type",
               Luau::toString(e, Luau::TypeErrorToStringOptions{frontend.fileResolver}));
         }
       }

@@ -2,12 +2,17 @@
 #
 #   cmake --preset debug && cmake --build --preset debug && ctest --preset debug
 #
-# Presets: debug (ASan + UBSan), release, web (Emscripten; needs `source ~/emsdk/emsdk_env.sh`).
+# Presets: debug (ASan + UBSan), release, web (Emscripten; needs `source ~/emsdk/emsdk_env.sh`),
+# ios-sim / ios-device / android-arm64 (phones; see README.md "Phones" and platform/).
 cmake_minimum_required(VERSION 3.22)
 project(dreamsy_engine LANGUAGES C CXX)
 
 if(APPLE)
   enable_language(OBJC)
+endif()
+# On iOS CMake makes every executable an app bundle by default; only the player is one (platform/ios).
+if(IOS)
+  set(CMAKE_MACOSX_BUNDLE OFF)
 endif()
 
 set(CMAKE_CXX_STANDARD 20)
@@ -185,7 +190,7 @@ if(DREAMSY_BUILD_PLAYER)
   if(APPLE)
     set(SOKOL_IMPL_SRC src/platform/sokol_impl.m)
     set(SOKOL_BACKEND SOKOL_METAL)
-  elseif(EMSCRIPTEN)
+  elseif(EMSCRIPTEN OR ANDROID)
     set(SOKOL_IMPL_SRC src/platform/sokol_impl.c)
     set(SOKOL_BACKEND SOKOL_GLES3)
   else()
@@ -196,10 +201,16 @@ if(DREAMSY_BUILD_PLAYER)
   add_library(dreamsy_sokol STATIC ${SOKOL_IMPL_SRC})
   target_include_directories(dreamsy_sokol PUBLIC ${THIRD_PARTY}/sokol)
   target_compile_definitions(dreamsy_sokol PUBLIC ${SOKOL_BACKEND})
-  if(APPLE)
+  if(IOS)
+    target_compile_options(dreamsy_sokol PRIVATE -fobjc-arc)
+    target_link_libraries(dreamsy_sokol PUBLIC "-framework Foundation" "-framework UIKit"
+      "-framework QuartzCore" "-framework CoreGraphics" "-framework Metal" "-framework MetalKit")
+  elseif(APPLE)
     target_compile_options(dreamsy_sokol PRIVATE -fobjc-arc)
     target_link_libraries(dreamsy_sokol PUBLIC
       "-framework Cocoa" "-framework QuartzCore" "-framework Metal" "-framework MetalKit")
+  elseif(ANDROID)
+    target_link_libraries(dreamsy_sokol PUBLIC GLESv3 EGL android log)
   elseif(EMSCRIPTEN)
     # em_library_funcs.json works around an Emscripten bug (seen in 4.0.11 and 6.0.13): with
     # -fwasm-exceptions and -O1 or higher, sokol_app's `withStackSave` fails to link with
@@ -212,7 +223,12 @@ if(DREAMSY_BUILD_PLAYER)
     target_link_libraries(dreamsy_sokol PUBLIC X11::X11 X11::Xi X11::Xcursor OpenGL::GL dl m pthread)
   endif()
 
-  add_executable(dreamsy-player apps/player/main.cpp)
+  if(ANDROID)
+    # Android loads the player as libdreamsy-player.so from a NativeActivity (platform/android).
+    add_library(dreamsy-player SHARED apps/player/main.cpp)
+  else()
+    add_executable(dreamsy-player apps/player/main.cpp)
+  endif()
   dreamsy_target_defaults(dreamsy-player)
   target_link_libraries(dreamsy-player PRIVATE dreamsy_base dreamsy_sokol)
   dreamsy_link_dmath(dreamsy-player)
@@ -221,6 +237,12 @@ if(DREAMSY_BUILD_PLAYER)
     target_link_options(dreamsy-player PRIVATE
       --shell-file ${CMAKE_CURRENT_SOURCE_DIR}/apps/player/shell.html -sALLOW_MEMORY_GROWTH=1)
     set_property(TARGET dreamsy-player APPEND PROPERTY LINK_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/apps/player/shell.html)
+  elseif(IOS)
+    include(platform/ios/ios.cmake)
+    dreamsy_ios_app(dreamsy-player)
+  elseif(ANDROID)
+    # sokol_app defines the NativeActivity entry point; nothing references it, so keep it explicitly.
+    target_link_options(dreamsy-player PRIVATE -u ANativeActivity_onCreate)
   endif()
 endif()
 
@@ -239,6 +261,11 @@ if(DREAMSY_BUILD_TESTS)
   if(EMSCRIPTEN)
     target_link_options(dreamsy-tests PRIVATE -sENVIRONMENT=node -sALLOW_MEMORY_GROWTH=1 -sNODERAWFS=1)
     add_test(NAME dreamsy-tests COMMAND node $<TARGET_FILE:dreamsy-tests>)
+  elseif(IOS)
+    # A plain command-line binary run inside the booted simulator (it can read the host's files).
+    add_test(NAME dreamsy-tests COMMAND xcrun simctl spawn booted $<TARGET_FILE:dreamsy-tests>)
+  elseif(ANDROID)
+    # Push and run by hand: adb push dreamsy-tests /data/local/tmp (tests needing repo files will fail).
   else()
     add_test(NAME dreamsy-tests COMMAND dreamsy-tests)
   endif()
@@ -251,7 +278,7 @@ endif()
 #   fuzz-<name>         libFuzzer, coverage-guided (DREAMSY_FUZZ=ON, upstream clang)
 option(DREAMSY_FUZZ "Build libFuzzer targets (needs clang with -fsanitize=fuzzer)" OFF)
 
-if(NOT EMSCRIPTEN)
+if(NOT EMSCRIPTEN AND NOT IOS AND NOT ANDROID)
   set(DREAMSY_FUZZ_TARGETS pack package zip_import)
   foreach(name IN LISTS DREAMSY_FUZZ_TARGETS)
     add_executable(fuzz-${name}-replay fuzz/fuzz_${name}.cpp fuzz/replay_main.cpp)

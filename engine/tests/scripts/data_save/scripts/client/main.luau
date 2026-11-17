@@ -1,0 +1,25 @@
+print(#data.list("data"), table.concat(data.list("data/levels"), ","))
+local t = data.read("data/info.json")
+print(t.name, t.list[2], t.nested.deep, t.missing)
+t.name = "changed"
+print(data.read("data/info.json").name)
+print(data.read("data/levels/one.txt"))
+print(data.exists("data/info.json"), data.exists("data/none.json"), files.exists("dreamsy.toml"))
+print(pcall(data.read, "../x.json"))
+print(pcall(data.read, "data/info.png"))
+print(pcall(data.read, "data/none.json"))
+print(save.get("best", 7))
+save.set("best", 42)
+save.set("profile", { name = "fox", levels = { 1, 2, 3 }, flags = { music = true } })
+save.set("temp", "x")
+save.remove("temp")
+save.set("gone", 1)
+save.set("gone", nil)
+print(save.get("best"), save.get("profile").levels[3], table.concat(save.keys(), ","))
+local deep = {}
+local cur = deep
+for i = 1, 40 do cur.x = {}; cur = cur.x end
+print(pcall(save.set, "deep", deep))
+print(pcall(save.set, "bad", { f = function() end }))
+print(pcall(save.set, "", 1))
+print(pcall(save.set, "big", string.rep("x", 70000)))

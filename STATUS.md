@@ -39,7 +39,26 @@ Spec: DREAMSY.MD §14 (stack, code style, determinism, 2.5D views, netcode, migr
 - Tests: 33 cases / 261 assertions + fuzz corpus/regression replays, green on macOS debug (ASan/UBSan), release and web.
 - TODO outside the engine: TS `.dpk` reader/writer in format/src/package.ts, then API/harness/engine-web switch from zip.
 
-Next: E2 (Luau host: client/server VMs, prelude port, budgets, host API skeleton).
+**E2 scripting: core done (not committed yet → see below).**
+- Spec: §14.13 (single-player keeps one VM like engine-web; separate server/client VMs only for authoritative
+  multiplayer; fast native vectors left OPEN), 2.5D folded into E3 (world) and E4 (renderer).
+- `engine/src/script/`: native Luau host. The prelude is extracted from engine-web/core/prelude.ts at build time
+  (byte-identical to what engine-web runs) and every kit's sources are embedded. Same op numbers, script order,
+  tick order, error dedupe, budgets (unswallowable), memory cap, require/kits/cycles, save (64 KB), data.read,
+  scenes, offline room, in-memory store, audio events. Entity ops raise "not available yet (E3)".
+- `dreamsy-tool run <pkg>`; `tests/conformance/run_compare.py` diffs it against engine-web (ts_run.mts):
+  6/6 script-only test games identical (`engine/tests/scripts/`).
+- Deterministic math: musl 1.2.5 libm (same as Emscripten → engine-web) linked into every executable, built
+  without FMA paths; math results identical to engine-web on all ~170 sampled values, golden bits pass on native
+  debug/release and web. Before: 20 values differed between macOS libm and engine-web.
+- Speed: native Luau ~1.8x engine-web's WASM Luau on a mixed benchmark (2.8x on pure compute; vec2 math only
+  1.7x because every vec2 allocates a table → evidence for the OPEN fast-vectors item). No Luau codegen yet.
+- Contract mismatches found (engine-web behavior kept for now): `random(min)` returns `min` (API says [min,max));
+  LUAU_API "Not available" says only scripts/ can be required, but `@kit/` works and is documented.
+- Still TODO in E2: `dreamsy-tool check` (Luau type checking against a dreamsy.d.luau), Luau native codegen
+  on desktop/Android/server, per-script profiling, hot reload.
+
+Next: finish E2 (type checking), then E3 world + physics with 2.5D (z, height, view modes) built in.
 
 ---
 

@@ -5,6 +5,7 @@
 //   dreamsy-tool info <package>                summary + content hash
 //   dreamsy-tool pack <package> <out.dpk>      validate, then write a Dreamsy pack
 //   dreamsy-tool unpack <pack.dpk> <dir>       extract a pack into a directory
+//   dreamsy-tool run <package> [--ticks N] [--seed S] [--budget MS]   run scripts headless
 //   dreamsy-tool smoke [--seed N] [--bodies N] [--steps N]
 //
 // <package> is a directory, a .dpk pack, or a legacy .zip (converted on the fly).
@@ -25,6 +26,7 @@
 #include "pkg/text.h"
 #include "pkg/validate.h"
 #include "pkg/zip_import.h"
+#include "script/host.h"
 
 using namespace dreamsy;
 namespace fs = std::filesystem;
@@ -39,6 +41,7 @@ int usage() {
                "  dreamsy-tool info <package>\n"
                "  dreamsy-tool pack <package> <out.dpk>\n"
                "  dreamsy-tool unpack <pack.dpk> <dir>\n"
+               "  dreamsy-tool run <package> [--ticks N] [--seed S] [--budget MS]\n"
                "  dreamsy-tool smoke [--seed N] [--bodies N] [--steps N]\n"
                "<package> is a directory, a .dpk pack or a .zip\n");
   return 2;
@@ -192,6 +195,56 @@ int cmd_unpack(int argc, char** argv) {
   return 0;
 }
 
+bool parse_int(const char* text, int64_t min, int64_t max, int64_t* out);
+
+// Runs the package's scripts for N ticks with a fixed clock and prints the same report as
+// engine/tests/conformance/ts_run.mts does for engine-web.
+int cmd_run(int argc, char** argv) {
+  if (argc < 3) return usage();
+  int64_t ticks = 120, seed = 1, budget = 250;
+  for (int i = 3; i < argc; i += 2) {
+    std::string_view flag = argv[i];
+    if (i + 1 >= argc) return usage();
+    int64_t* target = flag == "--ticks" ? &ticks : flag == "--seed" ? &seed : flag == "--budget" ? &budget : nullptr;
+    if (!target || !parse_int(argv[i + 1], 0, flag == "--seed" ? int64_t{0xffffffff} : 10000000, target)) return usage();
+  }
+  auto files = load_files(argv[2]);
+  if (!files) {
+    std::fprintf(stderr, "✗ %s\n", files.error().c_str());
+    return 1;
+  }
+  pkg::LoadResult loaded = pkg::load_package(std::move(files).value());
+  if (!loaded.ok) {
+    print_issues(loaded.issues);
+    return 1;
+  }
+  std::shared_ptr<const pkg::Package> package(std::move(loaded.package));
+  script::HostOptions opts;
+  opts.seed = static_cast<uint32_t>(seed);
+  opts.budget_ms = static_cast<double>(budget);
+  script::Host* host_ptr = nullptr;
+  opts.clock = [&host_ptr] { return 1767225600.0 + (host_ptr ? host_ptr->time() : 0.0); };
+  opts.on_log = [](const script::LogLine& l) { std::printf("[%s] %s\n", l.level.c_str(), l.text.c_str()); };
+  auto host = script::Host::create(package, opts);
+  if (!host) {
+    std::fprintf(stderr, "✗ %s\n", host.error().c_str());
+    return 1;
+  }
+  host_ptr = host.value().get();
+  for (int64_t i = 0; i < ticks; ++i) host_ptr->step();
+  auto num = [](double v) { return pkg::number_text(v); };
+  for (const script::ScriptError& e : host_ptr->errors()) {
+    std::printf("error %s:%d x%d: %s\n", e.script.c_str(), e.line, e.count, e.message.c_str());
+  }
+  for (const script::AudioEvent& a : host_ptr->audio_events()) {
+    if (a.kind == "sfx") std::printf("audio sfx %s %s %s  %s\n", a.id.c_str(), num(a.volume).c_str(), num(a.pitch).c_str(), num(a.time).c_str());
+    else if (a.kind == "music") std::printf("audio music %s   %s %s\n", a.id.c_str(), num(a.fade).c_str(), num(a.time).c_str());
+    else std::printf("audio music_stop    %s %s\n", num(a.fade).c_str(), num(a.time).c_str());
+  }
+  std::printf("save %s\ntime %s\n", host_ptr->save_data().stringify().c_str(), num(host_ptr->time()).c_str());
+  return 0;
+}
+
 // int64_t, not long: long is 32-bit on wasm32 and would overflow for seeds above 2^31.
 bool parse_int(const char* text, int64_t min, int64_t max, int64_t* out) {
   char* end = nullptr;
@@ -239,6 +292,7 @@ int main(int argc, char** argv) {
   if (cmd == "info") return cmd_info(argc, argv);
   if (cmd == "pack") return cmd_pack(argc, argv);
   if (cmd == "unpack") return cmd_unpack(argc, argv);
+  if (cmd == "run") return cmd_run(argc, argv);
   if (cmd == "smoke") return cmd_smoke(argc, argv);
   return usage();
 }

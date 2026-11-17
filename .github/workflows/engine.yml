@@ -3,9 +3,9 @@ name: engine
 
 on:
   push:
-    paths: ["engine/**", "third_party/**", "format/**", "engine-web/kits/**", ".github/workflows/engine.yml"]
+    paths: ["engine/**", "third_party/**", "format/**", "engine-web/**", ".github/workflows/engine.yml"]
   pull_request:
-    paths: ["engine/**", "third_party/**", "format/**", "engine-web/kits/**", ".github/workflows/engine.yml"]
+    paths: ["engine/**", "third_party/**", "format/**", "engine-web/**", ".github/workflows/engine.yml"]
 
 jobs:
   macos:
@@ -50,7 +50,7 @@ jobs:
         run: for f in dreamsy-player.wasm dreamsy-player.js dreamsy-tool.wasm; do echo "$f $(gzip -9c $f | wc -c) bytes"; done
 
   conformance:
-    name: Validator conformance (C++ vs format/src/validate.ts)
+    name: Conformance with the TS side (validator + script host)
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -60,11 +60,12 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
-      - run: pnpm install --frozen-lockfile --filter @dreamsy/format...
+      - run: pnpm install --frozen-lockfile --filter @dreamsy/format... --filter @dreamsy/engine...
       - name: build the tool
         working-directory: engine
         run: cmake --preset headless && cmake --build --preset headless --target dreamsy-tool
       - run: python3 engine/tests/conformance/conformance.py --tool engine/build/headless/dreamsy-tool
+      - run: python3 engine/tests/conformance/run_compare.py --tool engine/build/headless/dreamsy-tool
 
   fuzz:
     name: libFuzzer (5 min per target)

@@ -114,13 +114,51 @@ dreamsy_target_defaults(dreamsy_pkg)
 target_include_directories(dreamsy_pkg SYSTEM PRIVATE ${THIRD_PARTY}/tomlplusplus)
 target_link_libraries(dreamsy_pkg PUBLIC dreamsy_base yyjson)
 
+# Deterministic math (§14.4): musl's libm under the standard names, linked straight into every
+# executable (dreamsy_link_dmath) so it wins over the platform libm for all engine code, Luau included.
+set(DREAMSY_DMATH_DIR ${THIRD_PARTY}/musl-libm)
+file(GLOB DREAMSY_DMATH_SOURCES ${DREAMSY_DMATH_DIR}/src/math/*.c)
+add_library(dreamsy_dmath OBJECT ${DREAMSY_DMATH_SOURCES})
+target_include_directories(dreamsy_dmath PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/dmath/compat ${DREAMSY_DMATH_DIR}/src/internal ${DREAMSY_DMATH_DIR}/arch/generic)
+target_compile_definitions(dreamsy_dmath PRIVATE "hidden=__attribute__((__visibility__(\"hidden\")))")
+target_compile_options(dreamsy_dmath PRIVATE -U__FP_FAST_FMA -fno-builtin -w)
+function(dreamsy_link_dmath target)
+  target_sources(${target} PRIVATE $<TARGET_OBJECTS:dreamsy_dmath>)
+endfunction()
+# Luau must call these functions, not fold or replace them with builtins.
+target_compile_options(Luau.VM PRIVATE -fno-builtin)
+
+# Scripting (E2, §14.13). The prelude is extracted from engine-web/core/prelude.ts and the kit
+# sources from engine-web/kits at build time (engine-web stays the source of truth until parity).
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+set(DREAMSY_PRELUDE_TS ${CMAKE_CURRENT_SOURCE_DIR}/../engine-web/core/prelude.ts)
+file(GLOB_RECURSE DREAMSY_KIT_SOURCES CONFIGURE_DEPENDS ${DREAMSY_KITS_DIR}/*.luau)
+set(DREAMSY_SCRIPT_DATA_CPP ${CMAKE_BINARY_DIR}/generated/script_data.cpp)
+add_custom_command(
+  OUTPUT ${DREAMSY_SCRIPT_DATA_CPP}
+  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/gen_script_data.py ${DREAMSY_PRELUDE_TS} ${DREAMSY_KITS_DIR} ${DREAMSY_SCRIPT_DATA_CPP}
+  DEPENDS ${DREAMSY_PRELUDE_TS} ${DREAMSY_KIT_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/gen_script_data.py
+  COMMENT "Embedding the Luau prelude and kit sources")
+add_library(dreamsy_script_data STATIC ${DREAMSY_SCRIPT_DATA_CPP})
+target_include_directories(dreamsy_script_data PRIVATE src)
+
+add_library(dreamsy_script STATIC
+  src/script/host.cpp
+  src/script/json_value.cpp
+  src/script/theme.cpp
+  src/script/vm.cpp)
+dreamsy_target_defaults(dreamsy_script)
+target_link_libraries(dreamsy_script PUBLIC dreamsy_pkg Luau.Compiler Luau.VM PRIVATE dreamsy_script_data)
+
 add_library(dreamsy_zip_import STATIC src/pkg/zip_import.cpp)
 dreamsy_target_defaults(dreamsy_zip_import)
 target_link_libraries(dreamsy_zip_import PUBLIC dreamsy_pkg PRIVATE miniz)
 
 add_executable(dreamsy-tool apps/tool/main.cpp)
 dreamsy_target_defaults(dreamsy-tool)
-target_link_libraries(dreamsy-tool PRIVATE dreamsy_dev dreamsy_zip_import)
+target_link_libraries(dreamsy-tool PRIVATE dreamsy_dev dreamsy_zip_import dreamsy_script)
+dreamsy_link_dmath(dreamsy-tool)
 if(EMSCRIPTEN)
   target_link_options(dreamsy-tool PRIVATE -sENVIRONMENT=node -sALLOW_MEMORY_GROWTH=1 -sNODERAWFS=1)
 endif()
@@ -161,6 +199,7 @@ if(DREAMSY_BUILD_PLAYER)
   add_executable(dreamsy-player apps/player/main.cpp)
   dreamsy_target_defaults(dreamsy-player)
   target_link_libraries(dreamsy-player PRIVATE dreamsy_base dreamsy_sokol)
+  dreamsy_link_dmath(dreamsy-player)
   if(EMSCRIPTEN)
     set_target_properties(dreamsy-player PROPERTIES SUFFIX ".html")
     target_link_options(dreamsy-player PRIVATE
@@ -173,12 +212,13 @@ endif()
 
 if(DREAMSY_BUILD_TESTS)
   enable_testing()
-  add_executable(dreamsy-tests tests/main.cpp tests/base_test.cpp tests/smoke_test.cpp tests/pkg_test.cpp tests/pack_test.cpp)
+  add_executable(dreamsy-tests tests/main.cpp tests/base_test.cpp tests/smoke_test.cpp tests/pkg_test.cpp tests/pack_test.cpp tests/script_test.cpp tests/dmath_test.cpp)
   dreamsy_target_defaults(dreamsy-tests)
   # doctest needs RTTI; tests are not engine code.
   target_compile_options(dreamsy-tests PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-frtti>)
   target_include_directories(dreamsy-tests PRIVATE ${THIRD_PARTY}/doctest)
-  target_link_libraries(dreamsy-tests PRIVATE dreamsy_dev dreamsy_zip_import miniz)
+  target_link_libraries(dreamsy-tests PRIVATE dreamsy_dev dreamsy_zip_import dreamsy_script miniz)
+  dreamsy_link_dmath(dreamsy-tests)
   target_compile_definitions(dreamsy-tests PRIVATE DREAMSY_REPO_ROOT="${CMAKE_CURRENT_SOURCE_DIR}/..")
   if(EMSCRIPTEN)
     target_link_options(dreamsy-tests PRIVATE -sENVIRONMENT=node -sALLOW_MEMORY_GROWTH=1 -sNODERAWFS=1)
@@ -201,6 +241,7 @@ if(NOT EMSCRIPTEN)
     add_executable(fuzz-${name}-replay fuzz/fuzz_${name}.cpp fuzz/replay_main.cpp)
     dreamsy_target_defaults(fuzz-${name}-replay)
     target_link_libraries(fuzz-${name}-replay PRIVATE dreamsy_zip_import)
+    dreamsy_link_dmath(fuzz-${name}-replay)
     if(DREAMSY_FUZZ)
       add_executable(fuzz-${name} fuzz/fuzz_${name}.cpp)
       dreamsy_target_defaults(fuzz-${name})

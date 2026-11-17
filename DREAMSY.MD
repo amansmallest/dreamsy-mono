@@ -901,18 +901,21 @@ Each slice ends with tests passing and is built one at a time (CLAUDE.md).
 |---|---|---|
 | E0 Scaffold | `engine/` CMake, vendored deps, test runner, CI with sanitizers, native + web "hello", `docs/CPP-FOR-TS-DEVS.md` | builds on macOS, Linux, web; CI green |
 | E1 Packages | Dreamsy pack (§3.6) + dir loading, manifest, scenes, tilesets, levels, anims, sfx/music, asset index, full validator port (same issue codes as the TS validator); fuzzers | loads every package in `games/`; conformance with format/src/validate.ts |
-| E2 Luau | VMs with client/server roles, prelude port, budgets, host API skeleton | a script-only example runs headless |
-| E3 World + physics | entities, components, tick loop, Box2D v3, collision layers, deterministic math/RNG, state hash | coin-dash runs headless and passes conformance |
-| E4 Renderer | sokol: sprites, atlases, tilemaps, text, UI, camera, particles, lighting; web build | examples look right in a browser |
+| E2 Scripting | §14.13: native Luau, client/server VMs, prelude + host API core, require/kits, budgets, errors with traces, deterministic math, `dreamsy-tool check` (type checking against `dreamsy.d.luau`) | script-only examples run headless; every game type-checks |
+| E3 World + physics (2.5D-native) | entities with `x, y, z` + `height` from day one, view modes in the data model, tick loop, Box2D v3 in the ground plane + engine-handled z (gravity, jumps, ledges), collision layers, state hash | coin-dash runs headless and passes conformance; a z-jump test scene behaves identically on every platform |
+| E4 Renderer (2.5D-native) | sokol: batched sprites, atlases, tilemaps, text, UI, camera, particles, lighting; depth sorting per view mode (§14.5), drop shadows; web build | examples look right in a browser; side/topdown/oblique/iso test scenes sort correctly |
 | E5 Input, audio, save, shell | touch/keys/gestures, on-screen controls, audio, save, platform menu, dialogs | feature-demo works on a phone browser |
 | E6 Parity | full host API, all kits, conformance suite green; harness playtests and app WebView switch to the C++ build | §14.8 parity |
-| E7 2.5D | §14.5 + §3 format update + kit updates (topdown/rpg/farming get oblique/iso) | an iso and an oblique example game |
+| E7 2.5D content | iso tilemaps with elevation and stacked tiles, normal-mapped lighting, parallax, §3 format fields, kit updates (topdown/rpg/farming get oblique/iso) | an iso and an oblique example game |
 | E8 Netcode v2 | §14.6, `engine/apps/server`, gameserver integration, `LUAU_API.md` replication API | mp-duel and racing versus run authoritative |
 | E9 Native mobile | Expo native module, iOS + Android builds | showcase games run natively on both |
 | E10 Full engine | remaining §14.12 items not landed in E4–E9 | §14.12 quality bars met |
 | Later | rollback mode, UDP/WebTransport, interest management, offscreen screenshots | |
 
 Parity (E6) is the floor, not the goal. Each slice from E4 on includes the §14.12 features for its area.
+
+2.5D is built into the world model (E3) and renderer (E4) from the start, not added later: every entity
+has `z` and `height`, and depth sorting follows the scene's view mode. E7 adds the 2.5D content features.
 
 ### 14.11 Open questions
 
@@ -973,3 +976,34 @@ built natively for 2D (no 3D scene graph underneath).
 - Clean under AddressSanitizer + UndefinedBehaviorSanitizer; fuzzers run nightly.
 - Identical state hashes on macOS, Linux, iOS, Android and web for the conformance suite.
 - Every Luau-facing API documented in `format/LUAU_API.md`.
+
+### 14.13 Scripting (E2)
+
+The Luau API contract (`format/LUAU_API.md`) is unchanged: every kit and game runs as is. The host improves:
+
+- **Native Luau.** Linked as C++, not WASM-in-JS: no JS↔WASM call cost per host call. Luau native code
+  generation where the platform allows JIT-style code (desktop, Android, servers); the interpreter on iOS
+  and the web.
+- **Same prelude, native host.** The Luau prelude (engine-web/core/prelude.ts, plain Luau calling numbered host
+  ops) runs unchanged; the ops are implemented in C++. Same op numbers and value tags, so behavior matches by
+  construction and the two engines can be diffed op by op.
+- **VMs.** Single-player (`server.mode = "none"`) keeps one VM for all scripts, as engine-web does: client and
+  server scripts share module tables, and games rely on that. Server-authoritative multiplayer (§14.6) runs a
+  server VM (`scripts/server` + `scripts/shared`) and a client VM (`scripts/client` + `scripts/shared`). Each
+  script runs in its own sandbox thread.
+- **OPEN: fast vectors.** Luau's native `vector` type would make vector math allocation-free, but it can't tell
+  `Vec2` from `Vec3` (`tostring`, prop encoding and type checks depend on that). Decide after profiling E3.
+- **Budgets.** Per-callback CPU deadline via the interrupt callback (a script stuck in a loop is killed with
+  a clear error, and `pcall` can't swallow it); memory cap per VM.
+- **Errors developers and models can act on.** `scripts/client/player.luau:12: attempt to index nil with
+  'position'` plus a stack trace with script paths. Errors in callbacks are reported once with the callback's
+  origin.
+- **Deterministic math.** `math.sin/cos/tan/atan2/exp/log/pow` use the engine's deterministic
+  implementations (§14.4); `math.random`/`random()` use the seeded platform RNG.
+- **Type checking before play.** `dreamsy-tool check <package>` runs Luau's analyzer over every script against
+  `engine/script/dreamsy.d.luau` (typed declarations of the whole API, kept in sync with `LUAU_API.md`) and
+  reports `path:line: message`. The harness runs it before playtests, so wrong field names, missing
+  arguments and nil mistakes are fixed before a game ever boots. Non-strict scripts get warnings; `--!strict`
+  scripts get errors.
+- **Per-script profiling.** CPU time per script and callback, shown in the dev overlay (§14.12).
+- **Hot reload** (dev builds): a changed script re-runs without restarting the game.

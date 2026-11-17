@@ -1,0 +1,4 @@
+format = "0"
+name = "basics"
+dimension = "2d"
+entry_scene = "scenes/main.scene.json"

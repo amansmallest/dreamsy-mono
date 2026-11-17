@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Dreamsy</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #141220; overflow: hidden; }
+  canvas { display: block; width: 100vw; height: 100vh; touch-action: none; }
+</style>
+</head>
+<body>
+<canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+<script>
+  var Module = { canvas: document.getElementById("canvas"), print: console.log, printErr: console.error };
+</script>
+{{{ SCRIPT }}}
+</body>
+</html>

@@ -1,4 +1,86 @@
-# Dreamsy — status (2026-11-15, end of day 1)
+# Dreamsy — status
+
+## 2026-11-17 — engine v2 (C++) started
+
+Decision: Dreamsy becomes a 2D + 2.5D engine (no 3D), rewritten in C++ with server-authoritative multiplayer.
+Spec: DREAMSY.MD §14 (stack, code style, determinism, 2.5D views, netcode, migration, full-engine scope §14.12, slices E0–E10).
+`engine-web/` stays the shipping engine and reference until parity (E6).
+
+**E0 scaffold: done (not committed yet).**
+- `engine/`: CMake + presets (`debug` with ASan/UBSan, `release`, `headless`, `web`), see `engine/README.md`.
+- `src/base/`: Result/Status, Pool/Id generational handles, Arena, Rng (sfc32, bit-identical to engine-web), Hasher, log, checks.
+- `dreamsy-tool smoke` (sandboxed Luau + Box2D), `dreamsy-player` (spinning square: Metal on macOS, WebGL2 on web), `dreamsy-tests` (11 cases).
+- Physics golden hash `8f2b7e35f5951775` is identical on macOS arm64 (debug, release) and WebAssembly; CI adds Linux x86-64.
+- Web sizes (gzip): player wasm 44 KB + js 17 KB; tool (with Luau + Box2D) wasm 341 KB.
+- Vendored: Box2D v3.2.0, sokol, miniaudio 0.11.26, stb, doctest 2.5.3 (`third_party/*/DREAMSY_VENDOR.md`).
+- CI: `.github/workflows/engine.yml` (macOS, Linux headless, web). Not run yet: runs on the first push of engine changes to origin.
+- Emscripten bug workaround: `engine/src/platform/web/em_library_funcs.json` (see the comment in engine/CMakeLists.txt).
+- C++ primer: `docs/CPP-FOR-TS-DEVS.md`.
+
+**E1 packages: done (not committed yet).**
+- Zip replaced by the **Dreamsy pack (`.dpk`)**: index first, uncompressed + 16-byte aligned (read in place, no
+  decompressor; HTTP brotli/gzip compresses it better than zip), SHA-256 per file, package id = hash of the index,
+  canonical bytes. Spec: DREAMSY.MD §3.6. Engine never reads zip; `dreamsy-tool pack` converts (all 21 `.data` zips OK).
+- `engine/src/pkg/`: Files (packs, dirs, zero-copy views), catalog (embedded format/catalog.json + kit.json list),
+  manifest (toml++), tilesets/levels/anims/sfx/music/SVG parsers, `load_package()` = full port of
+  format/src/validate.ts with the same issue codes, typed `Package` output.
+- Tool: `dreamsy-tool validate|info|pack|unpack`. Packs are byte-identical between native and web builds.
+- Conformance: `engine/tests/conformance/conformance.py` runs both validators on 26 games + 81 generated broken
+  packages: 107/107 agree, 69 of 70 issue codes exercised (`package.too_large` is unit-tested instead).
+  Intended difference: C++ rejects `dimension = "3d"` (block-tower).
+- Fuzzing: targets for pack, package, zip import; `-replay` builds run in ctest with random mutations; libFuzzer in
+  CI. Found 3 real bugs, all fixed, inputs kept in `engine/fuzz/regressions/` (replayed by ctest):
+  1. toml++ v3.4.0 asserted (UB in release) on `[`+newline headers → re-vendored at upstream master `c38c9b9`
+     (fixed upstream); toml++ asserts stay on in every build and stop cleanly instead of becoming assumptions.
+  2. yyjson's error locator does null-pointer arithmetic on empty input → empty JSON files rejected before parsing.
+  3. miniz's memory reader overflows a pointer on corrupt zip offsets → importer uses its own bounds-checked reader.
+  After the fixes: 7,826 package + 7,525 pack + 12,004 zip mutated inputs under ASan/UBSan, no crashes.
+  macOS note: a crashing run sits in the crash reporter (state UE) and looks hung; set DREAMSY_FUZZ_SAVE to keep the input.
+- Tests: 33 cases / 261 assertions + fuzz corpus/regression replays, green on macOS debug (ASan/UBSan), release and web.
+- TODO outside the engine: TS `.dpk` reader/writer in format/src/package.ts, then API/harness/engine-web switch from zip.
+
+Next: E2 (Luau host: client/server VMs, prelude port, budgets, host API skeleton).
+
+---
+
+## 2026-11-16 — after the hackathon
+
+### Prod is gone
+The user asked for prod to be torn down:
+- EC2 `i-03475cd33072e0156` terminated, and its disk was deleted with it.
+- Elastic IP 15.252.199.188 released; security group and `dreamsy-ec2` key pair deleted.
+- AWS access key AKIA6H4S4CP4OH6RRRPR deleted.
+
+`scripts/deploy.sh` and `ssh dreamsy-ec2` no longer work. A new host needs a new key and box.
+
+### Lost
+The prod Postgres (users, coins, notifications, friends) and every game built on prod, including:
+- Tidal Dash, Nope. (the onboarding troll game)
+- Skyforge Saga, Turbo Tiles, Crownbreak Chess, Calibre, Rat Race
+- Riddle Rumble, Sky Sprint, Brass Era Rally, Gem Drop Duel, Orb Duel, Saboteur Blocks, Riddle Keeper, Sugar & Spice
+
+There is no backup. Rebuild them from prompts if needed. `docs/BEST-GAMES.md` has the ideas.
+
+### Surviving games (local)
+- `games/examples/`: kit templates plus mp-duel, block-tower, coin-dash, tile-quest, feature-demo.
+- `games/showcase/`: fox-quest, fort-raiders, street-racer, summer-ride.
+- `.data/blobs/packages/*.zip`: 21 local-dev builds of Dragons & Ladders, Petalbrook Farm, City Rush, Bop Up!, Village Raiders, Tile Quest, Summer Ride, Fox Explorer, Feature Demo and Coin Dash.
+
+### Still pointing at nothing / still live
+- Cloudflare DNS (dreamsy.dev, www, api, play, pwa → dead IP).
+- IAM user `dreamsy-ses-smtp`.
+- Convex `vivid-vulture-808` (live build feed).
+- Resend, Anthropic and OpenAI keys in `deploy/.env.prod` (gitignored).
+- EAS project 4da22b8e-13c3-4cff-9880-6b9275245537.
+
+### Next idea: open-source the games and host them free
+- Use Cloudflare Pages (or GitHub Pages) to serve `engine-web/dist` plus a `games/` folder of zips and an index page.
+- The engine already supports `?zip=<url>` (`engine-web/dev/main.ts`, loadPackage), so single-player needs no server.
+- Multiplayer, leaderboards, coins and accounts need `services/api` + `services/gameserver`. The free path is Cloudflare Workers + D1/Durable Objects, which is new work.
+
+---
+
+## 2026-11-15 — end of day 1 (historical)
 
 ## Run it
 ```sh

@@ -18,16 +18,19 @@ Status: v0 spec, 2026-11-14. Everything here is a decision unless marked **OPEN*
 5. **Server-authoritative multiplayer from day one.** Same code runs on client and server.
 6. **Determinism where it matters.** Async play (Clash of Clans-style raids) and replays need
    a deterministic simulation path.
-7. **Web engine, one language.** The engine is TypeScript (three.js + Rapier + Luau→WASM): the same
-   code runs in the browser, in the app, on the game server (Node) and in harness playtests.
-8. **2D first, 3D later.** Scope is Roblox-level at most. v1 ships 2D only; the format keeps 3D types.
+7. **One engine core everywhere.** The same engine code runs in the browser, in the app, on the game server and in
+   harness playtests. Today that is TypeScript (`engine-web/`: three.js + Rapier + Luau→WASM); it is being replaced
+   by a C++ core (`engine/`, §14) built for WebAssembly, iOS, Android and headless servers.
+8. **2D and 2.5D only.** No 3D (decided 2026-11-17, §14). The format still contains 3D types until §14.11 settles
+   their removal.
 
 ## 2. Monorepo layout
 
 ```
 dreamsy/
   DREAMSY.MD            this file
-  engine-web/           the engine: core (no DOM, runs in Node) + three.js renderer + input + Luau WASM
+  engine/               the C++ engine v2 (§14): one core for web (WASM), iOS, Android, headless server
+  engine-web/           the TypeScript engine (shipping + reference until engine/ reaches parity, §14.8)
   third_party/luau/     vendored Luau 0.747 (compiled to WASM for engine-web)
   format/               game package spec, JSON schemas, validator, diff ops
   services/api/         platform API: accounts, games, versions, uploads, generation jobs
@@ -42,7 +45,7 @@ dreamsy/
 
 ## 3. Game package format (v0)
 
-A game is a directory (zipped for transport), content-addressed and versioned.
+A game is a directory (authoring form), shipped as a Dreamsy pack (`.dpk`, §3.6), content-addressed and versioned.
 
 ```
 game/
@@ -209,6 +212,49 @@ blank lines are ignored; max 1024×256 tiles. Every character must be defined in
 Engine: chunked merged meshes; solid tiles merged into row-run rectangles (seam-free floors);
 `tileTouched` / `setTile` / `tileAt` in LUAU_API.md.
 
+### 3.6 Dreamsy pack (`.dpk`) — transport and runtime format (2026-11-17)
+
+**Decision:** packages travel and load as Dreamsy packs, not zips. Zip puts its index at the end,
+deflates every file (including PNG/OGG that are already compressed), stores timestamps (so the same
+content gives different bytes), and can't be read in place. A pack is built for the engine:
+
+- **Index first.** Header + index come before the data, so one small (range) read gives the whole file
+  list; the engine can parse `dreamsy.toml` and scenes before the media has arrived.
+- **Uncompressed, 16-byte aligned.** Media is already compressed; text is compressed by HTTP
+  (brotli/gzip) in transit, which beats zip because it shares context across files (e.g. 34 KB zip →
+  20 KB gzip'd pack). The engine needs no decompressor and reads files in place from the pack buffer.
+- **Content-addressed.** Every entry carries its SHA-256; the package's identity is the SHA-256 of
+  the index. Enables integrity checks, de-duplication across versions and incremental updates
+  (fetch only entries whose hash changed).
+- **Canonical.** Sorted paths, fixed offsets, zero padding, no timestamps: the same files always give
+  the same bytes. Readers accept only the canonical layout.
+
+Layout (little-endian):
+
+```
+header, 80 bytes
+  0   magic          "DREAMSY" 0x1A
+  8   u32 version    1
+  12  u32 flags      0 (reserved)
+  16  u32 entry_count
+  20  u32 index_size
+  24  u64 data_offset = align16(80 + index_size)
+  32  u64 data_size
+  40  u8[32] index_sha256      (= the package content hash)
+  72  u8[8]  reserved (0)
+index, entry_count entries, paths strictly ascending (byte order), normalized (§3, no "..")
+  u16 path_len, path (UTF-8), u8 compression (0 = none; others reserved), u8 reserved (0),
+  u64 offset (from data_offset, multiple of 16), u64 size, u8[32] sha256
+zero padding to data_offset
+data: entries in index order, each at its offset, zero-padded to 16 bytes; the file ends there
+```
+
+Limits (reader): ≤ 20,000 entries, ≤ 64 MB per file, ≤ 200 MB total, paths ≤ 1024 bytes.
+Reader/writer: `engine/src/pkg/pack.cpp`; `dreamsy-tool pack <dir|zip> <out.dpk>` (validates first),
+`dreamsy-tool unpack`, `dreamsy-tool info` (prints the content hash). The C++ engine never reads zips;
+the tool converts legacy zip builds. **Still TODO:** a TS reader/writer in `format/src/package.ts`, then
+the API, harness and `engine-web` switch from zip to `.dpk`.
+
 ## 4. Runtime & multiplayer
 
 ### 4.1 Scripting: Luau
@@ -245,6 +291,8 @@ fixed-point or carefully constrained float math in the sim layer. **OPEN:** how 
 physics we make deterministic vs. limiting async games to a sim-friendly subset.
 
 ### 4.3 Targets
+
+> Superseded by §14.7 once the C++ engine reaches parity. The table below describes `engine-web`.
 
 **Decision (2026-11-14):** web engine instead of a Godot fork (the fork was built, then deleted the same day). Games are Roblox-level at most
 (sprite games, platformers, block games, clean racing), which web tech handles on phones; in
@@ -384,6 +432,8 @@ Ledger), creator economy, website, Android.
 4. `harness/`: prompt + image → package via diff ops, validated with headless boot.
 5. `apps/mobile`: chat → harness → hot-reload preview.
 
+> Engine work from 2026-11-17 follows the §14.10 slices (E0–E9).
+
 **Slice 2 — multiplayer:** Linux headless server, Rooms + replication, DataStore.
 
 **Slice 3 — persistence & async:** Timers, Async + deterministic sim, a CoC-style example game.
@@ -392,7 +442,8 @@ Ledger), creator economy, website, Android.
 
 ## 10. Open questions
 
-- Deterministic physics scope (§4.2)
+- Deterministic physics scope (§4.2) — settled by §14.4: all physics deterministic in the C++ engine
+- C++ engine questions (§14.11)
 - Harness language (§5.1)
 - Audio generation (§5.2)
 - Moderation in v1 or stubbed (§7)
@@ -667,3 +718,258 @@ players?, max?, spectatable?}`. "online" = connected to the room server's lobby 
 
 #### Onboarding + live (2026-11-15)
 New accounts land in the onboarding game (Tidal Dash, `ONBOARDING_GAME_ID`) for a free first play; on the engine's `runEnd` host message (leaderboard finish/submit, Luau `platform.runEnded`, match end) the app/studio shows "Welcome to Dreamsy world" with `GET /v1/live` (people online + what they're playing, Join/Spectate) and featured games, then `POST /v1/me/onboarding`. The package format (§3) is unchanged; `platform.runEnded` is a runtime API addition (format/LUAU_API.md).
+
+## 14. Engine v2 — native C++ 2D/2.5D engine with authoritative multiplayer (spec, 2026-11-17)
+
+**Decision (2026-11-17):** Dreamsy is a **2D and 2.5D engine only**. 3D is dropped from scope (not "later").
+The engine is rewritten in **C++** as one core that runs on the web (WebAssembly), iOS, Android and the game server.
+Multiplayer moves from relay (§4.5) to **server-authoritative simulation with client prediction**. The TypeScript
+engine (`engine-web/`) stays the product and the reference implementation until the C++ engine reaches parity (§14.8).
+
+Why:
+- **One simulation everywhere.** The server and every client run the same compiled core, which is what authoritative
+  multiplayer, replays and async play (§4.2) need.
+- **Size and startup.** `engine-web` ships a 5.9 MB JS bundle + 0.7 MB Luau WASM. Target for the C++ web build: ≤ 1.5 MB
+  gzipped including Luau, measured in CI.
+- **Native apps without a WebView** (§14.7), from the same code.
+- **Determinism.** Box2D v3 is deterministic across platforms; Rapier's compat build is not guaranteed to be.
+
+What does **not** change: the game package format (§3) and the Luau API (`format/LUAU_API.md`) are the contract.
+Kits (`engine-web/kits`, ~41k lines of Luau) and generated games carry over unchanged. The harness keeps generating the
+same packages.
+
+### 14.1 Stack
+
+| Need | Choice |
+|---|---|
+| Language | C++20, restricted style (§14.2) |
+| Scripting | Luau (vendored `third_party/luau`), linked natively; WASM via Emscripten on the web |
+| Physics | Box2D v3 (C17, cross-platform deterministic), replaces Rapier |
+| Graphics / app / input | sokol (`sokol_gfx`, `sokol_app`): WebGL2 on the web (WebGPU later), Metal on iOS, GLES3 on Android |
+| Audio | miniaudio (sfxr-style synth and chiptune music ported from `render/audio.ts`) |
+| Images / fonts | stb_image, stb_truetype |
+| Zip / data | miniz (zip), a small TOML reader for `dreamsy.toml`, a JSON parser (simdjson or yyjson) |
+| Build | CMake + Ninja; Emscripten for web; Xcode / Android NDK via CMake toolchains |
+
+All third-party code is vendored under `third_party/` (not modified, per CLAUDE.md).
+
+### 14.2 Code style
+
+Clean, readable C++ that a TypeScript/Python developer can learn from. Mostly structs and free functions.
+
+- Errors are values: `Result<T>` / `Status` with a message. Engine code never uses `throw`/`try`. Exceptions stay
+  enabled in the compiler only because Luau raises script errors by unwinding through host calls, and destructors must run
+  when it does. `-fno-rtti` for engine code.
+- No raw `new`/`delete`. Ownership via `std::unique_ptr` or by value; `std::vector`, `std::string`, `std::span`.
+- Entities and other engine objects are referenced by **generational handles** (`EntityId { index, generation }`), never
+  by pointer across frames. A stale handle fails a check instead of reading freed memory.
+- Per-frame scratch memory from an arena that resets each tick.
+- No deep templates, no inheritance trees, no operator tricks. Virtual calls only at platform boundaries.
+- Naming: types `PascalCase`, functions and variables `snake_case`, files `snake_case.cpp/.h`, namespace `dreamsy`.
+- `clang-format` + `clang-tidy` in CI.
+- `docs/CPP-FOR-TS-DEVS.md` explains the patterns we use, mapped to TypeScript/Python.
+
+### 14.3 Layout
+
+```
+engine/
+  CMakeLists.txt
+  src/
+    base/       Result, handles, arenas, logging, deterministic math + RNG
+    pkg/        package loading: zip/dir, manifest, scenes, tilesets, levels, anims, sfx/music, assets
+    world/      entities, components, transforms, scene tree, tick loop
+    physics/    Box2D v3 wrapper, collision layers, height (z) for 2.5D
+    script/     Luau VMs, prelude, host API (the LUAU_API.md surface), CPU/memory budgets
+    render/     sokol renderer: sprites, atlases, tilemaps, text, UI, particles, lighting, camera, 2.5D views
+    audio/      miniaudio, sfx synth, music
+    input/      keyboard, mouse, touch, gestures, on-screen controls
+    net/        protocol, snapshots, prediction, reconciliation, interpolation
+    platform/   web (Emscripten), iOS, Android, headless
+  apps/
+    player/     the game player (web/iOS/Android)
+    server/     headless authoritative room simulation
+    tool/       headless CLI: run a package, scripted playtests, state hashes, screenshots
+  tests/        unit tests + the conformance runner (§14.8)
+  fuzz/         fuzzers for package loading and the protocol
+```
+
+### 14.4 Simulation and determinism
+
+- Fixed tick, 60 Hz. Rendering interpolates between ticks.
+- Nothing in the simulation reads the wall clock or the OS RNG. Time comes from the tick counter; randomness from a
+  seeded platform RNG (`base/rng`).
+- Floats are allowed but constrained: no `-ffast-math`, `-ffp-contract=off`, and the simulation uses `base/math`
+  (own `sin`/`cos`/`atan2`/`sqrt`-based helpers) instead of libm transcendentals, which differ across platforms.
+  The Luau `math` library inside simulation VMs is overridden with the same functions.
+- Box2D v3 with its cross-platform determinism settings.
+- A **state hash** per tick (entities, components, physics, script-visible state) is available in debug builds and
+  in the tool. Desync detection and the conformance suite use it.
+
+This settles the §4.2 **OPEN** on deterministic physics: all of physics is deterministic.
+
+### 14.5 2D and 2.5D
+
+The world is 2D (`x`, `y`) plus an optional **height** `z`. Physics runs in the 2D plane (Box2D); `z` is handled by the
+engine (gravity on `z`, jumping, falling off ledges, landing), in the style of classic beat-'em-ups and isometric games.
+The camera is always orthographic.
+
+View modes (manifest, per scene override):
+
+| `view` | Projection | Depth order | Typical games |
+|---|---|---|---|
+| `side` | x right, y up | layer, then z-index | platformers, runners (today's 2D) |
+| `topdown` | x right, y down | layer, then y | top-down RPGs, shooters, tycoon |
+| `oblique` | top-down, z draws upward | layer, then y, then z | Zelda-like, beat-'em-ups |
+| `iso` | 2:1 isometric diamond | layer, then x+y, then z | city builders, tactics, farming |
+
+Features:
+- Depth sorting by view mode; sprites can set an anchor (feet) and a sort offset.
+- Height: per-entity `z` and `height`, drop shadows on the ground, collisions only between overlapping `z` ranges.
+- Isometric tilemaps with per-tile elevation and stacked tiles.
+- Parallax layers.
+- Normal-mapped sprite lighting on top of today's Light2D (lights get a height).
+- Later: sprite stacking (layered slices) and billboards.
+
+Format changes (manifest `view`, entity `z`/`height`/`anchor`, iso tilesets, elevation grids) are specified in §3 in the
+2.5D slice (E7). Until then §3 is unchanged.
+
+### 14.6 Multiplayer v2 — server-authoritative
+
+**Model:** the server simulates; clients send inputs, predict their own player, and interpolate everything else.
+Built for co-op and party games up to 8 players (platformers, top-down, racing, arenas). The design leaves room for a
+`rollback` mode later (fast 1v1 fighting/duels), which the determinism of §14.4 makes possible.
+
+- **Two VM roles.** The server runs `scripts/server` + `scripts/shared`; each client runs `scripts/client` +
+  `scripts/shared`. Single-player runs both roles in one process (as today) without a network.
+- **Inputs.** Clients send numbered input frames (buttons, sticks, taps; ≤ 60/s, batched) to the server.
+- **Snapshots.** The server sends snapshots of replicated state at 20–30 Hz: quantized, delta-compressed against the
+  last acknowledged snapshot, binary.
+- **Replication.** Entities in replicated scenes replicate their transform and physics state by default. Script
+  properties replicate only when declared (Luau API, specified in `format/LUAU_API.md` in slice E8).
+- **Ownership.** An entity can be owned by a player. The owner's client predicts it.
+- **Prediction + reconciliation.** The owning client simulates its own entities immediately with local input. When a
+  snapshot arrives, it rewinds to the server state and replays unacknowledged inputs. Non-owned entities interpolate
+  ~100 ms behind.
+- **Remote events** (`remoteEvent`) stay, now delivered through the server.
+- **Interest management.** Later: clients receive only nearby entities.
+- **Reconnect.** Same seat within 60 s; the server sends a full snapshot.
+- **Relay compatibility.** v1 relay games (`room.replicate`, §4.5) keep working in the C++ engine as `net.model = "relay"`
+  until they are rebuilt.
+
+**Transport:** binary over WebSocket first (works everywhere). Native clients get UDP/WebTransport later.
+
+**Topology:** the existing Node room server (`services/gameserver`) keeps lobbies, codes, quick match, presence and
+spectators. When a match starts, it assigns the room to a simulation process (`engine/apps/server`), which loads the
+package and runs the match. One simulation process hosts many rooms.
+
+### 14.7 Targets
+
+| Where | How |
+|---|---|
+| Web / phone browsers | `engine/apps/player` via Emscripten (WebGL2, WebGPU later) |
+| Mobile app, step 1 | the WASM build inside the existing WebView (smaller and faster than today) |
+| Mobile app, step 2 | native: an Expo native module that hosts the engine view (iOS Metal, Android GLES3); WebView retired |
+| Game servers | `engine/apps/server`, Linux, headless |
+| Harness playtests | `engine/apps/tool` headless for logic playtests; screenshots from the web build in headless Chromium until the tool renders offscreen |
+
+App Store: games remain interpreted Luau + data in a sandbox (§6, guideline 4.7).
+
+### 14.8 Migration and parity
+
+- `engine-web` stays the shipping engine and the reference until parity.
+- **Conformance suite:** the same packages and scripted playtests run in both engines. They are compared by script output,
+  event logs and state at checkpoints. Pixel-exact rendering is not required; screenshots are reviewed by eye.
+- **Parity** means: all `games/examples`, `games/showcase` and kit examples pass the conformance suite, and the
+  engine-web test cases are ported to C++.
+- After parity, `engine-web` is frozen, then removed when the harness, app and web all use the C++ engine.
+- Physics behaves differently (Rapier → Box2D). Kits with physics balance sims are re-tuned where needed.
+
+### 14.9 Safety
+
+Packages and scripts are untrusted (AI- and user-generated).
+- Luau sandbox (no filesystem, no network), per-script CPU and memory budgets, as today.
+- Every size and count read from a package is bounds-checked; limits on textures, entities, audio length, zip size.
+- Fuzzers for package loading and the network protocol run in CI.
+- CI runs the tests under AddressSanitizer and UndefinedBehaviorSanitizer.
+- The server never trusts client inputs beyond their declared shape and rate.
+
+### 14.10 Slices
+
+Each slice ends with tests passing and is built one at a time (CLAUDE.md).
+
+| Slice | Delivers | Done when |
+|---|---|---|
+| E0 Scaffold | `engine/` CMake, vendored deps, test runner, CI with sanitizers, native + web "hello", `docs/CPP-FOR-TS-DEVS.md` | builds on macOS, Linux, web; CI green |
+| E1 Packages | Dreamsy pack (§3.6) + dir loading, manifest, scenes, tilesets, levels, anims, sfx/music, asset index, full validator port (same issue codes as the TS validator); fuzzers | loads every package in `games/`; conformance with format/src/validate.ts |
+| E2 Luau | VMs with client/server roles, prelude port, budgets, host API skeleton | a script-only example runs headless |
+| E3 World + physics | entities, components, tick loop, Box2D v3, collision layers, deterministic math/RNG, state hash | coin-dash runs headless and passes conformance |
+| E4 Renderer | sokol: sprites, atlases, tilemaps, text, UI, camera, particles, lighting; web build | examples look right in a browser |
+| E5 Input, audio, save, shell | touch/keys/gestures, on-screen controls, audio, save, platform menu, dialogs | feature-demo works on a phone browser |
+| E6 Parity | full host API, all kits, conformance suite green; harness playtests and app WebView switch to the C++ build | §14.8 parity |
+| E7 2.5D | §14.5 + §3 format update + kit updates (topdown/rpg/farming get oblique/iso) | an iso and an oblique example game |
+| E8 Netcode v2 | §14.6, `engine/apps/server`, gameserver integration, `LUAU_API.md` replication API | mp-duel and racing versus run authoritative |
+| E9 Native mobile | Expo native module, iOS + Android builds | showcase games run natively on both |
+| E10 Full engine | remaining §14.12 items not landed in E4–E9 | §14.12 quality bars met |
+| Later | rollback mode, UDP/WebTransport, interest management, offscreen screenshots | |
+
+Parity (E6) is the floor, not the goal. Each slice from E4 on includes the §14.12 features for its area.
+
+### 14.11 Open questions
+
+- **OPEN:** WebGPU from the start or after WebGL2 parity (default: after).
+- **OPEN:** whether the harness moves screenshots to the native tool (offscreen rendering) or keeps headless Chromium.
+- **OPEN:** remove the 3D entity types from the format at E7 (format version bump) or immediately.
+- **OPEN:** whether the engine/format/kits are released as open source, and under which license (MIT or Apache-2.0).
+
+### 14.12 Full engine scope (not a toy)
+
+The target is a complete, production 2D/2.5D engine: everything a team would expect to ship a commercial 2D game,
+built natively for 2D (no 3D scene graph underneath).
+
+**Rendering**
+- Batched sprite renderer: one draw call per atlas + material; textures packed into atlases at load (stb_rect_pack).
+- Materials and custom shaders: GLSL written once, cross-compiled to Metal / GLES3 / WebGL2 / WGSL with `sokol-shdc`.
+- Render layers, render targets, and a post-processing stack (bloom, color grading LUT, vignette, pixelate/CRT, distortion).
+- Pixel-perfect mode (integer scaling, snapped camera) and smooth mode.
+- 2D lighting: point/spot/ambient lights, normal maps, shadows cast by occluders.
+- Crisp text at any size (MSDF fonts), 9-slice sprites, lines/shapes/debug draw.
+
+**Animation**
+- Frame animations, tweens and easing (as today).
+- 2D skeletal animation: bones, skinned meshes, IK, in Dreamsy's own JSON format.
+- Animation state machines with transitions and events.
+
+**World**
+- Scene tree, prefabs (instancing with overrides), tags/groups, scene transitions, entity pooling.
+- Chunked tilemaps for large worlds; rule-based autotiling, animated tiles, collision generated from tiles; iso + elevation.
+- Native pathfinding: A* on grids, flow fields for crowds, navmesh for non-grid levels.
+
+**Physics** (Box2D v3)
+- Bodies, shapes, joints, sensors, ray and shape casts, continuous collision.
+- Character controller helpers: slopes, one-way platforms, moving platforms, coyote time.
+
+**Audio**
+- Mixer with buses (music, sfx, UI), ducking, 2D positional audio.
+- Streaming music (Ogg Vorbis via stb_vorbis) plus today's synthesized sfx and chiptune music.
+
+**Input and UI**
+- Action mapping over keyboard, mouse, touch and gamepad; rebinding; gestures; on-screen controls.
+- Retained UI with flex-style layout, theming, scrolling, focus navigation (gamepad/keyboard), safe areas.
+- Text input with IME on web and mobile. UTF-8 everywhere, font fallback; complex-script shaping **OPEN** (HarfBuzz).
+
+**Platform services**
+- Versioned saves, localization string tables, app lifecycle (pause/resume), orientation, haptics, asset cache.
+
+**Tooling** (dev builds only, compiled out of release)
+- Hot reload of scripts and assets.
+- Dev overlay (Dear ImGui): entity inspector, physics debug draw, profiler (per-system CPU, draw calls, memory), network
+  graph, log console. Tracy profiler hooks.
+- Input recording and deterministic replay; state-hash diffing between runs and engines.
+- Asset packer at publish time (atlases, MSDF fonts, audio), cached by content hash.
+
+**Quality bars** (measured in CI or on devices)
+- 60 fps with 5,000 animated sprites + 200 physics bodies on an iPhone 12 and a mid-range Android, native and web.
+- Web engine download ≤ 1.5 MB gzipped; first frame ≤ 1 s after download on a mid-range phone.
+- Clean under AddressSanitizer + UndefinedBehaviorSanitizer; fuzzers run nightly.
+- Identical state hashes on macOS, Linux, iOS, Android and web for the conformance suite.
+- Every Luau-facing API documented in `format/LUAU_API.md`.

@@ -25,7 +25,8 @@ ctest --preset debug                                   # run the tests
 ./build/debug/dreamsy-player                           # window (Metal on macOS)
 ```
 
-Other presets: `release`, `headless` (no window; for Linux CI), `web`.
+Other presets: `release`, `headless` (no window; for Linux CI), `web`, and `ios-sim`, `ios-device`,
+`android-arm64` (see [Phones](#phones)).
 
 Web (needs Emscripten; the repo uses 4.0.11 in `~/emsdk`):
 
@@ -35,6 +36,95 @@ cmake --preset web && cmake --build --preset web
 ctest --preset web                                     # tests run under Node
 # build/web/dreamsy-player.html: serve the folder with any static server to view it
 ```
+
+## Phones
+
+The player runs natively on phones (DREAMSY.MD §14.7, groundwork for E9): Metal on iOS, GLES3 on
+Android, both through sokol_app. Today it shows the E0 spinning square. Scripts run the same as
+everywhere else; Luau is always the interpreter (Luau.CodeGen is never linked), which is what iOS
+requires anyway. Platform files live in `platform/ios/` (Info.plist template, `ios.cmake`) and
+`platform/android/` (Gradle project).
+
+### iOS Simulator
+
+Needs Xcode with an iOS Simulator runtime (tested: Xcode 15.4, iOS 17.5 simulator, Apple silicon).
+
+```sh
+cmake --preset ios-sim && cmake --build --preset ios-sim     # build/ios-sim/Dreamsy.app (arm64)
+xcrun simctl boot "iPhone 15"                                 # or open -a Simulator
+xcrun simctl install booted build/ios-sim/Dreamsy.app
+xcrun simctl launch --console-pty booted com.dreamsy.player   # log goes to this terminal
+xcrun simctl io booted screenshot /tmp/dreamsy-ios.png
+ctest --preset ios-sim                                        # dreamsy-tests inside the booted simulator
+xcrun simctl spawn booted "$PWD/build/ios-sim/dreamsy-tool" run "$PWD/tests/scripts/basics"
+xcrun simctl shutdown booted
+```
+
+`dreamsy-tests` and `dreamsy-tool` are plain command-line binaries; `simctl spawn` runs them in the
+simulator, where they can read the Mac's files (use absolute paths). Simulator builds need no signing.
+
+### Your own iPhone (free Apple ID)
+
+The `ios-device` preset generates an Xcode project; Xcode signs it.
+
+1. Xcode > Settings > Accounts: add your Apple ID. It gets a free "Personal Team".
+2. On the phone (iOS 16+): connect by cable, tap "Trust", then turn on Settings > Privacy & Security >
+   Developer Mode and restart.
+3. Pick a bundle ID nobody else has used (free teams cannot use `com.dreamsy.player`), and generate:
+   ```sh
+   cmake --preset ios-device -DDREAMSY_IOS_BUNDLE_ID=com.yourname.dreamsy -DDREAMSY_IOS_TEAM_ID=YOURTEAMID
+   open build/ios-device/dreamsy_engine.xcodeproj
+   ```
+   The team ID is shown in Xcode > Settings > Accounts (or leave it out and pick the team in Xcode under
+   the `dreamsy-player` target > Signing & Capabilities; re-running CMake resets that choice).
+4. In Xcode pick the `dreamsy-player` scheme and your phone, press Run.
+5. First launch only: on the phone, Settings > General > VPN & Device Management > trust your developer
+   profile, then open Dreamsy.
+
+Without the Xcode UI:
+
+```sh
+cmake --build --preset ios-device -- -allowProvisioningUpdates
+xcrun devicectl list devices
+xcrun devicectl device install app --device <id> build/ios-device/Release-iphoneos/Dreamsy.app
+xcrun devicectl device process launch --device <id> com.yourname.dreamsy
+```
+
+Limits of a free Apple ID: the app stops launching after 7 days (run again from Xcode), at most 3 apps
+per device. Xcode only deploys to iOS versions it knows: Xcode 15.4 goes up to iOS 17.x, so a phone on a
+newer iOS needs a newer Xcode. To check the device build compiles without signing:
+`cmake --build --preset ios-device -- CODE_SIGNING_ALLOWED=NO`.
+
+### Android
+
+Not built yet on this machine (no SDK/NDK). What to install:
+
+- Android Studio (it brings the SDK, a JDK 17+ and Gradle support), or the command-line tools.
+- SDK Manager: Android SDK Platform 35, Build-Tools 35, **NDK 27.2.12479018** (r27c), **CMake 3.22.1**.
+- Python 3 on `PATH` (the engine build runs code generators) and Gradle 8.9+ if building from a shell.
+
+Build the APK (NativeActivity, arm64-v8a, minSdk 26) with Gradle:
+
+```sh
+cd platform/android
+gradle wrapper --gradle-version 8.10.2      # once; or just open this folder in Android Studio
+./gradlew assembleDebug                      # app/build/outputs/apk/debug/app-debug.apk
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+adb shell am start -n com.dreamsy.player/android.app.NativeActivity
+adb logcat -s SOKOL                          # sokol logs to logcat (tag SOKOL)
+```
+
+Gradle runs `engine/CMakeLists.txt` with `-DDREAMSY_BUILD_TESTS=OFF` and builds only `dreamsy-player`, which on
+Android is `libdreamsy-player.so` (sokol_app supplies `ANativeActivity_onCreate`; there is no Java code).
+For a plain CMake build of the libraries, tool and tests (e.g. to `adb push` and run them under
+`/data/local/tmp`):
+
+```sh
+export ANDROID_NDK_HOME=~/Library/Android/sdk/ndk/27.2.12479018
+cmake --preset android-arm64 && cmake --build --preset android-arm64
+```
+
+The engine's own logging (`base/log.cpp`) writes to stderr, which Android drops; it needs a logcat sink before E9.
 
 ## Layout
 
@@ -46,6 +136,8 @@ ctest --preset web                                     # tests run under Node
 | `src/check/` | `dreamsy-tool check`: Luau analyzer over a package's scripts against `format/dreamsy.d.luau` (tools only) |
 | `src/dmath/` | deterministic math: musl libm linked into every executable (see its README) |
 | `src/platform/` | sokol implementation unit; web link settings |
+| `platform/ios/` | iOS app bundle: `Info.plist.in`, `ios.cmake` (bundle ID, signing settings) |
+| `platform/android/` | Android Gradle project: NativeActivity manifest loading `libdreamsy-player.so` |
 | `src/dev/` | E0 smoke checks (Luau, Box2D); replaced by `src/script` (E2) and `src/physics` (E3) |
 | `apps/tool/` | `dreamsy-tool`, the headless CLI |
 | `apps/player/` | `dreamsy-player`, the windowed engine |

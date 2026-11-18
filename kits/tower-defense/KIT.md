@@ -151,7 +151,7 @@ Layout for 720×1280: HUD 0–96 and 1152–1280; put the map between (11×15 ti
 
 **Balance** (headless; harness only — too slow for a frame) — `TD.Balance.runLevel(C, id, opts)`, `TD.Balance.campaign(C, {endlessWaves})`.
 Runs on `progression.balance.simulate`. The reference bot greedily buys the affordable action with the best value/cost (dps × path coverage × effectiveness vs. the level's
-enemy mix: armor, resist, air, overkill; spreads tower types). TS: `balance(pkg)` in `harness.ts`, or
+enemy mix: armor, resist, air, overkill; spreads tower types). TS: `balance(pkg)` in `harness.ts` (C++ engine, `dreamsy-tool eval`), or
 `npx tsx kits/tower-defense/cli.ts balance <pkg>` → per level `won, lives, stars, livesByWave, leaksByEnemy, towers, seconds` + endless
 waves survived + `problems` (reads the package's data/**). `validateContent(pkg)` / `cli.ts validate <pkg>` check data against the schemas.
 

@@ -15,12 +15,24 @@ pnpm -C ../format cli validate /tmp/frog
 WORKER_TOKEN=... DREAMSY_API_URL=http://localhost:8787 pnpm worker
 
 pnpm test   # end-to-end: real API (PGlite) + worker + scripted fake model; no network, no cost
+PLAYTEST_BROWSER_TEST=1 pnpm test   # also screenshots through the C++ web player
 ```
+
+Playtests run on the C++ engine (DREAMSY.MD §5.1). Build it first:
+
+```sh
+cd ../engine && cmake --preset release && cmake --build --preset release --target dreamsy-tool   # headless playtests
+source ~/emsdk/emsdk_env.sh && cmake --preset web && cmake --build --preset web --target dreamsy-player   # screenshots
+```
+
+`src/playtest.ts` runs `dreamsy-tool playtest` (found via `DREAMSY_TOOL`, else `engine/build/{release,headless,debug}`);
+`src/browser.ts` drives `engine/build/web/dreamsy-player.html` (or `DREAMSY_WEB_BUILD`) in headless Chromium with
+Playwright, stepping game time manually. `PLAYTEST_BROWSER=0` turns screenshots off.
 
 Layout: `route.ts` (Haiku classifier + model plans) · `agent.ts` (tool loop) · `workspace.ts`
 (working package, ops, async images) · `prompt.ts` (cached system prompt: role, Luau API, catalog, style) ·
 `generate.ts` (route → agent → escalate → summary) · `worker.ts` (API protocol, heartbeats, cancel) ·
-`images.ts` (Gemini).
+`images.ts` (Gemini) · `playtest.ts` / `browser.ts` (C++ engine playtests).
 
 ## Continual improvement (retrieval, not training)
 - `src/memory.ts` — `Memory {remember, recall, forget}`: Supermemory when `SUPERMEMORY_API_KEY` is set, else a

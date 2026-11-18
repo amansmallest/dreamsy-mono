@@ -155,6 +155,8 @@ class Host {
   const std::vector<LocalScore>& local_scores() const { return local_scores_; }
 
   ui::DialogSystem& dialogs() { return dialogs_; }
+  // The avatar: the first entity tagged `player` (engine-web Game.avatar), or null.
+  world::EntityId avatar() const;
   const ui::ToastQueue& toasts() const { return toasts_; }
 
  private:
@@ -240,7 +242,6 @@ class Host {
   world::Emitter& emitter_of(world::Entity& e);
   Status burst(world::EntityId e, double n);
   bool effective_visible(world::EntityId e) const;
-  world::EntityId avatar() const;
   world::EntityId current_camera() const;
   void update_camera(bool snap);
   void shake(double intensity, double seconds);

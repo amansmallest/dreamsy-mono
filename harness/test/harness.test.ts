@@ -14,7 +14,7 @@ import type { ImageGen } from "../src/images.js";
 import type { AgentLLM, StructuredLLM } from "../src/models.js";
 import type { Route } from "../src/route.js";
 import { ApiClient, processJob } from "../src/worker.js";
-import { simulate } from "@dreamsy/engine/playtest";
+import { simulate } from "../src/playtest.js";
 import type { Playtester } from "../src/playtest.js";
 
 /** Real engine simulation (Node, fast) + fake browser that returns a tiny JPEG. */
@@ -23,7 +23,7 @@ const playtest: Playtester = {
   simulate,
   async browser(_pkg, _tl, shots) {
     browserCalls.push(shots);
-    return { errors: [], logs: [], toasts: [], entities: 1, consoleErrors: [], audio: { sfx: {}, music: [] }, shots: shots.map((t) => ({ t, jpeg: new Uint8Array([0xff, 0xd8, 0xff, 0xd9]) })) };
+    return { consoleErrors: [], scriptErrors: 0, shots: shots.map((t) => ({ t, jpeg: new Uint8Array([0xff, 0xd8, 0xff, 0xd9]) })) };
   },
 };
 

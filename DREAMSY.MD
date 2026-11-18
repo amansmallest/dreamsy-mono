@@ -402,6 +402,16 @@ physical interaction between players (puppets have no bodies), shared objects ne
 - **Smaller models** handle cheap, frequent work: small edits, naming, metadata, moderation pre-checks.
 - Loop: plan → emit ops → validate (schema, typecheck, headless boot test, scripted smoke play)
   → fix → commit version → push to client for hot reload.
+- **Playtests run on the C++ engine (2026-11-18):** the builder's `playtest` tool and the final gate (8 s smoke
+  run, zero script errors) use `dreamsy-tool playtest <pkg> --timeline <json>` (headless, `harness/src/playtest.ts`):
+  timeline steps `{t, hold?, release?, press?, tap?: [x,y], swipe?: {from,to,seconds?}}` in game time, taps through
+  `Host::tap_screen`; the JSON report has script errors (script/line/count), last logs, toasts, entity count,
+  sfx counts + music, the avatar's position per second, dialog lines shown (auto-advanced) and the one open at
+  the end, final save data, the scenes visited, and the controls the game read. Options: `--seconds --scene
+  --params --save --clock --auto-dialog --budget --seed` (start mid-game). Screenshots come from the C++ web
+  player in headless Chromium (`harness/src/browser.ts`: Playwright `page.route`, no server, `?manual=1` +
+  `window.__dreamsy.step`, `?scene=&params=&save=`), at game times, so 2.5D games are seen as players see them.
+  Kit balance simulators (`kits/<kit>/harness.ts`) run Luau through `dreamsy-tool eval`.
 - **OPEN:** harness language. Leaning TypeScript (Claude Agent SDK; shares types with web app).
 
 ### 5.2 Assets
@@ -601,7 +611,8 @@ not re-implement core systems per game.
   - tests — headless core simulation tests in `engine-web/test/kits/<kit>.test.ts`.
 - Manifest: `kits = ["rpg"]` (array; validated against the shipped kit list).
   - `kit.json` (optional) — `{ "requires": ["core", "progression"] }`: dependencies are enabled automatically when a game
-    lists the kit (engine `expandKits` / `kitDependencies()`; format `registerKitDependencies` for the validator).
+    lists the kit (engine `expandKits` / `kitDependencies()`; format `registerKitDependencies` for the validator; the
+    harness reads `kits/*/kit.json` itself).
 - Kits are **data-driven**: content lives in the game package (`data/<kit-area>/*.json`, tilemaps,
   sprites); kits expose hooks/events for custom behaviour.
 - v1 kits: `rpg` (overworld grid movement, NPCs/interaction/signs/doors/warps, dialog trees, quests,
@@ -934,7 +945,7 @@ Each slice ends with tests passing and is built one at a time (CLAUDE.md).
 | E3 World + physics (2.5D-native) | entities with `x, y, z` + `height` from day one, view modes in the data model, tick loop, Box2D v3 in the ground plane + engine-handled z (gravity, jumps, ledges), collision layers, state hash | coin-dash runs headless and passes conformance; a z-jump test scene behaves identically on every platform |
 | E4 Renderer (2.5D-native) | sokol: batched sprites, atlases, tilemaps, text, UI, camera, particles, lighting; depth sorting per view mode (§14.5), drop shadows; web build | examples look right in a browser; side/topdown/oblique/iso test scenes sort correctly |
 | E5 Input, audio, save, shell | touch/keys/gestures, on-screen controls, audio, save, platform menu, dialogs | feature-demo works on a phone browser |
-| E6 Parity | full host API, all kits, conformance suite green; harness playtests and app WebView switch to the C++ build | §14.8 parity |
+| E6 Parity | full host API, all kits, conformance suite green; harness playtests and app WebView switch to the C++ build | §14.8 parity. **Harness switched 2026-11-18** (§5.1: `dreamsy-tool playtest` / `eval`, browser shots from the C++ web player; `@dreamsy/engine` no longer a harness dependency) |
 | E7 2.5D content | iso tilemaps with elevation and stacked tiles, normal-mapped lighting, parallax, §3 format fields, kit updates (topdown/rpg/farming get oblique/iso) | an iso and an oblique example game. **Minimal slice landed 2026-11-17:** §3 fields (view, z/height/z_velocity/z_gravity_scale, Sprite2D anchor) in both validators, z physics in both engines, blocks/raised tile maps/shadows in the C++ renderer, script helpers, docs + harness prompt, and a Claude-built oblique showcase game (§14.5) |
 | E8 Netcode v2 | §14.6, `engine/apps/server`, gameserver integration, `LUAU_API.md` replication API | mp-duel and racing versus run authoritative |
 | E9 Native mobile | Expo native module, iOS + Android builds | showcase games run natively on both |

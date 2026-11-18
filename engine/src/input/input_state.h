@@ -26,6 +26,7 @@
 #include <set>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace dreamsy::input {
 
@@ -106,6 +107,12 @@ class InputState {
   bool recently_read(std::string_view name, int64_t ticks = kRecentlyReadTicks) const;
   // True if scripts ever read `name` (a button kits read through config shows up on first read).
   bool ever_read(std::string_view name) const { return last_read_.find(name) != last_read_.end(); }
+  // Every control name scripts have read so far, sorted (playtest reports).
+  std::vector<std::string> read_names() const {
+    std::vector<std::string> out;
+    for (const auto& [name, _] : last_read_) out.push_back(name);
+    return out;
+  }
 
   int64_t tick() const { return tick_; }
   bool gesture_active() const { return gesture_.has_value(); }

@@ -2,7 +2,25 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { registerKitDependencies } from "@dreamsy/format";
-import { kitDependencies } from "@dreamsy/engine/core";
+
+const ROOT = fileURLToPath(new URL("../../kits/", import.meta.url));
+
+/** Kit → kits it requires, from kits/<kit>/kit.json `requires` (DREAMSY.MD §12.1). */
+export function kitDependencies(root = ROOT): Record<string, string[]> {
+  const out: Record<string, string[]> = {};
+  if (!existsSync(root)) return out;
+  for (const id of readdirSync(root).sort()) {
+    const file = join(root, id, "kit.json");
+    if (!existsSync(file)) continue;
+    try {
+      const r = (JSON.parse(readFileSync(file, "utf8")) as { requires?: unknown }).requires;
+      out[id] = Array.isArray(r) ? r.filter((x): x is string => typeof x === "string") : [];
+    } catch {
+      out[id] = [];
+    }
+  }
+  return out;
+}
 
 // Kits can require other kits (kits/<kit>/kit.json); validation must know the map, otherwise a game
 // listing only "rpg" that also requires @kit/core would be flagged.
@@ -18,8 +36,6 @@ export interface Kit {
   /** JSON Schemas for content files, keyed by file name (e.g. "creature.json"). */
   schemas: Record<string, unknown>;
 }
-
-const ROOT = fileURLToPath(new URL("../../kits/", import.meta.url));
 
 let cache: Map<string, Kit> | null = null;
 

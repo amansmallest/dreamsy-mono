@@ -10,10 +10,12 @@
 //                                              run headless (see cmd_run)
 //   dreamsy-tool check <package> [--strict] [--json]   type-check scripts; exit 1 on errors
 //   dreamsy-tool check --print-defs                    print the Luau API definitions
+//   dreamsy-tool playtest <package> --timeline JSON ...   scripted playtest -> JSON report (playtest.cpp)
+//   dreamsy-tool eval --script FILE --kits a,b ...         run a Luau snippet (kit sims) -> JSON (playtest.cpp)
 //   dreamsy-tool smoke [--seed N] [--bodies N] [--steps N]
 //
 // <package> is a directory, a .dpk pack, or a legacy .zip (converted on the fly).
-// Later slices add: playtest, replay, screenshot (DREAMSY.MD §14.3).
+// Later slices add: replay, screenshot (DREAMSY.MD §14.3).
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -35,27 +37,12 @@
 #include "check/check.h"
 #include "script/embedded_kits.h"
 #include "script/host.h"
+#include "tool.h"
 
 using namespace dreamsy;
 namespace fs = std::filesystem;
 
-namespace {
-
-int usage() {
-  std::fprintf(stderr,
-               "usage:\n"
-               "  dreamsy-tool version\n"
-               "  dreamsy-tool validate <package> [--json]\n"
-               "  dreamsy-tool info <package>\n"
-               "  dreamsy-tool pack <package> <out.dpk>\n"
-               "  dreamsy-tool unpack <pack.dpk> <dir>\n"
-               "  dreamsy-tool run <package> [--ticks N] [--seed S] [--budget MS] [--input PLAN] [--dump SPEC] [--hash]\n"
-               "                   [--view MODE] [--height ID=H,...] [--zjump TICK:ID=VZ;...]\n"
-               "  dreamsy-tool check <package> [--strict] [--json] | --print-defs\n"
-               "  dreamsy-tool smoke [--seed N] [--bodies N] [--steps N]\n"
-               "<package> is a directory, a .dpk pack or a .zip\n");
-  return 2;
-}
+namespace dreamsy::tool {
 
 Result<std::shared_ptr<pkg::Files::Bytes>> read_file(const std::string& path) {
   std::ifstream in(path, std::ios::binary | std::ios::ate);
@@ -76,6 +63,33 @@ Result<pkg::Files> load_files(const std::string& path) {
   if (!bytes) return Error{bytes.error()};
   if (pkg::ends_with(path, ".zip")) return pkg::import_zip(*bytes.value());
   return pkg::Files::from_pack(std::move(bytes).value());
+}
+
+}  // namespace dreamsy::tool
+
+using dreamsy::tool::load_files;
+using dreamsy::tool::read_file;
+
+namespace {
+
+int usage() {
+  std::fprintf(stderr,
+               "usage:\n"
+               "  dreamsy-tool version\n"
+               "  dreamsy-tool validate <package> [--json]\n"
+               "  dreamsy-tool info <package>\n"
+               "  dreamsy-tool pack <package> <out.dpk>\n"
+               "  dreamsy-tool unpack <pack.dpk> <dir>\n"
+               "  dreamsy-tool run <package> [--ticks N] [--seed S] [--budget MS] [--input PLAN] [--dump SPEC] [--hash]\n"
+               "                   [--view MODE] [--height ID=H,...] [--zjump TICK:ID=VZ;...]\n"
+               "  dreamsy-tool check <package> [--strict] [--json] | --print-defs\n"
+               "  dreamsy-tool playtest <package> [--timeline JSON|@file] [--seconds N] [--scene PATH] [--params JSON]\n"
+               "                   [--save JSON] [--clock UNIX] [--auto-dialog first|last|N] [--budget MS] [--seed S]\n"
+               "  dreamsy-tool eval --script FILE|- --kits a,b [--base <package>] [--ticks N] [--until KEY] [--max-ticks N]\n"
+               "                   [--budget MS] [--seed S] [--clock UNIX] [--save JSON]\n"
+               "  dreamsy-tool smoke [--seed N] [--bodies N] [--steps N]\n"
+               "<package> is a directory, a .dpk pack or a .zip\n");
+  return 2;
 }
 
 Status write_file(const std::string& path, std::span<const uint8_t> data) {
@@ -504,6 +518,8 @@ int main(int argc, char** argv) {
   if (cmd == "unpack") return cmd_unpack(argc, argv);
   if (cmd == "run") return cmd_run(argc, argv);
   if (cmd == "check") return cmd_check(argc, argv);
+  if (cmd == "playtest") return tool::cmd_playtest(argc, argv);
+  if (cmd == "eval") return tool::cmd_eval(argc, argv);
   if (cmd == "smoke") return cmd_smoke(argc, argv);
   return usage();
 }

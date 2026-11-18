@@ -12,7 +12,7 @@ import { createApp } from "@dreamsy/api/app";
 import { schema, type DB } from "@dreamsy/api/db";
 import { MemoryStorage } from "@dreamsy/api/storage";
 import type { Config, IdentityVerifier } from "@dreamsy/api/context";
-import { simulate } from "@dreamsy/engine/playtest";
+import { simulate } from "../src/playtest.js";
 import type { ImageGen } from "../src/images.js";
 import type { AgentLLM, StructuredLLM } from "../src/models.js";
 import type { Route } from "../src/route.js";
@@ -28,7 +28,7 @@ import { loadEnv } from "../src/env.js";
 const playtest: Playtester = {
   simulate,
   async browser(_pkg, _tl, shots) {
-    return { errors: [], logs: [], toasts: [], entities: 1, consoleErrors: [], audio: { sfx: {}, music: [] }, shots: shots.map((t) => ({ t, jpeg: new Uint8Array([0xff, 0xd8, 0xff, 0xd9]) })) };
+    return { consoleErrors: [], scriptErrors: 0, shots: shots.map((t) => ({ t, jpeg: new Uint8Array([0xff, 0xd8, 0xff, 0xd9]) })) };
   },
 };
 const config: Config = { jwtSecret: "x".repeat(40), workerToken: "wt", dailyGenerationQuota: 100, leaseSeconds: 60, maxAttempts: 3, ssePollMs: 10, starterStars: 500, creatorShare: 0.5, playPrice: 10000, playPassMinutes: 30, createPrice: 0, remixPrice: 0 };

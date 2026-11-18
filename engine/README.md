@@ -9,7 +9,8 @@ Dreamsy packs (`.dpk`, §3.6), and runs games headless natively: entities, Box2D
 tweens, sprite animation, particles, camera, tile maps, dialogs. Every 2D game in `games/` produces the same
 script output as engine-web (`tests/conformance/run_compare.py --all`). The renderer draws all four view modes
 from a test scene; connecting it to running games comes next.
-`engine-web/` is still the shipping engine.
+`engine-web/` is still the shipping engine for the app; the harness playtests on this engine (`dreamsy-tool playtest`,
+the web player for screenshots; DREAMSY.MD §5.1).
 
 ## Build
 
@@ -28,6 +29,9 @@ ctest --preset debug                                   # run the tests
 ./build/release/dreamsy-tool run ../games/examples/coin-dash --ticks 300 \
     --input "10-200:move_x=1;40:jump" --dump "10:player,#coin" --hash   # scripted input, entity dumps, state hashes
 ./build/release/dreamsy-tool run tests/scenes/z_platforms --ticks 240   # 2.5D from the package (view, z, height)
+./build/release/dreamsy-tool playtest ../games/showcase/cloud-hopper --seconds 8 --auto-dialog first \
+    --timeline '[{"t":0.3,"tap":[360,900]},{"t":0.5,"hold":["right"]},{"t":1,"press":["jump"]}]'   # harness playtest -> JSON
+./build/release/dreamsy-tool eval --base ../games/examples/kit-tycoon --kits tycoon --script sim.luau --until out   # kit sims -> JSON
 ./build/release/dreamsy-tool run tests/scenes/z_jump --view topdown \
     --height player=16,crate=16,ledge=48 --zjump 50:player=300 --dump 10:player   # 2.5D test overrides
 ./build/debug/dreamsy-player                           # window (Metal): runs feature-demo (keys, mouse, Esc/P pause)
@@ -186,7 +190,7 @@ The engine's own logging (`base/log.cpp`) writes to stderr, which Android drops;
 | `platform/ios/` | iOS app bundle: `Info.plist.in`, `ios.cmake` (bundle ID, signing settings) |
 | `platform/android/` | Android Gradle project: NativeActivity manifest loading `libdreamsy-player.so` |
 | `src/dev/` | E0 smoke checks (Luau, Box2D), kept for `dreamsy-tool smoke` |
-| `apps/tool/` | `dreamsy-tool`, the headless CLI |
+| `apps/tool/` | `dreamsy-tool`, the headless CLI; `playtest.cpp`: `playtest` (the harness's scripted playtests, JSON report) and `eval` (a Luau script in a package with kits, for kit balance sims) |
 | `apps/player/` | `dreamsy-player`, the windowed engine; `demo_scene` draws a test scene from a package's assets until E3/E6 |
 | `tools/` | `web_screenshot.cjs` (screenshots of the web player), `web_touch_screenshot.cjs` (phone touch input), `make_play_page.py` (packs games for the web player), `parity.mts` (engine-web vs C++ screenshots) |
 | `tests/` | doctest unit tests, one binary: `dreamsy-tests` |

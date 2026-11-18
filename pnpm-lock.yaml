@@ -227,9 +227,6 @@ importers:
       '@anthropic-ai/sdk':
         specifier: ^1.8.0
         version: 1.8.0(zod@4.6.7)
-      '@dreamsy/engine':
-        specifier: workspace:^
-        version: link:../engine-web
       '@dreamsy/format':
         specifier: workspace:^
         version: link:../format

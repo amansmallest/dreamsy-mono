@@ -21,6 +21,7 @@
 #include "base/log.h"
 #include "base/version.h"
 #include "demo_scene.h"
+#include "pkg/catalog.h"
 #include "play/scene_draw.h"
 #include "script/host.h"
 #include "pkg/validate.h"
@@ -46,6 +47,28 @@ using namespace dreamsy;
 #ifndef DREAMSY_DEMO_PACKAGE
 #define DREAMSY_DEMO_PACKAGE "/pkg"
 #endif
+#ifndef DREAMSY_KIT_PACKS_DIR
+#define DREAMSY_KIT_PACKS_DIR "/kits"  // web: fetched with the package once games load by URL (E6)
+#endif
+
+// The kits a game enables (and their dependencies), each from <dir>/<kit>.dpk. Kit code isn't in the
+// player binary (script/kits.h); only what a game uses is loaded.
+Result<script::KitLookup> load_kits(const pkg::Manifest& m) {
+  std::vector<std::shared_ptr<const pkg::Files>> packs;
+  for (const std::string& kit : pkg::Catalog::get().expand_kits(m.kits.value_or(std::vector<std::string>{}))) {
+    const std::string path = std::string(DREAMSY_KIT_PACKS_DIR) + "/" + kit + ".dpk";
+    std::FILE* f = std::fopen(path.c_str(), "rb");
+    if (!f) return Error{"kit \"" + kit + "\" is not available (" + path + ")"};
+    auto bytes = std::make_shared<pkg::Files::Bytes>();
+    std::vector<char> buf(64 * 1024);  // heap, not stack: the web build's stack is only 64 KB
+    for (size_t n; (n = std::fread(buf.data(), 1, buf.size(), f)) > 0;) bytes->insert(bytes->end(), buf.begin(), buf.begin() + static_cast<long>(n));
+    std::fclose(f);
+    auto files = pkg::Files::from_pack(bytes);
+    if (!files) return Error{"kit \"" + kit + "\": " + files.error()};
+    packs.push_back(std::make_shared<const pkg::Files>(std::move(files).value()));
+  }
+  return script::kits_from_packs(std::move(packs));
+}
 
 struct Options {
   std::string package_dir = DREAMSY_DEMO_PACKAGE;
@@ -114,6 +137,12 @@ bool load(App& app) {
     return true;
   }
   script::HostOptions host_options;
+  auto kits = load_kits(app.package->manifest);
+  if (!kits) {
+    log_error(kits.error());
+    return false;
+  }
+  host_options.kits = std::move(kits).value();
   host_options.on_log = [](const script::LogLine& l) {
     (l.level == "error" ? log_error : l.level == "warn" ? log_warn : log_info)("[game] " + l.text);
   };

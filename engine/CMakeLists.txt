@@ -34,7 +34,8 @@ add_compile_options(-ffp-contract=off -fno-fast-math)
 # otherwise every Luau error() aborts the module.
 if(EMSCRIPTEN)
   add_compile_options(-fwasm-exceptions)
-  add_link_options(-fwasm-exceptions)
+  # Emscripten's default stack is 64 KB; Luau recursion and file buffers need more.
+  add_link_options(-fwasm-exceptions -sSTACK_SIZE=1048576)
 endif()
 
 if(DREAMSY_SANITIZE)
@@ -139,14 +140,29 @@ target_compile_options(Luau.VM PRIVATE -fno-builtin)
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 set(DREAMSY_PRELUDE_TS ${CMAKE_CURRENT_SOURCE_DIR}/../engine-web/core/prelude.ts)
 file(GLOB_RECURSE DREAMSY_KIT_SOURCES CONFIGURE_DEPENDS ${DREAMSY_KITS_DIR}/*.luau)
-set(DREAMSY_SCRIPT_DATA_CPP ${CMAKE_BINARY_DIR}/generated/script_data.cpp)
+set(DREAMSY_PRELUDE_CPP ${CMAKE_BINARY_DIR}/generated/prelude.cpp)
+set(DREAMSY_KITS_CPP ${CMAKE_BINARY_DIR}/generated/kits.cpp)
 add_custom_command(
-  OUTPUT ${DREAMSY_SCRIPT_DATA_CPP}
-  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/gen_script_data.py ${DREAMSY_PRELUDE_TS} ${DREAMSY_KITS_DIR} ${DREAMSY_SCRIPT_DATA_CPP}
+  OUTPUT ${DREAMSY_PRELUDE_CPP} ${DREAMSY_KITS_CPP}
+  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/gen_script_data.py ${DREAMSY_PRELUDE_TS} ${DREAMSY_KITS_DIR} ${DREAMSY_PRELUDE_CPP} ${DREAMSY_KITS_CPP}
   DEPENDS ${DREAMSY_PRELUDE_TS} ${DREAMSY_KIT_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/gen_script_data.py
   COMMENT "Embedding the Luau prelude and kit sources")
-add_library(dreamsy_script_data STATIC ${DREAMSY_SCRIPT_DATA_CPP})
+add_library(dreamsy_script_data STATIC ${DREAMSY_PRELUDE_CPP})
 target_include_directories(dreamsy_script_data PRIVATE src)
+
+# Every kit compiled in: tools, tests and the type checker (players load kit packs instead).
+add_library(dreamsy_kits_embedded STATIC src/script/embedded_kits.cpp ${DREAMSY_KITS_CPP})
+dreamsy_target_defaults(dreamsy_kits_embedded)
+target_link_libraries(dreamsy_kits_embedded PUBLIC dreamsy_script)
+
+# One Dreamsy pack per kit (build/<preset>/kits/<kit>.dpk) for players.
+set(DREAMSY_KIT_PACKS_DIR ${CMAKE_BINARY_DIR}/kits)
+add_custom_command(
+  OUTPUT ${DREAMSY_KIT_PACKS_DIR}/core.dpk
+  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/gen_kit_packs.py ${DREAMSY_KITS_DIR} ${DREAMSY_KIT_PACKS_DIR}
+  DEPENDS ${DREAMSY_KIT_SOURCES} ${DREAMSY_KIT_MANIFESTS} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/gen_kit_packs.py
+  COMMENT "Packing kits (one .dpk per kit)")
+add_custom_target(dreamsy_kit_packs DEPENDS ${DREAMSY_KIT_PACKS_DIR}/core.dpk)
 
 # World (E3, §14.5): entities with 2.5D fields, scene tree, props, tile grids, tweens, particles.
 add_library(dreamsy_world STATIC
@@ -167,6 +183,7 @@ add_library(dreamsy_script STATIC
   src/script/host.cpp
   src/script/host_world.cpp
   src/script/json_value.cpp
+  src/script/kits.cpp
   src/script/require_path.cpp
   src/script/theme.cpp
   src/script/vm.cpp)
@@ -186,7 +203,7 @@ add_library(dreamsy_check STATIC src/check/check.cpp ${DREAMSY_DEFS_CPP})
 target_include_directories(dreamsy_check PRIVATE src)
 # Luau.Analysis uses RTTI and exceptions; this tool-only module is the boundary (see check.cpp).
 target_compile_options(dreamsy_check PRIVATE -frtti)
-target_link_libraries(dreamsy_check PUBLIC dreamsy_pkg PRIVATE dreamsy_script dreamsy_script_data Luau.Analysis)
+target_link_libraries(dreamsy_check PUBLIC dreamsy_pkg PRIVATE dreamsy_script dreamsy_kits_embedded Luau.Analysis)
 
 # Rendering, CPU side (E4): draw list, depth sorting, view math, image decoding, atlas, fonts,
 # batching. No GPU, so it builds everywhere (tests, headless tools); the sokol renderer is below.
@@ -231,7 +248,7 @@ target_link_libraries(dreamsy_zip_import PUBLIC dreamsy_pkg PRIVATE miniz)
 
 add_executable(dreamsy-tool apps/tool/main.cpp)
 dreamsy_target_defaults(dreamsy-tool)
-target_link_libraries(dreamsy-tool PRIVATE dreamsy_dev dreamsy_zip_import dreamsy_script dreamsy_check)
+target_link_libraries(dreamsy-tool PRIVATE dreamsy_dev dreamsy_zip_import dreamsy_script dreamsy_kits_embedded dreamsy_check)
 dreamsy_link_dmath(dreamsy-tool)
 if(EMSCRIPTEN)
   target_link_options(dreamsy-tool PRIVATE -sENVIRONMENT=node -sALLOW_MEMORY_GROWTH=1 -sNODERAWFS=1)
@@ -297,6 +314,7 @@ if(DREAMSY_BUILD_PLAYER)
   endif()
   dreamsy_target_defaults(dreamsy-player)
   target_link_libraries(dreamsy-player PRIVATE dreamsy_render_gpu dreamsy_play)
+  add_dependencies(dreamsy-player dreamsy_kit_packs)
   dreamsy_link_dmath(dreamsy-player)
   if(EMSCRIPTEN)
     set_target_properties(dreamsy-player PROPERTIES SUFFIX ".html")
@@ -308,12 +326,14 @@ if(DREAMSY_BUILD_PLAYER)
     include(platform/ios/ios.cmake)
     dreamsy_ios_app(dreamsy-player)
     # TODO(E9): bundle the demo package into the app; until then the player falls back to its built-in scene path.
-    target_compile_definitions(dreamsy-player PRIVATE DREAMSY_DEMO_PACKAGE="${DREAMSY_DEMO_PACKAGE_DIR}")
+    target_compile_definitions(dreamsy-player PRIVATE DREAMSY_DEMO_PACKAGE="${DREAMSY_DEMO_PACKAGE_DIR}"
+                                                      DREAMSY_KIT_PACKS_DIR="${DREAMSY_KIT_PACKS_DIR}")
   elseif(ANDROID)
     # sokol_app defines the NativeActivity entry point; nothing references it, so keep it explicitly.
     target_link_options(dreamsy-player PRIVATE -u ANativeActivity_onCreate)
   else()
-    target_compile_definitions(dreamsy-player PRIVATE DREAMSY_DEMO_PACKAGE="${DREAMSY_DEMO_PACKAGE_DIR}")
+    target_compile_definitions(dreamsy-player PRIVATE DREAMSY_DEMO_PACKAGE="${DREAMSY_DEMO_PACKAGE_DIR}"
+                                                      DREAMSY_KIT_PACKS_DIR="${DREAMSY_KIT_PACKS_DIR}")
   endif()
 endif()
 
@@ -333,7 +353,7 @@ if(DREAMSY_BUILD_TESTS)
     target_compile_options(dreamsy-tests PRIVATE -fno-sanitize=vptr)
   endif()
   target_include_directories(dreamsy-tests PRIVATE ${THIRD_PARTY}/doctest)
-  target_link_libraries(dreamsy-tests PRIVATE dreamsy_dev dreamsy_zip_import dreamsy_script dreamsy_check dreamsy_render miniz)
+  target_link_libraries(dreamsy-tests PRIVATE dreamsy_dev dreamsy_zip_import dreamsy_script dreamsy_kits_embedded dreamsy_check dreamsy_render miniz)
   dreamsy_link_dmath(dreamsy-tests)
   target_compile_definitions(dreamsy-tests PRIVATE DREAMSY_REPO_ROOT="${CMAKE_CURRENT_SOURCE_DIR}/..")
   if(EMSCRIPTEN)

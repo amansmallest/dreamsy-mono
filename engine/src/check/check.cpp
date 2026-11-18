@@ -14,7 +14,7 @@
 #include "pkg/catalog.h"
 #include "pkg/text.h"
 #include "script/require_path.h"
-#include "script/script_data.h"
+#include "script/embedded_kits.h"
 
 namespace dreamsy::check {
 
@@ -26,13 +26,7 @@ std::string_view definitions() { return data::definitions(); }
 
 namespace {
 
-std::optional<std::string_view> kit_source(const std::string& path) {
-  auto kits = script::data::kit_sources();
-  auto it = std::lower_bound(kits.begin(), kits.end(), path,
-                             [](const script::data::KitSource& k, const std::string& p) { return k.path < p; });
-  if (it == kits.end() || it->path != path) return std::nullopt;
-  return it->source;
-}
+std::optional<std::string_view> kit_source(const std::string& path) { return script::embedded_kit_source(path); }
 
 // Module names are package paths ("scripts/client/x.luau") or kit paths ("kits/core/init.luau").
 class Resolver : public Luau::FileResolver {

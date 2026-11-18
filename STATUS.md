@@ -63,7 +63,28 @@ Spec: DREAMSY.MD §14 (stack, code style, determinism, 2.5D views, netcode, migr
 - format: `Package.fromPack/toPack/contentHash` in TS, byte-identical with the C++ tool on 25 games
   (CLI `pack x.dpk`). API/harness/engine-web still move zips.
 
-Next: finish E2 (type checking), then E3 world + physics with 2.5D (z, height, view modes) built in.
+**Parallel agents (2026-11-17), merged into engine-v2:**
+- E3 world + physics (2.5D-native): `engine/src/world`, `engine/src/physics` (Box2D v3, 32 px = 1 m, Rapier's
+  average friction/restitution, Area2D overlaps at step start like Rapier), every entity op in the host,
+  tweens, anims, particles, camera, dialogs, headless input, leaderboards. 2.5D: z/height/z-velocity per
+  entity, view mode, z-range collision filtering, landing on tops, falling off ledges (engine-internal until E7).
+  Conformance: 25/25 games + 6/6 script tests identical to engine-web at script level; state hashes identical
+  across debug/release/wasm. Physics drift vs Rapier: tiny when scripts steer bodies (coin-dash 0.004 px,
+  feature-demo 0.17 px max); free bouncing diverges (physics_mix ball ends 318 px off) — accepted per §14.8.
+- E4 renderer foundation: `engine/src/render` (batched sokol renderer, own Metal/GLSL shaders, per-view depth
+  sorting + drop shadows, PNG/JPG/SVG atlases, 4 bundled OFL fonts, letterboxing, pixel-perfect mode).
+  Topdown sort is layer, z_index, then y (agent's choice, Godot-style; user to confirm).
+- Phones: iOS simulator build verified (screenshot, 42/42 tests in the simulator); device build compiles
+  unsigned; Android presets + Gradle skeleton untested (no SDK/NDK installed). engine/README.md "Phones".
+- TS .dpk (format/src/pack.ts), byte-identical with C++ on 25 games.
+- Integration: `engine/src/play/scene_draw` (world -> draw list); dreamsy-player runs games at 60 Hz:
+  feature-demo, coin-dash, tile-quest run natively and on the web with 0 script errors (keyboard stand-in input).
+- Audio: skipped on purpose — the user is designing an audio harness. The host still records sfx/music events.
+- Known: web player is ~1.44 MB gzipped because all kit sources are embedded → ship kits separately.
+
+In progress: E5 agent (input translation, gestures, on-screen controls, toasts, UI layout + drawing + hit-testing).
+
+Next: kits outside the binary, E6 parity (every game playable, harness/app switch), E7 2.5D content.
 
 ---
 

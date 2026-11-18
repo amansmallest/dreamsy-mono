@@ -90,6 +90,16 @@ export function screenToWorld(v: View2D, sx: number, sy: number): [number, numbe
 }
 
 /** Reference px (UI coordinates) → world, for a camera view. */
+/** 2.5D: a ground point → where the view draws it (iso: the 2:1 diamond (x − y, (x + y) / 2); others: unchanged). */
+export function projectGround(view: string, x: number, y: number): [number, number] {
+  return view === "iso" ? [x - y, (x + y) / 2] : [x, y];
+}
+
+/** Inverse of projectGround. */
+export function unprojectGround(view: string, px: number, py: number): [number, number] {
+  return view === "iso" ? [py + px / 2, py - px / 2] : [px, py];
+}
+
 export function refToWorld(cx: number, cy: number, zoom: number, ref: [number, number], x: number, y: number): [number, number] {
   return [cx + (x - ref[0] / 2) / zoom, cy + (y - ref[1] / 2) / zoom];
 }

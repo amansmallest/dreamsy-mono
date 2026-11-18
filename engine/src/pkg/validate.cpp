@@ -52,6 +52,7 @@ struct RawEntity {
 struct RawScene {
   JsonDoc doc;
   std::string root;
+  std::optional<std::string> view;
   std::vector<RawEntity> entities;
   std::unordered_map<std::string, size_t> index;
 
@@ -276,6 +277,9 @@ void Validator::check_manifest() {
   if (m.style.grid && m.style.preset != "pixel") {
     warn("manifest.style_grid", "style.grid only applies to the pixel preset", kFile);
   }
+  if (m.view && m.dimension != "2d") {
+    err("manifest.view_dimension", "view (2.5D) applies to 2D games only: remove it or set dimension = \"2d\"", kFile);
+  }
 }
 
 void Validator::check_assets() {
@@ -454,6 +458,7 @@ void Validator::parse_scenes() {
     if (o.valid() && !format) problems.add("format", "is required");
     else if (format && (!yyjson_is_str(format) || str_of(format) != "0")) problems.add("format", "expected \"0\", got " + json_text(format));
     scene.root = read_string(o, "root", {}, true).value_or("");
+    scene.view = read_enum(o, "view", {"side", "topdown", "oblique", "iso"});
     yyjson_val* ents = o.take("entities");
     if (o.valid() && !ents) problems.add("entities", "is required");
     else if (ents && !yyjson_is_obj(ents)) problems.add("entities", "expected an object, got " + json_text(ents));
@@ -501,6 +506,9 @@ void Validator::parse_scenes() {
 }
 
 void Validator::check_scene(const std::string& file, RawScene& scene) {
+  if (scene.view && manifest_ && manifest_->dimension != "2d") {
+    err("scene.view_dimension", "view (2.5D) applies to 2D games only", file);
+  }
   if (!scene.entity(scene.root)) {
     err("scene.root_missing", "root " + quote(scene.root) + " is not an entity in this scene", file);
     return;
@@ -548,6 +556,7 @@ void Validator::check_scene(const std::string& file, RawScene& scene) {
   SceneDef def;
   def.path = file;
   def.root = scene.root;
+  def.view = scene.view;
   for (const RawEntity& e : scene.entities) {
     if (!is_id(e.id)) err("entity.bad_id", "id " + quote(e.id) + " must be lowercase snake_case, start with a letter, ≤64 chars", file, e.id);
     EntityDef out;

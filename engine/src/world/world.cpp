@@ -19,6 +19,52 @@ const char* view_mode_name(ViewMode v) {
   return "side";
 }
 
+Point project_ground(ViewMode v, double x, double y) {
+  if (v == ViewMode::Iso) return {x - y, (x + y) * 0.5};
+  return {x, y};
+}
+
+Point unproject_ground(ViewMode v, double px, double py) {
+  // Iso: px = x - y and py = (x + y) / 2, so x = py + px / 2 and y = py - px / 2.
+  if (v == ViewMode::Iso) return {py + px * 0.5, py - px * 0.5};
+  return {px, py};
+}
+
+ViewMode parse_view_mode(std::string_view name) {
+  if (name == "topdown") return ViewMode::TopDown;
+  if (name == "oblique") return ViewMode::Oblique;
+  if (name == "iso") return ViewMode::Iso;
+  return ViewMode::Side;
+}
+
+ViewMode scene_view(const pkg::Manifest& manifest, const pkg::SceneDef& scene) {
+  if (scene.view) return parse_view_mode(*scene.view);
+  if (manifest.view) return parse_view_mode(*manifest.view);
+  return ViewMode::Side;
+}
+
+bool is_elevation_key(std::string_view key) {
+  return key == "z" || key == "height" || key == "z_velocity" || key == "z_gravity_scale";
+}
+
+// Only for types whose catalog has the prop: `z` on a Camera2D is not a prop (and Vec3 `.z`
+// is not an entity prop at all), so those keys fall through to the normal "no property" path.
+const double* elevation_field(const Entity& e, std::string_view key) {
+  if (!is_elevation_key(key) || prop_index(*e.type, key) < 0) return nullptr;
+  if (key == "z") return &e.z;
+  if (key == "height") return &e.height;
+  if (key == "z_velocity") return &e.z_velocity;
+  return &e.z_gravity_scale;
+}
+
+double* elevation_field(Entity& e, std::string_view key) {  // same as above, for writing
+  if (!is_elevation_key(key) || prop_index(*e.type, key) < 0) return nullptr;
+  if (key == "z") return &e.z;
+  if (key == "height") return &e.height;
+  if (key == "z_velocity") return &e.z_velocity;
+  return &e.z_gravity_scale;
+}
+
 bool parse_color(std::string_view text, double out[4]) {
   std::string_view h = pkg::trim(text);
   if (!h.empty() && h[0] == '#') h.remove_prefix(1);
@@ -263,7 +309,7 @@ std::vector<EntityId> World::load_scene(const pkg::SceneDef& scene, const Warn& 
         warn(e.id + ": " + v.error());
         continue;
       }
-      e.props[static_cast<size_t>(prop_index(*e.type, prop_alias(e, key)))] = std::move(v).value();
+      set_raw(e, prop_alias(e, key), std::move(v).value());
     }
     if (alive(parent)) attach(eid, parent);
     else root_ = eid;
@@ -320,6 +366,7 @@ std::vector<EntityId> World::tagged(std::string_view tag) const {
 std::optional<Value> World::get_prop(const Entity& e, std::string_view key) const {
   int i = prop_index(*e.type, key);
   if (i < 0) return std::nullopt;
+  if (const double* f = elevation_field(e, key)) return Value::number(*f);
   if (e.props[static_cast<size_t>(i)]) return e.props[static_cast<size_t>(i)];
   return default_value(e.type->props[static_cast<size_t>(i)]);
 }
@@ -353,12 +400,23 @@ bool World::visible(const Entity& e) const {
 void World::set_raw(Entity& e, std::string_view key, Value v) {
   int i = prop_index(*e.type, key);
   DREAMSY_CHECK(i >= 0, "set_raw: no such prop");
+  if (double* f = elevation_field(e, key)) {
+    *f = v.kind == ValueKind::Number ? v.v[0] : 0;
+    return;
+  }
   e.props[static_cast<size_t>(i)] = std::move(v);
 }
 
 void World::unset(Entity& e, std::string_view key) {
   int i = prop_index(*e.type, key);
-  if (i >= 0) e.props[static_cast<size_t>(i)].reset();
+  if (i < 0) return;
+  if (double* f = elevation_field(e, key)) {
+    // Back to the catalog default (z_gravity_scale 1, the others 0).
+    std::optional<Value> d = default_value(e.type->props[static_cast<size_t>(i)]);
+    *f = d && d->kind == ValueKind::Number ? d->v[0] : 0;
+    return;
+  }
+  e.props[static_cast<size_t>(i)].reset();
 }
 
 namespace {

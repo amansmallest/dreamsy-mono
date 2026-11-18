@@ -91,7 +91,8 @@ std::string Host::tap_screen(double x, double y) {
 
 world::Point Host::ref_to_world(double x, double y) {
   const CameraView v = camera_view();
-  return {v.x + (x - ref_width() / 2) / v.zoom, v.y + (y - ref_height() / 2) / v.zoom};
+  const world::Point c = world::project_ground(world_.view, v.x, v.y);
+  return world::unproject_ground(world_.view, c.x + (x - ref_width() / 2) / v.zoom, c.y + (y - ref_height() / 2) / v.zoom);
 }
 
 void Host::press(EntityId e) {
@@ -110,6 +111,13 @@ bool Host::tap_entity(EntityId e) {
 // The topmost visible entity under the point that listens for tapped / tileTapped / tappedAt
 // (or has a listening ancestor: taps bubble up to it). "Topmost" = accumulated z_index, then tree
 // order. TileMap2D cells hit inside the grid; other 2D entities inside their `size` box.
+// A Sprite2D with anchor = "bottom" stands on its position: its box center is half its height up.
+// Returns how far (local px) to move a local point so the box is centered on the origin again.
+double Host::bottom_anchor_shift(const Entity& e) const {
+  if (e.type->name != "Sprite2D" || world_.str(e, "anchor") != "bottom") return 0;
+  return world_.vec(e, "size").y / 2;
+}
+
 EntityId Host::tap_world(double x, double y) {
   std::set<EntityId, ui::EntityIdLess> listeners;
   for (const auto& [id, c] : conns_) {
@@ -144,7 +152,8 @@ EntityId Host::tap_world(double x, double y) {
     } else if (v && !target.is_null() && world::prop_index(*e->type, "size") >= 0 && e->is_2d()) {
       const world::Point l = world::apply(world::invert(world_.global(id)), x, y);
       const world::Point s = world_.vec(*e, "size");
-      if (std::abs(l.x) <= s.x / 2 && std::abs(l.y) <= s.y / 2) {
+      const double ly = l.y + bottom_anchor_shift(*e);
+      if (std::abs(l.x) <= s.x / 2 && std::abs(ly) <= s.y / 2) {
         const double key = zz * 1e6 + order;
         if (key > best_key) {
           best_key = key;
@@ -178,7 +187,7 @@ EntityId Host::tap_world(double x, double y) {
     world::Point off;
     if (t->type->name != "TileMap2D" && world::prop_index(*t->type, "size") >= 0) {
       const world::Point s = world_.vec(*t, "size");
-      off = {s.x / 2, s.y / 2};
+      off = {s.x / 2, s.y / 2 + bottom_anchor_shift(*t)};
     }
     fire(best, "tappedAt", [&](lua_State* L) { return push_xy(L, l.x + off.x, l.y + off.y); });
   }

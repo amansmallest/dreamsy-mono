@@ -368,6 +368,18 @@ camera = freeze({
 		if not isV2(p) then error("camera.worldToScreen expects a Vec2 world position", 2) end
 		return v2(H(OP_CAMERA, "toScreen", p.x, p.y))
 	end,
+	-- 2.5D: the scene's view mode, and screen directions (joystick) -> world directions
+	view = function() return H(OP_CAMERA, "view") end,
+	screenDirToWorld = function(d)
+		if not isV2(d) then error("camera.screenDirToWorld expects a Vec2 direction, e.g. vec2(input.axis('move_x'), input.axis('move_y'))", 2) end
+		if H(OP_CAMERA, "view") ~= "iso" then return d end
+		-- iso draws (x, y) at (x - y, (x + y) / 2): undo that, keeping the input's length
+		local wx, wy = d.y + d.x * 0.5, d.y - d.x * 0.5
+		local len = sqrt(wx * wx + wy * wy)
+		if len < 1e-9 then return v2(0, 0) end
+		local k = sqrt(d.x * d.x + d.y * d.y) / len
+		return v2(wx * k, wy * k)
+	end,
 })
 screen = freeze({
 	size = function() return v2(H(OP_CAMERA, "screenSize")) end,

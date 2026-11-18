@@ -24,9 +24,13 @@
 //     a.z < b.z + b.height and b.z < a.z + a.height. A shape with height 0 is "flat" and
 //     interacts with everything, so plain 2D games are unaffected.
 //   - Moving bodies (dynamic, kinematic) fall with kZGravity (scaled by z_gravity_scale) when
-//     above the ground, and land on the ground height: the highest top (z + height) of a static
-//     or kinematic body under their footprint that is at or below them, else 0. Walking off a
-//     ledge makes the ground lower, so the body falls. A script/engine jump sets z_velocity > 0.
+//     above the ground, and land on the ground height (ground_below()): the highest top
+//     (z + height) at or below them of a static or kinematic body, or a solid tile of a TileMap2D
+//     with a height, under the mover's center, else 0. Using the center (the "feet") rather than
+//     the whole footprint means a body stands on a platform while its center is over it, and
+//     steps off a ledge once its center leaves it; it also keeps depth sorting simple (a body
+//     on a block always has its center inside the block's footprint). Walking off a ledge makes
+//     the ground lower, so the body falls. A script jump sets z_velocity > 0 (`e.z_velocity = 420`).
 //   - Semi-implicit Euler per tick, in a fixed order (body creation order): deterministic.
 //   - The z rule is applied to contacts (pre-solve), continuous collision (pre-continuous) and
 //     Area2D overlaps.
@@ -98,6 +102,16 @@ class Physics2D {
   // Touching something below: a contact whose normal points down from this body (ny > 0.6).
   bool on_floor(world::EntityId e);
 
+  // 2.5D: the ground height at world point (x, y) for something at height z: the highest top
+  // (z + height) of a static/kinematic body or solid raised tile containing the point that is not
+  // above z, else 0. `ignore` = an entity handle to skip (the mover itself).
+  double ground_below(double x, double y, double z, uint32_t ignore = 0);
+  // The ground height under a body's center (0 when it has no body).
+  double ground_of(world::EntityId e);
+  // 2.5D: resting on its ground (z at the ground and not moving up). Bodies that never left the
+  // ground (z = 0, no height) are always on the ground.
+  bool on_ground(world::EntityId e);
+
   // One step of `dt` seconds: simulate, write moved bodies back to their entities, integrate z.
   // Returns contact begin/end events (receiver first).
   std::vector<ContactEvent> step(double dt);
@@ -134,7 +148,7 @@ class Physics2D {
   Groups safe_groups(const world::Entity& e) const;
   b2Filter filter_of(const world::Entity& e) const;
   void step_z(double dt);
-  double ground_height(const BodyRec& mover, double z);
+  bool covers(const BodyRec& r, double x, double y);
   void push_events(std::vector<ContactEvent>& out, b2ShapeId s1, b2ShapeId s2, bool started);
   void update_areas(std::vector<ContactEvent>& out);
   bool shapes_overlap(b2ShapeId a, b2ShapeId b) const;

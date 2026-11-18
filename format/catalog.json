@@ -61,6 +61,21 @@
           },
           "default": 0,
           "doc": "Draw order; higher draws on top."
+        },
+        "z": {
+          "type": {
+            "kind": "number"
+          },
+          "default": 0,
+          "doc": "2.5D: height above the ground in px (+ = up), relative to the parent. Drawn raised in topdown/oblique/iso views (with a drop shadow); physics moves it for dynamic/kinematic Body2D (gravity, jumps, landing)."
+        },
+        "height": {
+          "type": {
+            "kind": "number",
+            "min": 0
+          },
+          "default": 0,
+          "doc": "2.5D: vertical extent in px. Body2D/Area2D/TileMap2D: only things whose z ranges overlap collide (0 = flat: collides with everything); static bodies with a height are platforms others can land on. Sprite2D: > 0 draws a solid block this tall (top face = texture/color, shaded sides) in topdown/oblique/iso; TileMap2D: every tile draws as such a block and solid tiles are platforms (raised terrain)."
         }
       }
     },
@@ -196,6 +211,32 @@
           },
           "default": "normal",
           "doc": "\"add\" = additive (glows, fire, light beams, fake night lights): brightens what is behind."
+        },
+        "z": {
+          "type": {
+            "kind": "number"
+          },
+          "default": 0,
+          "doc": "2.5D: height above the ground in px (+ = up), relative to the parent. Drawn raised in topdown/oblique/iso views (with a drop shadow); physics moves it for dynamic/kinematic Body2D (gravity, jumps, landing)."
+        },
+        "height": {
+          "type": {
+            "kind": "number",
+            "min": 0
+          },
+          "default": 0,
+          "doc": "2.5D: vertical extent in px. Body2D/Area2D/TileMap2D: only things whose z ranges overlap collide (0 = flat: collides with everything); static bodies with a height are platforms others can land on. Sprite2D: > 0 draws a solid block this tall (top face = texture/color, shaded sides) in topdown/oblique/iso; TileMap2D: every tile draws as such a block and solid tiles are platforms (raised terrain)."
+        },
+        "anchor": {
+          "type": {
+            "kind": "enum",
+            "values": [
+              "center",
+              "bottom"
+            ]
+          },
+          "default": "center",
+          "doc": "Which point of the image sits on `position`: \"center\", or \"bottom\" (bottom-center: the feet). 2.5D views: use \"bottom\" for things that stand on the ground (characters, trees, coins) so they stand on their position and their drop shadow sits under their feet."
         }
       }
     },
@@ -336,6 +377,37 @@
           },
           "default": "",
           "doc": "Comma-separated layers this collides with / detects (e.g. \"world,enemy\"). \"\" = every layer."
+        },
+        "z": {
+          "type": {
+            "kind": "number"
+          },
+          "default": 0,
+          "doc": "2.5D: height above the ground in px (+ = up), relative to the parent. Drawn raised in topdown/oblique/iso views (with a drop shadow); physics moves it for dynamic/kinematic Body2D (gravity, jumps, landing)."
+        },
+        "height": {
+          "type": {
+            "kind": "number",
+            "min": 0
+          },
+          "default": 0,
+          "doc": "2.5D: vertical extent in px. Body2D/Area2D/TileMap2D: only things whose z ranges overlap collide (0 = flat: collides with everything); static bodies with a height are platforms others can land on. Sprite2D: > 0 draws a solid block this tall (top face = texture/color, shaded sides) in topdown/oblique/iso; TileMap2D: every tile draws as such a block and solid tiles are platforms (raised terrain)."
+        },
+        "z_velocity": {
+          "type": {
+            "kind": "number",
+            "min": -100000,
+            "max": 100000
+          },
+          "default": 0,
+          "doc": "2.5D: vertical speed in px/s (+ = up). Set it to jump (e.g. 420); physics applies z gravity (980 px/s² × z_gravity_scale) and zeroes it on landing."
+        },
+        "z_gravity_scale": {
+          "type": {
+            "kind": "number"
+          },
+          "default": 1,
+          "doc": "2.5D: multiplier on z gravity (0 = floats at its z)."
         }
       }
     },
@@ -423,6 +495,21 @@
           },
           "default": "",
           "doc": "Comma-separated layers this collides with / detects (e.g. \"world,enemy\"). \"\" = every layer."
+        },
+        "z": {
+          "type": {
+            "kind": "number"
+          },
+          "default": 0,
+          "doc": "2.5D: height above the ground in px (+ = up), relative to the parent. Drawn raised in topdown/oblique/iso views (with a drop shadow); physics moves it for dynamic/kinematic Body2D (gravity, jumps, landing)."
+        },
+        "height": {
+          "type": {
+            "kind": "number",
+            "min": 0
+          },
+          "default": 0,
+          "doc": "2.5D: vertical extent in px. Body2D/Area2D/TileMap2D: only things whose z ranges overlap collide (0 = flat: collides with everything); static bodies with a height are platforms others can land on. Sprite2D: > 0 draws a solid block this tall (top face = texture/color, shaded sides) in topdown/oblique/iso; TileMap2D: every tile draws as such a block and solid tiles are platforms (raised terrain)."
         }
       }
     },
@@ -666,6 +753,21 @@
           },
           "default": false,
           "doc": "Drawn above Lighting2D darkness at full brightness (glowing eyes, lamps, UI-like world text)."
+        },
+        "z": {
+          "type": {
+            "kind": "number"
+          },
+          "default": 0,
+          "doc": "2.5D: height above the ground in px (+ = up), relative to the parent. Drawn raised in topdown/oblique/iso views (with a drop shadow); physics moves it for dynamic/kinematic Body2D (gravity, jumps, landing)."
+        },
+        "height": {
+          "type": {
+            "kind": "number",
+            "min": 0
+          },
+          "default": 0,
+          "doc": "2.5D: vertical extent in px. Body2D/Area2D/TileMap2D: only things whose z ranges overlap collide (0 = flat: collides with everything); static bodies with a height are platforms others can land on. Sprite2D: > 0 draws a solid block this tall (top face = texture/color, shaded sides) in topdown/oblique/iso; TileMap2D: every tile draws as such a block and solid tiles are platforms (raised terrain)."
         }
       }
     },
@@ -764,6 +866,21 @@
           },
           "default": "",
           "doc": "Comma-separated layers this collides with / detects (e.g. \"world,enemy\"). \"\" = every layer."
+        },
+        "z": {
+          "type": {
+            "kind": "number"
+          },
+          "default": 0,
+          "doc": "2.5D: height above the ground in px (+ = up), relative to the parent. Drawn raised in topdown/oblique/iso views (with a drop shadow); physics moves it for dynamic/kinematic Body2D (gravity, jumps, landing)."
+        },
+        "height": {
+          "type": {
+            "kind": "number",
+            "min": 0
+          },
+          "default": 0,
+          "doc": "2.5D: vertical extent in px. Body2D/Area2D/TileMap2D: only things whose z ranges overlap collide (0 = flat: collides with everything); static bodies with a height are platforms others can land on. Sprite2D: > 0 draws a solid block this tall (top face = texture/color, shaded sides) in topdown/oblique/iso; TileMap2D: every tile draws as such a block and solid tiles are platforms (raised terrain)."
         }
       }
     },

@@ -15,6 +15,8 @@
 //
 // Sprites and text are billboards: their anchor point is projected, then they are drawn upright.
 // Tiles and ground rects lie on the ground plane: their corners are projected (diamonds in iso).
+// Blocks (sprites with a `height`, in topdown/oblique/iso) are boxes: a top face at z + height over
+// their footprint plus the visible side faces (the front in topdown/oblique, two faces in iso).
 #pragma once
 
 #include <cstdint>
@@ -67,6 +69,7 @@ enum class TextAlign : uint8_t { Left, Center, Right };
 //   1. `layer`   (render layers; lower first)
 //   2. `z_index` (sub-layer inside a layer, like Godot: background at -1 stays behind)
 //   3. then by view mode: side = submission order; topdown = y; oblique = y, then z; iso = x+y, then z
+//      (blocks sort by their footprint's center; something standing on a block sorts right after it)
 //   4. ties: submission order (stable), so equal items never flicker
 struct SortInfo {
   int32_t layer = 0;
@@ -82,8 +85,14 @@ struct SpriteCmd {
 
   // World transform. `position` is the anchor point on the ground (x, y) at height `z`.
   Vec2 position;
-  float z = 0;       // height above the ground (2.5D); drop shadow when > 0 and `shadow` is set
-  float height = 0;  // the entity's own height (2.5D); reserved for E7 occlusion/stacking
+  float z = 0;  // height above the ground (2.5D)
+  // 2.5D block: > 0 in topdown/oblique/iso draws a box this tall over the footprint `size` x
+  // `scale`, centered on `position` (anchor and rotation are ignored), top face at z + height.
+  float height = 0;
+  // Height of the ground under `position` (the top of a block it stands or hovers over; 0 =
+  // the floor). The drop shadow lies at this height, and an item on raised ground sorts after
+  // the block it stands on.
+  float ground_z = 0;
   float rotation = 0;  // radians, clockwise on screen
   Vec2 scale{1, 1};
   Vec2 size{16, 16};      // world pixels before scale
@@ -93,7 +102,7 @@ struct SpriteCmd {
 
   Color tint;
   BlendMode blend = BlendMode::Alpha;
-  bool shadow = false;  // draw a drop shadow on the ground under the sprite when z > 0
+  bool shadow = false;  // draw a drop shadow on the ground (ground_z) under the sprite when z > ground_z
   Space space = Space::World;
   SortInfo sort;
 };
@@ -141,9 +150,11 @@ struct Tile {
 // A block of tiles on the ground plane (engine-web cuts TileMap2D into 32x32-tile chunks).
 // Tile (col, row) covers world [origin + col*tile_size, origin + (col+1)*tile_size).
 // A chunk sorts as one flat item: below upright items of the same layer and z_index in
-// topdown/oblique/iso. Elevation and stacked iso tiles come in E7.
+// topdown/oblique/iso. Raised tile maps (TileMap2D `height` > 0) are drawn as one block
+// (SpriteCmd with a height) per tile instead.
 struct TileChunkCmd {
   Vec2 origin;  // world position of tile (0, 0)'s top-left corner
+  float z = 0;  // height of the layer above the ground (2.5D)
   float tile_size = 16;
   std::vector<Tile> tiles;
   SortInfo sort;
@@ -156,12 +167,20 @@ struct Camera {
   float zoom = 1;
 };
 
-// Drop shadows under raised sprites (z > 0): a soft ellipse on the ground.
+// Drop shadows under raised sprites (z > ground_z): a soft ellipse on the ground (blocks: their
+// footprint, darkened).
 struct ShadowStyle {
   Color color{0, 0, 0, 0.35f};
   float width = 0.8f;    // x sprite width
   float aspect = 0.35f;  // ellipse height / width
-  float fade_height = 160;  // z at which the shadow is smallest and faintest
+  float fade_height = 160;  // height above the ground at which the shadow is smallest and faintest
+};
+
+// How much darker the side faces of 2.5D blocks are than the top (multiplies the tint's RGB):
+// front = topdown/oblique front face and the iso left face, right = the iso right face.
+struct BlockShade {
+  float front = 0.62f;
+  float right = 0.48f;
 };
 
 struct DrawList {
@@ -169,6 +188,7 @@ struct DrawList {
   Camera camera;
   Color clear_color{0.1f, 0.11f, 0.17f, 1};  // inside the game rect
   ShadowStyle shadows;
+  BlockShade block_shade;
 
   std::vector<SpriteCmd> sprites;
   std::vector<RectCmd> rects;

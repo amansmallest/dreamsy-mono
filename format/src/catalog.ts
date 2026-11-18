@@ -72,6 +72,19 @@ const transform3d = {
   scale: vec3([1, 1, 1], "Scale factor."),
 };
 
+/**
+ * 2.5D height (DREAMSY.MD §14.5). Appended after each type's other props so existing prop indices stay put.
+ * The world is still 2D (x, y on the ground; +y is down / toward the viewer); `z` lifts things off the ground.
+ */
+const elevation = {
+  z: num(0, "2.5D: height above the ground in px (+ = up), relative to the parent. Drawn raised in topdown/oblique/iso views (with a drop shadow); physics moves it for dynamic/kinematic Body2D (gravity, jumps, landing)."),
+  height: num(0, "2.5D: vertical extent in px. Body2D/Area2D/TileMap2D: only things whose z ranges overlap collide (0 = flat: collides with everything); static bodies with a height are platforms others can land on. Sprite2D: > 0 draws a solid block this tall (top face = texture/color, shaded sides) in topdown/oblique/iso; TileMap2D: every tile draws as such a block and solid tiles are platforms (raised terrain).", 0),
+};
+const zMotion = {
+  z_velocity: num(0, "2.5D: vertical speed in px/s (+ = up). Set it to jump (e.g. 420); physics applies z gravity (980 px/s² × z_gravity_scale) and zeroes it on landing.", -100000, 100000),
+  z_gravity_scale: num(1, "2.5D: multiplier on z gravity (0 = floats at its z)."),
+};
+
 const physics = {
   mass: num(1, "kg (dynamic only).", 0.001),
   friction: num(0.5, "0..1.", 0, 1),
@@ -124,7 +137,7 @@ export const CATALOG = {
   Node2D: {
     dimension: "2d", container: true,
     doc: "Empty 2D transform. Use to group and move children together.",
-    props: { ...transform2d },
+    props: { ...transform2d, ...elevation },
   },
   Sprite2D: {
     dimension: "2d", container: true,
@@ -142,6 +155,8 @@ export const CATALOG = {
       color: { type: { kind: "color" }, doc: "Alias of `modulate` (handy for untextured solid rects); setting it sets modulate." },
       ...emissive,
       ...blend,
+      ...elevation,
+      anchor: oneOf(["center", "bottom"], "center", 'Which point of the image sits on `position`: "center", or "bottom" (bottom-center: the feet). 2.5D views: use "bottom" for things that stand on the ground (characters, trees, coins) so they stand on their position and their drop shadow sits under their feet.'),
     },
   },
   Body2D: {
@@ -154,12 +169,14 @@ export const CATALOG = {
       size: vec2([32, 32], "rect: w,h. circle: x = diameter. capsule: w,h."),
       ...physics,
       ...layers,
+      ...elevation,
+      ...zMotion,
     },
   },
   Area2D: {
     dimension: "2d", container: true,
     doc: "Trigger zone: reports overlaps, no collision response.",
-    props: { ...transform2d, shape: oneOf(["rect", "circle"], "rect", "Shape."), size: vec2([32, 32], "Size."), ...layers },
+    props: { ...transform2d, shape: oneOf(["rect", "circle"], "rect", "Shape."), size: vec2([32, 32], "Size."), ...layers, ...elevation },
   },
   Camera2D: {
     dimension: "2d", container: false,
@@ -178,7 +195,7 @@ export const CATALOG = {
   Text2D: {
     dimension: "2d", container: false,
     doc: "Text placed in the world.",
-    props: { ...transform2d, text: str("", "Text."), font_size: int(16, "Pixels.", 4, 256), color: color("#ffffff", "Color."), align: oneOf(["left", "center", "right"], "center", "Horizontal anchor: center = text centered on position, left = text starts at position, right = text ends at position. Vertically centered on position."), ...textStyle, ...emissive },
+    props: { ...transform2d, text: str("", "Text."), font_size: int(16, "Pixels.", 4, 256), color: color("#ffffff", "Color."), align: oneOf(["left", "center", "right"], "center", "Horizontal anchor: center = text centered on position, left = text starts at position, right = text ends at position. Vertically centered on position."), ...textStyle, ...emissive, ...elevation },
   },
   TileMap2D: {
     dimension: "2d", container: false,
@@ -190,6 +207,7 @@ export const CATALOG = {
       data: str("", 'The grid: rows of tile characters joined by "\\n" (top row first), or "file:data/levels/<name>.txt".', 65536),
       collision: bool(true, "Solid tiles block bodies."),
       ...layers,
+      ...elevation,
     },
   },
   Particles2D: {

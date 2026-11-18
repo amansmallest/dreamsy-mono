@@ -58,7 +58,7 @@ Status Host::init() {
   scene_path_ = options_.scene.value_or(m.entry_scene);
   if (!pkg_->scenes.count(scene_path_)) return Error{"no scene " + scene_path_};
 
-  world_.view = options_.view;
+  world_.view = view_for(scene_path_);
   new_physics();
   vm_ = Vm::create({options_.memory_limit, options_.budget_ms});
   lua_State* L = vm_->main();
@@ -414,6 +414,7 @@ void Host::switch_scene(const std::string& path) {
   for (int64_t id : dead_timers) remove_timer(id, true);
   std::erase_if(scripts_, [&](const std::unique_ptr<ScriptInst>& s) { return dead(s.get()); });
   tile_touching_.clear();
+  world_.view = view_for(path);  // before new_physics(): planar gravity depends on the view
   new_physics();
   std::erase_if(tweens_, [&](const world::Tween& t) { return !world_.alive(t.entity); });
   dialogs_.clear();

@@ -104,6 +104,9 @@ export function validatePackage(pkg: Package): ValidationResult {
     if (manifest.style.grid && manifest.style.preset !== "pixel") {
       warn("manifest.style_grid", "style.grid only applies to the pixel preset", { file: "dreamsy.toml" });
     }
+    if (manifest.view && manifest.dimension !== "2d") {
+      err("manifest.view_dimension", 'view (2.5D) applies to 2D games only: remove it or set dimension = "2d"', { file: "dreamsy.toml" });
+    }
   }
 
   // ----- assets -----
@@ -266,6 +269,10 @@ interface SceneCtx {
 function validateScene(file: string, scene: Scene, ctx: SceneCtx) {
   const { err, warn } = ctx;
   const ents = scene.entities;
+
+  if (scene.view && ctx.manifest && ctx.manifest.dimension !== "2d") {
+    err("scene.view_dimension", "view (2.5D) applies to 2D games only", { file });
+  }
 
   if (!ents[scene.root]) {
     err("scene.root_missing", `root "${scene.root}" is not an entity in this scene`, { file });

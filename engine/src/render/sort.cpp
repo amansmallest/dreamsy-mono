@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <optional>
 
 namespace dreamsy::render {
 
@@ -67,7 +68,16 @@ bool less_world(ViewMode view, const Key& a, const Key& b) {
 
 }  // namespace
 
-bool casts_shadow(const SpriteCmd& s) { return s.shadow && s.space == Space::World && s.z > 0; }
+bool casts_shadow(const SpriteCmd& s) { return s.shadow && s.space == Space::World && s.z > s.ground_z; }
+
+bool is_block(ViewMode view, const SpriteCmd& s) {
+  return s.height > 0 && s.space == Space::World && view != ViewMode::Side;
+}
+
+Footprint block_footprint(const SpriteCmd& s) {
+  const float hw = std::abs(s.size.x * s.scale.x) * 0.5f, hd = std::abs(s.size.y * s.scale.y) * 0.5f;
+  return {s.position.x - hw, s.position.y - hd, s.position.x + hw, s.position.y + hd};
+}
 
 void sort_draw_list(const DrawList& list, SortedDrawList& out) {
   out.world.clear();
@@ -80,14 +90,45 @@ void sort_draw_list(const DrawList& list, SortedDrawList& out) {
 
   auto add = [&](Space space, Key k) { (space == Space::World ? world : screen).push_back(k); };
 
+  // 2.5D blocks, for moving things that stand on raised ground (see sort.h).
+  std::vector<uint32_t> blocks;
+  if (view != ViewMode::Side) {
+    for (uint32_t i = 0; i < list.sprites.size(); i++)
+      if (is_block(view, list.sprites[i])) blocks.push_back(i);
+  }
+  // The depth key of the block under a raised item, or nothing.
+  auto supporting_depth = [&](const SpriteCmd& s) -> std::optional<float> {
+    std::optional<float> best;
+    for (uint32_t b : blocks) {
+      const SpriteCmd& blk = list.sprites[b];
+      if (&blk == &s || blk.sort.layer != s.sort.layer || blk.sort.z_index != s.sort.z_index) continue;
+      if (std::abs(blk.z + blk.height - s.ground_z) > 0.5f) continue;
+      const Footprint f = block_footprint(blk);
+      if (s.position.x < f.x0 || s.position.x > f.x1 || s.position.y < f.y0 || s.position.y > f.y1) continue;
+      const float d = make_key(view, blk.sort, 2, blk.position.x, blk.position.y, 0, {}).depth;
+      if (!best || d > *best) best = d;
+    }
+    return best;
+  };
+
   for (uint32_t i = 0; i < list.sprites.size(); i++) {
     const SpriteCmd& s = list.sprites[i];
-    add(s.space, make_key(view, s.sort, 2, s.position.x, s.position.y, s.z, {DrawKind::Sprite, i}));
+    Key k = make_key(view, s.sort, 2, s.position.x, s.position.y, s.z, {DrawKind::Sprite, i});
+    std::optional<float> on_block;
+    if (!blocks.empty() && s.ground_z > 0 && !is_block(view, s) && s.space == Space::World) {
+      on_block = supporting_depth(s);
+      // Just after the block: the gap is far below a pixel, so it never passes anything else.
+      if (on_block && k.depth <= *on_block) k.depth = *on_block + 0.001f;
+    }
+    add(s.space, k);
     if (casts_shadow(s)) {
-      // The shadow sits on the ground under the sprite: same depth, bucket 1, height 0.
-      Key k = make_key(view, s.sort, 1, s.position.x, s.position.y, 0, {DrawKind::Shadow, i});
-      k.sub = 0;
-      world.push_back(k);
+      // The shadow lies on the ground under the sprite: right before it. On the floor it goes in
+      // the shadow bucket (under everything upright); on a block it must come after that block.
+      Key sk = make_key(view, s.sort, s.ground_z > 0 ? 2 : 1, s.position.x, s.position.y, s.ground_z,
+                        {DrawKind::Shadow, i});
+      if (s.ground_z > 0) sk.depth = k.depth;
+      sk.sub = 0;
+      world.push_back(sk);
     }
   }
   for (uint32_t i = 0; i < list.rects.size(); i++) {

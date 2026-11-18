@@ -8,6 +8,10 @@ export const Id = z.string().regex(ID_RE, "id must be lowercase snake_case, star
 
 // ---------- manifest (dreamsy.toml) ----------
 
+/** 2.5D view modes (DREAMSY.MD §14.5). */
+export const VIEW_MODES = ["side", "topdown", "oblique", "iso"] as const;
+export type ViewMode = (typeof VIEW_MODES)[number];
+
 export const Manifest = z.strictObject({
   format: z.literal(FORMAT_VERSION),
   id: z.string().optional(),
@@ -16,6 +20,12 @@ export const Manifest = z.strictObject({
   dimension: z.enum(["2d", "3d"]),
   /** Phone layout (DREAMSY.MD §11.1). Absent = "landscape" (older games); new games default to portrait. */
   orientation: z.enum(["portrait", "landscape"]).optional(),
+  /**
+   * 2.5D view mode (DREAMSY.MD §14.5), 2D games only. Absent = "side". Scenes may override it.
+   * side: x right, y down, planar gravity (platformers). topdown / oblique / iso: y is depth (no planar
+   * gravity), entities have a height `z`; oblique draws z upward, iso projects onto a 2:1 diamond.
+   */
+  view: z.enum(VIEW_MODES).optional(),
   entry_scene: z.string().regex(/^scenes\/[a-z0-9_\-/]+\.scene\.json$/, "entry_scene must be scenes/<name>.scene.json"),
   players: z.strictObject({
     min: z.number().int().min(1).default(1),
@@ -81,6 +91,8 @@ export type Orientation = "portrait" | "landscape";
 /** Engine orientation: absent = "landscape" (games made before §11.1). */
 export const orientationOf = (m: Pick<Manifest, "orientation">): Orientation => m.orientation ?? "landscape";
 /** Reference screen (short side 720): portrait 720×1280, landscape 1280×720. */
+/** A scene's view mode: its own `view`, else the manifest's, else "side". */
+export const viewOf = (m: Pick<Manifest, "view">, scene?: { view?: ViewMode }): ViewMode => scene?.view ?? m.view ?? "side";
 export function referenceSize(m: Pick<Manifest, "orientation">): [number, number] {
   return orientationOf(m) === "portrait" ? [720, 1280] : [1280, 720];
 }
@@ -107,6 +119,8 @@ export type Entity = z.infer<typeof Entity>;
 export const Scene = z.strictObject({
   format: z.literal(FORMAT_VERSION),
   root: z.string(),
+  /** Overrides the manifest's `view` for this scene (e.g. an iso map scene in an oblique game). */
+  view: z.enum(VIEW_MODES).optional(),
   entities: z.record(z.string(), Entity),
 });
 export type Scene = z.infer<typeof Scene>;

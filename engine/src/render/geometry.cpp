@@ -100,6 +100,10 @@ struct Builder {
     const float w = s.size.x * s.scale.x * zoom;  // negative scale mirrors, like engine-web
     const float h = s.size.y * s.scale.y * zoom;
     if (w == 0 || h == 0 || !(s.tint.a > 0)) return;
+    if (world && is_block(list.view, s)) {
+      block(s);
+      return;
+    }
 
     std::optional<AtlasRegion> region;
     if (s.image.valid()) region = textures.region(s.image, std::max(std::abs(w), std::abs(h)) * raster_scale);
@@ -126,16 +130,75 @@ struct Builder {
     rect_quad(region->page, x, y, w, h, uv, pack_color(s.tint, s.blend), s.rotation, a);
   }
 
+  // A 2.5D block: the top face over the footprint at z + height, then the side faces facing the
+  // viewer (draw_list.h). The image (or solid tint) covers the top; the sides reuse it, darkened.
+  void block(const SpriteCmd& s) {
+    std::optional<AtlasRegion> region;
+    if (s.image.valid()) region = textures.region(s.image, std::max(std::abs(s.size.x), std::abs(s.size.y)) * zoom * raster_scale);
+    UvRect uv;
+    if (region) {
+      const UvRect& r = region->uv;
+      uv = {r.u0 + (r.u1 - r.u0) * s.src.u0, r.v0 + (r.v1 - r.v0) * s.src.v0, r.u0 + (r.u1 - r.u0) * s.src.u1,
+            r.v0 + (r.v1 - r.v0) * s.src.v1};
+    } else {
+      region = white();
+      uv = region->uv;
+    }
+    const Footprint f = block_footprint(s);
+    const float z0 = s.z, z1 = s.z + s.height;
+    auto shaded = [&](float k) {
+      Color c = s.tint;
+      c.r *= k;
+      c.g *= k;
+      c.b *= k;
+      return pack_color(c, s.blend);
+    };
+    // Corners in quad order: top-left, top-right, bottom-right, bottom-left (as seen on screen).
+    auto face = [&](Vec2 a, Vec2 b, Vec2 c, Vec2 d, uint32_t color) {
+      Vec2 q[4] = {a, b, c, d};
+      if (params.pixel_snap && list.view != ViewMode::Iso) {
+        for (Vec2& p : q) p = {snap(p.x), snap(p.y)};
+      }
+      quad(region->page, q, uv, color);
+    };
+    const BlockShade& shade = list.block_shade;
+    if (list.view == ViewMode::Iso) {
+      // Visible sides: y = y1 (lower left on screen) and x = x1 (lower right).
+      face(to_ref(f.x0, f.y1, z1), to_ref(f.x1, f.y1, z1), to_ref(f.x1, f.y1, z0), to_ref(f.x0, f.y1, z0),
+           shaded(shade.front));
+      face(to_ref(f.x1, f.y1, z1), to_ref(f.x1, f.y0, z1), to_ref(f.x1, f.y0, z0), to_ref(f.x1, f.y1, z0),
+           shaded(shade.right));
+    } else {
+      // topdown / oblique: the front face (y = y1) hangs below the top face.
+      face(to_ref(f.x0, f.y1, z1), to_ref(f.x1, f.y1, z1), to_ref(f.x1, f.y1, z0), to_ref(f.x0, f.y1, z0),
+           shaded(shade.front));
+    }
+    face(to_ref(f.x0, f.y0, z1), to_ref(f.x1, f.y0, z1), to_ref(f.x1, f.y1, z1), to_ref(f.x0, f.y1, z1),
+         pack_color(s.tint, s.blend));
+  }
+
   void shadow(const SpriteCmd& s) {
     const ShadowStyle& st = list.shadows;
-    const float t = std::clamp(s.z / std::max(1.0f, st.fade_height), 0.0f, 1.0f);
+    const float above = s.z - s.ground_z;  // height above whatever the shadow falls on
+    const float t = std::clamp(above / std::max(1.0f, st.fade_height), 0.0f, 1.0f);
+    if (is_block(list.view, s)) {
+      // A floating block: its footprint, darkened, on the ground below.
+      Color c = st.color;
+      c.a *= 1.0f - 0.7f * t;
+      const Footprint f = block_footprint(s);
+      const AtlasRegion wr = white();
+      const Vec2 q[4] = {to_ref(f.x0, f.y0, s.ground_z), to_ref(f.x1, f.y0, s.ground_z), to_ref(f.x1, f.y1, s.ground_z),
+                         to_ref(f.x0, f.y1, s.ground_z)};
+      quad(wr.page, q, wr.uv, pack_color(c));
+      return;
+    }
     const float w = std::abs(s.size.x * s.scale.x) * st.width * (1.0f - 0.5f * t) * zoom;
     const float h = w * st.aspect;
     Color c = st.color;
     c.a *= 1.0f - 0.7f * t;
     if (w <= 0 || !(c.a > 0)) return;
     const AtlasRegion r = *textures.region(TextureStore::kShadow);
-    const Vec2 g = to_ref(s.position.x, s.position.y, 0);  // on the ground under the sprite
+    const Vec2 g = to_ref(s.position.x, s.position.y, s.ground_z);  // on the ground under the sprite
     rect_quad(r.page, g.x - w * 0.5f, g.y - h * 0.5f, w, h, r.uv, pack_color(c));
   }
 
@@ -213,7 +276,7 @@ struct Builder {
       }
       const float x0 = c.origin.x + tile.col * ts, y0 = c.origin.y + tile.row * ts;
       const float x1 = x0 + ts, y1 = y0 + ts;
-      Vec2 q[4] = {to_ref(x0, y0, 0), to_ref(x1, y0, 0), to_ref(x1, y1, 0), to_ref(x0, y1, 0)};
+      Vec2 q[4] = {to_ref(x0, y0, c.z), to_ref(x1, y0, c.z), to_ref(x1, y1, c.z), to_ref(x0, y1, c.z)};
       if (params.pixel_snap && list.view != ViewMode::Iso) {
         for (Vec2& p : q) p = {snap(p.x), snap(p.y)};
       }

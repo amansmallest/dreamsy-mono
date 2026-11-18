@@ -1,5 +1,12 @@
 // Rapier 2D adapter. Works in pixel units with +y down (gravity = +980 px/s², like Godot).
 // Rapier angles are CCW in y-up space, i.e. clockwise on a y-down screen — same as our `rotation`.
+//
+// 2.5D height (DREAMSY.MD §14.5), the same rules as the C++ engine (engine/src/physics/physics2d.h):
+// entity props `z` (base height) and `height` (vertical extent); two shapes interact only when their
+// z ranges overlap (height 0 = flat = interacts with everything; Rapier physics hooks); moving bodies
+// fall with Z_GRAVITY × z_gravity_scale and land on the highest top (z + height) of a static/kinematic
+// body or solid raised tile under their center; planar gravity applies in the "side" view only.
+// engine-web draws in 2D (z is not drawn); the C++ engine renders the views.
 import RAPIER from "@dimforge/rapier2d-compat";
 import { apply, global2D, invert, mul, rotationOf, type Entity, type Mat2D } from "./world.js";
 
@@ -10,6 +17,9 @@ export function initRapier2D(): Promise<void> {
 }
 
 export const GRAVITY_2D = 980;
+export const Z_GRAVITY = 980;
+
+const Z_HOOKS = RAPIER.ActiveHooks.FILTER_CONTACT_PAIRS | RAPIER.ActiveHooks.FILTER_INTERSECTION_PAIRS;
 
 interface BodyRec {
   e: Entity;
@@ -26,6 +36,11 @@ export interface ContactEvent {
   started: boolean;
 }
 
+/** 2.5D props (catalog defaults 0; types without them read as flat, on the ground). */
+function zOf(e: Entity): { z: number; height: number; vz: number } {
+  return { z: e.get<number>("z") ?? 0, height: e.get<number>("height") ?? 0, vz: e.get<number>("z_velocity") ?? 0 };
+}
+
 export class Physics2D {
   readonly world: RAPIER.World;
   private queue: RAPIER.EventQueue;
@@ -38,9 +53,15 @@ export class Physics2D {
   /** Pairs active before a tilemap's colliders were rebuilt; re-confirmed silently by the new colliders. */
   private staleTilePairs = new Map<string, [Entity, Entity]>();
 
-  /** Named collision layers (manifest [physics] layers); index = bit. */
-  constructor(dt: number, readonly layers: readonly string[] = []) {
-    this.world = new RAPIER.World({ x: 0, y: GRAVITY_2D });
+  /** z-range filter: only colliders of entities with a height carry the hook flags (see zHooks). */
+  private hooks: RAPIER.PhysicsHooks = {
+    filterContactPair: (c1, c2) => (this.zAllows(c1, c2) ? RAPIER.SolverFlags.COMPUTE_IMPULSE : null),
+    filterIntersectionPair: (c1, c2) => this.zAllows(c1, c2),
+  };
+
+  /** Named collision layers (manifest [physics] layers); index = bit. `view`: planar gravity only in "side". */
+  constructor(dt: number, readonly layers: readonly string[] = [], view: string = "side") {
+    this.world = new RAPIER.World({ x: 0, y: view === "side" ? GRAVITY_2D : 0 });
     this.world.timestep = dt;
     this.world.lengthUnit = 32;
     this.queue = new RAPIER.EventQueue(true);
@@ -128,6 +149,7 @@ export class Physics2D {
       if (kind === "dynamic") cd.setMass(e.get<number>("mass"));
       cd.setActiveCollisionTypes(RAPIER.ActiveCollisionTypes.DEFAULT | RAPIER.ActiveCollisionTypes.KINEMATIC_FIXED);
     }
+    if (zOf(e).height > 0) cd.setActiveHooks(Z_HOOKS);
     const collider = this.world.createCollider(cd, body);
     const rec: BodyRec = { e, body, collider, colliders: [collider], kind };
     this.recs.set(e, rec);
@@ -166,6 +188,7 @@ export class Physics2D {
         .setCollisionGroups(groups)
         .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS)
         .setActiveCollisionTypes(RAPIER.ActiveCollisionTypes.DEFAULT | RAPIER.ActiveCollisionTypes.KINEMATIC_FIXED);
+      if (zOf(e).height > 0) cd.setActiveHooks(Z_HOOKS);
       colliders.push(this.world.createCollider(cd, body));
     }
     const rec: BodyRec = { e, body, collider: colliders[0]!, colliders, kind: "tiles" };
@@ -257,10 +280,95 @@ export class Physics2D {
     return floor;
   }
 
+  // ---------- 2.5D height ----------
+
+  /** A script changed `height`: colliders with a height carry the z-filter hook flags. */
+  zHooks(e: Entity) {
+    const rec = this.recs.get(e);
+    if (!rec) return;
+    const flags = zOf(e).height > 0 ? Z_HOOKS : RAPIER.ActiveHooks.NONE;
+    for (const c of rec.colliders) c.setActiveHooks(flags);
+  }
+
+  private zAllows(c1: number, c2: number): boolean {
+    const a = this.byCollider.get(c1)?.e, b = this.byCollider.get(c2)?.e;
+    if (!a || !b) return true;
+    const za = zOf(a), zb = zOf(b);
+    if (za.height <= 0 || zb.height <= 0) return true; // flat shapes interact with everything
+    return za.z < zb.z + zb.height && zb.z < za.z + za.height;
+  }
+
+  /** Does the body's footprint (or a solid tile of a tile map) contain the world point? */
+  private covers(r: BodyRec, x: number, y: number): boolean {
+    if (r.kind === "tiles") {
+      const grid = r.e.tiles;
+      if (!grid) return false;
+      const [lx, ly] = apply(invert(global2D(r.e)), x, y);
+      const ts = r.e.get<number>("tile_size");
+      if (!(ts > 0)) return false;
+      const col = Math.floor(lx / ts), row = Math.floor(ly / ts);
+      return grid.kindAt(col, row)?.solid ?? false;
+    }
+    const b = this.aabb(r.e);
+    return !!b && b[0] <= x && x <= b[2] && b[1] <= y && y <= b[3];
+  }
+
+  /** Ground height at (x, y) for something at height z: highest top ≤ z of a static/kinematic body or solid raised tile, else 0. */
+  groundBelow(x: number, y: number, z: number, ignore?: Entity): number {
+    let ground = 0;
+    for (const r of this.recs.values()) {
+      if (r.e === ignore || (r.kind !== "static" && r.kind !== "kinematic" && r.kind !== "tiles")) continue;
+      if (!r.body.isEnabled()) continue;
+      const s = zOf(r.e);
+      if (s.height <= 0) continue;
+      const top = s.z + s.height;
+      if (top > z + 1e-6 || top <= ground) continue;
+      if (this.covers(r, x, y)) ground = top;
+    }
+    return ground;
+  }
+
+  /** Ground height under a body's center (0 without a body). */
+  groundOf(e: Entity): number {
+    const rec = this.rec(e);
+    if (!rec) return 0;
+    const t = rec.body.translation();
+    return this.groundBelow(t.x, t.y, zOf(e).z, e);
+  }
+
+  /** Resting on its ground (not moving up). */
+  onGround(e: Entity): boolean {
+    const z = zOf(e);
+    return z.vz <= 0 && z.z <= this.groundOf(e) + 1e-6;
+  }
+
+  /** z gravity, jumps and landing for moving bodies (creation order; semi-implicit Euler). */
+  private stepZ(dt: number) {
+    for (const r of this.recs.values()) {
+      if (r.kind !== "dynamic" && r.kind !== "kinematic") continue;
+      const e = r.e;
+      let { z, vz } = zOf(e);
+      const height = zOf(e).height;
+      if ((z === 0 && vz === 0 && height <= 0) || !r.body.isEnabled()) continue;
+      const t = r.body.translation();
+      const ground = this.groundBelow(t.x, t.y, z, e);
+      if (z > ground || vz > 0) {
+        vz -= Z_GRAVITY * (e.get<number>("z_gravity_scale") ?? 1) * dt;
+        z += vz * dt;
+        if (z <= ground) { z = ground; vz = 0; }
+      } else {
+        z = ground;
+        vz = 0;
+      }
+      if (z !== e.get<number>("z")) { e.props.z = z; e.rev++; }
+      if (vz !== e.get<number>("z_velocity")) e.props.z_velocity = vz;
+    }
+  }
+
   /** Step and write simulated transforms back to entities. Returns contact enter/exit events. */
   step(onMoved: (e: Entity) => void): ContactEvent[] {
     this.flush();
-    this.world.step(this.queue);
+    this.world.step(this.queue, this.hooks);
     for (const rec of this.recs.values()) {
       if (rec.kind !== "dynamic" && rec.kind !== "kinematic") continue;
       if (rec.body.isSleeping()) continue;
@@ -283,6 +391,7 @@ export class Physics2D {
       }
       if (changed) onMoved(rec.e);
     }
+    this.stepZ(this.world.timestep);
     const events: ContactEvent[] = [];
     this.queue.drainCollisionEvents((h1, h2, started) => {
       const r1 = this.byCollider.get(h1), r2 = this.byCollider.get(h2);

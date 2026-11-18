@@ -34,6 +34,7 @@ struct Manifest {
   std::optional<std::string> description;
   std::string dimension;                  // "2d" (the C++ engine rejects "3d")
   std::optional<std::string> orientation;  // absent = landscape (§11.1)
+  std::optional<std::string> view;         // 2.5D view mode (§14.5): side | topdown | oblique | iso; absent = side
   std::string entry_scene;
 
   int players_min = 1;
@@ -87,6 +88,7 @@ struct EntityDef {
 struct SceneDef {
   std::string path;  // scenes/<name>.scene.json
   std::string root;
+  std::optional<std::string> view;  // overrides Manifest::view for this scene
   std::vector<EntityDef> entities;  // file order
   std::unordered_map<std::string, size_t> index;  // id -> entities[i]
 

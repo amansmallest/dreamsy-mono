@@ -114,6 +114,7 @@ Result<Manifest> parse_manifest(std::string_view text) {
   m.description = read_string(o, "description", {.max_len = 2000});
   if (auto v = read_enum(o, "dimension", {"2d", "3d"}, true)) m.dimension = *v;
   m.orientation = read_enum(o, "orientation", {"portrait", "landscape"});
+  m.view = read_enum(o, "view", {"side", "topdown", "oblique", "iso"});
   if (auto v = read_string(o, "entry_scene",
                            {.pattern = is_entry_scene, .pattern_message = "entry_scene must be scenes/<name>.scene.json"},
                            true))

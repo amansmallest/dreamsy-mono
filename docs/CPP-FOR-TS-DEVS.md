@@ -164,5 +164,5 @@ with a stack trace. If a test passes in debug, those bug classes didn't happen.
 1. `src/base/result.h`, `src/base/pool.h`: the two patterns used everywhere.
 2. `src/base/rng.h`: a tiny class, compare it with `engine-web/core/random.ts`.
 3. `src/dev/smoke.cpp`: calling C libraries (Luau, Box2D) from C++.
-4. `apps/player/main.cpp`: the frame loop and drawing.
+4. `apps/player/main.cpp`: the frame loop; `src/render/draw_list.h` then `src/render/renderer.h` for drawing.
 5. `tests/base_test.cpp`: how each piece is meant to be used.

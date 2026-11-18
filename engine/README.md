@@ -57,6 +57,37 @@ DREAMSY_WEB_BUILD=build/web-mygame DREAMSY_SHOT_KEYS="d@0,Space@800" NODE_PATH=.
     node tools/web_screenshot.cjs /tmp/shots 540x960 game
 ```
 
+### Embedding the web player (the app, share links)
+
+`build/web` is a static site: `dreamsy-player.{html,js,wasm}` plus `kits/<kit>.dpk`. `scripts/dev.sh` serves it on
+`:2005` (with `index.html` = `dreamsy-player.html`) and `deploy/Dockerfile` builds it into `/app/player`.
+The contract lives in `apps/player/embed.js` (linked with `--pre-js`; the download starts before the WASM is ready):
+
+| Query | Loads |
+|---|---|
+| `?public=<gameId>` (or a `/g/<gameId>` path) | the published version, `GET <api>/v1/public/games/<id>/package`; `<api>` = `?api=`, else `api.<domain>` on `play.<domain>`, else this host on `:8787` |
+| `?api=<base>&game=<id>&version=<n>&token=<jwt>` | `GET <api>/v1/games/<id>/versions/<n>/package` with `Authorization: Bearer` (token from the query, else `localStorage.dreamsy_token`) |
+| `?pkg=<url>[&kits=<base>]` | a `.dpk` or `.zip` by URL (dev and tools); kits from `<base>/<kit>.dpk` (default `kits/`) |
+| nothing | the embedded demo (`/pkg`), except in embed mode (error "no game to load") |
+
+Packages are told apart by content (zip signature), so URLs need no extension. Embed mode (`?embed=1`, inside a
+React Native WebView, or `?public=`) posts messages to the host: a JSON string to `window.ReactNativeWebView.postMessage`
+and, inside an iframe, the object to `window.parent.postMessage(msg, "*")`:
+
+| Message | When |
+|---|---|
+| `{type:"ready"}` | the game is running |
+| `{type:"error", message}` | the game didn't load (download, validation, start), or a script error after ready (at most one per 2 s, the same one at most every 30 s) |
+| `{type:"quit"}` | pause menu Quit (outside embed mode Quit goes back) |
+| `{type:"runEnd", reason, board?, value?}` | `leaderboard.finish` (`"finish"`, value = seconds) / `leaderboard.submit` (`"submit"`), `platform.runEnded(reason)` (`gameover` / `finish` / `quit`), or the room finished; at most one per 3 s |
+
+`?insets=top,right,bottom,left` (CSS px) keeps the pause button, menu, touch controls and the game's UI anchors clear
+of the host's safe area. Not supported yet (engine-web's dev page had them): `{type:"purchase"}` and the API store
+(the store is the free in-memory one), API leaderboards (runs, ranks, ghosts; `runEnd` has no `rank`), saved games
+(`save.*` lasts for the session; engine-web kept it in localStorage) and `{type:"save"}`,
+`?room=` / `?spectate=` and the lobby (no room client until E8: multiplayer games run solo with the offline room),
+`?touch=` (use `#touch`), `?scene=`, `?sceneParams=`, `?save=0`, `?budget=`.
+
 ## Parity screenshots
 
 `tools/parity.mts` shows every game side by side in engine-web (the reference) and the C++ web player, at the
@@ -188,6 +219,7 @@ The engine's own logging (`base/log.cpp`) writes to stderr, which Android drops;
 | `src/dev/` | E0 smoke checks (Luau, Box2D), kept for `dreamsy-tool smoke` |
 | `apps/tool/` | `dreamsy-tool`, the headless CLI |
 | `apps/player/` | `dreamsy-player`, the windowed engine; `demo_scene` draws a test scene from a package's assets until E3/E6 |
+| `apps/player/embed.js` | the web player's embedding contract: package source from the query, messages to the host app (see [Embedding](#embedding-the-web-player-the-app-share-links)) |
 | `tools/` | `web_screenshot.cjs` (screenshots of the web player), `web_touch_screenshot.cjs` (phone touch input), `make_play_page.py` (packs games for the web player), `parity.mts` (engine-web vs C++ screenshots) |
 | `tests/` | doctest unit tests, one binary: `dreamsy-tests` |
 | `tests/conformance/` | `conformance.py`: C++ vs `format/src/validate.ts` on every game plus ~80 generated broken packages; `run_compare.py`: C++ vs engine-web: `tests/scripts/*` (identical logs, errors, audio, save, time), physics scenarios with scripted input (identical script output + measured position/velocity drift), `--all` over every game |

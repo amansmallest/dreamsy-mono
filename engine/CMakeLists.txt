@@ -349,12 +349,14 @@ if(DREAMSY_BUILD_PLAYER)
     set_target_properties(dreamsy-player PROPERTIES SUFFIX ".html")
     target_link_options(dreamsy-player PRIVATE
       --shell-file ${CMAKE_CURRENT_SOURCE_DIR}/apps/player/shell.html -sALLOW_MEMORY_GROWTH=1
+      --pre-js ${CMAKE_CURRENT_SOURCE_DIR}/apps/player/embed.js
       --embed-file ${DREAMSY_DEMO_PACKAGE_DIR}@/pkg)
     if(DREAMSY_WEB_EMBED_KITS)
       # SHELL: keeps CMake from merging the repeated --embed-file flag with the one above
       target_link_options(dreamsy-player PRIVATE "SHELL:--embed-file ${DREAMSY_KIT_PACKS_DIR}@/kits")
     endif()
-    set_property(TARGET dreamsy-player APPEND PROPERTY LINK_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/apps/player/shell.html)
+    set_property(TARGET dreamsy-player APPEND PROPERTY LINK_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/apps/player/shell.html
+                                                                    ${CMAKE_CURRENT_SOURCE_DIR}/apps/player/embed.js)
   elseif(IOS)
     include(platform/ios/ios.cmake)
     dreamsy_ios_app(dreamsy-player)

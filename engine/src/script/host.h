@@ -51,6 +51,15 @@ struct HostOptions {
   // Forces one 2.5D view mode for every scene (tools/tests). Unset = each scene's own view
   // (scene `view`, else manifest `view`, else side; DREAMSY.MD §14.5).
   std::optional<world::ViewMode> view;
+  // A run ended (engine-web Game.onRunEnd, the app's {type:"runEnd"}): leaderboard finish/submit,
+  // platform.runEnded, or the (offline) room finished. Called during step(); not rate-limited here.
+  std::function<void(const struct RunEnd&)> on_run_end;
+};
+
+struct RunEnd {
+  std::string reason;  // "finish" | "submit" | "gameover" | "quit"
+  std::optional<std::string> board;
+  std::optional<double> value;
 };
 
 struct LogLine {

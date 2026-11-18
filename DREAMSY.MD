@@ -307,7 +307,9 @@ physics we make deterministic vs. limiting async games to a sim-friendly subset.
 
 ### 4.3 Targets
 
-> Superseded by §14.7 once the C++ engine reaches parity. The table below describes `engine-web`.
+> Superseded by §14.7. Since 2026-11-18 the app, share links, dev stack and deploy image use the C++ web player
+> (`engine/apps/player`, embedding contract in `engine/apps/player/embed.js`); `engine-web` is being removed. The table
+> below is the history.
 
 **Decision (2026-11-14):** web engine instead of a Godot fork (the fork was built, then deleted the same day). Games are Roblox-level at most
 (sprite games, platformers, block games, clean racing), which web tech handles on phones; in
@@ -338,6 +340,9 @@ apps/mobile, apps/web ► services/api ◄── harness workers (claim jobs, up
 - **harness** — stateless workers that pull jobs from the API.
 - **services/gameserver** — the room server (§4.5): Node + `ws`, one process, in-memory rooms. Prod: `gameserver`
   container on the same box; Caddy routes `api.dreamsy.dev/rooms*` (WebSocket) to it, everything else to the API.
+  It owns the room protocol (`services/gameserver/src/protocol.ts`).
+- **play.<domain>** — the C++ web player as static files (built in `deploy/Dockerfile`, published to Caddy by the
+  compose `player` service).
 
 ### 4.5 Multiplayer v1 — rooms, 1v1 red vs blue, family play (2026-11-15)
 
@@ -364,11 +369,15 @@ physical interaction between players (puppets have no bodies), shared objects ne
   lobby, else the API handle (`GET /v1/me`).
 - **Limits**: 8 KB/message (socket closes > 16 KB), 40 msg/s sustained + 80 burst (excess dropped with `rate_limited`;
   > 400 drops → close 4008), event args ≤ 4 KB, state values ≤ 2 KB, ≤ 64 state keys, 20 s heartbeat.
-- **Protocol** (`engine-web/net/protocol.ts`, JSON over one WebSocket): client `hello · create · join · spectate · quick · cancel ·
+- **Protocol** (`services/gameserver/src/protocol.ts`, moved from `engine-web/net/protocol.ts` 2026-11-18; JSON over one WebSocket): client `hello · create · join · spectate · quick · cancel ·
   ready · team · start · leave · ping` and in a match `st (avatar sample) · ev (event → host | others | player id) · kv ·
   score · end`; server `welcome · room · queued · start · left · error · pong` and `st (+ server ts) · ev · kv · score ·
   ended`.
-- **Engine**: `core/net.ts` (NetSession: Luau `players` / `remoteEvent` / `room` on a `NetLink`), `net/client.ts`
+- **C++ engine (2026-11-18): no room client yet.** `engine/src/script` has only the offline room (engine-web's
+  NetSession without a link: `room.*` works locally, `room.finish` ends the run, no lobby), so in the web player and the
+  app multiplayer v1 games run solo until E8 (§14.10, which brings authoritative netcode, §14.6). The app's `room` /
+  `spectate` query params are ignored meanwhile; the gameserver keeps running and its tests drive it at the protocol level.
+- **Engine (engine-web, retired)**: `core/net.ts` (NetSession: Luau `players` / `remoteEvent` / `room` on a `NetLink`), `net/client.ts`
   (RoomClient over WebSocket), `net/interp.ts` (clock sync + snapshot interpolation), `net/loopback.ts` (in-memory room for
   tests/harness), `net/lobby.ts` (engine-owned lobby, HUD chips, winner card). Dev page: games with `server.mode = "rooms"`
   and `players.max > 1` open the lobby first (`?room=<code>` joins, `?solo=1` skips, tools never see it); the room server
@@ -423,8 +432,12 @@ iteration, Opus for builds and hard logic, aggressive caching of assets and plan
 ## 6. Clients
 
 - **Mobile app (iOS first, Expo/React Native):** home/discover, play, create. Create = chat + live preview of the running
-  game + tap-to-select entities to scope edits. Engine runs in a WebView.
-- **Web:** same flows; the engine is native to the web.
+  game + tap-to-select entities to scope edits. Engine runs in a WebView: the C++ web player (§14.7 step 1) loaded with
+  `?api=&game=&version=&token=&embed=1[&insets=]`, posting `ready / error / quit / runEnd` back (PWA: an iframe and
+  `window.parent.postMessage`). Contract: `engine/apps/player/embed.js` and `engine/README.md` "Embedding the web
+  player". Not ported from engine-web's page yet: `purchase` + the API store (the store is the free in-memory one), API
+  leaderboards (`runEnd.rank`, ghosts), persisted saves, rooms/lobby (§4.5).
+- **Web:** same flows, same player; share links are `play.<domain>/?public=<gameId>` (`/g/<gameId>` redirects there).
 - App Store: games are interpreted Luau + data in a sandbox (same basis as Roblox / HTML5 mini-games, guideline 4.7).
 
 ## 7. Trust & safety

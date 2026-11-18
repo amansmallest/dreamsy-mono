@@ -272,7 +272,7 @@ add_library(dreamsy_zip_import STATIC src/pkg/zip_import.cpp)
 dreamsy_target_defaults(dreamsy_zip_import)
 target_link_libraries(dreamsy_zip_import PUBLIC dreamsy_pkg PRIVATE miniz)
 
-add_executable(dreamsy-tool apps/tool/main.cpp)
+add_executable(dreamsy-tool apps/tool/main.cpp apps/tool/playtest.cpp)
 dreamsy_target_defaults(dreamsy-tool)
 target_link_libraries(dreamsy-tool PRIVATE dreamsy_dev dreamsy_zip_import dreamsy_script dreamsy_kits_embedded dreamsy_check)
 dreamsy_link_dmath(dreamsy-tool)

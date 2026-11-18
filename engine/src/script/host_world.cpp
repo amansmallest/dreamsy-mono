@@ -272,6 +272,7 @@ Status Host::set_prop(EntityId id, const std::string& key, const std::optional<V
     // 2.5D props live in Entity fields that physics reads and writes every tick (world.h).
     if (v) world_.set_raw(*e, key, *v);
     else world_.unset(*e, key);
+    if (key == "height" && physics_) physics_->height_changed(id);
     return Status::success();
   }
   std::optional<Value>& slot = e->props[static_cast<size_t>(index)];

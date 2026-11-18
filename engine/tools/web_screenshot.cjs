@@ -7,7 +7,8 @@
 // smooth mode, e.g. iso-smooth) via dreamsy-player.html#<view>, and fails if the page logs an error.
 // The view "game" adds no hash: the package's own view (manifest / scene `view`).
 // Env: DREAMSY_WEB_BUILD = the build folder (default build/web), DREAMSY_SHOT_MS = wait before the
-// shot (default 2500), DREAMSY_SHOT_KEYS = "key@ms,key@ms" keys held from that time (e.g. "d@0,Space@900"). Needs Playwright: `pnpm install` at the repo root, then run with
+// shot (default 2500), DREAMSY_SHOT_KEYS = "key@ms,key@ms" keys held from that time (e.g. "d@0,Space@900";
+// "-key@ms" releases it, "key~@ms" taps it), DREAMSY_SHOT_TAPS = "x:y@ms,..." mouse clicks in page pixels. Needs Playwright: `pnpm install` at the repo root, then run with
 // NODE_PATH=../engine-web/node_modules (or any folder where `require("playwright")` resolves).
 const fs = require("fs");
 const path = require("path");
@@ -19,6 +20,10 @@ const keys = (process.env.DREAMSY_SHOT_KEYS || "").split(",").filter(Boolean).ma
   const [key, at] = k.split("@");
   return { key, at: Number(at || 0) };
 });
+for (const t of (process.env.DREAMSY_SHOT_TAPS || "").split(",").filter(Boolean)) {
+  const [xy, at] = t.split("@");
+  keys.push({ tap: xy.split(":").map(Number), at: Number(at || 0) });
+}
 const outDir = path.resolve(process.argv[2] || "/tmp/dreamsy-e4");
 const [width, height] = (process.argv[3] || "540x960").split("x").map(Number);
 const views = (process.argv[4] || "side,topdown,oblique,iso").split(",");
@@ -48,7 +53,10 @@ const types = { ".html": "text/html", ".js": "text/javascript", ".wasm": "applic
     for (const k of [...keys].sort((a, b) => a.at - b.at)) {
       if (k.at > t) await page.waitForTimeout(k.at - t);
       t = Math.max(t, k.at);
-      await page.keyboard.down(k.key);
+      if (k.tap) await page.mouse.click(k.tap[0], k.tap[1]);
+      else if (k.key.startsWith("-")) await page.keyboard.up(k.key.slice(1));
+      else if (k.key.endsWith("~")) await page.keyboard.press(k.key.slice(0, -1));
+      else await page.keyboard.down(k.key);
     }
     if (waitMs > t) await page.waitForTimeout(waitMs - t);
     const out = path.join(outDir, `web-${view}-${width}x${height}.png`);

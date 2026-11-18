@@ -190,6 +190,8 @@ void Physics2D::build(EntityId id) {
     bd.gravityScale = static_cast<float>(world_.num(*e, "gravity_scale"));
     if (world_.flag(*e, "lock_rotation")) bd.motionLocks.angularZ = true;
   }
+  // 2.5D: contacts between bodies with a height are re-checked every step (physics2d.h).
+  bd.enableContactRecycling = e->height <= 0;
   b2BodyId body = b2CreateBody(b2world_, &bd);
 
   const double sx = std::hypot(m.a, m.b) != 0 ? std::hypot(m.a, m.b) : 1;
@@ -271,6 +273,7 @@ void Physics2D::build_tiles(EntityId id, bool rebuilt) {
   bd.position = b2Vec2{to_m(m.tx), to_m(m.ty)};
   bd.rotation = make_rot(world::rotation_of(m));
   bd.userData = handle_data(e->handle);
+  bd.enableContactRecycling = e->height <= 0;  // see the 2.5D notes in physics2d.h
   b2BodyId body = b2CreateBody(b2world_, &bd);
   const double sx = std::hypot(m.a, m.b) != 0 ? std::hypot(m.a, m.b) : 1;
   const double sy = std::hypot(m.c, m.d) != 0 ? std::hypot(m.c, m.d) : 1;
@@ -471,6 +474,12 @@ double Physics2D::ground_of(EntityId id) {
   if (!r) return 0;
   const b2Vec2 p = b2Body_GetPosition(r->body);
   return ground_below(to_px(p.x), to_px(p.y), e->z, r->handle);
+}
+
+void Physics2D::height_changed(EntityId id) {
+  const Entity* e = world_.get(id);
+  BodyRec* r = e ? find(e->handle) : nullptr;
+  if (r) b2Body_EnableContactRecycling(r->body, e->height <= 0);
 }
 
 bool Physics2D::on_ground(EntityId id) {

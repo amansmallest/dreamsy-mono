@@ -33,7 +33,9 @@
 //     the ground lower, so the body falls. A script jump sets z_velocity > 0 (`e.z_velocity = 420`).
 //   - Semi-implicit Euler per tick, in a fixed order (body creation order): deterministic.
 //   - The z rule is applied to contacts (pre-solve), continuous collision (pre-continuous) and
-//     Area2D overlaps.
+//     Area2D overlaps. Bodies with a height turn off Box2D's contact recycling: a recycled contact
+//     (bodies that barely moved relative to each other, e.g. a hero pressed against a block) skips
+//     pre-solve, so a hero jumping up along a wall would stay blocked after rising above its top.
 // Planar gravity applies in the `side` view only; topdown/oblique/iso scenes have no planar
 // gravity (y is depth there), and z gravity takes its role.
 #pragma once
@@ -108,6 +110,8 @@ class Physics2D {
   double ground_below(double x, double y, double z, uint32_t ignore = 0);
   // The ground height under a body's center (0 when it has no body).
   double ground_of(world::EntityId e);
+  // A script changed the entity's height: contacts of bodies with a height are never recycled.
+  void height_changed(world::EntityId e);
   // 2.5D: resting on its ground (z at the ground and not moving up). Bodies that never left the
   // ground (z = 0, no height) are always on the ground.
   bool on_ground(world::EntityId e);

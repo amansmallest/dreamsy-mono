@@ -321,3 +321,27 @@ TEST_CASE("2.5D: scene view overrides the manifest; side scenes keep planar grav
   CHECK(r.logs.find("scenes/side.scene.json\tside") != std::string::npos);
   CHECK(r.host->world().view == world::ViewMode::Side);
 }
+
+TEST_CASE("2.5D: a body pressed against a block's side climbs onto it by jumping (no stale recycled contact)") {
+  const char* scene = R"({"format": "0", "root": "world", "entities": {
+    "world": {"type": "Node2D", "children": ["hero", "wall"]},
+    "hero": {"type": "Body2D", "props": {"position": [100, 200], "body": "dynamic", "size": [20, 14], "height": 28, "lock_rotation": true, "friction": 0}},
+    "wall": {"type": "Body2D", "props": {"position": [100, 120], "size": [64, 64], "height": 48}}
+  }})";
+  auto pkg = game25("view = \"oblique\"\n", scene, R"(
+    local hero = entity("hero")
+    local t = 0
+    onTick(function()
+      t += 1
+      hero.velocity = vec2(0, if t < 60 then -150 else -40)  -- walk up the screen into the wall, then ease off
+      if t == 60 then hero.z_velocity = 420 end      -- jump while pressed against it
+      if t == 120 then print("z", hero.z, "ground", hero.groundZ) end
+    end)
+  )");
+  auto h = Host::create(pkg);
+  REQUIRE(h.ok());
+  for (int i = 0; i < 120; ++i) h.value()->step();
+  std::string logs;
+  for (const LogLine& l : h.value()->logs()) logs += l.text + "\n";
+  CHECK(logs == "z\t48\tground\t48\n");  // on top of the wall, not stuck at its foot
+}

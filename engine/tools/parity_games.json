@@ -27,11 +27,15 @@
    },
    {
     "name": "realm",
-    "seconds": 4.0,
+    "seconds": 4.5,
     "taps": [
      {
       "t": 1.2,
       "button": "shadow realm"
+     },
+     {
+      "t": 1.6,
+      "button": "shadow well"
      }
     ]
    },

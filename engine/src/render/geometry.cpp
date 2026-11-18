@@ -202,12 +202,13 @@ struct Builder {
     const bool outline = t.outline.a > 0 && t.outline_size > 0;
     auto outlined = [&](Vec2 offset, Color fill, Color edge) {
       if (outline) {
-        // 8 offset copies approximate a stroke (MSDF text, with real outlines, is later work).
+        // Offset copies around a circle approximate a stroke, as engine-web's UI does with
+        // text-shadows: 8 for thin outlines, 16 from 1 px up (MSDF text, with real outlines, is later work).
         const float d = t.outline_size;
-        const Vec2 dirs[8] = {{-d, 0}, {d, 0}, {0, -d}, {0, d}, {-d * 0.7f, -d * 0.7f}, {d * 0.7f, -d * 0.7f},
-                              {-d * 0.7f, d * 0.7f}, {d * 0.7f, d * 0.7f}};
-        for (const Vec2& dir : dirs) {
-          text_glyphs(t, layout, origin, k, px, {offset.x + dir.x, offset.y + dir.y}, pack_color(edge));
+        const int steps = d <= 1 ? 8 : 16;
+        for (int i = 0; i < steps; i++) {
+          const float a = static_cast<float>(i) / static_cast<float>(steps) * 6.2831853f;
+          text_glyphs(t, layout, origin, k, px, {offset.x + std::cos(a) * d, offset.y + std::sin(a) * d}, pack_color(edge));
         }
       }
       text_glyphs(t, layout, origin, k, px, offset, pack_color(fill));

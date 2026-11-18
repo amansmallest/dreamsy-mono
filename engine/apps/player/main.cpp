@@ -84,7 +84,9 @@ Result<script::KitLookup> load_kits(const pkg::Manifest& m, std::string& kit_sou
 
 struct Options {
   std::string package_dir = DREAMSY_DEMO_PACKAGE;
-  render::ViewMode view = render::ViewMode::Side;
+  // Forces a view mode (dev: --view / #iso / keys 1-4). Unset = the scene's own view (manifest
+  // or scene `view`, DREAMSY.MD §14.5).
+  std::optional<render::ViewMode> view;
   int frames = 0;  // quit after this many frames (0 = run until closed)
   bool smooth = false;  // force smooth mode (linear filtering, no pixel snap) to check it on any package
   bool demo = false;    // renderer test scene instead of running the game
@@ -216,7 +218,7 @@ void init() {
     start = end + 1;
   }
 #endif
-  app.view = app.options.view;
+  app.view = app.options.view.value_or(render::ViewMode::Side);
 
   if (!load(app)) return;
   if (Status s = app.renderer.init(app.style); !s) {
@@ -225,7 +227,8 @@ void init() {
   }
   app.ok = true;
   app.last_ticks = stm_now();
-  if (app.host && app.options.view != render::ViewMode::Side) set_view(app, app.options.view);
+  if (app.host && app.options.view) set_view(app, *app.options.view);
+  if (app.host && !app.options.view) app.view = static_cast<render::ViewMode>(static_cast<int>(app.host->world().view));
   log_info("package \"" + app.package->manifest.name + "\": reference " + std::to_string(app.style.ref_w) + "x" +
            std::to_string(app.style.ref_h) + (app.style.pixel_snap ? ", pixel-art mode" : ", smooth mode"));
 }

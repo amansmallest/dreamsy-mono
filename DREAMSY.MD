@@ -81,6 +81,7 @@ id = "g_01J..."            # platform-assigned
 name = "Tiny Clash"
 dimension = "2d"           # "2d" | "3d"
 orientation = "portrait"   # "portrait" (720×1280) | "landscape" (1280×720); absent = landscape (§11.1)
+view = "oblique"           # 2.5D view (§14.5), 2D games only: "side" | "topdown" | "oblique" | "iso"; absent = "side"
 entry_scene = "scenes/main.scene.json"
 kits = ["rpg"]             # optional engine kits (§12.1); format/src/kits.ts KITS
 
@@ -157,6 +158,17 @@ A preset (`format/src/styles.ts`) drives three things at once:
   `"asset:<id>"`, entity id refs. Unset = catalog default.
 - Scripts attached to an entity run per-entity (`script.entity`). Client/server scripts not
   attached to anything run once at game start. Shared scripts are modules only.
+- **2.5D (E7, 2026-11-17, additive).** Scene files may set a top-level `"view"` (same values as the manifest's) that
+  overrides the manifest `view` for that scene; `view` in a 3D game is an error (`manifest.view_dimension`,
+  `scene.view_dimension`). Props appended to the catalog (after each type's other props, so older prop indices never
+  move): `z` (number, default 0, px above the ground, + up, relative to the parent) and `height` (number ≥ 0, default
+  0, vertical extent in px) on Node2D, Sprite2D, Body2D, Area2D, Text2D, TileMap2D; `z_velocity` (px/s, + up, default 0)
+  and `z_gravity_scale` (default 1) on Body2D; Sprite2D `anchor` (`"center"` | `"bottom"`, default `"center"`: which
+  point of the image sits on `position`). Semantics (§14.5, LUAU_API.md "Height & 2.5D views"): bodies collide only
+  when their z ranges overlap (height 0 = flat = collides with everything); moving bodies fall with z gravity and land
+  on the highest static/kinematic top or raised solid tile under their center; topdown/oblique/iso have no planar
+  gravity; in those views a Sprite2D with `height` > 0 draws as a block, a TileMap2D with `height` > 0 draws each tile
+  as a block (its solid tiles are platforms). Packages without these fields behave exactly as before.
 - Many scenes per game: `entry_scene` starts; scripts switch with `loadScene(path, params)`. A switch tears
   down the scene's entities, attached-script instances and physics; unattached scripts (the "session")
   and loaded modules keep running. The validator errors on literal `loadScene("...")` targets that don't exist.
@@ -833,8 +845,22 @@ Features:
 - Normal-mapped sprite lighting on top of today's Light2D (lights get a height).
 - Later: sprite stacking (layered slices) and billboards.
 
-Format changes (manifest `view`, entity `z`/`height`/`anchor`, iso tilesets, elevation grids) are specified in §3 in the
-2.5D slice (E7). Until then §3 is unchanged.
+Format changes for 2.5D are in §3 (§3.1 manifest `view`, §3.3 scene `view`, entity `z`/`height`/`z_velocity`/
+`z_gravity_scale`, Sprite2D `anchor`), landed in E7 (2026-11-17, minimal slice):
+- Both engines simulate height identically (engine-web through Rapier contact/intersection hooks; conformance:
+  `engine/tests/scenes/z_platforms` in `run_compare.py`). engine-web previews every view flat; the C++ renderer draws
+  them.
+- Ground support uses the mover's **center** (its feet), not its whole footprint: a body stands on a block while its
+  center is over it and steps off a ledge when its center leaves. This also keeps depth sorting a simple key sort.
+- Depth sorting with blocks (`render/sort.h`): blocks (Sprite2D / tiles with `height`) sort by their footprint center;
+  an item standing on raised ground is moved right after the block it stands on, with its shadow. In iso, long sprite
+  blocks are split into square cells so the center key stays correct.
+- Drop shadows fall on the ground under the item (a block's top when over one), not always on the floor.
+- Scripts: `e.onGround`, `e.groundZ` (Body2D, read-only), `camera.view()`, `camera.screenDirToWorld(dir)` (joystick →
+  world direction; rotates in iso); `camera.screenToWorld` / `worldToScreen` and world taps project through the view.
+- Not yet (rest of E7): per-tile elevation grids and stacked tiles inside one TileMap2D (today: one raised map per
+  height level), iso tilesets with art for each face, sort offsets, normal-mapped lighting, parallax, moving
+  platforms carrying riders, kit updates.
 
 ### 14.6 Multiplayer v2 — server-authoritative
 
@@ -909,7 +935,7 @@ Each slice ends with tests passing and is built one at a time (CLAUDE.md).
 | E4 Renderer (2.5D-native) | sokol: batched sprites, atlases, tilemaps, text, UI, camera, particles, lighting; depth sorting per view mode (§14.5), drop shadows; web build | examples look right in a browser; side/topdown/oblique/iso test scenes sort correctly |
 | E5 Input, audio, save, shell | touch/keys/gestures, on-screen controls, audio, save, platform menu, dialogs | feature-demo works on a phone browser |
 | E6 Parity | full host API, all kits, conformance suite green; harness playtests and app WebView switch to the C++ build | §14.8 parity |
-| E7 2.5D content | iso tilemaps with elevation and stacked tiles, normal-mapped lighting, parallax, §3 format fields, kit updates (topdown/rpg/farming get oblique/iso) | an iso and an oblique example game |
+| E7 2.5D content | iso tilemaps with elevation and stacked tiles, normal-mapped lighting, parallax, §3 format fields, kit updates (topdown/rpg/farming get oblique/iso) | an iso and an oblique example game. **Minimal slice landed 2026-11-17:** §3 fields (view, z/height/z_velocity/z_gravity_scale, Sprite2D anchor) in both validators, z physics in both engines, blocks/raised tile maps/shadows in the C++ renderer, script helpers, docs + harness prompt, and a Claude-built oblique showcase game (§14.5) |
 | E8 Netcode v2 | §14.6, `engine/apps/server`, gameserver integration, `LUAU_API.md` replication API | mp-duel and racing versus run authoritative |
 | E9 Native mobile | Expo native module, iOS + Android builds | showcase games run natively on both |
 | E10 Full engine | remaining §14.12 items not landed in E4–E9 | §14.12 quality bars met |

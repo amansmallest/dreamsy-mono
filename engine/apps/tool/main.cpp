@@ -334,10 +334,10 @@ void dump_entities(script::Host& host, int64_t tick, const std::vector<std::stri
 // engine/tests/conformance/ts_run.mts does for engine-web: logs as they happen, dumps, then
 // errors, audio events, save data and game time. --hash adds "hash <tick> <state hash>" per tick.
 //
-// 2.5D (engine-internal until the format gets these fields in slice E7, so engine-web has no
-// equivalent): --view sets every scene's view mode, --height ID=H gives entities a vertical
-// extent, --zjump TICK:ID=VZ sets an entity's z velocity (px/s, up) before that tick. With any of
-// them, dumps add the entity's z.
+// 2.5D test overrides (packages set these themselves since slice E7: manifest/scene `view`,
+// entity `z`/`height`/`z_velocity`): --view forces every scene's view mode, --height ID=H gives
+// entities a vertical extent, --zjump TICK:ID=VZ sets an entity's z velocity (px/s, up) before
+// that tick. With any of them, dumps add the entity's z.
 int cmd_run(int argc, char** argv) {
   if (argc < 3) return usage();
   int64_t ticks = 120, seed = 1, budget = 250, dump_every = 0;

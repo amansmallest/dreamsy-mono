@@ -179,7 +179,7 @@ Engine alone: `pnpm -C engine-web dev` → http://localhost:2005 (game picker). 
 | Taste | `taste/packs/*.md` + `taste/refs/` | 11 house styles from Pinterest refs |
 | Games | `games/showcase/` (fox-quest, fort-raiders, street-racer, summer-ride), `games/examples/` | |
 
-## Kits (engine-web/kits, DREAMSY.MD §12) — all 21 built, documented (KIT.md), schema'd, tested
+## Kits (kits, DREAMSY.MD §12) — all 21 built, documented (KIT.md), schema'd, tested
 - Foundation: core · progression · juice · combat · ai · procgen
 - Genres: rpg · platformer · topdown · tower-defense · tycoon · puzzle · simulator · racing · roguelite · runner · story · deckbuilder · farming · survival · shooter
 - Each has `kit.json` (deps auto-enabled), reads content via `data.read`, a minimal example in `games/examples/kit-*`, headless tests and (most) a balance/pacing sim.

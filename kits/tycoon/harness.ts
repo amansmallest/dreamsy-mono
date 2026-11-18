@@ -5,7 +5,7 @@
  * The kit reads content itself (`Tycoon.new()` → data/tycoon.json + data/{generators,upgrades,achievements,events}/*.json).
  */
 import { Package } from "@dreamsy/format";
-import { Game, MemorySaveHost } from "../../core/index.js";
+import { Game, MemorySaveHost } from "../../engine-web/core/index.js";
 
 // ---------- headless runs ----------
 

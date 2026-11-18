@@ -760,7 +760,7 @@ describe("rpg kit: example end-to-end", () => {
 
 // ---------------------------------------------------------------- content schemas (kits/rpg/schemas)
 // A small JSON Schema subset validator (the keywords the rpg schemas use) — the harness uses a full one.
-const SCHEMAS = resolve(__dirname, "../../kits/rpg/schemas");
+const SCHEMAS = resolve(__dirname, "../../../kits/rpg/schemas");
 const loadSchema = (f: string) => JSON.parse(readFileSync(resolve(SCHEMAS, f), "utf8"));
 function validate(schema: any, value: unknown, root: any, path = "$", errs: string[] = []): string[] {
   if (schema === true || schema === undefined || Object.keys(schema).length === 0) return errs;

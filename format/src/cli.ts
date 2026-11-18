@@ -11,9 +11,9 @@ import { registerKitDependencies } from "./kits.js";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-// Shipped kit dependencies (engine-web/kits/<kit>/kit.json) when run inside the monorepo.
+// Shipped kit dependencies (kits/<kit>/kit.json) when run inside the monorepo.
 try {
-  const kitsDir = fileURLToPath(new URL("../../engine-web/kits/", import.meta.url));
+  const kitsDir = fileURLToPath(new URL("../../kits/", import.meta.url));
   if (existsSync(kitsDir)) {
     const deps: Record<string, string[]> = {};
     for (const k of readdirSync(kitsDir)) {

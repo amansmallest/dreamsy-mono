@@ -8,7 +8,7 @@ import { kitDependencies } from "@dreamsy/engine/core";
 // listing only "rpg" that also requires @kit/core would be flagged.
 registerKitDependencies(kitDependencies());
 
-/** Genre kits shipped with the engine (DREAMSY.MD §12.1): engine-web/kits/<kit>/KIT.md + schemas. */
+/** Genre kits shipped with the engine (DREAMSY.MD §12.1): kits/<kit>/KIT.md + schemas. */
 export interface Kit {
   id: string;
   /** API reference pasted into the builder's prompt. */
@@ -19,7 +19,7 @@ export interface Kit {
   schemas: Record<string, unknown>;
 }
 
-const ROOT = fileURLToPath(new URL("../../engine-web/kits/", import.meta.url));
+const ROOT = fileURLToPath(new URL("../../kits/", import.meta.url));
 
 let cache: Map<string, Kit> | null = null;
 

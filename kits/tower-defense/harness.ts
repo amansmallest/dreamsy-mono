@@ -10,7 +10,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Package } from "@dreamsy/format";
-import { Game, MemorySaveHost } from "../../core/index.js";
+import { Game, MemorySaveHost } from "../../engine-web/core/index.js";
 
 const KITS_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 

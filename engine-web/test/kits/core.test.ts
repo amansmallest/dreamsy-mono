@@ -378,7 +378,7 @@ describe("kit-foundation example", () => {
   it("data files match the kit schemas (top-level keys + required)", () => {
     const schemaFor: Record<string, string> = { items: "core/schemas/item", quests: "core/schemas/quest", dialog: "core/schemas/dialog", achievements: "core/schemas/achievement", skills: "progression/schemas/skill" };
     for (const [kind, sp] of Object.entries(schemaFor)) {
-      const schema = JSON.parse(readFileSync(join(__dirname, `../../kits/${sp}.schema.json`), "utf8"));
+      const schema = JSON.parse(readFileSync(join(__dirname, `../../../kits/${sp}.schema.json`), "utf8"));
       for (const f of readdirSync(join(EX, "data", kind))) {
         const d = JSON.parse(readFileSync(join(EX, "data", kind, f), "utf8"));
         for (const k of Object.keys(d)) expect(Object.keys(schema.properties), `${kind}/${f}: ${k}`).toContain(k);

@@ -1,6 +1,6 @@
 # Generates a C++ source that embeds format/catalog.json and the kit manifests
-# (engine-web/kits/<kit>/kit.json) so the engine needs no data files at runtime.
-#   cmake -DCATALOG=<catalog.json> -DKITS_DIR=<engine-web/kits> -DOUT=<file.cpp> -P embed_data.cmake
+# (kits/<kit>/kit.json) so the engine needs no data files at runtime.
+#   cmake -DCATALOG=<catalog.json> -DKITS_DIR=<kits> -DOUT=<file.cpp> -P embed_data.cmake
 
 function(to_hex_array content out_var)
   string(HEX "${content}" hex)

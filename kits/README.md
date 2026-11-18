@@ -5,7 +5,7 @@ A kit is a tested, versioned Luau library shipped with the engine (DREAMSY.MD §
 The shipped list is `KITS` in `format/src/kits.ts` (the validator rejects anything else).
 
 ```
-engine-web/kits/<kit>/
+kits/<kit>/
   init.luau            the API: require("@kit/<kit>") returns what this returns
   <module>.luau        submodules: require("@kit/<kit>/<module>"); a folder with init.luau works too
                        (`battle/init.luau` = "@kit/rpg/battle"; nested: "@kit/rpg/battle/moves")

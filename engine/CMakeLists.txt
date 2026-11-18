@@ -94,9 +94,9 @@ dreamsy_target_defaults(dreamsy_dev)
 target_link_libraries(dreamsy_dev PUBLIC dreamsy_base Luau.Compiler Luau.VM box2d::box2d)
 
 # Packages (§3): Dreamsy packs, directories, the catalog, the validator.
-# format/catalog.json and engine-web/kits/*/kit.json are embedded at build time.
+# format/catalog.json and kits/*/kit.json are embedded at build time.
 set(DREAMSY_CATALOG ${CMAKE_CURRENT_SOURCE_DIR}/../format/catalog.json)
-set(DREAMSY_KITS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../engine-web/kits)
+set(DREAMSY_KITS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../kits)
 file(GLOB DREAMSY_KIT_MANIFESTS CONFIGURE_DEPENDS ${DREAMSY_KITS_DIR}/*/kit.json)
 set(DREAMSY_EMBEDDED_CPP ${CMAKE_BINARY_DIR}/generated/embedded.cpp)
 add_custom_command(
@@ -136,7 +136,7 @@ endfunction()
 target_compile_options(Luau.VM PRIVATE -fno-builtin)
 
 # Scripting (E2, §14.13). The prelude is extracted from engine-web/core/prelude.ts and the kit
-# sources from engine-web/kits at build time (engine-web stays the source of truth until parity).
+# sources from kits at build time (engine-web stays the source of truth until parity).
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 set(DREAMSY_PRELUDE_TS ${CMAKE_CURRENT_SOURCE_DIR}/../engine-web/core/prelude.ts)
 file(GLOB_RECURSE DREAMSY_KIT_SOURCES CONFIGURE_DEPENDS ${DREAMSY_KITS_DIR}/*.luau)

@@ -11,7 +11,7 @@ Speeds are tiles/s, ranges and radii are tiles. The View converts with the map's
 
 ## Content (data/…)
 
-Schemas: `engine-web/kits/tower-defense/schemas/{enemy,tower,waves,level,campaign}.schema.json`. Ids = file names (lowercase_snake).
+Schemas: `kits/tower-defense/schemas/{enemy,tower,waves,level,campaign}.schema.json`. Ids = file names (lowercase_snake).
 
 `TD.content()` reads these files with the engine data reader (`data.list/data.read`; cached per game) and resolves
 `"file:"` grids. `TD.content("data/td")` reads another root; `TD.content(tbl)` normalizes a table (tests). No generated modules.

@@ -590,7 +590,7 @@ Target: every generated game offers **1–2 hours of play**. Opus designs and fi
 not re-implement core systems per game.
 
 ### 12.1 Kits
-- A kit is a tested, versioned Luau library shipped with the engine: `engine-web/kits/<kit>/`
+- A kit is a tested, versioned Luau library shipped with the engine: `kits/<kit>/`
   - `init.luau` (+ submodules) — the API, required by games as `require("@kit/<kit>")`
     (submodules `require("@kit/<kit>/battle")`). Read-only to games; sandboxed like game scripts.
   - `KIT.md` — the API reference the harness injects into Opus's prompt when the game uses the kit
@@ -750,7 +750,7 @@ Why:
 - **Determinism.** Box2D v3 is deterministic across platforms; Rapier's compat build is not guaranteed to be.
 
 What does **not** change: the game package format (§3) and the Luau API (`format/LUAU_API.md`) are the contract.
-Kits (`engine-web/kits`, ~41k lines of Luau) and generated games carry over unchanged. The harness keeps generating the
+Kits (`kits`, ~41k lines of Luau) and generated games carry over unchanged. The harness keeps generating the
 same packages.
 
 ### 14.1 Stack

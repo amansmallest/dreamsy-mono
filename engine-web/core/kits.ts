@@ -7,10 +7,10 @@ let sources: Record<string, string> | null = null;
 
 function fromGlob(): Record<string, string> | null {
   try {
-    const mods = import.meta.glob("../kits/**/*.luau", { query: "?raw", import: "default", eager: true }) as Record<string, string>;
-    const manifests = import.meta.glob("../kits/*/kit.json", { query: "?raw", import: "default", eager: true }) as Record<string, string>;
+    const mods = import.meta.glob("../../kits/**/*.luau", { query: "?raw", import: "default", eager: true }) as Record<string, string>;
+    const manifests = import.meta.glob("../../kits/*/kit.json", { query: "?raw", import: "default", eager: true }) as Record<string, string>;
     const out: Record<string, string> = {};
-    for (const [k, v] of Object.entries({ ...mods, ...manifests })) out[k.replace(/^\.\.\//, "")] = v;
+    for (const [k, v] of Object.entries({ ...mods, ...manifests })) out[k.replace(/^(\.\.\/)+/, "")] = v;
     return out;
   } catch {
     return null; // not running under Vite
@@ -24,7 +24,7 @@ async function fromDisk(): Promise<Record<string, string>> {
     const fs = await import(/* @vite-ignore */ fsName) as typeof import("node:fs");
     const path = await import(/* @vite-ignore */ pathName) as typeof import("node:path");
     const url = await import(/* @vite-ignore */ urlName) as typeof import("node:url");
-    const root = path.resolve(path.dirname(url.fileURLToPath(import.meta.url)), "../kits");
+    const root = path.resolve(path.dirname(url.fileURLToPath(import.meta.url)), "../../kits");
     if (!fs.existsSync(root)) return out;
     const walk = (dir: string) => {
       for (const e of fs.readdirSync(dir, { withFileTypes: true })) {

@@ -382,7 +382,7 @@ describe("topdown kit: example game (games/examples/kit-topdown)", () => {
   it("kit.setup() reads data/*.json (no Luau mirror); JSON has the kit schemas' required fields", async () => {
     const pkg = await Package.fromDir(DIR);
     expect(pkg.has("scripts/shared/content.luau")).toBe(false);
-    const schema = (n: string) => JSON.parse(readFileSync(resolve(__dirname, `../../kits/topdown/schemas/${n}.json`), "utf8"));
+    const schema = (n: string) => JSON.parse(readFileSync(resolve(__dirname, `../../../kits/topdown/schemas/${n}.json`), "utf8"));
     const ids: string[] = [];
     for (const [dir, s] of [["items", "item"], ["enemies", "enemy"], ["bosses", "boss"], ["npcs", "npc"]] as const) {
       for (const p of pkg.paths(`data/${dir}/`)) {

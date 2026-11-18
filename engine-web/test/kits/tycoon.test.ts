@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { Package } from "@dreamsy/format";
 import { beforeAll, describe, expect, it } from "vitest";
 import { Game, MemorySaveHost } from "../../core/index.js";
-import { balance, runLuau } from "../../kits/tycoon/harness.js";
+import { balance, runLuau } from "../../../kits/tycoon/harness.js";
 
 const EXAMPLE = resolve(__dirname, "../../../games/examples/kit-tycoon");
 
@@ -421,7 +421,7 @@ describe("tycoon: example package (Crumbtown Bakery)", () => {
 
   it("schemas exist for every content kind", () => {
     for (const s of ["tycoon", "generator", "upgrade", "achievement", "event"]) {
-      const j = JSON.parse(readFileSync(resolve(__dirname, `../../kits/tycoon/schemas/${s}.json`), "utf8"));
+      const j = JSON.parse(readFileSync(resolve(__dirname, `../../../kits/tycoon/schemas/${s}.json`), "utf8"));
       expect(j.$schema).toMatch(/json-schema/);
     }
   });

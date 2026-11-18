@@ -33,7 +33,7 @@ std::string errors_of(const LoadResult& r) {
 
 }  // namespace
 
-TEST_CASE("catalog: embedded from format/catalog.json and engine-web/kits") {
+TEST_CASE("catalog: embedded from format/catalog.json and kits") {
   const Catalog& c = Catalog::get();
   const EntityType* sprite = c.type("Sprite2D");
   REQUIRE(sprite);

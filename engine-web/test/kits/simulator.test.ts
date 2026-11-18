@@ -204,7 +204,7 @@ describe("simulator kit: schemas", () => {
   it("every example data file has the schema's required keys and no unknown keys", () => {
     const areas: Record<string, string> = { zones: "zone", tools: "tool", backpacks: "backpack", pets: "pet", eggs: "egg" };
     const check = (file: string, schemaName: string) => {
-      const sch = JSON.parse(readFileSync(resolve(__dirname, `../../kits/simulator/schemas/${schemaName}.json`), "utf8"));
+      const sch = JSON.parse(readFileSync(resolve(__dirname, `../../../kits/simulator/schemas/${schemaName}.json`), "utf8"));
       expect(sch.$schema).toMatch(/json-schema/);
       const obj = JSON.parse(readFileSync(file, "utf8"));
       for (const k of sch.required ?? []) expect(obj, `${file} needs ${k}`).toHaveProperty(k);

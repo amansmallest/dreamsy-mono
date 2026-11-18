@@ -593,7 +593,7 @@ describe("platformer kit: example game (games/examples/kit-platformer)", () => {
     const enemies = pkg.paths("data/enemies/").map((p) => JSON.parse(pkg.text(p)!));
     const bosses = pkg.paths("data/bosses/").map((p) => JSON.parse(pkg.text(p)!));
     const world = JSON.parse(pkg.text("data/world.json")!);
-    const schema = (n: string) => JSON.parse(readFileSync(resolve(__dirname, `../../kits/platformer/schemas/${n}.json`), "utf8"));
+    const schema = (n: string) => JSON.parse(readFileSync(resolve(__dirname, `../../../kits/platformer/schemas/${n}.json`), "utf8"));
     for (const e of enemies) for (const k of schema("enemy").required) expect(e, `${e.id}.${k}`).toHaveProperty(k);
     for (const b of bosses) for (const k of schema("boss").required) expect(b, `${b.id}.${k}`).toHaveProperty(k);
     for (const k of schema("world").required) expect(world).toHaveProperty(k);

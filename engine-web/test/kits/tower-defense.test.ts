@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 import { Package } from "@dreamsy/format";
 import { beforeAll, describe, expect, it } from "vitest";
 import { Game, MemorySaveHost } from "../../core/index.js";
-import { balance, runLuau, validateContent } from "../../kits/tower-defense/harness.js";
+import { balance, runLuau, validateContent } from "../../../kits/tower-defense/harness.js";
 
 const EXAMPLE = resolve(__dirname, "../../../games/examples/kit-tower-defense");
 

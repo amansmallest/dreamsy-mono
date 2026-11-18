@@ -238,7 +238,7 @@ async function examplePkg(extra: Record<string, string> = {}) {
 describe("racing kit: example (Sprout Speedway)", () => {
   it("content files match the kit schemas (keys + required)", () => {
     for (const [kind, sc] of [["tracks", "track"], ["cars", "car"], ["cups", "cup"]] as const) {
-      const schema = JSON.parse(readFileSync(join(__dirname, `../../kits/racing/schemas/${sc}.schema.json`), "utf8"));
+      const schema = JSON.parse(readFileSync(join(__dirname, `../../../kits/racing/schemas/${sc}.schema.json`), "utf8"));
       for (const f of readdirSync(join(EXAMPLE, "data", kind))) {
         const d = JSON.parse(readFileSync(join(EXAMPLE, "data", kind, f), "utf8"));
         for (const k of Object.keys(d)) expect(Object.keys(schema.properties), `${kind}/${f}: ${k}`).toContain(k);

@@ -9,7 +9,7 @@ import { expandKits } from "@dreamsy/format";
 import { kits } from "./kits.js";
 
 /**
- * Machine-check kit content against the kits' JSON Schemas (engine-web/kits/<kit>/schemas/*.json).
+ * Machine-check kit content against the kits' JSON Schemas (kits/<kit>/schemas/*.json).
  * Schemas name the files they describe in `title`, e.g. "data/creatures/<id>.json"; that maps package
  * paths to schemas. Files with no matching schema are not checked (returns null).
  */

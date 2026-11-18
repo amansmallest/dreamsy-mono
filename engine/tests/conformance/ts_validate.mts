@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import { Package, registerKitDependencies, validatePackage } from "../../../format/src/index.ts";
 
 // Same kit dependency registration as format/src/cli.ts.
-const kitsDir = fileURLToPath(new URL("../../../engine-web/kits/", import.meta.url));
+const kitsDir = fileURLToPath(new URL("../../../kits/", import.meta.url));
 const deps: Record<string, string[]> = {};
 for (const k of readdirSync(kitsDir)) {
   const f = `${kitsDir}${k}/kit.json`;

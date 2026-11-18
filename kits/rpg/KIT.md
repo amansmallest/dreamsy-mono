@@ -39,7 +39,7 @@ A map may set `"scene"` to use its own (empty or decorated) scene. Don't build o
 Controls (platform-mapped): move = joystick/arrows; **A** (`jump`) = talk/interact/confirm; hold **B**
 (`action`) = run; **C** (`action2`) or the MENU button = menu. Battles and menus are tap-first.
 
-## Content files (JSON Schemas in `engine-web/kits/rpg/schemas/`)
+## Content files (JSON Schemas in `kits/rpg/schemas/`)
 
 ids = file names, `lowercase_snake`. Stats: `hp atk def mag res spd`. Move categories: `physical` (atk vs def),
 `magic` (mag vs res), `status`. Built-in statuses: `burn` (1/16 HP per turn, halves physical damage),

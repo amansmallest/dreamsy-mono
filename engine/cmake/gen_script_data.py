@@ -7,7 +7,7 @@ into tools and tests; players load kits as separate packs, see cmake/gen_kit_pac
 The prelude's source of truth stays engine-web/core/prelude.ts (the shipping engine) until the C++ engine
 reaches parity (DREAMSY.MD §14.8): we take the `PRELUDE` template string, substitute `${OP.NAME}` with the
 numbers from the `OP` object and decode the JavaScript template escapes. Kits are every
-engine-web/kits/<kit>/**/*.luau (not `_template`), keyed "kits/<kit>/<path>.luau" like engine-web/core/kits.ts.
+kits/<kit>/**/*.luau (not `_template`), keyed "kits/<kit>/<path>.luau" like engine-web/core/kits.ts.
 """
 import re
 import sys

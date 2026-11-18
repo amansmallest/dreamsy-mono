@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 
+#include "render/style.h"
 #include "world/value.h"
 
 namespace dreamsy::play {
@@ -47,7 +48,8 @@ float lerp(double a, double b, double t) { return static_cast<float>(a + (b - a)
 class Builder {
  public:
   Builder(script::Host& host, render::TextureStore& textures, render::DrawList& out)
-      : world_(host.world()), textures_(textures), out_(out) {}
+      : world_(host.world()), textures_(textures), pixel_(render::style_from_manifest(host.package().manifest).pixel_snap),
+        out_(out) {}
 
   void visit(EntityId id, int z_acc) {
     Entity* e = world_.get(id);
@@ -182,18 +184,30 @@ class Builder {
     double s0 = world_.num(e, "start_size"), s1 = world_.num(e, "end_size");
     std::string tex = world_.str(e, "texture");
     render::ImageId image = !tex.empty() ? textures_.find_asset(tex)
-                            : world_.str(e, "shape") == "circle" ? render::TextureStore::kShadow
+                            : world_.str(e, "shape") == "circle" ? render::TextureStore::kDisc
                                                                  : render::ImageId{};
     render::BlendMode mode = blend(e);
     const bool glow = emissive(e);
+    // engine-web ParticlesView blends the start and end colors in linear light, and in pixel-art
+    // styles snaps particles to whole pixels.
+    auto to_linear = [](double x) { return x <= 0.04045 ? x / 12.92 : std::pow((x + 0.055) / 1.055, 2.4); };
+    auto to_srgb = [](double x) { return x <= 0.0031308 ? x * 12.92 : 1.055 * std::pow(x, 1 / 2.4) - 0.055; };
+    auto mix = [&](float a, float b, double t) {
+      return static_cast<float>(to_srgb(std::clamp(to_linear(a) + (to_linear(b) - to_linear(a)) * t, 0.0, 1.0)));
+    };
     for (int i = 0; i < em.count(); ++i) {
       double t = em.life(i) > 0 ? std::clamp(static_cast<double>(em.age(i)) / em.life(i), 0.0, 1.0) : 1.0;
       render::SpriteCmd s;  // particles live in world space (engine-web ParticlesView)
       s.image = image;
       s.position = {em.x(i), em.y(i)};
       float size = lerp(s0, s1, t);
+      if (pixel_) {
+        s.position = {std::round(s.position.x), std::round(s.position.y)};
+        size = std::max(1.0f, std::round(size));
+      }
       s.size = {size, size};
-      s.tint = {lerp(c0.r, c1.r, t), lerp(c0.g, c1.g, t), lerp(c0.b, c1.b, t), lerp(c0.a, c1.a, t)};
+      s.tint = {mix(c0.r, c1.r, t), mix(c0.g, c1.g, t), mix(c0.b, c1.b, t), lerp(c0.a, c1.a, t)};
+      if (s.tint.a <= 0.003f) continue;
       s.blend = mode;
       s.emissive = glow;
       s.sort = sort(z);
@@ -203,6 +217,7 @@ class Builder {
 
   world::World& world_;
   render::TextureStore& textures_;
+  bool pixel_ = false;  // pixel-art style (manifest)
   render::DrawList& out_;
 };
 

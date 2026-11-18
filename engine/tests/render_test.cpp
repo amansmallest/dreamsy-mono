@@ -381,6 +381,20 @@ TEST_CASE("image: SVG <text> is drawn with the bundled fonts") {
   CHECK(red > 300);  // two bold glyphs, 80 px tall
 }
 
+TEST_CASE("image: a bounding-box radial gradient on a wide rect is an ellipse, like in a browser") {
+  auto svg = Svg::parse(R"svg(<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 16"><defs>
+    <radialGradient id="n"><stop offset="0" stop-color="#ff0000"/><stop offset="0.99" stop-color="#ff0000"/>
+    <stop offset="1" stop-color="#ff0000" stop-opacity="0"/></radialGradient></defs>
+    <rect width="64" height="16" fill="url(#n)"/></svg>)svg");
+  REQUIRE(svg.ok());
+  auto img = svg.value().rasterize(64, 16);
+  REQUIRE(img.ok());
+  auto alpha = [&](int x, int y) { return img.value().pixels[(static_cast<size_t>(y) * 64 + x) * 4 + 3]; };
+  CHECK(alpha(32, 8) == 255);
+  CHECK(alpha(4, 8) == 255);  // 28 px from the center: inside the 32 x 8 ellipse (a circle would end at ~23 px)
+  CHECK(alpha(32, 0) < 128);  // the top edge: outside the ellipse
+}
+
 TEST_CASE("image: every SVG in games/ parses and draws something") {
   int count = 0, with_text = 0;
   std::string failures;

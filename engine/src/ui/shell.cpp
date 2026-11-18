@@ -23,7 +23,9 @@ enum Id : int {
 constexpr float kTouchSizes[] = {0.8f, 1.0f, 1.25f};  // S M L (engine-web)
 constexpr int kLayer = 5;                             // above the overlay's layers (overlay.h)
 
-// CSS `line-height: normal` for the system fonts engine-web uses.
+// Line heights: titles, labels and table text inherit the page's `line-height: 1.4`; buttons and
+// tabs set a `font` shorthand, which means `line-height: normal` (about 1.2 for the system fonts).
+constexpr double kTextLineHeight = 1.4;
 constexpr double kLineHeight = 1.2;
 
 // Builds the item list top to bottom inside the panel's content box.
@@ -107,7 +109,7 @@ ShellLayout PauseShell::layout(const OverlayContext& ctx, const ShellData& data)
     const double size = (pixel ? 20 : 26) * k;
     ShellItem it;
     it.kind = Kind::Title;
-    it.rect = {col.x, col.next(size * kLineHeight), col.w, size * kLineHeight};
+    it.rect = {col.x, col.next(size * kTextLineHeight), col.w, size * kTextLineHeight};
     col.y += 8 * k;  // margin-bottom 8
     it.text = label(text);
     it.size = static_cast<float>(size);
@@ -116,7 +118,7 @@ ShellLayout PauseShell::layout(const OverlayContext& ctx, const ShellData& data)
   };
   auto button = [&](const std::string& text, int id, bool primary = false) {
     const double size = (pixel ? 15 : 18) * k;
-    const double h = size * kLineHeight + 26 * k;  // padding 13 16
+    const double h = size * (pixel ? kLineHeight : 1.17) + 26 * k;  // padding 13 16
     ShellItem it;
     it.kind = Kind::Button;
     it.rect = {col.x, col.next(h), col.w, h};
@@ -129,7 +131,7 @@ ShellLayout PauseShell::layout(const OverlayContext& ctx, const ShellData& data)
   };
   // A settings row: label left, a control of `cw` x `ch` points right (padding 4 2, 15px bold).
   auto row = [&](Kind kind, const std::string& text, int id, double cw, double ch) -> ShellItem& {
-    const double h = std::max(ch, 15 * kLineHeight) * k + 8 * k;
+    const double h = std::max(ch, 15 * kTextLineHeight) * k + 8 * k;
     ShellItem it;
     it.kind = kind;
     it.rect = {col.x, col.next(h), col.w, h};
@@ -206,7 +208,7 @@ ShellLayout PauseShell::layout(const OverlayContext& ctx, const ShellData& data)
       for (const Row& r : rows) first = std::max(first, width_of(r.action, 14));
       const double rest = std::max(0.0, (col.w - first - 24 * k) / 2);
       const double xs[3] = {col.x, col.x + first + 12 * k, col.x + first + 12 * k + rest + 12 * k};
-      const double header_h = 12 * kLineHeight * k, row_h = 14 * kLineHeight * k;
+      const double header_h = 12 * kTextLineHeight * k, row_h = 14 * kTextLineHeight * k;
       const double table_h = header_h + static_cast<double>(rows.size()) * (row_h + 8 * k);
       double y = col.next(table_h + 12 * k) + 4 * k;  // margin 4 top, 8 bottom
       text_item(xs[1], y, rest, header_h, "KEYBOARD", 12, render::TextAlign::Left, 0.6f);
@@ -259,7 +261,7 @@ ShellLayout PauseShell::layout(const OverlayContext& ctx, const ShellData& data)
           }
         }
       } else {
-        const double h = 13 * kLineHeight * k;
+        const double h = 13 * kTextLineHeight * k;
         col.y -= 6 * k;  // margin-top -6
         text_item(col.x, col.next(h), col.w, h, board_label(board), 13, render::TextAlign::Center, 0.7f);
       }
@@ -272,7 +274,7 @@ ShellLayout PauseShell::layout(const OverlayContext& ctx, const ShellData& data)
         return a.ascending ? a.value < b.value : a.value > b.value;
       });
       if (runs.size() > 10) runs.resize(10);
-      const double row_h = 15 * kLineHeight * k;
+      const double row_h = 15 * kTextLineHeight * k;
       if (runs.empty()) {
         const double top = col.next(60 * k);
         text_item(col.x, top + 8 * k, col.w, row_h, "No runs yet. Be the first!", 15, render::TextAlign::Center, 0.7f);

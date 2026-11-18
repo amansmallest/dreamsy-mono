@@ -72,45 +72,6 @@ Result<Image> decode_raster(std::span<const uint8_t> bytes, ImageFormat format) 
 
 void Svg::Deleter::operator()(NSVGimage* image) const { nsvgDelete(image); }
 
-std::string fix_bbox_gradients(std::string_view svg) {
-  std::string out;
-  out.reserve(svg.size() + 64);
-  size_t pos = 0;
-  while (true) {
-    // The next <linearGradient or <radialGradient start tag.
-    const size_t lin = svg.find("<linearGradient", pos), rad = svg.find("<radialGradient", pos);
-    const size_t start = std::min(lin, rad);
-    if (start == std::string_view::npos) break;
-    const size_t end = svg.find('>', start);
-    if (end == std::string_view::npos) break;
-    out.append(svg.substr(pos, start - pos));
-    std::string tag(svg.substr(start, end - start));
-    if (tag.find("userSpaceOnUse") == std::string::npos) {
-      // Each coordinate attribute: name="number" (no unit, no %) -> name="number*100%".
-      for (const char* name : {"x1", "y1", "x2", "y2", "cx", "cy", "r", "fx", "fy"}) {
-        const std::string key = std::string(" ") + name + "=";
-        const size_t at = tag.find(key);
-        if (at == std::string::npos) continue;
-        const size_t q = at + key.size();
-        if (q >= tag.size() || (tag[q] != '"' && tag[q] != '\'')) continue;
-        const size_t close = tag.find(tag[q], q + 1);
-        if (close == std::string::npos) continue;
-        const std::string value = tag.substr(q + 1, close - q - 1);
-        char* rest = nullptr;
-        const double v = std::strtod(value.c_str(), &rest);
-        if (value.empty() || rest == value.c_str() || *rest != '\0') continue;  // has a unit or %
-        char buf[32];
-        std::snprintf(buf, sizeof buf, "%g%%", v * 100);
-        tag.replace(q + 1, close - q - 1, buf);
-      }
-    }
-    out.append(tag);
-    pos = end;
-  }
-  out.append(svg.substr(pos));
-  return out;
-}
-
 namespace {
 
 // The value of attribute `name` in a start tag (`tag` = "<use href=... x=...>"), or nullopt.
@@ -256,7 +217,93 @@ void draw_svg_text(Image& img, const Svg::Text& t, float s, float tx, float ty) 
   }
 }
 
+// The box of the only kind of shape that uses gradient `id`: every url(#id) is on a <rect> with
+// the same plain-number x, y, width, height. nullopt otherwise.
+struct Box {
+  double x = 0, y = 0, w = 0, h = 0;
+};
+std::optional<Box> sole_rect_user(std::string_view svg, const std::string& id) {
+  if (id.empty()) return std::nullopt;
+  std::optional<Box> box;
+  const std::string ref = "url(#" + id + ")";
+  for (size_t at = svg.find(ref); at != std::string_view::npos; at = svg.find(ref, at + 1)) {
+    const size_t start = svg.rfind('<', at);
+    if (start == std::string_view::npos || svg.substr(start, 6) != "<rect ") return std::nullopt;
+    const std::string_view tag = svg.substr(start, svg.find('>', start) - start);
+    Box b;
+    double* fields[4] = {&b.x, &b.y, &b.w, &b.h};
+    const char* names[4] = {"x", "y", "width", "height"};
+    for (int i = 0; i < 4; i++) {
+      const std::string v = tag_attr(tag, names[i]).value_or(i < 2 ? "0" : "");
+      char* rest = nullptr;
+      *fields[i] = std::strtod(v.c_str(), &rest);
+      if (v.empty() || *rest != '\0') return std::nullopt;  // missing, or with a unit / %
+    }
+    if (box && (box->x != b.x || box->y != b.y || box->w != b.w || box->h != b.h)) return std::nullopt;
+    box = b;
+  }
+  return box && box->w > 0 && box->h > 0 ? box : std::nullopt;
+}
+
 }  // namespace
+
+std::string fix_bbox_gradients(std::string_view svg) {
+  std::string out;
+  out.reserve(svg.size() + 64);
+  size_t pos = 0;
+  while (true) {
+    // The next <linearGradient or <radialGradient start tag.
+    const size_t lin = svg.find("<linearGradient", pos), rad = svg.find("<radialGradient", pos);
+    const size_t start = std::min(lin, rad);
+    if (start == std::string_view::npos) break;
+    const size_t end = svg.find('>', start);
+    if (end == std::string_view::npos) break;
+    out.append(svg.substr(pos, start - pos));
+    std::string tag(svg.substr(start, end - start));
+    if (start == rad && tag.find("userSpaceOnUse") == std::string::npos) {
+      // A browser stretches a bounding-box radial gradient with the box (an ellipse on a wide
+      // rect); nanosvg would make a circle. When every shape filled with it is the same <rect>,
+      // the box is known: use the unit-square coordinates in user space with the box as a matrix.
+      if (auto box = sole_rect_user(svg, tag_attr(tag, "id").value_or(""))) {
+        std::string units = " gradientUnits=\"userSpaceOnUse\"";
+        for (const char* name : {"cx", "cy", "r"}) {
+          if (!tag_attr(tag, name)) units += std::string(" ") + name + "=\"0.5\"";  // the bbox defaults
+        }
+        char m[96];
+        std::snprintf(m, sizeof m, " gradientTransform=\"matrix(%g 0 0 %g %g %g)\"", box->w, box->h, box->x, box->y);
+        tag += units + m;
+        if (tag.size() > 1 && tag[tag.size() - 1 - std::strlen(m) - units.size()] == '/') {
+          // keep a self-closing tag self-closing
+          tag.erase(tag.size() - 1 - std::strlen(m) - units.size(), 1);
+          tag += "/";
+        }
+      }
+    }
+    if (tag.find("userSpaceOnUse") == std::string::npos) {
+      // Each coordinate attribute: name="number" (no unit, no %) -> name="number*100%".
+      for (const char* name : {"x1", "y1", "x2", "y2", "cx", "cy", "r", "fx", "fy"}) {
+        const std::string key = std::string(" ") + name + "=";
+        const size_t at = tag.find(key);
+        if (at == std::string::npos) continue;
+        const size_t q = at + key.size();
+        if (q >= tag.size() || (tag[q] != '"' && tag[q] != '\'')) continue;
+        const size_t close = tag.find(tag[q], q + 1);
+        if (close == std::string::npos) continue;
+        const std::string value = tag.substr(q + 1, close - q - 1);
+        char* rest = nullptr;
+        const double v = std::strtod(value.c_str(), &rest);
+        if (value.empty() || rest == value.c_str() || *rest != '\0') continue;  // has a unit or %
+        char buf[32];
+        std::snprintf(buf, sizeof buf, "%g%%", v * 100);
+        tag.replace(q + 1, close - q - 1, buf);
+      }
+    }
+    out.append(tag);
+    pos = end;
+  }
+  out.append(svg.substr(pos));
+  return out;
+}
 
 std::string expand_svg_uses(std::string_view svg) {
   std::string cur(svg);

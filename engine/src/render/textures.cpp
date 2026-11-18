@@ -18,8 +18,9 @@ Image solid_white(int size) {
   return img;
 }
 
-// A white disc whose alpha falls off smoothly towards the edge (the drop-shadow blob).
-Image soft_disc(int size) {
+// A white disc whose alpha falls off towards the edge over `rim` of the radius: 0.35 is the soft
+// drop-shadow blob; 1/12 is engine-web's particle circle (alpha = (0.5 - r) * 24 in uv units).
+Image soft_disc(int size, float rim) {
   Image img;
   img.width = size;
   img.height = size;
@@ -29,7 +30,7 @@ Image soft_disc(int size) {
     for (int x = 0; x < size; x++) {
       const float dx = (static_cast<float>(x) + 0.5f - r) / r, dy = (static_cast<float>(y) + 0.5f - r) / r;
       const float d = std::sqrt(dx * dx + dy * dy);  // 0 center .. 1 edge
-      const float a = std::clamp((1.0f - d) / 0.35f, 0.0f, 1.0f);  // solid core, soft 35% rim
+      const float a = std::clamp((1.0f - d) / rim, 0.0f, 1.0f);  // solid core, soft rim
       uint8_t* p = img.pixels.data() + (static_cast<size_t>(y) * size + x) * 4;
       p[0] = p[1] = p[2] = 255;
       p[3] = static_cast<uint8_t>(std::lround(a * 255));
@@ -42,11 +43,13 @@ Image soft_disc(int size) {
 
 TextureStore::TextureStore(const pkg::Package* package, Atlas& atlas, bool pixel_art)
     : package_(package), atlas_(atlas), pixel_art_(pixel_art) {
-  // Ids 1 and 2 are the built-ins (kWhite, kShadow). They are tiny and can't fail to pack.
+  // Ids 1 to 3 are the built-ins (kWhite, kShadow, kDisc). They are tiny and can't fail to pack.
   auto white = add_image("<white>", solid_white(4));
-  auto shadow = add_image("<shadow>", soft_disc(64));
+  auto shadow = add_image("<shadow>", soft_disc(64, 0.35f));
+  auto disc = add_image("<disc>", soft_disc(64, 1.0f / 12));
   DREAMSY_CHECK(white.ok() && white.value() == kWhite, "built-in white image");
   DREAMSY_CHECK(shadow.ok() && shadow.value() == kShadow, "built-in shadow image");
+  DREAMSY_CHECK(disc.ok() && disc.value() == kDisc, "built-in disc image");
 }
 
 int TextureStore::svg_raster_bucket(float screen_px) {

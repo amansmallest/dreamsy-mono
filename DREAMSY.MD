@@ -924,8 +924,8 @@ has `z` and `height`, and depth sorting follows the scene's view mode. E7 adds t
 filled by the world; `z_index` is a sub-layer under §14.5's depth keys (layer, z_index, then y / x+y / z);
 alpha and additive blending share batches via premultiplied alpha; pixel-art styles render into a
 reference-size target with nearest upscaling; shaders are hand-written MSL + GLSL ES 3.0 until custom
-materials need sokol-shdc; bundled fonts are Press Start 2P, Nunito, Inter, Source Serif 4 (OFL; Latin-1
-subsets); WebP is deferred (clear error) because no package uses it and libwebp costs ~100 KB.
+materials need sokol-shdc; bundled fonts are Press Start 2P (E6: DejaVu Sans Mono), Nunito, Inter, Source
+Serif 4 (OFL; Latin-1 subsets); WebP is deferred (clear error) because no package uses it and libwebp costs ~100 KB.
 
 **E5 input + platform UI decisions (2026-11-17):** script-visible input follows engine-web exactly
 (`engine/src/input/input_state.h`: pressed for the one tick after an edge, live held, pointer visible one tick
@@ -933,11 +933,21 @@ after release, swipes ≥ 40 px within 0.6 s with px/s velocity, everything hidd
 open, `recentlyRead` = 45 ticks). The platform UI is drawn by the engine into the draw list, not as HTML:
 UI entities, toasts, dialogs, on-screen controls and the pause button/menu share one layout module
 (`engine/src/ui/layout.h`) for drawing and hit testing. On-screen controls keep engine-web's sizes in CSS px
-(points), converted to reference px per window, but sit inside the letterboxed game rect (engine-web places
-them in the container). The renderer has no scissor yet, so scroll lists clip rects/images exactly and drop
-text lines outside the clip. Characters outside the Latin-1 font subsets (▶, ▼) are replaced by » and a
-drawn marker. Headless `tap_screen` keeps engine-web's `uiHit` rules (global z_index, no safe area); device
-taps use the drawn stacking order.
+(points), converted to reference px per window (E6: placed in the whole window, see below). Headless
+`tap_screen` keeps engine-web's `uiHit` rules (global z_index, no safe area); device taps use the drawn
+stacking order.
+
+**E6 visual parity decisions (2026-11-17):** `engine/tools/parity.mts` screenshots every game in both engines
+at the reference size and the same game time (manual stepping, `?manual=1` + `window.__dreamsy.step`) with
+the same scripted input and scores the difference; that is the parity check for looks. The pixel theme font is
+DejaVu Sans Mono Bold, not Press Start 2P: engine-web's pixel stack names fonts no device has, so every game
+was laid out with the system monospace (0.6 em per character) and Press Start 2P (1 em) overflowed panels. A
+DejaVu Sans Bold symbol subset is the fallback for characters the bundled fonts lack (▶ ▼ ★ ♥ → …). SVGs are
+pre-processed before nanosvg (unitless bounding-box gradients, `<use>`, rect `<pattern>` fills) and `<text>` is
+drawn with the bundled fonts. The renderer has per-batch clip rects (scissor), Lighting2D (a multiply pass after
+the world, emissive items after it) and a UI pass over the whole window, so the pause button, pause menu and
+touch controls sit in the window like engine-web's container. The pause menu is engine-web's full shell
+(Settings, Controls, local Leaderboard, Quit); settings persist under engine-web's localStorage key on the web.
 
 ### 14.11 Open questions
 

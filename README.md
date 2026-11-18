@@ -17,14 +17,15 @@ flowchart LR
   harness -- "headless playtests" --> engine
 ```
 
-Everything speaks one contract: the **game package** defined in `format/` (DREAMSY.MD §3). The harness writes packages, the API validates and versions them, and the engine runs them in the browser, the app's WebView, Node, and headless playtests.
+Everything speaks one contract: the **game package** defined in `format/` (DREAMSY.MD §3). The harness writes packages, the API validates and versions them, and the C++ engine runs them in the browser, the app's WebView, natively, and in headless playtests.
 
 ## Repository layout
 
 | Path | Package | What |
 |---|---|---|
 | `format/` | `@dreamsy/format` | Game package spec: schemas, entity catalog, styles, validator, edit ops, CLI. [LUAU_API.md](format/LUAU_API.md) is the scripting contract. |
-| `engine-web/` | `@dreamsy/engine` | The engine. `core/` is DOM-free (runs in Node); `render/`, `input/`, `net/`, `luau/`; 21 genre kits in `kits/`. |
+| `engine/` | | The engine: C++20, 2D and 2.5D, one core for web (WASM), iOS, Android and headless tools. See [engine/README.md](engine/README.md). |
+| `kits/` | | 21 genre kits: Luau libraries games load with `require("@kit/...")`, plus their docs and schemas. |
 | `services/api/` | `@dreamsy/api` | Platform API: auth, games/versions, generation jobs, feed, remix, Stars store, leaderboards, groups. |
 | `services/gameserver/` | `@dreamsy/gameserver` | Multiplayer room server: invite codes, 1v1 quick match, relay (DREAMSY.MD §4.5). |
 | `services/live/` | `@dreamsy/live` | Convex functions for the live build feed. |
@@ -34,10 +35,9 @@ Everything speaks one contract: the **game package** defined in `format/` (DREAM
 | `games/examples/` | | Hand-written golden packages, including a minimal example per kit. |
 | `games/showcase/` | | Generated showcase games seeded into the API. |
 | `taste/` | | House-style packs (`packs/*.md`) and their reference images. |
-| `pipelines/assets/` | | 2D/3D asset generation (DREAMSY.MD §5.2). |
 | `deploy/` | | Production Docker Compose, Dockerfile, Caddyfile. |
 | `scripts/` | | `dev.sh` (local stack, builds and serves the C++ web player). |
-| `third_party/luau/` | | Vendored Luau, compiled to WASM. Don't modify. |
+| `third_party/` | | Vendored libraries (Luau, Box2D, sokol, ...). Don't modify. |
 
 ## Prerequisites
 
@@ -114,7 +114,7 @@ pnpm -C harness local --prompt "a pixel game where a frog collects coins" --out 
 pnpm -C harness local --prompt "make the frog faster" --base /tmp/frog --select player --out /tmp/frog2
 pnpm -C format cli validate /tmp/frog        # validate a game package
 pnpm -C format catalog                       # regenerate format/catalog.json
-pnpm -C engine-web screenshot                # headless screenshot of a package
+engine/build/release/dreamsy-tool playtest /tmp/frog   # headless playtest report (JSON); build: engine/README.md
 
 pnpm -C services/api db:generate             # after editing services/api/src/db/schema.ts; commit the migration
 ```
@@ -143,7 +143,6 @@ box's `/srv/dreamsy/{web,pwa}` by hand.
 ## Conventions
 
 - The game package format is the central contract. Don't change `format/` without updating DREAMSY.MD §3.
-- `engine-web/core` stays DOM-free so it runs in Node for servers and harness playtests.
-- 2D first; the format keeps 3D types, but the engine rejects 3D packages for now.
+- 2D and 2.5D only; the format keeps 3D types, but the engine rejects 3D packages.
 - `third_party/` is vendored; don't modify it.
 - Per-package details live in each package's own README.

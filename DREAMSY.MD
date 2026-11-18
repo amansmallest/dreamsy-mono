@@ -19,8 +19,9 @@ Status: v0 spec, 2026-11-14. Everything here is a decision unless marked **OPEN*
 6. **Determinism where it matters.** Async play (Clash of Clans-style raids) and replays need
    a deterministic simulation path.
 7. **One engine core everywhere.** The same engine code runs in the browser, in the app, on the game server and in
-   harness playtests. Today that is TypeScript (`engine-web/`: three.js + Rapier + Luau→WASM); it is being replaced
-   by a C++ core (`engine/`, §14) built for WebAssembly, iOS, Android and headless servers.
+   harness playtests: the C++ engine (`engine/`, §14) built for WebAssembly, iOS, Android and headless servers. It
+   replaced the TypeScript engine (`engine-web/`: three.js + Rapier + Luau→WASM), deleted 2026-11-18 (git tag
+   `engine-web-final` has its last version).
 8. **2D and 2.5D only.** No 3D (decided 2026-11-17, §14). The format still contains 3D types until §14.11 settles
    their removal.
 
@@ -30,13 +31,13 @@ Status: v0 spec, 2026-11-14. Everything here is a decision unless marked **OPEN*
 dreamsy/
   DREAMSY.MD            this file
   engine/               the C++ engine v2 (§14): one core for web (WASM), iOS, Android, headless server
-  engine-web/           the TypeScript engine (shipping + reference until engine/ reaches parity, §14.8)
-  third_party/luau/     vendored Luau 0.747 (compiled to WASM for engine-web)
+  kits/                 21 genre kits (Luau libraries games `require("@kit/...")`, §12)
+  third_party/          vendored libraries (Luau 0.747, Box2D, sokol, ...; §14.6), unmodified
   format/               game package spec, JSON schemas, validator, diff ops
   services/api/         platform API: accounts, games, versions, uploads, generation jobs
-  services/gameserver/  multiplayer room server (v1: rooms, quick match, relay; §4.5) → later Node game servers on engine-web/core
+  services/gameserver/  multiplayer room server (v1: rooms, quick match, relay; §4.5) → later headless C++ engine servers (E8)
   harness/              cloud generation: Claude agent loop + sandboxed engine
-  pipelines/assets/     2D/3D asset generation
+  taste/                house-style packs and reference art the harness shows the model
   apps/mobile/          iPhone app, React Native/Expo (create + play)
   apps/web/             website (later)
   games/examples/       hand-written golden packages
@@ -267,14 +268,14 @@ Reader/writer: `engine/src/pkg/pack.cpp`; `dreamsy-tool pack <dir|zip> <out.dpk>
 the tool converts legacy zip builds. TS reader/writer: `format/src/pack.ts` (`Package.fromPack`, `toPack`,
 `contentHash`; pure-TS synchronous SHA-256 so it runs in browsers), byte-identical with the C++ writer (cross-checked
 in `format/test/pack.test.ts` against `dreamsy-tool` for every 2D example/showcase game); the format CLI packs to
-`.dpk` when the output ends in `.dpk` and reads `.dpk` in `validate`/`unpack`/`apply`. **Still TODO:** the API,
-harness and `engine-web` still move zips; switch them to `.dpk`.
+`.dpk` when the output ends in `.dpk` and reads `.dpk` in `validate`/`unpack`/`apply`. **Still TODO:** the API and
+harness still move zips (the players read both); switch them to `.dpk`.
 
 ## 4. Runtime & multiplayer
 
 ### 4.1 Scripting: Luau
 
-- Luau compiled to WASM (`engine-web/luau`), host API implemented in TypeScript. Contract: `format/LUAU_API.md`.
+- Luau 0.747 embedded in the C++ engine (native; interpreter-only on iOS and web), host API in `engine/src/script`. Contract: `format/LUAU_API.md`.
 - Why Luau: sandboxed by design, fast, gradual types, and models are heavily trained on it.
 - API is Dreamsy's own (not a Roblox clone), but follows the same proven shape:
   client / server / shared scripts, remote events + remote functions, replicated properties.
@@ -308,7 +309,7 @@ physics we make deterministic vs. limiting async games to a sim-friendly subset.
 ### 4.3 Targets
 
 > Superseded by §14.7. Since 2026-11-18 the app, share links, dev stack and deploy image use the C++ web player
-> (`engine/apps/player`, embedding contract in `engine/apps/player/embed.js`); `engine-web` is being removed. The table
+> (`engine/apps/player`, embedding contract in `engine/apps/player/embed.js`); `engine-web` was removed. The table
 > below is the history.
 
 **Decision (2026-11-14):** web engine instead of a Godot fork (the fork was built, then deleted the same day). Games are Roblox-level at most
@@ -352,7 +353,7 @@ Goal: "1v1 true red vs true blue, and a game can have many players, so I can sha
 (client + server scripts, as single-player does today) and simulates its own world and avatar. The room server is
 authoritative for everything *about* the match — membership, teams, host, shared state, score totals, the result — and
 relays avatar samples (15 Hz) and remote events. Remote avatars are visual puppets interpolated 100 ms in the past.
-Why not run the game on the server yet: `engine-web/core` does run in Node, but one VM runs client and server scripts
+Why not run the game on the server yet (decided with the TS engine, still true for E8): one VM runs client and server scripts
 together, entity props have no replication layer, and phones need instant local movement (that means client prediction +
 reconciliation for a server-simulated avatar). Relay gives zero-latency controls on phones, works for every existing game
 and kit with a few lines (`room.replicate`, `room.finish`), and costs ~nothing on the server (no simulation). Trade-offs,
@@ -527,7 +528,7 @@ unless marked **public**.
 - `GET /v1/public/games/:id` → FeedGame + `publishedVersion` (**public**, published only).
 - `GET /v1/public/games/:id/package` → published package zip (**public**) so the web player can run
   it without an account. Rate-limit later.
-- Share URL: `${WEB_URL}/g/<gameId>` → engine-web serves a play page (`/g/:id` route or
+- Share URL: `${WEB_URL}/g/<gameId>` → the C++ web player at play.<domain> (Caddy redirects `/g/:id` to
   `?public=<id>`), no login needed. App share sheet shares this URL.
 
 ### 11.6 Marketplace
@@ -621,7 +622,7 @@ not re-implement core systems per game.
   - `schemas/*.json` — JSON Schemas for the kit's content files (e.g. `data/creatures/*.json`); the
     harness validates content against them.
   - `example/` — a small complete game package using the kit (also a golden test).
-  - tests — headless core simulation tests in `engine-web/test/kits/<kit>.test.ts`.
+  - tests — headless C++ tests in `engine/tests/kits/<kit>_test.cpp` (doctest, run by ctest).
 - Manifest: `kits = ["rpg"]` (array; validated against the shipped kit list).
   - `kit.json` (optional) — `{ "requires": ["core", "progression"] }`: dependencies are enabled automatically when a game
     lists the kit (engine `expandKits` / `kitDependencies()`; format `registerKitDependencies` for the validator; the
@@ -763,12 +764,13 @@ New accounts land in the onboarding game (Tidal Dash, `ONBOARDING_GAME_ID`) for 
 **Decision (2026-11-17):** Dreamsy is a **2D and 2.5D engine only**. 3D is dropped from scope (not "later").
 The engine is rewritten in **C++** as one core that runs on the web (WebAssembly), iOS, Android and the game server.
 Multiplayer moves from relay (§4.5) to **server-authoritative simulation with client prediction**. The TypeScript
-engine (`engine-web/`) stays the product and the reference implementation until the C++ engine reaches parity (§14.8).
+engine (`engine-web/`) was the product and the reference implementation until the C++ engine reached parity (§14.8);
+it was deleted 2026-11-18.
 
 Why:
 - **One simulation everywhere.** The server and every client run the same compiled core, which is what authoritative
   multiplayer, replays and async play (§4.2) need.
-- **Size and startup.** `engine-web` ships a 5.9 MB JS bundle + 0.7 MB Luau WASM. Target for the C++ web build: ≤ 1.5 MB
+- **Size and startup.** `engine-web` shipped a 5.9 MB JS bundle + 0.7 MB Luau WASM. Target for the C++ web build: ≤ 1.5 MB
   gzipped including Luau, measured in CI.
 - **Native apps without a WebView** (§14.7), from the same code.
 - **Determinism.** Box2D v3 is deterministic across platforms; Rapier's compat build is not guaranteed to be.
@@ -929,12 +931,16 @@ App Store: games remain interpreted Luau + data in a sandbox (§6, guideline 4.7
 
 ### 14.8 Migration and parity
 
-- `engine-web` stays the shipping engine and the reference until parity.
-- **Conformance suite:** the same packages and scripted playtests run in both engines. They are compared by script output,
-  event logs and state at checkpoints. Pixel-exact rendering is not required; screenshots are reviewed by eye.
-- **Parity** means: all `games/examples`, `games/showcase` and kit examples pass the conformance suite, and the
-  engine-web test cases are ported to C++.
-- After parity, `engine-web` is frozen, then removed when the harness, app and web all use the C++ engine.
+- **Done 2026-11-18: `engine-web` removed** (last version: git tag `engine-web-final`). The harness, the app, share
+  links, the dev stack and the deploy image use the C++ engine; engine-web's test suite was ported to C++
+  (`engine/tests/kits`, `engine/tests/api`, the headless playtest of every game).
+- **Conformance suite:** `engine/tests/conformance/run_compare.py` diffs the C++ engine against golden reports recorded
+  from engine-web before it was deleted (`golden/`: script-only tests, physics scenarios, every game with a scripted
+  input plan). Script output must be identical; entity positions are compared numerically against engine-web's
+  physics as drift. `--update` rewrites the script lines for an intentional behavior change (never the dump rows).
+  `conformance.py` keeps diffing the C++ loader against the TypeScript validator in `format/`.
+- What the C++ engine does not do yet that engine-web did: the online room client (multiplayer games run solo until
+  E8), the API store and leaderboards in the web player, saves across sessions on the web (§6 gaps).
 - Physics behaves differently (Rapier → Box2D). Kits with physics balance sims are re-tuned where needed.
 
 ### 14.9 Safety
@@ -958,7 +964,7 @@ Each slice ends with tests passing and is built one at a time (CLAUDE.md).
 | E3 World + physics (2.5D-native) | entities with `x, y, z` + `height` from day one, view modes in the data model, tick loop, Box2D v3 in the ground plane + engine-handled z (gravity, jumps, ledges), collision layers, state hash | coin-dash runs headless and passes conformance; a z-jump test scene behaves identically on every platform |
 | E4 Renderer (2.5D-native) | sokol: batched sprites, atlases, tilemaps, text, UI, camera, particles, lighting; depth sorting per view mode (§14.5), drop shadows; web build | examples look right in a browser; side/topdown/oblique/iso test scenes sort correctly |
 | E5 Input, audio, save, shell | touch/keys/gestures, on-screen controls, audio, save, platform menu, dialogs | feature-demo works on a phone browser |
-| E6 Parity | full host API, all kits, conformance suite green; harness playtests and app WebView switch to the C++ build | §14.8 parity. **Harness switched 2026-11-18** (§5.1: `dreamsy-tool playtest` / `eval`, browser shots from the C++ web player; `@dreamsy/engine` no longer a harness dependency) |
+| E6 Parity | full host API, all kits, conformance suite green; harness playtests and app WebView switch to the C++ build | §14.8 parity. **Done 2026-11-18:** harness (§5.1: `dreamsy-tool playtest` / `eval`, browser shots from the C++ web player), app WebView + share links (embedding contract, §6), engine-web's tests ported, conformance against goldens; engine-web deleted |
 | E7 2.5D content | iso tilemaps with elevation and stacked tiles, normal-mapped lighting, parallax, §3 format fields, kit updates (topdown/rpg/farming get oblique/iso) | an iso and an oblique example game. **Minimal slice landed 2026-11-17:** §3 fields (view, z/height/z_velocity/z_gravity_scale, Sprite2D anchor) in both validators, z physics in both engines, blocks/raised tile maps/shadows in the C++ renderer, script helpers, docs + harness prompt, and a Claude-built oblique showcase game (§14.5) |
 | E8 Netcode v2 | §14.6, `engine/apps/server`, gameserver integration, `LUAU_API.md` replication API | mp-duel and racing versus run authoritative |
 | E9 Native mobile | Expo native module, iOS + Android builds | showcase games run natively on both |
@@ -1066,10 +1072,10 @@ The Luau API contract (`format/LUAU_API.md`) is unchanged: every kit and game ru
 - **Native Luau.** Linked as C++, not WASM-in-JS: no JS↔WASM call cost per host call. Luau native code
   generation where the platform allows JIT-style code (desktop, Android, servers); the interpreter on iOS
   and the web.
-- **Same prelude, native host.** The Luau prelude (engine-web/core/prelude.ts, plain Luau calling numbered host
-  ops) runs unchanged; the ops are implemented in C++. Same op numbers and value tags, so behavior matches by
-  construction and the two engines can be diffed op by op.
-- **VMs.** Single-player (`server.mode = "none"`) keeps one VM for all scripts, as engine-web does: client and
+- **Same prelude, native host.** The Luau prelude (`engine/src/script/prelude.luau`, plain Luau calling numbered host
+  ops; moved from engine-web/core/prelude.ts unchanged) runs on ops implemented in C++. The op numbers live in
+  `src/script/ops.h` and are substituted into the prelude at build time.
+- **VMs.** Single-player (`server.mode = "none"`) keeps one VM for all scripts, as engine-web did: client and
   server scripts share module tables, and games rely on that. Server-authoritative multiplayer (§14.6) runs a
   server VM (`scripts/server` + `scripts/shared`) and a client VM (`scripts/client` + `scripts/shared`). Each
   script runs in its own sandbox thread.

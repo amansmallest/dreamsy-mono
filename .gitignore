@@ -7,8 +7,6 @@ __pycache__/
 # ios
 apps/mobile/ios/
 apps/mobile/android/
-# godot project caches (demo projects)
-.godot/
 .dev-logs/
 .data/
 

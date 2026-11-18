@@ -3,9 +3,9 @@ name: engine
 
 on:
   push:
-    paths: ["engine/**", "third_party/**", "format/**", "engine-web/**", ".github/workflows/engine.yml"]
+    paths: ["engine/**", "third_party/**", "format/**", "kits/**", "games/**", ".github/workflows/engine.yml"]
   pull_request:
-    paths: ["engine/**", "third_party/**", "format/**", "engine-web/**", ".github/workflows/engine.yml"]
+    paths: ["engine/**", "third_party/**", "format/**", "kits/**", "games/**", ".github/workflows/engine.yml"]
 
 jobs:
   macos:
@@ -60,7 +60,7 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
-      - run: pnpm install --frozen-lockfile --filter @dreamsy/format... --filter @dreamsy/engine...
+      - run: pnpm install --frozen-lockfile --filter @dreamsy/format...
       - name: build the tool
         working-directory: engine
         run: cmake --preset headless && cmake --build --preset headless --target dreamsy-tool

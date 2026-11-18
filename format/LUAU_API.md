@@ -1,7 +1,7 @@
 # Dreamsy Luau API — v0 contract
 
 The scripting surface every game script may use. The harness teaches this to Claude verbatim;
-the engine (`engine-web/`) must implement exactly this. Change both together.
+the engine (`engine/src/script`: the prelude `prelude.luau` + the C++ host) must implement exactly this. Change both together.
 
 Luau rules: `--!strict` recommended. Sandboxed — no `io`, `os` (except `os.clock`), `debug`,
 `loadstring`, `getfenv`/`setfenv`, filesystem or network. Scripts that run too long are killed

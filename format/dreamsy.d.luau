@@ -1,7 +1,7 @@
 -- Dreamsy Luau API: typed declarations (Luau definition file) for format/LUAU_API.md.
 --
 -- The C++ engine type-checks every game script against this before it runs (`dreamsy-tool check`), and the
--- harness can show it to the model. Change it together with LUAU_API.md and engine-web/core/prelude.ts.
+-- harness can show it to the model. Change it together with LUAU_API.md and engine/src/script/prelude.luau.
 --
 -- The Entity class's catalog props are generated from format/catalog.json at build time: the line
 -- `--@ENTITY_PROPS` below is replaced with one typed field per catalog prop. Run

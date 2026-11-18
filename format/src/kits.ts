@@ -24,7 +24,7 @@ export const isKit = (id: string): id is KitId => (KITS as readonly string[]).in
 /**
  * Kit dependencies (kit → kits it requires), declared by each kit in kits/<kit>/kit.json.
  * The engine registers the shipped map at load (core/kits.ts); tools can register it too
- * (`registerKitDependencies(kitDependencies())` from @dreamsy/engine/core). Used by the validator.
+ * (`registerKitDependencies(...)` with the `requires` lists from kits/*/kit.json, as format/src/cli.ts does). Used by the validator.
  */
 let KIT_DEPS: Record<string, readonly string[]> = {};
 export function registerKitDependencies(deps: Record<string, readonly string[]>) { KIT_DEPS = { ...deps }; }

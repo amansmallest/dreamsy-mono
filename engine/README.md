@@ -3,14 +3,13 @@
 The native 2D/2.5D engine: one C++20 core for web (WebAssembly), iOS, Android and headless game
 servers. Design and roadmap: `DREAMSY.MD` §14. New to C++? Start with `docs/CPP-FOR-TS-DEVS.md`.
 
-Status: **E0 (scaffold), E1 (packages), E2 (scripting), E3 (world + physics) done; E4 (renderer) foundation done; E5 input + platform UI (keys, mouse, touch, on-screen controls, gestures, UI entities, dialogs, toasts, pause) done, audio pending; E7 2.5D minimal slice done (package `view`, `z`/`height`, blocks, raised tile maps, shadows; DREAMSY.MD §14.5); E6 parity in progress: games load by URL, visual parity pass (lighting, scissor, fonts, SVG fixes, full pause menu; see [Parity screenshots](#parity-screenshots)).**
+Status: **E0 (scaffold), E1 (packages), E2 (scripting), E3 (world + physics) done; E4 (renderer) foundation done; E5 input + platform UI (keys, mouse, touch, on-screen controls, gestures, UI entities, dialogs, toasts, pause) done, audio pending; E7 2.5D minimal slice done (package `view`, `z`/`height`, blocks, raised tile maps, shadows; DREAMSY.MD §14.5); E6 parity done: the harness, the app and share links run on this engine and engine-web (the TypeScript engine) was deleted 2026-11-18 (tag `engine-web-final`).**
 It loads and validates every game in `games/` (same verdicts as the TypeScript validator), reads/writes
 Dreamsy packs (`.dpk`, §3.6), and runs games headless natively: entities, Box2D physics with 2.5D height,
 tweens, sprite animation, particles, camera, tile maps, dialogs. Every 2D game in `games/` produces the same
-script output as engine-web (`tests/conformance/run_compare.py --all`). The renderer draws all four view modes
-from a test scene; connecting it to running games comes next.
-`engine-web/` is still the shipping engine for the app; the harness playtests on this engine (`dreamsy-tool playtest`,
-the web player for screenshots; DREAMSY.MD §5.1).
+script output as engine-web did (`tests/conformance/run_compare.py --all`, against golden reports recorded from it).
+The harness playtests on this engine (`dreamsy-tool playtest`, the web player for screenshots; DREAMSY.MD §5.1) and the
+app plays games in the web player (see [Embedding the web player](#embedding-the-web-player-the-app-share-links)).
 
 ## Build
 
@@ -50,14 +49,14 @@ cmake --preset web && cmake --build --preset web
 ctest --preset web                                     # tests run under Node
 # build/web/dreamsy-player.html: serve the folder with any static server to view it
 # (dreamsy-player.html#iso picks the view mode, #iso-smooth forces smooth mode)
-NODE_PATH=../engine-web/node_modules node tools/web_screenshot.cjs /tmp/dreamsy-e4 540x960
-NODE_PATH=../engine-web/node_modules node tools/web_touch_screenshot.cjs /tmp/dreamsy-e5
+NODE_PATH=../harness/node_modules node tools/web_screenshot.cjs /tmp/dreamsy-e4 540x960
+NODE_PATH=../harness/node_modules node tools/web_touch_screenshot.cjs /tmp/dreamsy-e5
 #   as a phone: real touch events tap through the dialog, push the joystick, hold A
 # Another game in the web player (kit games need their kit packs embedded):
 cmake --preset web -DDREAMSY_DEMO_PACKAGE_DIR=$PWD/../games/examples/kit-tycoon -DDREAMSY_WEB_EMBED_KITS=ON
 #   headless Chromium screenshots of every view mode (Playwright page.route, no server)
 # A game's own view, from its own build folder, holding keys on the way (see the script header):
-DREAMSY_WEB_BUILD=build/web-mygame DREAMSY_SHOT_KEYS="d@0,Space@800" NODE_PATH=../engine-web/node_modules \
+DREAMSY_WEB_BUILD=build/web-mygame DREAMSY_SHOT_KEYS="d@0,Space@800" NODE_PATH=../harness/node_modules \
     node tools/web_screenshot.cjs /tmp/shots 540x960 game
 ```
 
@@ -90,28 +89,7 @@ of the host's safe area. Not supported yet (engine-web's dev page had them): `{t
 (the store is the free in-memory one), API leaderboards (runs, ranks, ghosts; `runEnd` has no `rank`), saved games
 (`save.*` lasts for the session; engine-web kept it in localStorage) and `{type:"save"}`,
 `?room=` / `?spectate=` and the lobby (no room client until E8: multiplayer games run solo with the offline room),
-`?touch=` (use `#touch`), `?scene=`, `?sceneParams=`, `?save=0`, `?budget=`.
-
-## Parity screenshots
-
-`tools/parity.mts` shows every game side by side in engine-web (the reference) and the C++ web player, at the
-game's reference size and the same game time, with the same scripted input:
-
-```sh
-cmake --preset web && cmake --build --preset web --target dreamsy-player   # (source ~/emsdk/emsdk_env.sh first)
-../engine-web/node_modules/.bin/tsx tools/parity.mts --out /tmp/dreamsy-parity            # every game (~20 min)
-../engine-web/node_modules/.bin/tsx tools/parity.mts --out /tmp/dreamsy-parity --games city-rush,kit-story
-../engine-web/node_modules/.bin/tsx tools/parity.mts --out /tmp/after --baseline /tmp/before/results.json  # before -> after
-```
-
-Shots per game: `title` (1.5 s), `play` (taps the start button, holds right, jumps; 4.5 s), `pause` (Esc);
-`tools/parity_games.json` adds or replaces shots per game (taps on buttons by text, keys, held keys). Output:
-`shots/<game>-<shot>-{web,cpp,pair}.png` (pair = engine-web | C++ | difference x3), `index.html` and
-`contact.png` (worst first), `results.json`. The score is the mean RGB difference in percent on 4x downscaled
-images, so antialiasing barely counts and layout, color and missing things do. No server runs: Playwright
-answers every request from disk. `--only cpp` re-shoots just the C++ side, `--cpp-build DIR` compares another
-build, `--verbose` prints both consoles. Physics (Box2D vs Rapier) and font hinting make some difference
-unavoidable; review the pairs by eye (DREAMSY.MD §14.8).
+`?touch=` (use `#touch`), `?budget=`. `?scene=<path>&params=<json>&save=<json>` start mid-game (harness playtests).
 
 ## Phones
 
@@ -224,9 +202,9 @@ The engine's own logging (`base/log.cpp`) writes to stderr, which Android drops;
 | `apps/tool/` | `dreamsy-tool`, the headless CLI; `playtest.cpp`: `playtest` (the harness's scripted playtests, JSON report) and `eval` (a Luau script in a package with kits, for kit balance sims) |
 | `apps/player/` | `dreamsy-player`, the windowed engine; `demo_scene` draws a test scene from a package's assets until E3/E6 |
 | `apps/player/embed.js` | the web player's embedding contract: package source from the query, messages to the host app (see [Embedding](#embedding-the-web-player-the-app-share-links)) |
-| `tools/` | `web_screenshot.cjs` (screenshots of the web player), `web_touch_screenshot.cjs` (phone touch input), `make_play_page.py` (packs games for the web player), `parity.mts` (engine-web vs C++ screenshots) |
+| `tools/` | `web_screenshot.cjs` (screenshots of the web player), `web_touch_screenshot.cjs` (phone touch input), `make_play_page.py` (packs games for the web player) |
 | `tests/` | doctest unit tests, one binary: `dreamsy-tests` |
-| `tests/conformance/` | `conformance.py`: C++ vs `format/src/validate.ts` on every game plus ~80 generated broken packages; `run_compare.py`: C++ vs engine-web: `tests/scripts/*` (identical logs, errors, audio, save, time), physics scenarios with scripted input (identical script output + measured position/velocity drift), `--all` over every game |
+| `tests/conformance/` | `conformance.py`: C++ vs `format/src/validate.ts` on every game plus ~80 generated broken packages; `run_compare.py`: C++ vs golden reports recorded from engine-web (`golden/`, `--update` after an intentional change): `tests/scripts/*` (identical logs, errors, audio, save, time), physics scenarios with scripted input (identical script output + measured position/velocity drift), `--all` over every game |
 | `tests/scripts/` | script-only test games (basics, modules, data/save, errors/budget, scenes/room/store/audio, math) |
 | `tests/scenes/` | entity test scenes (`z_jump`: the 2.5D jump/land/ledge scene with test overrides; `z_platforms`: 2.5D from the package, compared with engine-web) |
 | `fuzz/` | fuzz targets (pack, package, zip import); `-replay` builds run in ctest, libFuzzer builds in CI |
@@ -270,7 +248,7 @@ Third-party code lives in `../third_party/` (vendored, unmodified; each folder h
 ## Checks beyond unit tests
 
 ```sh
-python3 tests/conformance/conformance.py              # needs `pnpm install` (format/, engine-web/)
+python3 tests/conformance/conformance.py              # needs `pnpm install` (format/)
 python3 tests/conformance/run_compare.py               # scripts + physics scenarios (uses build/release if present)
 python3 tests/conformance/run_compare.py --all         # every game in games/examples and games/showcase
 python3 fuzz/make_corpus.py /tmp/corpus build/debug/dreamsy-tool

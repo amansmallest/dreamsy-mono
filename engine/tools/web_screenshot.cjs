@@ -9,7 +9,7 @@
 // Env: DREAMSY_WEB_BUILD = the build folder (default build/web), DREAMSY_SHOT_MS = wait before the
 // shot (default 2500), DREAMSY_SHOT_KEYS = "key@ms,key@ms" keys held from that time (e.g. "d@0,Space@900";
 // "-key@ms" releases it, "key~@ms" taps it), DREAMSY_SHOT_TAPS = "x:y@ms,..." mouse clicks in page pixels. Needs Playwright: `pnpm install` at the repo root, then run with
-// NODE_PATH=../engine-web/node_modules (or any folder where `require("playwright")` resolves).
+// NODE_PATH=../harness/node_modules (or any folder where `require("playwright")` resolves).
 const fs = require("fs");
 const path = require("path");
 const { chromium } = require("playwright");

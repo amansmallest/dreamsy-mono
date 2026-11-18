@@ -6,7 +6,7 @@
 // Shots: <out>/touch-0-start.png (dialog open, controls dimmed), touch-1-dialog-tapped.png (after
 // tapping through the dialogs), touch-2-held.png (joystick pushed right + A held). The joystick and
 // A positions are engine-web's portrait layout in CSS px (input/touch_controls.cpp touch_layout).
-// Needs Playwright (NODE_PATH=../engine-web/node_modules), like tools/web_screenshot.cjs.
+// Needs Playwright (NODE_PATH=../harness/node_modules), like tools/web_screenshot.cjs.
 const fs = require("fs");
 const path = require("path");
 const { chromium } = require("playwright");

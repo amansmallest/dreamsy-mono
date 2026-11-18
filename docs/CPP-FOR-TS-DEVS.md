@@ -193,9 +193,11 @@ boundary, where a script called us, does a failed `Status` become a Lua error
 ## 11. Reading order for the engine
 
 1. `src/base/result.h`, `src/base/pool.h`: the two patterns used everywhere.
-2. `src/base/rng.h`: a tiny class, compare it with `engine-web/core/random.ts`.
+2. `src/base/rng.h`: a tiny class, compare it with the TypeScript version it replaced
+   (`git show engine-web-final:engine-web/core/random.ts`).
 3. `src/dev/smoke.cpp`: calling C libraries (Luau, Box2D) from C++.
-4. `src/world/world.h`: entities in a `Pool`, props, the scene tree; compare with `engine-web/core/world.ts`.
+4. `src/world/world.h`: entities in a `Pool`, props, the scene tree; compare with
+   `git show engine-web-final:engine-web/core/world.ts`.
 5. `src/physics/physics2d.h`: Box2D behind a small API, and how 2.5D height works.
 6. `src/script/host_world.cpp`: how a script's `e.position = v` reaches the world.
 7. `apps/player/main.cpp`: the frame loop; `src/render/draw_list.h` then `src/render/renderer.h` for drawing.

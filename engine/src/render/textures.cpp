@@ -24,10 +24,10 @@ Image soft_disc(int size) {
   img.width = size;
   img.height = size;
   img.pixels.resize(static_cast<size_t>(size) * size * 4);
-  const float r = size * 0.5f;
+  const float r = static_cast<float>(size) * 0.5f;
   for (int y = 0; y < size; y++) {
     for (int x = 0; x < size; x++) {
-      const float dx = (x + 0.5f - r) / r, dy = (y + 0.5f - r) / r;
+      const float dx = (static_cast<float>(x) + 0.5f - r) / r, dy = (static_cast<float>(y) + 0.5f - r) / r;
       const float d = std::sqrt(dx * dx + dy * dy);  // 0 center .. 1 edge
       const float a = std::clamp((1.0f - d) / 0.35f, 0.0f, 1.0f);  // solid core, soft 35% rim
       uint8_t* p = img.pixels.data() + (static_cast<size_t>(y) * size + x) * 4;
@@ -51,7 +51,7 @@ TextureStore::TextureStore(const pkg::Package* package, Atlas& atlas, bool pixel
 
 int TextureStore::svg_raster_bucket(float screen_px) {
   int px = 32;
-  while (px < screen_px && px < 1024) px *= 2;
+  while (static_cast<float>(px) < screen_px && px < 1024) px *= 2;
   return px;
 }
 
@@ -115,7 +115,7 @@ bool TextureStore::load(Entry& e, float screen_px) {
     } else {
       px = svg_raster_bucket(screen_px);
       if (e.loaded && e.raster_px >= px) return true;
-      const float k = px / std::max(e.size.x, e.size.y);
+      const float k = static_cast<float>(px) / std::max(e.size.x, e.size.y);
       w = std::max(1, static_cast<int>(std::lround(e.size.x * k)));
       h = std::max(1, static_cast<int>(std::lround(e.size.y * k)));
     }

@@ -197,6 +197,7 @@ add_library(dreamsy_render STATIC
   src/render/geometry.cpp
   src/render/image.cpp
   src/render/sort.cpp
+  src/render/style.cpp
   src/render/textures.cpp
   src/render/view.cpp
   ${DREAMSY_FONTS_CPP})
@@ -248,15 +249,26 @@ if(DREAMSY_BUILD_PLAYER)
     target_link_libraries(dreamsy_sokol PUBLIC X11::X11 X11::Xi X11::Xcursor OpenGL::GL dl m pthread)
   endif()
 
-  add_executable(dreamsy-player apps/player/main.cpp)
+  # The GPU renderer (E4): sokol_gfx, hand-written Metal / GLSL ES 3.0 shaders (render/renderer.cpp).
+  add_library(dreamsy_render_gpu STATIC src/render/renderer.cpp)
+  dreamsy_target_defaults(dreamsy_render_gpu)
+  target_link_libraries(dreamsy_render_gpu PUBLIC dreamsy_render dreamsy_sokol)
+
+  # The demo package the player shows until it runs games (E6): native reads it from the repo,
+  # the web build embeds it at /pkg.
+  set(DREAMSY_DEMO_PACKAGE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../games/examples/feature-demo)
+  add_executable(dreamsy-player apps/player/main.cpp apps/player/demo_scene.cpp)
   dreamsy_target_defaults(dreamsy-player)
-  target_link_libraries(dreamsy-player PRIVATE dreamsy_base dreamsy_sokol)
+  target_link_libraries(dreamsy-player PRIVATE dreamsy_render_gpu)
   dreamsy_link_dmath(dreamsy-player)
   if(EMSCRIPTEN)
     set_target_properties(dreamsy-player PROPERTIES SUFFIX ".html")
     target_link_options(dreamsy-player PRIVATE
-      --shell-file ${CMAKE_CURRENT_SOURCE_DIR}/apps/player/shell.html -sALLOW_MEMORY_GROWTH=1)
+      --shell-file ${CMAKE_CURRENT_SOURCE_DIR}/apps/player/shell.html -sALLOW_MEMORY_GROWTH=1
+      --embed-file ${DREAMSY_DEMO_PACKAGE_DIR}@/pkg)
     set_property(TARGET dreamsy-player APPEND PROPERTY LINK_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/apps/player/shell.html)
+  else()
+    target_compile_definitions(dreamsy-player PRIVATE DREAMSY_DEMO_PACKAGE="${DREAMSY_DEMO_PACKAGE_DIR}")
   endif()
 endif()
 

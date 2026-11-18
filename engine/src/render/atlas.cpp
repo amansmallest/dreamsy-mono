@@ -117,7 +117,8 @@ Result<AtlasRegion> Atlas::add(const Image& img) {
   region.h = img.height;
   const float pw = static_cast<float>(target->data.width);
   const float ph = static_cast<float>(target->data.height);
-  region.uv = {region.x / pw, region.y / ph, (region.x + region.w) / pw, (region.y + region.h) / ph};
+  const auto f = [](int v) { return static_cast<float>(v); };
+  region.uv = {f(region.x) / pw, f(region.y) / ph, f(region.x + region.w) / pw, f(region.y + region.h) / ph};
   return region;
 }
 

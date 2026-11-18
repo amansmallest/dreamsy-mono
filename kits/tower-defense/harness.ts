@@ -1,6 +1,6 @@
 /**
- * Headless helpers for the tower-defense kit (tests + harness). The kit reads its content from the package
- * itself (`TD.content()` → engine `data.list/data.read`) and the engine resolves `@kit/…` natively.
+ * Headless helpers for the tower-defense kit (tests + harness), on the C++ engine (`dreamsy-tool eval`). The kit reads
+ * its content from the package itself (`TD.content()` → engine `data.list/data.read`). `pkg` is a Package or a directory.
  *  - runLuau(src, base?): runs a client script in the package headless and returns what it `save.set("out", …)`.
  *  - balance(pkg): auto-places a reference build on every campaign level (Luau sim, `@kit/tower-defense/balance`)
  *    and reports winnable / lives left / stars per level.
@@ -9,33 +9,17 @@
 import { readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { Package } from "@dreamsy/format";
-import { Game, MemorySaveHost } from "../../engine-web/core/index.js";
+import { evalLuau, type PackageLike } from "../_tools/engine.js";
 
 const KITS_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
-// ---------- headless runs ----------
+// ---------- headless runs (C++ engine: dreamsy-tool eval) ----------
 
-const MANIFEST = `format = "0"\nname = "kit test"\ndimension = "2d"\norientation = "portrait"\nentry_scene = "scenes/__run.scene.json"\nkits = ["tower-defense"]\n[style]\npreset = "clean"\n`;
-
-/** Run `src` (Luau, a client script) inside `base` (or an empty package); returns `save.get("out")` and logs/errors. */
-export async function runLuau(src: string, base?: Package, opts: { steps?: number; files?: Record<string, string>; budgetMs?: number } = {}) {
-  let files: Record<string, Uint8Array | string> = {};
-  if (base) for (const p of base.paths()) files[p] = base.bytes(p)!;
-  files = {
-    ...files,
-    "dreamsy.toml": MANIFEST,
-    "scenes/__run.scene.json": JSON.stringify({ format: "0", root: "run_root", entities: { run_root: { type: "Node2D" } } }),
-    ...opts.files,
-  };
-  // drop the game's own scripts: only the test script runs (shared modules stay requireable)
-  for (const p of Object.keys(files)) if (/^scripts\/(client|server)\//.test(p)) delete files[p];
-  files["scripts/client/__run.luau"] = src;
-  const host = new MemorySaveHost();
-  const game = await Game.load(Package.fromFiles(files), { seed: 1, save: host, budgetMs: opts.budgetMs ?? 120_000 });
-  for (let i = 0; i < (opts.steps ?? 1); i++) game.step();
-  const errors = game.errors.map((e) => `${e.script}:${e.line ?? "?"}: ${e.message}`);
-  return { out: host.data.out as any, logs: game.logs.map((l) => l.text), errors };
+/** Run `src` (Luau, a client script) inside `base` (a package or its directory; default: an empty package) with the
+ *  tower-defense kit enabled; returns `save.get("out")`, logs, errors ("script:line: message") and the save data. */
+export async function runLuau(src: string, base?: PackageLike | string, opts: { steps?: number; files?: Record<string, string>; budgetMs?: number } = {}) {
+  const r = evalLuau(src, { kits: ["tower-defense"], base, files: opts.files, steps: opts.steps, budgetMs: opts.budgetMs ?? 120_000 });
+  return { out: r.out, logs: r.logs, errors: r.errors, save: r.save };
 }
 
 export interface LevelReport { level: string; won: boolean; lives: number; maxLives: number; stars: number; wavesCleared: number; waves: number; leaked: number; spent: number; towers: string[]; seconds: number }
@@ -46,7 +30,7 @@ export interface BalanceReport { ok: boolean; levels: LevelReport[]; endless?: {
  * (greedy: best coverage tiles, cheapest unlocked towers first, upgrades when rich) and run the level at
  * fixed 30 Hz. Reports winnable + lives left; `problems` lists levels that are lost or trivially easy.
  */
-export async function balance(pkg: Package, opts: { endlessWaves?: number } = {}): Promise<BalanceReport> {
+export async function balance(pkg: PackageLike | string, opts: { endlessWaves?: number } = {}): Promise<BalanceReport> {
   const { out, errors, logs } = await runLuau(
     `local TD = require("@kit/tower-defense")\nsave.set("out", TD.Balance.campaign(TD.content(), { endlessWaves = ${opts.endlessWaves ?? 30} }))`,
     pkg,
@@ -105,7 +89,7 @@ function check(v: unknown, s: Schema, at: string, out: string[]) {
 }
 
 /** Validate a package's TD content files against schemas/*.json. Returns issues ("file: path: message"). */
-export function validateContent(pkg: Package): string[] {
+export function validateContent(pkg: Pick<PackageLike, "paths" | "text">): string[] {
   const out: string[] = [];
   const cache: Record<string, Schema> = {};
   for (const p of pkg.paths("data/")) {

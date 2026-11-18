@@ -17,6 +17,8 @@ kits/<kit>/
                        runtime with data.list / data.read — never generate scripts/shared/*content*.luau copies
   example/             a small complete game package using the kit (also a golden test)
 engine-web/test/kits/<kit>.test.ts   headless core tests (Node, no renderer)
+kits/<kit>/harness.ts, cli.ts        optional headless helpers (balance sims) on the C++ engine via kits/_tools/engine.ts
+                                     (`dreamsy-tool eval`: runs a Luau script in a package with the kit enabled)
 games/examples/kit-<kit>/            optional showcase package
 ```
 

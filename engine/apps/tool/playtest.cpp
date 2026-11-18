@@ -474,14 +474,17 @@ int cmd_eval(int argc, char** argv) {
   auto source = script_arg == "-" ? json_arg("-") : json_arg("@" + script_arg);
   if (!source) return usage_error(source.error());
 
-  // The run package: the base's files minus its client/server scripts (shared modules stay
-  // requireable), a manifest enabling `kits`, an empty entry scene and the script.
+  // The run package: the base's files with its client/server scripts emptied (shared modules stay
+  // requireable; only the given script runs), a manifest enabling `kits`, an empty entry scene and the script.
   std::map<std::string, std::string> files;
   if (!base.empty()) {
     auto f = load_files(base);
     if (!f) return usage_error(f.error());
     for (const std::string& p : f.value().paths()) {
-      if (pkg::starts_with(p, "scripts/client/") || pkg::starts_with(p, "scripts/server/")) continue;
+      if (pkg::starts_with(p, "scripts/client/") || pkg::starts_with(p, "scripts/server/")) {
+        files[p] = "";  // emptied, not removed: the base's scenes may still attach it
+        continue;
+      }
       auto b = f.value().bytes(p);
       files[p] = std::string(reinterpret_cast<const char*>(b->data()), b->size());
     }

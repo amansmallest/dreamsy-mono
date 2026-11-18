@@ -1,34 +1,29 @@
 /**
  * Headless helpers for the tycoon kit (tests + harness):
- *  - runLuau(src, pkg?, {clock?}): runs a client script headless and returns what it `save.set("out", …)`.
+ *  - runLuau(src, pkg?, {clock?}): runs a client script headless (C++ engine) and returns what it `save.set("out", …)`.
  *  - balance(pkg, {hours}): greedy-player simulation (`@kit/tycoon/balance`) of the package's own data → pacing report.
+ *    `pkg` is a Package or a package directory. CLI: `tsx kits/tycoon/cli.ts balance <packageDir> [--hours 2]`.
  * The kit reads content itself (`Tycoon.new()` → data/tycoon.json + data/{generators,upgrades,achievements,events}/*.json).
  */
-import { Package } from "@dreamsy/format";
-import { Game, MemorySaveHost } from "../../engine-web/core/index.js";
+import { evalLuau, type PackageLike } from "../_tools/engine.js";
 
-// ---------- headless runs ----------
+// ---------- headless runs (C++ engine: dreamsy-tool eval) ----------
 
-const MANIFEST = `format = "0"\nname = "kit test"\ndimension = "2d"\norientation = "portrait"\nentry_scene = "scenes/__run.scene.json"\nkits = ["tycoon"]\n[style]\npreset = "clean"\n`;
+/** A save store shared across runs (= relaunching the game): starts from `data`, gets the final save back. */
+export interface SaveStore { data: Record<string, unknown> }
 
-/** Run `src` (a client script) inside `base` (or an empty package); returns `save.get("out")`, logs, errors. */
-export async function runLuau(src: string, base?: Package, opts: { steps?: number; files?: Record<string, string>; until?: (save: Record<string, unknown>) => boolean; clock?: () => number; save?: MemorySaveHost } = {}) {
-  let files: Record<string, Uint8Array | string> = {};
-  if (base) for (const p of base.paths()) files[p] = base.bytes(p)!;
-  files = {
-    ...files,
-    "dreamsy.toml": MANIFEST,
-    "scenes/__run.scene.json": JSON.stringify({ format: "0", root: "run_root", entities: { run_root: { type: "Node2D" } } }),
-    ...opts.files,
-  };
-  for (const p of Object.keys(files)) if (/^scripts\/(client|server)\//.test(p)) delete files[p];
-  files["scripts/client/__run.luau"] = src;
-  const host = opts.save ?? new MemorySaveHost();
-  const game = await Game.load(Package.fromFiles(files), { seed: 1, save: host, clock: opts.clock });
-  for (let i = 0; i < (opts.steps ?? 1); i++) game.step();
-  if (opts.until) for (let i = 0; i < 100000 && !opts.until(host.data) && !game.errors.length; i++) game.step();
-  const errors = game.errors.map((e) => `${e.script}:${e.line ?? "?"}: ${e.message}`);
-  return { out: host.data.out as any, logs: game.logs.map((l) => l.text), errors };
+/** Run `src` (a client script) inside `base` (a package or its directory; default: an empty package) with the tycoon
+ *  kit enabled; returns `save.get("out")`, logs, errors ("script:line: message") and the final save data.
+ *  `clock`: clock.now() at game time 0 (a function is read once, at load). `save`: initial data, or a SaveStore. */
+export async function runLuau(src: string, base?: PackageLike | string, opts: { steps?: number; files?: Record<string, string>; until?: string; clock?: number | (() => number); save?: Record<string, unknown> | SaveStore; budgetMs?: number } = {}) {
+  const store = opts.save && typeof (opts.save as SaveStore).data === "object" && (opts.save as SaveStore).data !== null ? opts.save as SaveStore : undefined;
+  const clock = typeof opts.clock === "function" ? opts.clock() : opts.clock;
+  const r = evalLuau(src, { kits: ["tycoon"], base, files: opts.files, steps: opts.steps, until: opts.until, clock, save: store ? store.data : opts.save as Record<string, unknown> | undefined, budgetMs: opts.budgetMs });
+  if (store) {
+    for (const k of Object.keys(store.data)) delete store.data[k];
+    Object.assign(store.data, r.save);
+  }
+  return { out: r.out, logs: r.logs, errors: r.errors, save: r.save };
 }
 
 export interface BalanceReport {
@@ -53,7 +48,7 @@ export interface BalanceReport {
 }
 
 /** Greedy-player pacing simulation of the package's tycoon content (see balance.luau for options). */
-export async function balance(pkg: Package, opts: { hours?: number; dt?: number; prestigeRatio?: number; stallSeconds?: number } = {}): Promise<BalanceReport> {
+export async function balance(pkg: PackageLike | string, opts: { hours?: number; dt?: number; prestigeRatio?: number; stallSeconds?: number } = {}): Promise<BalanceReport> {
   const o = { hours: 2, dt: 1, ...opts };
   const { out, errors, logs } = await runLuau(
     // the sim runs in slices across ticks (each script call has a 250 ms budget)
@@ -72,7 +67,7 @@ onTick(function()
 	end
 end)`,
     pkg,
-    { until: (d) => d.out !== undefined },
+    { until: "out" },
   );
   if (errors.length || !out) throw new Error(`tycoon balance sim failed:\n${errors.join("\n")}\n${logs.slice(-5).join("\n")}`);
   const r = out as BalanceReport;

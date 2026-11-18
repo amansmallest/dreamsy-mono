@@ -103,7 +103,8 @@ sfx on milestones/upgrades; toast unlocks/achievements; show the next milestone 
 when unaffordable; keep ≤ 4–5 rows visible with `arrows`.
 
 ## Balance simulation (harness)
-`balance(pkg, {hours=2, dt=1, prestigeRatio=2, stallSeconds=180})` in `kits/tycoon/harness.ts` runs
+`balance(pkg, {hours=2, dt=1, prestigeRatio=2, stallSeconds=180})` in `kits/tycoon/harness.ts` (or
+`npx tsx kits/tycoon/cli.ts balance <packageDir> [--hours 2]`; runs headless on the C++ engine, `dreamsy-tool eval`) runs
 `@kit/tycoon/balance` on the package's own data (greedy player: buys the best payback among generators/upgrades/managers, taps for the first minute of a
 run, restarts manual gens every 3 s, claims events, resets when the prestige bonus would double or when stuck) and returns
 `{firstPrestige, prestiges[{t,gain}], unlocks, firstBuy, allGeneratorsAt, allUpgradesAt, purchases, gaps{median,p90,max}, stalls[], smooth, samples[{t,income,allTime}], final}`

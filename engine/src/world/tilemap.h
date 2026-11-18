@@ -23,7 +23,7 @@ struct TileKind {
   std::vector<std::string> tags;
 };
 
-// The tileset's tile kinds. Immutable once loaded, so clones of a grid share it.
+// The tileset's tile kinds (a handful per tileset, so grids and their clones keep their own copy).
 struct TileKinds {
   std::vector<TileKind> kinds;  // [0] = empty
   std::map<char, int> by_char;
@@ -35,7 +35,7 @@ struct TileRect {
 
 class TileGrid {
  public:
-  TileGrid(int cols, int rows, std::shared_ptr<const TileKinds> kinds);
+  TileGrid(int cols, int rows, TileKinds kinds);
 
   int cols() const { return cols_; }
   int rows() const { return rows_; }
@@ -43,7 +43,7 @@ class TileGrid {
   // nullptr for empty or out-of-bounds cells.
   const TileKind* kind_at(int c, int r) const;
   const TileKind* by_char(char ch) const;
-  const TileKinds& kinds() const { return *kinds_; }
+  const TileKinds& kinds() const { return kinds_; }
   uint16_t cell(int c, int r) const { return cells_[static_cast<size_t>(r) * cols_ + c]; }
 
   // Returns true if the cell changed. `kind` nullptr = empty.
@@ -59,11 +59,11 @@ class TileGrid {
   std::vector<TileRect> solid_rects() const;
 
  private:
-  bool solid_at_index(uint16_t i) const { return i < kinds_->kinds.size() && kinds_->kinds[i].solid; }
+  bool solid_at_index(uint16_t i) const { return i < kinds_.kinds.size() && kinds_.kinds[i].solid; }
 
   int cols_, rows_;
   std::vector<uint16_t> cells_;
-  std::shared_ptr<const TileKinds> kinds_;
+  TileKinds kinds_;
   uint32_t solid_rev_ = 0;
 };
 

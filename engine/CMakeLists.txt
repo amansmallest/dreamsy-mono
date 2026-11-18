@@ -244,10 +244,17 @@ endif()
 
 if(DREAMSY_BUILD_TESTS)
   enable_testing()
-  add_executable(dreamsy-tests tests/main.cpp tests/base_test.cpp tests/smoke_test.cpp tests/pkg_test.cpp tests/pack_test.cpp tests/script_test.cpp tests/dmath_test.cpp)
+  add_executable(dreamsy-tests tests/main.cpp tests/base_test.cpp tests/smoke_test.cpp tests/pkg_test.cpp tests/pack_test.cpp tests/script_test.cpp tests/dmath_test.cpp
+    tests/world_test.cpp tests/physics_test.cpp tests/host_world_test.cpp)
   dreamsy_target_defaults(dreamsy-tests)
   # doctest needs RTTI; tests are not engine code.
   target_compile_options(dreamsy-tests PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-frtti>)
+  # UBSan's vptr check only works when every translation unit has RTTI. Standard-library templates
+  # with virtual internals (std::function, shared_ptr control blocks) are shared between these RTTI
+  # tests and -fno-rtti engine code, which gives false "invalid vptr" reports; turn that one check off.
+  if(DREAMSY_SANITIZE)
+    target_compile_options(dreamsy-tests PRIVATE -fno-sanitize=vptr)
+  endif()
   target_include_directories(dreamsy-tests PRIVATE ${THIRD_PARTY}/doctest)
   target_link_libraries(dreamsy-tests PRIVATE dreamsy_dev dreamsy_zip_import dreamsy_script miniz)
   dreamsy_link_dmath(dreamsy-tests)

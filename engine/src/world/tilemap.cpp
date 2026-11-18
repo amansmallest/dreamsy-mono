@@ -7,19 +7,19 @@
 
 namespace dreamsy::world {
 
-TileGrid::TileGrid(int cols, int rows, std::shared_ptr<const TileKinds> kinds)
+TileGrid::TileGrid(int cols, int rows, TileKinds kinds)
     : cols_(cols), rows_(rows), cells_(static_cast<size_t>(cols) * static_cast<size_t>(rows), 0), kinds_(std::move(kinds)) {}
 
 const TileKind* TileGrid::kind_at(int c, int r) const {
   if (!in_bounds(c, r)) return nullptr;
   uint16_t k = cell(c, r);
-  if (k == 0 || k >= kinds_->kinds.size()) return nullptr;
-  return &kinds_->kinds[k];
+  if (k == 0 || k >= kinds_.kinds.size()) return nullptr;
+  return &kinds_.kinds[k];
 }
 
 const TileKind* TileGrid::by_char(char ch) const {
-  auto it = kinds_->by_char.find(ch);
-  return it == kinds_->by_char.end() ? nullptr : &kinds_->kinds[static_cast<size_t>(it->second)];
+  auto it = kinds_.by_char.find(ch);
+  return it == kinds_.by_char.end() ? nullptr : &kinds_.kinds[static_cast<size_t>(it->second)];
 }
 
 bool TileGrid::set(int c, int r, const TileKind* kind) {
@@ -78,19 +78,19 @@ TileLoad load_tile_grid(const pkg::Files& files, const std::string& tileset, con
   out.errors = r.errors;
   if (!r.tileset) return out;
 
-  auto kinds = std::make_shared<TileKinds>();
-  kinds->kinds.push_back(TileKind{});  // 0 = empty
+  TileKinds kinds;
+  kinds.kinds.push_back(TileKind{});  // 0 = empty
   for (const auto& [ch, def] : r.tileset->tiles) {
     if (pkg::is_empty_tile(static_cast<unsigned char>(ch))) continue;
     TileKind k;
-    k.index = static_cast<int>(kinds->kinds.size());
+    k.index = static_cast<int>(kinds.kinds.size());
     k.ch = ch;
     k.sprite = def.sprite;
     if (def.color) k.has_color = parse_color(*def.color, k.color);
     k.solid = def.solid;
     k.tags = def.tags;
-    kinds->by_char[ch] = k.index;
-    kinds->kinds.push_back(std::move(k));
+    kinds.by_char[ch] = k.index;
+    kinds.kinds.push_back(std::move(k));
   }
   const int rows = static_cast<int>(std::min<size_t>(r.rows.size(), pkg::kMaxTileMapRows));
   const int cols = static_cast<int>(std::min<size_t>(r.cols, pkg::kMaxTileMapCols));
@@ -98,8 +98,8 @@ TileLoad load_tile_grid(const pkg::Files& files, const std::string& tileset, con
   for (int y = 0; y < rows; ++y) {
     const std::string& line = r.rows[static_cast<size_t>(y)];
     for (int x = 0; x < std::min<int>(cols, static_cast<int>(line.size())); ++x) {
-      auto it = kinds->by_char.find(line[static_cast<size_t>(x)]);
-      if (it != kinds->by_char.end()) out.grid->set_index(x, y, static_cast<uint16_t>(it->second));
+      auto it = kinds.by_char.find(line[static_cast<size_t>(x)]);
+      if (it != kinds.by_char.end()) out.grid->set_index(x, y, static_cast<uint16_t>(it->second));
     }
   }
   return out;

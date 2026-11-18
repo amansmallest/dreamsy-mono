@@ -14,6 +14,7 @@
 #include <cmath>
 #include <functional>
 #include <map>
+#include <optional>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -27,6 +28,25 @@
 namespace dreamsy::test {
 
 using script::Json;
+
+// ---------------------------------------------------------------- CPU budget under sanitizers
+
+// The debug preset builds with AddressSanitizer, which makes Luau several times slower than in
+// engine-web (or a release build). Tests that run whole kit games keep engine-web's 250 ms per-call
+// budget in release/web builds and get 8x that under ASan: budget(250). The budget isn't what those
+// tests check; tests of the budget itself use exact values.
+#if defined(__SANITIZE_ADDRESS__)
+inline constexpr double kBudgetScale = 8;
+#elif defined(__has_feature)
+#if __has_feature(address_sanitizer)
+inline constexpr double kBudgetScale = 8;
+#else
+inline constexpr double kBudgetScale = 1;
+#endif
+#else
+inline constexpr double kBudgetScale = 1;
+#endif
+inline double budget(double ms) { return ms * kBudgetScale; }
 
 // Package files by path (text or binary bytes in a std::string), like the TS `Record<string, string>`.
 using FileMap = std::map<std::string, std::string>;
@@ -190,7 +210,7 @@ struct LuauOptions {
   std::function<bool(const Json& save)> until;
   std::function<double()> clock;
   Json save = Json::object_value();  // initial save data (a shared MemorySaveHost: pass the last run's save)
-  double budget_ms = 250;
+  double budget_ms = budget(250);
   uint32_t seed = 1;
   std::string orientation = "portrait";
   std::string preset = "clean";
@@ -203,6 +223,50 @@ struct LuauRun {
 };
 
 LuauRun run_luau(const std::string& src, const LuauOptions& options);
+
+// ---------------------------------------------------------------- playtest timelines
+
+// engine-web/tools/playtest.ts simulate(): run a package with a scripted input timeline (times are
+// game seconds). Controls: "left" "right" "up" "down" (axes) and "jump" "action" "action2" (buttons).
+struct TimelineStep {
+  double t = 0;
+  std::vector<std::string> hold, release, press;  // press = hold for 0.1 s
+  std::optional<std::pair<double, double>> tap;   // tap_screen at reference px
+  struct Swipe {
+    std::pair<double, double> from, to;
+    double seconds = 0.15;
+  };
+  std::optional<Swipe> swipe;
+};
+
+struct SimulateOptions {
+  Json save = Json::object_value();   // preloaded save data
+  std::optional<std::string> scene;   // start mid-game
+  std::optional<Json> scene_params;
+  double clock = 1767225600;          // clock.now() base (PLAYTEST_EPOCH); game time is added
+  std::optional<std::string> auto_dialog;  // "first" | "last" | "1", "2"...: answer dialogs and choices
+  double budget_ms = budget(250);
+  uint32_t seed = 1;
+};
+
+struct PlaytestReport {
+  std::vector<std::string> errors;  // "script:line: message"
+  std::vector<std::string> logs;    // the last 30, "[level] text"
+  std::vector<std::string> toasts;
+  size_t entities = 0;
+  std::map<std::string, int> sfx;   // sfx id -> times played
+  std::vector<std::string> music;   // music ids in play order
+  struct Sample {
+    double t, x, y;
+  };
+  std::vector<Sample> avatar_trace;  // the avatar's position once per second (rounded)
+  std::optional<std::string> dialog;  // text of the dialog line open at the end
+  std::vector<std::string> dialog_log;  // lines shown ("speaker: text", choices add " [a | b]"), last 50
+  Json save;
+};
+
+PlaytestReport simulate(const FileMap& files, const std::vector<TimelineStep>& timeline, double seconds,
+                        const SimulateOptions& options = {});
 
 // ---------------------------------------------------------------- JSON Schema subset
 

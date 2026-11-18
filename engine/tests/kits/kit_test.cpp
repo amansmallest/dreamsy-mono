@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <fstream>
 #include <regex>
+#include <set>
 #include <sstream>
 
 #include "pkg/json.h"
@@ -287,6 +288,139 @@ LuauRun run_luau(const std::string& src, const LuauOptions& o) {
   if (o.until)
     for (int i = 0; i < 100000 && !o.until(g.save()) && g.host->errors().empty(); ++i) g.host->step();
   return LuauRun{g.save(), g.logs(), g.errors()};
+}
+
+// ---------------------------------------------------------------- playtest timelines
+
+PlaytestReport simulate(const FileMap& files, const std::vector<TimelineStep>& timeline, double seconds,
+                        const SimulateOptions& o) {
+  script::HostOptions opts;
+  opts.seed = o.seed;
+  opts.budget_ms = o.budget_ms;
+  opts.scene = o.scene;
+  opts.scene_params = o.scene_params;
+  opts.save = o.save;
+  // clock.now() = base + game time; the host isn't created yet, so the lambda reads it through a pointer.
+  script::Host* host_ptr = nullptr;
+  double base = o.clock;
+  opts.clock = [&host_ptr, base] { return base + (host_ptr ? host_ptr->time() : 0); };
+  Game game = start(files, opts);
+  host_ptr = game.host.get();
+  script::Host& g = *game.host;
+
+  std::set<std::string> held;
+  struct Release {
+    double at;
+    std::string control;
+  };
+  std::vector<Release> pending_release;
+  struct PendingSwipe {
+    double at, t0;
+    std::pair<double, double> from, to;
+  };
+  std::vector<PendingSwipe> pending_swipes;
+  std::vector<TimelineStep> steps = timeline;
+  std::stable_sort(steps.begin(), steps.end(), [](const auto& a, const auto& b) { return a.t < b.t; });
+
+  auto apply_held = [&] {
+    double mx = 0, my = 0;
+    for (const std::string& c : held) {
+      if (c == "left") mx -= 1;
+      else if (c == "right") mx += 1;
+      else if (c == "up") my -= 1;
+      else if (c == "down") my += 1;
+      else g.input().set_button(c, true);
+    }
+    g.input().set_axis("move_x", mx);
+    g.input().set_axis("move_y", my);
+    for (const char* b : {"jump", "action", "action2"})
+      if (!held.count(b)) g.input().set_button(b, false);
+  };
+
+  PlaytestReport report;
+  std::string last_dialog;
+  const int ticks = static_cast<int>(std::lround(seconds * 60));
+  size_t si = 0;
+  for (int i = 0; i <= ticks; ++i) {
+    const double t = i / 60.0;
+    while (si < steps.size() && steps[si].t <= t) {
+      const TimelineStep& s = steps[si++];
+      for (const auto& c : s.hold) held.insert(c);
+      for (const auto& c : s.release) held.erase(c);
+      for (const auto& c : s.press) {
+        held.insert(c);
+        pending_release.push_back({t + 0.1, c});
+      }
+      apply_held();
+      if (s.tap) g.tap_screen(s.tap->first, s.tap->second);
+      if (s.swipe) {
+        g.pointer_down(s.swipe->from.first, s.swipe->from.second);
+        pending_swipes.push_back({t + std::max(0.0, s.swipe->seconds), t, s.swipe->from, s.swipe->to});
+      }
+    }
+    for (size_t k = pending_swipes.size(); k-- > 0;) {
+      const PendingSwipe& sw = pending_swipes[k];
+      double f = sw.at > sw.t0 ? std::min(1.0, (t - sw.t0) / (sw.at - sw.t0)) : 1;
+      if (sw.at <= t) {
+        g.pointer_up(sw.to.first, sw.to.second);
+        pending_swipes.erase(pending_swipes.begin() + static_cast<long>(k));
+      } else {
+        g.pointer_move(sw.from.first + (sw.to.first - sw.from.first) * f, sw.from.second + (sw.to.second - sw.from.second) * f);
+      }
+    }
+    for (size_t k = pending_release.size(); k-- > 0;) {
+      if (pending_release[k].at <= t) {
+        held.erase(pending_release[k].control);
+        pending_release.erase(pending_release.begin() + static_cast<long>(k));
+        apply_held();
+      }
+    }
+    if (i % 60 == 0) {
+      std::vector<world::EntityId> players = g.world().tagged("player");
+      if (!players.empty()) {
+        world::Point p = g.world().vec(*g.world().get(players[0]), "position");
+        report.avatar_trace.push_back({std::round(t), std::round(p.x), std::round(p.y)});
+      }
+    }
+    if (const auto& d = g.dialogs().dialogs.current) {
+      std::string key = std::to_string(d->id) + ":" + std::to_string(d->index);
+      const ui::DialogLine& line = d->lines[d->index];
+      bool last_line = d->index == d->lines.size() - 1;
+      if (key != last_dialog) {
+        last_dialog = key;
+        std::string text = (line.speaker ? *line.speaker + ": " : "") + line.text;
+        if (d->choice && last_line) text += " [" + join(d->options, " | ") + "]";
+        report.dialog_log.push_back(text);
+      }
+      if (o.auto_dialog && i % 6 == 3) {
+        bool line_done = d->shown >= static_cast<double>(line.length);
+        if (d->choice && last_line && line_done) {
+          int n = static_cast<int>(d->options.size());
+          const std::string& a = *o.auto_dialog;
+          int idx = a == "first" ? 0 : a == "last" ? n - 1 : std::max(0, std::min(n - 1, std::atoi(a.c_str()) - 1));
+          g.dialogs().tap(idx);
+        } else {
+          g.dialogs().tap(-1);
+        }
+      }
+    }
+    if (i < ticks) g.step();
+  }
+
+  report.errors = game.errors();
+  const auto& logs = g.logs();
+  for (size_t k = logs.size() > 30 ? logs.size() - 30 : 0; k < logs.size(); ++k)
+    report.logs.push_back("[" + logs[k].level + "] " + logs[k].text);
+  for (const auto& toast : g.toasts().toasts()) report.toasts.push_back(toast.text);
+  report.entities = g.world().count();
+  for (const auto& a : g.audio_events()) {
+    if (a.kind == "sfx") report.sfx[a.id]++;
+    else if (a.kind == "music") report.music.push_back(a.id);
+  }
+  if (const auto& d = g.dialogs().dialogs.current) report.dialog = d->lines[d->index].text;
+  if (report.dialog_log.size() > 50) report.dialog_log.erase(report.dialog_log.begin(), report.dialog_log.end() - 50);
+  report.save = g.save_data();
+  return report;
 }
 
 // ---------------------------------------------------------------- JSON Schema subset

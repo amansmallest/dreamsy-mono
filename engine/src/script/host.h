@@ -112,6 +112,31 @@ class Host {
 
   Settings settings;
 
+  // ---- pointer, taps and platform UI (host_input.cpp). Positions are reference (UI) px.
+  //
+  // The platform layer (play/platform_ui.h) calls these as events arrive, between ticks. They fire
+  // input.pointerDown / pointerUp / swipe right away, like engine-web's Game.pointerDown/Up.
+  void pointer_down(double x, double y, std::optional<double> time = std::nullopt);
+  void pointer_move(double x, double y);
+  void pointer_up(double x, double y, std::optional<double> time = std::nullopt);
+  // Headless tap (engine-web Game.tapScreen, playtests): pointer down + up, then the open dialog,
+  // else the topmost UI element (UIButton.pressed + tapped), else the world. Returns "dialog",
+  // the entity id that was hit, or "".
+  std::string tap_screen(double x, double y);
+  // World-space tap: `tapped` (+ tileTapped, tappedAt) on the topmost visible listening entity.
+  world::EntityId tap_world(double wx, double wy);
+  // `tapped` on one entity (the UI overlay); false if nothing listens.
+  bool tap_entity(world::EntityId e);
+  // UIButton press: fires `pressed` if the button is visible.
+  void press(world::EntityId e);
+  // Reference screen -> world (ground plane, side/topdown camera; engine-web refToWorld).
+  world::Point ref_to_world(double x, double y);
+  double ref_width() const;
+  double ref_height() const;
+
+  ui::DialogSystem& dialogs() { return dialogs_; }
+  const ui::ToastQueue& toasts() const { return toasts_; }
+
  private:
   struct ScriptInst {
     std::string path;

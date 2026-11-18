@@ -173,15 +173,18 @@ add_library(dreamsy_input STATIC
 dreamsy_target_defaults(dreamsy_input)
 target_link_libraries(dreamsy_input PUBLIC dreamsy_base)
 
-# Platform UI state (E5): ui.dialog / ui.choice state machine, toasts. Deterministic, no drawing.
+# Platform UI state (E5): ui.dialog / ui.choice state machine, toasts, UI entity layout and hit
+# testing. Deterministic, no drawing (ui/overlay.cpp draws, in dreamsy_overlay).
 add_library(dreamsy_ui STATIC
   src/ui/dialog.cpp
+  src/ui/layout.cpp
   src/ui/toasts.cpp)
 dreamsy_target_defaults(dreamsy_ui)
-target_link_libraries(dreamsy_ui PUBLIC dreamsy_input)
+target_link_libraries(dreamsy_ui PUBLIC dreamsy_input dreamsy_world)
 
 add_library(dreamsy_script STATIC
   src/script/host.cpp
+  src/script/host_input.cpp
   src/script/host_world.cpp
   src/script/json_value.cpp
   src/script/require_path.cpp
@@ -241,6 +244,11 @@ add_library(dreamsy_render STATIC
   ${DREAMSY_FONTS_CPP})
 dreamsy_target_defaults(dreamsy_render)
 target_link_libraries(dreamsy_render PUBLIC dreamsy_pkg PRIVATE dreamsy_media_libs)
+
+# Platform UI drawing (E5): UI entities, toasts, dialogs, touch controls, pause button -> draw list.
+add_library(dreamsy_overlay STATIC src/ui/overlay.cpp)
+dreamsy_target_defaults(dreamsy_overlay)
+target_link_libraries(dreamsy_overlay PUBLIC dreamsy_ui dreamsy_render dreamsy_script)
 
 add_library(dreamsy_zip_import STATIC src/pkg/zip_import.cpp)
 dreamsy_target_defaults(dreamsy_zip_import)

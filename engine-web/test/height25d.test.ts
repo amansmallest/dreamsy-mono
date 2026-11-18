@@ -5,6 +5,7 @@
 import { Package } from "@dreamsy/format";
 import { describe, expect, it } from "vitest";
 import { Game, type Entity } from "../core/index.js";
+import type { Physics2D } from "../core/physics2d.js";
 
 function pkg(view: string, entities: Record<string, unknown>, script = "") {
   return Package.fromFiles({
@@ -15,12 +16,14 @@ function pkg(view: string, entities: Record<string, unknown>, script = "") {
     "data/tilesets/t.json": JSON.stringify({ tiles: { "#": { color: "#8080ff", solid: true } } }),
   });
 }
+/** Game.physics is private; the tests look inside. */
+const phys = (g: Game) => (g as unknown as { physics: Physics2D }).physics;
 const steps = (g: Game, n: number) => { for (let i = 0; i < n; i++) g.step(); };
 const byId = (g: Game, id: string) => g.world.byId.get(id)!;
 const z = (e: Entity) => e.get<number>("z");
 const pos = (e: Entity) => e.get<number[]>("position");
 const logs = (g: Game) => g.logs.map((l) => l.text);
-const teleport = (g: Game, e: Entity, x: number, y: number) => { e.props.position = [x, y]; g.physics!.syncTransform(e); };
+const teleport = (g: Game, e: Entity, x: number, y: number) => { e.props.position = [x, y]; phys(g).syncTransform(e); };
 
 const WORLD = {
   hero: { type: "Body2D", props: { position: [40, 100], body: "dynamic", size: [16, 12], height: 24, z: 5 } },
@@ -32,7 +35,7 @@ const WORLD = {
 describe("2.5D height", () => {
   it("falls to the floor, lands on a block and on a raised tile map; onGround / groundZ", async () => {
     const g = await Game.load(pkg("topdown", WORLD));
-    const hero = byId(g, "hero"), ph = g.physics!;
+    const hero = byId(g, "hero"), ph = phys(g);
     steps(g, 30);
     expect(z(hero)).toBe(0);
     expect(ph.onGround(hero)).toBe(true);
@@ -58,8 +61,8 @@ describe("2.5D height", () => {
       high: { type: "Body2D", props: { position: [40, 280], body: "dynamic", size: [10, 10], height: 8, z: 30, z_gravity_scale: 0 } },
       flat: { type: "Body2D", props: { position: [40, 320], body: "dynamic", size: [10, 10] } },
     }));
-    g.physics!.setVelocity(byId(g, "high"), [120, 0]);
-    g.physics!.setVelocity(byId(g, "flat"), [120, 0]);
+    phys(g).setVelocity(byId(g, "high"), [120, 0]);
+    phys(g).setVelocity(byId(g, "flat"), [120, 0]);
     steps(g, 90);
     expect(pos(byId(g, "high"))[0]).toBeGreaterThan(150);
     expect(pos(byId(g, "flat"))[0]).toBeLessThan(90.5);

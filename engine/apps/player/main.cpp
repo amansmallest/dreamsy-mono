@@ -15,6 +15,8 @@
 // is embedded at /pkg and the URL hash sets the options as dash-separated words
 // (dreamsy-player.html#iso, #iso-smooth, #demo-iso, #touch). Keys: 1-4 pick the view mode, Tab cycles.
 #include <algorithm>
+#include <functional>
+#include <map>
 #include <cstdlib>
 #include <cstring>
 #include <memory>
@@ -25,6 +27,8 @@
 #include "base/version.h"
 #include "demo_scene.h"
 #include "pkg/catalog.h"
+#include "pkg/text.h"
+#include "pkg/zip_import.h"
 #include "input/usage.h"
 #include "play/platform_ui.h"
 #include "play/scene_draw.h"
@@ -59,19 +63,38 @@ using namespace dreamsy;
 #define DREAMSY_KIT_PACKS_DIR "/kits"  // web: fetched with the package once games load by URL (E6)
 #endif
 
-// The kits a game enables (and their dependencies), each from <dir>/<kit>.dpk. Kit code isn't in the
+using Bytes = pkg::Files::Bytes;
+
+// Reads a whole file (heap buffer: the web build's stack is small).
+std::shared_ptr<Bytes> read_file(const std::string& path) {
+  std::FILE* f = std::fopen(path.c_str(), "rb");
+  if (!f) return nullptr;
+  auto bytes = std::make_shared<Bytes>();
+  std::vector<char> buf(64 * 1024);
+  for (size_t n; (n = std::fread(buf.data(), 1, buf.size(), f)) > 0;) bytes->insert(bytes->end(), buf.begin(), buf.begin() + static_cast<long>(n));
+  std::fclose(f);
+  return bytes;
+}
+
+// Kit pack bytes by kit name: from DREAMSY_KIT_PACKS_DIR natively, or fetched over HTTP on the web.
+using KitBytes = std::function<std::shared_ptr<Bytes>(const std::string& kit)>;
+
+std::shared_ptr<Bytes> kit_from_disk(const std::string& kit) {
+  return read_file(std::string(DREAMSY_KIT_PACKS_DIR) + "/" + kit + ".dpk");
+}
+
+std::vector<std::string> kits_of(const pkg::Manifest& m) {
+  return pkg::Catalog::get().expand_kits(m.kits.value_or(std::vector<std::string>{}));
+}
+
+// The kits a game enables (and their dependencies), each a <kit>.dpk. Kit code isn't in the
 // player binary (script/kits.h); only what a game uses is loaded.
 // `kit_sources` receives every kit script, for the input-usage scan (input/usage.h).
-Result<script::KitLookup> load_kits(const pkg::Manifest& m, std::string& kit_sources) {
+Result<script::KitLookup> load_kits(const pkg::Manifest& m, const KitBytes& kit_bytes, std::string& kit_sources) {
   std::vector<std::shared_ptr<const pkg::Files>> packs;
-  for (const std::string& kit : pkg::Catalog::get().expand_kits(m.kits.value_or(std::vector<std::string>{}))) {
-    const std::string path = std::string(DREAMSY_KIT_PACKS_DIR) + "/" + kit + ".dpk";
-    std::FILE* f = std::fopen(path.c_str(), "rb");
-    if (!f) return Error{"kit \"" + kit + "\" is not available (" + path + ")"};
-    auto bytes = std::make_shared<pkg::Files::Bytes>();
-    std::vector<char> buf(64 * 1024);  // heap, not stack: the web build's stack is only 64 KB
-    for (size_t n; (n = std::fread(buf.data(), 1, buf.size(), f)) > 0;) bytes->insert(bytes->end(), buf.begin(), buf.begin() + static_cast<long>(n));
-    std::fclose(f);
+  for (const std::string& kit : kits_of(m)) {
+    std::shared_ptr<Bytes> bytes = kit_bytes(kit);
+    if (!bytes) return Error{"kit \"" + kit + "\" is not available"};
     auto files = pkg::Files::from_pack(bytes);
     if (!files) return Error{"kit \"" + kit + "\": " + files.error()};
     for (const std::string& file : files.value().paths("kits/")) {
@@ -83,7 +106,9 @@ Result<script::KitLookup> load_kits(const pkg::Manifest& m, std::string& kit_sou
 }
 
 struct Options {
-  std::string package_dir = DREAMSY_DEMO_PACKAGE;
+  std::string package_dir = DREAMSY_DEMO_PACKAGE;  // a directory, a .dpk or a .zip
+  std::string package_url;                          // web: ?pkg=<url> (.dpk or .zip), fetched at start
+  std::string kits_url = "kits/";                   // web: where <kit>.dpk files are (?kits=<url>)
   render::ViewMode view = render::ViewMode::Side;
   int frames = 0;  // quit after this many frames (0 = run until closed)
   bool smooth = false;  // force smooth mode (linear filtering, no pixel snap) to check it on any package
@@ -118,17 +143,22 @@ struct App {
   uint64_t start_ticks = 0;
   int frame_count = 0;
   bool ok = false;
+  bool loading = false;  // web: waiting for ?pkg= / kit downloads
+  std::map<std::string, std::shared_ptr<Bytes>> fetched_kits;
 };
 
 std::unique_ptr<App> g_app;
 
-bool load(App& app) {
-  auto files = pkg::Files::from_dir(app.options.package_dir);
-  if (!files) {
-    log_error("can't open package " + app.options.package_dir + ": " + files.error());
-    return false;
-  }
-  pkg::LoadResult loaded = pkg::load_package(std::move(files).value());
+// A package from a directory, a .dpk or a .zip (bytes already read for the last two).
+Result<pkg::Files> open_package(const std::string& name, std::shared_ptr<Bytes> bytes) {
+  if (!bytes) return pkg::Files::from_dir(name);
+  if (pkg::ends_with(name, ".zip")) return pkg::import_zip(*bytes);
+  return pkg::Files::from_pack(std::move(bytes));
+}
+
+// Validates the package and starts the game (or the --demo scene).
+bool start(App& app, pkg::Files files, const KitBytes& kit_bytes) {
+  pkg::LoadResult loaded = pkg::load_package(std::move(files));
   for (const pkg::Issue& issue : loaded.issues) {
     if (issue.severity == pkg::Severity::Error) log_error(pkg::format_issue(issue));
   }
@@ -152,7 +182,7 @@ bool load(App& app) {
   }
   script::HostOptions host_options;
   std::string kit_sources;
-  auto kits = load_kits(app.package->manifest, kit_sources);
+  auto kits = load_kits(app.package->manifest, kit_bytes, kit_sources);
   if (!kits) {
     log_error(kits.error());
     return false;
@@ -189,7 +219,86 @@ bool load(App& app) {
   return true;
 }
 
+// Native/embedded: the package is a local path.
+bool load(App& app) {
+  const std::string& name = app.options.package_dir;
+  std::shared_ptr<Bytes> bytes;
+  if (pkg::ends_with(name, ".dpk") || pkg::ends_with(name, ".zip")) {
+    bytes = read_file(name);
+    if (!bytes) {
+      log_error("can't read " + name);
+      return false;
+    }
+  }
+  auto files = open_package(name, std::move(bytes));
+  if (!files) {
+    log_error("can't open package " + name + ": " + files.error());
+    return false;
+  }
+  return start(app, std::move(files).value(), kit_from_disk);
+}
+
 void set_view(App& app, render::ViewMode v);
+void finish_init(App& app);
+
+#ifdef __EMSCRIPTEN__
+// Web: ?pkg=<url> loads a package over HTTP, then each kit it enables from <kits_url><kit>.dpk.
+struct Download {
+  std::string what;  // "" = the package, else a kit name
+};
+std::shared_ptr<Bytes> g_package_bytes;
+std::vector<std::string> g_kits_to_fetch;
+
+void fetch_next(App& app);
+
+void on_fetch_error(void* arg) {
+  std::unique_ptr<Download> d(static_cast<Download*>(arg));
+  log_error(d->what.empty() ? "can't download " + g_app->options.package_url : "can't download kit \"" + d->what + "\"");
+  g_app->loading = false;
+}
+
+void on_fetch(void* arg, void* data, int size) {
+  std::unique_ptr<Download> d(static_cast<Download*>(arg));
+  auto bytes = std::make_shared<Bytes>(static_cast<uint8_t*>(data), static_cast<uint8_t*>(data) + size);
+  App& app = *g_app;
+  if (d->what.empty()) {
+    g_package_bytes = bytes;
+    // Peek at the manifest to learn which kits to fetch.
+    auto files = open_package(app.options.package_url, bytes);
+    if (!files) {
+      log_error("can't open " + app.options.package_url + ": " + files.error());
+      app.loading = false;
+      return;
+    }
+    pkg::LoadResult peek = pkg::load_package(std::move(files).value());
+    if (peek.ok) g_kits_to_fetch = kits_of(peek.package->manifest);
+  } else {
+    app.fetched_kits[d->what] = bytes;
+  }
+  fetch_next(app);
+}
+
+void fetch_next(App& app) {
+  if (!g_kits_to_fetch.empty()) {
+    std::string kit = g_kits_to_fetch.back();
+    g_kits_to_fetch.pop_back();
+    std::string url = app.options.kits_url + kit + ".dpk";
+    emscripten_async_wget_data(url.c_str(), new Download{kit}, on_fetch, on_fetch_error);
+    return;
+  }
+  app.loading = false;
+  auto files = open_package(app.options.package_url, g_package_bytes);
+  if (!files) {
+    log_error("can't open " + app.options.package_url + ": " + files.error());
+    return;
+  }
+  auto kit_bytes = [&app](const std::string& kit) -> std::shared_ptr<Bytes> {
+    auto it = app.fetched_kits.find(kit);
+    return it == app.fetched_kits.end() ? nullptr : it->second;
+  };
+  if (start(app, std::move(files).value(), kit_bytes)) finish_init(app);
+}
+#endif
 
 void init() {
   App& app = *g_app;
@@ -218,7 +327,24 @@ void init() {
 #endif
   app.view = app.options.view;
 
+#ifdef __EMSCRIPTEN__
+  // ?pkg=<url to a .dpk or .zip>[&kits=<base url>]: load a game over HTTP instead of the embedded one.
+  app.options.package_url = emscripten_run_script_string("new URLSearchParams(location.search).get('pkg') || ''");
+  const std::string kits = emscripten_run_script_string("new URLSearchParams(location.search).get('kits') || ''");
+  if (!kits.empty()) app.options.kits_url = kits.back() == '/' ? kits : kits + "/";
+  if (!app.options.package_url.empty()) {
+    app.loading = true;
+    log_info("downloading " + app.options.package_url);
+    emscripten_async_wget_data(app.options.package_url.c_str(), new Download{""}, on_fetch, on_fetch_error);
+    return;
+  }
+#endif
   if (!load(app)) return;
+  finish_init(app);
+}
+
+// After the package is loaded: renderer, first frame timing, view mode.
+void finish_init(App& app) {
   if (Status s = app.renderer.init(app.style); !s) {
     log_error(s.error());
     return;
@@ -233,10 +359,10 @@ void init() {
 void frame() {
   App& app = *g_app;
   if (!app.ok) {
-    // Nothing loaded: clear to a dark red so the failure is visible, and keep the window up.
+    // Still downloading: dark grey. Nothing loaded: dark red, so the failure is visible.
     sg_pass pass{};
     pass.action.colors[0].load_action = SG_LOADACTION_CLEAR;
-    pass.action.colors[0].clear_value = {0.3f, 0.05f, 0.08f, 1};
+    pass.action.colors[0].clear_value = app.loading ? sg_color{0.08f, 0.08f, 0.1f, 1} : sg_color{0.3f, 0.05f, 0.08f, 1};
     pass.swapchain = sglue_swapchain();
     sg_begin_pass(&pass);
     sg_end_pass();
@@ -409,7 +535,8 @@ sapp_desc sokol_main(int argc, char** argv) {
   // Window shape from the package's orientation (portrait 9:16, landscape 16:9); the renderer
   // letterboxes anyway, this just avoids big bars.
   bool portrait = false;
-  if (auto files = pkg::Files::from_dir(o.package_dir)) {
+  const bool archive = pkg::ends_with(o.package_dir, ".dpk") || pkg::ends_with(o.package_dir, ".zip");
+  if (auto files = open_package(o.package_dir, archive ? read_file(o.package_dir) : nullptr)) {
     if (auto toml = files.value().text("dreamsy.toml")) portrait = toml->find("\"portrait\"") != std::string_view::npos;
   }
 

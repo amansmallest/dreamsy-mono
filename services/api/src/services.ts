@@ -90,7 +90,7 @@ export const publicGameView = (g: Game, x: GameExtras) => {
   return { ...rest, ...shown(g, x, g.publishedVersion), ...playersShown(x, g.publishedVersion) };
 };
 
-/** DREAMSY.MD §11.2 FeedGame. */
+/** docs/platform.md §11.2 FeedGame. */
 export const feedGameView = (g: Game, x: GameExtras) => ({
   id: g.id,
   name: g.name,
@@ -347,7 +347,7 @@ export const publishFields = (version: number) => ({
 // ---------- stats ----------
 
 /**
- * DREAMSY.MD §11.2: (plays_7d + 3·likes_7d + 5·remixes_7d) / (hoursSincePublish + 2)^1.2.
+ * docs/platform.md §11.2: (plays_7d + 3·likes_7d + 5·remixes_7d) / (hoursSincePublish + 2)^1.2.
  * Cheap: three indexed counts for one game. Called whenever a play/like/remix lands and on publish.
  * Scores of games with no new activity are not decayed until their next write.
  */

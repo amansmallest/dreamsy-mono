@@ -1,6 +1,6 @@
 # apps/mobile — Dreamsy app (iOS first)
 
-Create (chat + live preview) and play. Expo + expo-router + TypeScript. See DREAMSY.MD §6.
+Create (chat + live preview) and play. Expo + expo-router + TypeScript. See docs/platform.md §6.
 
 ## Setup
 
@@ -70,10 +70,10 @@ app/                 expo-router routes
   avatar.tsx         edit avatar (modal)
   (tabs)/            Home (feed tabs + search), Create (my games, running builds + ETA),
                      Market (store items across games), Profile (own profile, coins wallet, earnings)
-  discover/[id].tsx  game page: play, like, share, share with family, remix, creator, report (DREAMSY.MD §11);
+  discover/[id].tsx  game page: play, like, share, share with family, remix, creator, report (docs/platform.md §11);
                      leaderboards (board picker, Everyone / each of my groups, top 20, me, ghost badge; §13)
   user/[id].tsx      creator profile: follow, published games
-  groups/index.tsx   Family & friends (DREAMSY.MD §13): my groups, start one (share sheet with the invite link),
+  groups/index.tsx   Family & friends (docs/platform.md §13): my groups, start one (share sheet with the invite link),
                      join by code. Reached from Profile (row + menu) and the people icon on Home
   groups/[id].tsx    group: invite code + share, members, shared games (Play; drafts too), leave, delete /
                      new code (owner)
@@ -168,7 +168,7 @@ posts JSON back via `window.ReactNativeWebView.postMessage` (in the PWA iframe: 
 
 `&insets=top,right,bottom,left` (full-screen player) keeps the engine's pause button and controls out of the notch.
 `&room=` / `&spectate=` (friends: join / watch a room) are ignored until the C++ engine has a room client
-(DREAMSY.MD §14.10 E8); multiplayer games run solo meanwhile.
+(docs/engine.md §14.10 E8); multiplayer games run solo meanwhile.
 
 The workspace preview is keyed by `latestVersion`, so a finished generation (or a restore)
 reloads it. Production will point `EXPO_PUBLIC_ENGINE_URL` at a hosted build of the web player

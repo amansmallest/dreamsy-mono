@@ -1,7 +1,7 @@
 // The raw files of a game package: normalized path -> bytes.
 //
 // Sources:
-//   - a Dreamsy pack (.dpk, DREAMSY.MD §3.6): the transport and runtime format; read in place,
+//   - a Dreamsy pack (.dpk, docs/format.md §3.6): the transport and runtime format; read in place,
 //     every file is a view into the one pack buffer (no copies)
 //   - a directory (authoring, tools)
 //   - an in-memory map (tests)

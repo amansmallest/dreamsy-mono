@@ -1,11 +1,11 @@
-// Multiplayer offline fallback (DREAMSY.MD §4.5): one local player, in-process remote events, room
+// Multiplayer offline fallback (docs/runtime.md §4.5): one local player, in-process remote events, room
 // state / scores / finish, and mp-duel played solo. Port of the offline parts of
 // engine-web/test/net.test.ts.
 //
 // Not ported: everything that needs two connected games (engine-web's LoopbackRoom: teams, puppet
 // replication + interpolation, remote event routing, shared state, mp-duel and racing versus) and
 // the netcode client helpers (SnapshotBuffer, ClockSync, room URLs / codes). The C++ engine has no
-// network room yet: netcode is slice E8 (DREAMSY.MD §14.6, §14.10).
+// network room yet: netcode is slice E8 (docs/engine.md §14.6, §14.10).
 #include "kits/kit_test.h"
 
 #include <cmath>

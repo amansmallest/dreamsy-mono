@@ -1,4 +1,4 @@
-// Depth sorting by view mode (DREAMSY.MD §14.5).
+// Depth sorting by view mode (docs/engine.md §14.5).
 //
 // sort_draw_list() returns the order to draw a DrawList's items in, as references into its
 // vectors. It also inserts a drop shadow before each raised sprite (z > 0 with `shadow` set).

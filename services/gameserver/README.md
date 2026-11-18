@@ -2,10 +2,10 @@
 
 Rooms with invite codes, 1v1 quick match (red vs blue), party rooms up to `[players] max` (≤ 8).
 v1 = server-relayed state sync: devices simulate, this server owns membership, teams, host, shared
-state, scores and match results, and relays avatar samples + remote events. See DREAMSY.MD §4.5 and
+state, scores and match results, and relays avatar samples + remote events. See docs/runtime.md §4.5 and
 `src/protocol.ts` (the message contract; this service owns it, clients must match it).
 
-Clients: the C++ engine has no room client yet (E8, DREAMSY.MD §14.10), so multiplayer games currently run
+Clients: the C++ engine has no room client yet (E8, docs/engine.md §14.10), so multiplayer games currently run
 offline (solo, with the engine's offline room) in the web player and the app. The socket tests drive the server
 with a protocol-level client (`test/client.ts`).
 

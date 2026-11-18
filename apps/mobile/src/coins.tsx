@@ -1,4 +1,4 @@
-// Pay-per-play coins (DREAMSY.MD §11.6): 10,000 coins = $0.10; playing someone else's published game
+// Pay-per-play coins (docs/platform.md §11.6): 10,000 coins = $0.10; playing someone else's published game
 // costs PLAY_PRICE (creator 90%, Dreamsy 10%) and buys a 30-minute pass. Free: own games, drafts
 // shared to a group, an active pass. The server decides; this file formats, remembers passes, and
 // gates the Play screen (POST /v1/games/:id/play before opening the player).

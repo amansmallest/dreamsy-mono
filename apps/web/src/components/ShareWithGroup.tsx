@@ -5,7 +5,7 @@ import { Button, Empty, ErrorNote, Modal, Spinner } from './ui';
 import { api, errorMessage } from '../lib/api';
 import { invalidate, useResource } from '../lib/store';
 
-/** Pick one of my groups and share this game with it (drafts included, DREAMSY.MD §13). */
+/** Pick one of my groups and share this game with it (drafts included, docs/platform.md §13). */
 export function ShareWithGroupModal({ gameId, gameName, open, onClose }: { gameId: string; gameName: string; open: boolean; onClose: () => void }) {
   const groups = useResource(open ? 'groups' : null, api.myGroups);
   const [busy, setBusy] = useState<string | null>(null);

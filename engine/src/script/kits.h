@@ -1,4 +1,4 @@
-// Where the script host finds kit sources ("kits/<kit>/<module>.luau", DREAMSY.MD §12.1).
+// Where the script host finds kit sources ("kits/<kit>/<module>.luau", docs/kits.md §12.1).
 //
 // Players load only the kits a game enables, as separate Dreamsy packs (kits/<kit>.dpk, built by
 // cmake/gen_kit_packs.py), so kit code isn't in the player download. Tools and tests link every kit

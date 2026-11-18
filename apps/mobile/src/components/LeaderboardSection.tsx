@@ -32,7 +32,7 @@ const boardLabel = (b: string) => {
 };
 
 /**
- * Game page leaderboards (DREAMSY.MD §13): board picker, scope (Public / each of my groups), top 20,
+ * Game page leaderboards (docs/platform.md §13): board picker, scope (Public / each of my groups), top 20,
  * me highlighted (plus my row under the list if I'm outside the top 20), ghost badge. Renders nothing
  * for games without boards. Refetches on focus, so a run finished in the player shows up on return.
  */

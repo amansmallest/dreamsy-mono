@@ -2,7 +2,7 @@
 //
 // Until the world (E3) fills draw lists from entities, the player shows this: the package's
 // tile level, sprites with frame animation, jumping sprites with drop shadows, additive sparks,
-// text with outlines and shadows, and a UI panel, in any of the four view modes (DREAMSY.MD §14.5).
+// text with outlines and shadows, and a UI panel, in any of the four view modes (docs/engine.md §14.5).
 #pragma once
 
 #include <string>

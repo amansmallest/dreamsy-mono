@@ -1,4 +1,4 @@
-// dreamsy-tool playtest / eval: the harness's headless engine runs (DREAMSY.MD §5.1, §14.8).
+// dreamsy-tool playtest / eval: the harness's headless engine runs (docs/harness.md §5.1, §14.8).
 //
 // playtest: runs a package with a scripted input timeline (game time) and prints one JSON report:
 // what engine-web's tools/playtest.ts simulate() returned to the builder model, plus the scenes the

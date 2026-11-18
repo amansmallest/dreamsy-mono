@@ -1,6 +1,6 @@
 // The script host: runs a package's Luau scripts with the platform API (format/LUAU_API.md).
 //
-// A port of engine-web/core/game.ts (DREAMSY.MD §14.13). The prelude (engine-web/core/prelude.ts,
+// A port of engine-web/core/game.ts (docs/engine.md §14.13). The prelude (engine-web/core/prelude.ts,
 // embedded at build time) builds the public API in Luau and calls numbered host ops, which are
 // implemented here, natively. Same op numbers, value tags, script order and tick order as
 // engine-web, so the two engines can be compared op by op.
@@ -49,7 +49,7 @@ struct HostOptions {
   std::function<void(const struct LogLine&)> on_log;
   KitLookup kits;  // where kit sources come from; empty = script::default_kits() (script/kits.h)
   // Forces one 2.5D view mode for every scene (tools/tests). Unset = each scene's own view
-  // (scene `view`, else manifest `view`, else side; DREAMSY.MD §14.5).
+  // (scene `view`, else manifest `view`, else side; docs/engine.md §14.5).
   std::optional<world::ViewMode> view;
   // A run ended (engine-web Game.onRunEnd, the app's {type:"runEnd"}): leaderboard finish/submit,
   // platform.runEnded, or the (offline) room finished. Called during step(); not rate-limited here.

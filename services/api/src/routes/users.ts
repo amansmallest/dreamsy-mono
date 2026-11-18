@@ -208,7 +208,7 @@ export function userRoutes({ db, config, identity, mailer }: Deps) {
     return c.json({ user });
   });
 
-  // ---------- creators & following (DREAMSY.MD §11.4) ----------
+  // ---------- creators & following (docs/platform.md §11.4) ----------
 
   r.use("/v1/users/*", requireUser(config));
 

@@ -7,7 +7,7 @@ import { useUser } from '../lib/auth';
 import { inviteLink, timeAgo } from '../lib/format';
 import { invalidate, useResource } from '../lib/store';
 
-/** Family / friends groups (DREAMSY.MD §13): invite by code, shared games, group leaderboards. */
+/** Family / friends groups (docs/platform.md §13): invite by code, shared games, group leaderboards. */
 export function Groups() {
   const groups = useResource('groups', api.myGroups);
   const [params, setParams] = useSearchParams();

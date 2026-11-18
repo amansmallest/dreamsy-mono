@@ -1,6 +1,6 @@
 # Kits
 
-A kit is a tested, versioned Luau library shipped with the engine (DREAMSY.MD §12.1). Games opt in with
+A kit is a tested, versioned Luau library shipped with the engine (docs/kits.md §12.1). Games opt in with
 `kits = ["<kit>"]` in `dreamsy.toml` and `require("@kit/<kit>")` (or `require("@kit/<kit>/<module>")`).
 The shipped list is `KITS` in `format/src/kits.ts` (the validator rejects anything else).
 

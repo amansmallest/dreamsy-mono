@@ -29,7 +29,7 @@ export async function unreadCount(q: Q, userId: string) {
   return Number(r?.n ?? 0);
 }
 
-/** In-app inbox + Expo push tokens (DREAMSY.MD §11.6). */
+/** In-app inbox + Expo push tokens (docs/platform.md §11.6). */
 export function notificationRoutes({ db, config }: Deps) {
   const r = router();
   r.use("/v1/me/notifications", requireUser(config));

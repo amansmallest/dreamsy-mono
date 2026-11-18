@@ -8,7 +8,7 @@ export const Id = z.string().regex(ID_RE, "id must be lowercase snake_case, star
 
 // ---------- manifest (dreamsy.toml) ----------
 
-/** 2.5D view modes (DREAMSY.MD §14.5). */
+/** 2.5D view modes (docs/engine.md §14.5). */
 export const VIEW_MODES = ["side", "topdown", "oblique", "iso"] as const;
 export type ViewMode = (typeof VIEW_MODES)[number];
 
@@ -18,10 +18,10 @@ export const Manifest = z.strictObject({
   name: z.string().min(1).max(80),
   description: z.string().max(2000).optional(),
   dimension: z.enum(["2d", "3d"]),
-  /** Phone layout (DREAMSY.MD §11.1). Absent = "landscape" (older games); new games default to portrait. */
+  /** Phone layout (docs/platform.md §11.1). Absent = "landscape" (older games); new games default to portrait. */
   orientation: z.enum(["portrait", "landscape"]).optional(),
   /**
-   * 2.5D view mode (DREAMSY.MD §14.5), 2D games only. Absent = "side". Scenes may override it.
+   * 2.5D view mode (docs/engine.md §14.5), 2D games only. Absent = "side". Scenes may override it.
    * side: x right, y down, planar gravity (platformers). topdown / oblique / iso: y is depth (no planar
    * gravity), entities have a height `z`; oblique draws z upward, iso projects onto a 2:1 diamond.
    */
@@ -36,7 +36,7 @@ export const Manifest = z.strictObject({
     tick_rate: z.number().int().min(1).max(120).default(30),
     deterministic: z.boolean().default(false),
   }).default({ mode: "none", tick_rate: 30, deterministic: false }),
-  /** Engine kits this game uses (DREAMSY.MD §12.1), e.g. ["rpg"]; validated against KITS. */
+  /** Engine kits this game uses (docs/kits.md §12.1), e.g. ["rpg"]; validated against KITS. */
   kits: z.array(z.string()).max(8).optional(),
   avatar: z.strictObject({ enabled: z.boolean().default(false) }).default({ enabled: false }),
   /**

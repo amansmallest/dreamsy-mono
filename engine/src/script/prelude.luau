@@ -450,7 +450,7 @@ sound = freeze({
 	play = function(assetId, at) H(OP_SOUND, assetId, encode(at)) end,
 })
 
--- ---------- players + rooms (multiplayer, DREAMSY.MD §4.5) ----------
+-- ---------- players + rooms (multiplayer, docs/runtime.md §4.5) ----------
 -- Offline (no room): one local player, events stay in-process. In a room: players/teams from the room server,
 -- fireServer goes to the room host's device, fireClient/fireAll are relayed, avatars replicate via room.replicate.
 local net = { online = H(OP_NET, "active"), spectator = H(OP_NET, "prop", "isSpectator") == true, objs = {} }
@@ -785,7 +785,7 @@ store = freeze({
 	purchased = setmetatable({ _h = 0, _name = "storePurchased" }, SignalM),
 })
 
--- ---------- leaderboards + ghosts (DREAMSY.MD §13) ----------
+-- ---------- leaderboards + ghosts (docs/platform.md §13) ----------
 local function lbBoard(b, fn, required)
 	if b == nil and not required then return nil end
 	if type_(b) ~= "string" then error("leaderboard." .. fn .. " expects a board name string like \"fastest\"", 3) end

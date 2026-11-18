@@ -10,7 +10,7 @@ import { fail, type Config, type IdentityVerifier } from "../src/context.js";
 import { schema, type DB } from "../src/db/client.js";
 import { MemoryStorage } from "../src/storage.js";
 
-/** DREAMSY.MD §13 leaderboards, ghosts, groups. */
+/** docs/platform.md §13 leaderboards, ghosts, groups. */
 
 const config: Config = {
   jwtSecret: "test-secret-test-secret-test-secret-123",

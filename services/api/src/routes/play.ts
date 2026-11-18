@@ -26,7 +26,7 @@ function freeReason(g: Game, userId: string): "owner" | "draft" | null {
 }
 
 /**
- * Pay-per-play (DREAMSY.MD §11.6). Starting someone else's published game costs `playPrice` coins:
+ * Pay-per-play (docs/platform.md §11.6). Starting someone else's published game costs `playPrice` coins:
  * creator `creatorShare`, platform the rest. A paid start opens a `playPassMinutes` pass for
  * (user, game); starts while it's valid are free and return the same pass. Owners and group members
  * on shared drafts play free, and so does a new account's onboarding game until its welcome sheet is shown

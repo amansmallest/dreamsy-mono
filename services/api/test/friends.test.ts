@@ -10,7 +10,7 @@ import type { Presence, PresenceFetcher } from "../src/presence.js";
 import { flushPushes } from "../src/push.js";
 import { MemoryStorage } from "../src/storage.js";
 
-/** DREAMSY.MD §13.4: friends, invites, presence. */
+/** docs/platform.md §13.4: friends, invites, presence. */
 
 const config: Config = {
   jwtSecret: "test-secret-test-secret-test-secret-123",

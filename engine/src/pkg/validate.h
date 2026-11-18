@@ -5,7 +5,7 @@
 // the API) and the C++ engine agree on which packages are valid. The conformance test compares
 // the two on every package in games/ (engine/tests/conformance/).
 //
-// One intentional difference: the C++ engine is 2D/2.5D only (DREAMSY.MD §14), so
+// One intentional difference: the C++ engine is 2D/2.5D only (docs/engine.md §14), so
 // dimension = "3d" is an error ("manifest.dimension_unsupported").
 #pragma once
 

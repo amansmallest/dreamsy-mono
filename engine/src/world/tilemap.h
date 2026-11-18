@@ -1,4 +1,4 @@
-// The live tile grid of a TileMap2D (DREAMSY.MD §3.5): parsed once from the package, edited by
+// The live tile grid of a TileMap2D (docs/format.md §3.5): parsed once from the package, edited by
 // scripts with setTile. A port of engine-web/core/tilemap.ts.
 #pragma once
 

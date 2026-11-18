@@ -12,7 +12,7 @@
 // Each batch is one draw call: one per atlas page, whatever the mix of images, text and blending.
 //
 // Shaders are written by hand for Metal (macOS/iOS) and GLSL ES 3.0 (WebGL2, Android) in
-// renderer.cpp; there is one tiny shader, so sokol-shdc isn't needed yet (DREAMSY.MD §14.12
+// renderer.cpp; there is one tiny shader, so sokol-shdc isn't needed yet (docs/engine.md §14.12
 // plans it for custom materials).
 #pragma once
 

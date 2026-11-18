@@ -1,4 +1,4 @@
-// dreamsy.toml (DREAMSY.MD §3.1), port of the zod Manifest schema in format/src/schema.ts.
+// dreamsy.toml (docs/format.md §3.1), port of the zod Manifest schema in format/src/schema.ts.
 #pragma once
 
 #include <string_view>

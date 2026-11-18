@@ -1,4 +1,4 @@
-// Small shared helpers for the social side (feed, game page, profiles, market). DREAMSY.MD §11.
+// Small shared helpers for the social side (feed, game page, profiles, market). docs/platform.md §11.
 
 import { Share } from 'react-native';
 

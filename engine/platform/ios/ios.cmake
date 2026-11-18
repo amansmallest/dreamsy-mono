@@ -1,4 +1,4 @@
-# iOS app bundle for dreamsy-player (DREAMSY.MD §14.7). Included from engine/CMakeLists.txt when
+# iOS app bundle for dreamsy-player (docs/engine.md §14.7). Included from engine/CMakeLists.txt when
 # CMAKE_SYSTEM_NAME is iOS (presets ios-sim and ios-device; see engine/README.md "Phones").
 #
 # Luau runs in interpreter mode on iOS (no JIT: Luau.CodeGen is never linked), as on every target.

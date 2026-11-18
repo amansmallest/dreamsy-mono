@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Writes one Dreamsy pack per kit (DREAMSY.MD §3.6): <out_dir>/<kit>.dpk holding kits/<kit>/**/*.luau and
+"""Writes one Dreamsy pack per kit (docs/format.md §3.6): <out_dir>/<kit>.dpk holding kits/<kit>/**/*.luau and
 kits/<kit>/kit.json. Players load only the kits a game enables (script/kits.h), so kit code stays out of
 the player binary and download.
 

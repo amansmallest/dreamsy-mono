@@ -1,5 +1,5 @@
 // Real sockets on an ephemeral port: auth, limits, quick match, and a duel played through the server at the protocol level
-// (what an engine client sends and receives; the C++ engine's room client lands in E8, DREAMSY.MD §14.10).
+// (what an engine client sends and receives; the C++ engine's room client lands in E8, docs/engine.md §14.10).
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { SignJWT } from "jose";
 import { LIMITS, type ServerMsg } from "../src/protocol.js";

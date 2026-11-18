@@ -1,4 +1,4 @@
-// Deterministic math (DREAMSY.MD §14.4): the engine links musl's libm (third_party/musl-libm) into every
+// Deterministic math (docs/engine.md §14.4): the engine links musl's libm (third_party/musl-libm) into every
 // executable, so these must hold bit for bit on macOS arm64, Linux x86-64 and WebAssembly (CI runs all three).
 // The golden bits come from musl 1.2.5 compiled with the engine's flags; engine-web (Emscripten's musl)
 // produces the same values (tests/scripts/math via tests/conformance/run_compare.py).

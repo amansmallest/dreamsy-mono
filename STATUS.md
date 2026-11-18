@@ -1,243 +1,63 @@
 # Dreamsy — status
 
-## 2026-11-18 — engine-web deleted; everything runs on the C++ engine
+Current state of the work (2026-11-18). The spec is DREAMSY.MD + `docs/`; git history has the day-by-day log.
 
-The TypeScript engine (`engine-web/`) is gone (last version: git tag `engine-web-final`). E6 parity done (DREAMSY.MD §14.8).
-- **Harness** (§5.1): `dreamsy-tool playtest` (headless JSON report, same fields as engine-web's PlaytestReport, byte-identical
-  output on the games checked) and `dreamsy-tool eval` (Luau in a package; kit balance sims in `kits/tycoon`,
-  `kits/tower-defense` via `kits/_tools/engine.ts`, identical reports). Browser screenshots from the C++ web player
-  (`harness/src/browser.ts`, real 2.5D). One real generation run: $0.11.
-- **App + share links**: the web player has the embedding contract (`engine/apps/player/embed.js`: `?public=`,
-  `?api=&game=&version=&token=`, `embed=1`, messages ready/error/quit/runEnd). `scripts/dev.sh` builds and serves it
-  on :2005 (laptop stack is now the default, `--prod` for hosted); `scripts/deploy.sh` deleted; `deploy/Dockerfile`
-  builds dreamsy-tool + the web player (untested end to end: apt mirrors failed locally; the player stage built).
-- **Gameserver** owns the room protocol (`services/gameserver/src/protocol.ts`).
-- **Tests**: engine-web's suite ported to doctest (`engine/tests/kits`, `engine/tests/api`): 307 of 351 TS tests ported
-  (all 232 kit tests, same thresholds), 5 already covered, 5 obsolete, 34 need missing features (net/spectate: E8;
-  API leaderboards/ghosts, pluggable store, run-end events — `HostOptions::on_run_end` now exists, so those 5 can be
-  ported next). Slow sims are ctest label `slow` (skipped in debug/headless presets, run in release/web).
-- **Prelude** is `engine/src/script/prelude.luau` (op numbers from `ops.h`). **Conformance** diffs against golden
-  reports recorded from engine-web (`engine/tests/conformance/golden`, `run_compare.py --update` for intentional changes):
-  12/12 + 26/26 identical; `conformance.py` 113/113.
-- **Removed**: engine-web, `pipelines/`, `tools/parity.mts`, `ts_run.mts`, godot .gitignore lines.
-- **Gaps vs engine-web**: no online room client (multiplayer games run solo until E8), no API store / leaderboards /
-  cross-session saves in the web player.
-- Results (macOS): ctest debug 8/8 (ASan/UBSan), release 9/9 (incl. slow), web 2/2; harness 28, api 95, gameserver 27,
-  format 50; `pnpm -r typecheck` clean.
-- Not mine to change: `third_party/luau/DREAMSY_VENDOR.md` still mentions engine-web's WASM build (third_party is
-  vendored, don't modify; the note is stale).
+## What works
 
-## 2026-11-17 — engine v2 (C++) started
-
-Decision: Dreamsy becomes a 2D + 2.5D engine (no 3D), rewritten in C++ with server-authoritative multiplayer.
-Spec: DREAMSY.MD §14 (stack, code style, determinism, 2.5D views, netcode, migration, full-engine scope §14.12, slices E0–E10).
-`engine-web/` stays the shipping engine and reference until parity (E6).
-
-**E0 scaffold: done (not committed yet).**
-- `engine/`: CMake + presets (`debug` with ASan/UBSan, `release`, `headless`, `web`), see `engine/README.md`.
-- `src/base/`: Result/Status, Pool/Id generational handles, Arena, Rng (sfc32, bit-identical to engine-web), Hasher, log, checks.
-- `dreamsy-tool smoke` (sandboxed Luau + Box2D), `dreamsy-player` (spinning square: Metal on macOS, WebGL2 on web), `dreamsy-tests` (11 cases).
-- Physics golden hash `8f2b7e35f5951775` is identical on macOS arm64 (debug, release) and WebAssembly; CI adds Linux x86-64.
-- Web sizes (gzip): player wasm 44 KB + js 17 KB; tool (with Luau + Box2D) wasm 341 KB.
-- Vendored: Box2D v3.2.0, sokol, miniaudio 0.11.26, stb, doctest 2.5.3 (`third_party/*/DREAMSY_VENDOR.md`).
-- CI: `.github/workflows/engine.yml` (macOS, Linux headless, web). Not run yet: runs on the first push of engine changes to origin.
-- Emscripten bug workaround: `engine/src/platform/web/em_library_funcs.json` (see the comment in engine/CMakeLists.txt).
-- C++ primer: `docs/CPP-FOR-TS-DEVS.md`.
-
-**E1 packages: done (not committed yet).**
-- Zip replaced by the **Dreamsy pack (`.dpk`)**: index first, uncompressed + 16-byte aligned (read in place, no
-  decompressor; HTTP brotli/gzip compresses it better than zip), SHA-256 per file, package id = hash of the index,
-  canonical bytes. Spec: DREAMSY.MD §3.6. Engine never reads zip; `dreamsy-tool pack` converts (all 21 `.data` zips OK).
-- `engine/src/pkg/`: Files (packs, dirs, zero-copy views), catalog (embedded format/catalog.json + kit.json list),
-  manifest (toml++), tilesets/levels/anims/sfx/music/SVG parsers, `load_package()` = full port of
-  format/src/validate.ts with the same issue codes, typed `Package` output.
-- Tool: `dreamsy-tool validate|info|pack|unpack`. Packs are byte-identical between native and web builds.
-- Conformance: `engine/tests/conformance/conformance.py` runs both validators on 26 games + 81 generated broken
-  packages: 107/107 agree, 69 of 70 issue codes exercised (`package.too_large` is unit-tested instead).
-  Intended difference: C++ rejects `dimension = "3d"` (block-tower).
-- Fuzzing: targets for pack, package, zip import; `-replay` builds run in ctest with random mutations; libFuzzer in
-  CI. Found 3 real bugs, all fixed, inputs kept in `engine/fuzz/regressions/` (replayed by ctest):
-  1. toml++ v3.4.0 asserted (UB in release) on `[`+newline headers → re-vendored at upstream master `c38c9b9`
-     (fixed upstream); toml++ asserts stay on in every build and stop cleanly instead of becoming assumptions.
-  2. yyjson's error locator does null-pointer arithmetic on empty input → empty JSON files rejected before parsing.
-  3. miniz's memory reader overflows a pointer on corrupt zip offsets → importer uses its own bounds-checked reader.
-  After the fixes: 7,826 package + 7,525 pack + 12,004 zip mutated inputs under ASan/UBSan, no crashes.
-  macOS note: a crashing run sits in the crash reporter (state UE) and looks hung; set DREAMSY_FUZZ_SAVE to keep the input.
-- Tests: 33 cases / 261 assertions + fuzz corpus/regression replays, green on macOS debug (ASan/UBSan), release and web.
-- TODO outside the engine: TS `.dpk` reader/writer in format/src/package.ts, then API/harness/engine-web switch from zip.
-
-**E2 scripting: core done (not committed yet → see below).**
-- Spec: §14.13 (single-player keeps one VM like engine-web; separate server/client VMs only for authoritative
-  multiplayer; fast native vectors left OPEN), 2.5D folded into E3 (world) and E4 (renderer).
-- `engine/src/script/`: native Luau host. The prelude is extracted from engine-web/core/prelude.ts at build time
-  (byte-identical to what engine-web runs) and every kit's sources are embedded. Same op numbers, script order,
-  tick order, error dedupe, budgets (unswallowable), memory cap, require/kits/cycles, save (64 KB), data.read,
-  scenes, offline room, in-memory store, audio events. Entity ops raise "not available yet (E3)".
-- `dreamsy-tool run <pkg>`; `tests/conformance/run_compare.py` diffs it against engine-web (ts_run.mts):
-  6/6 script-only test games identical (`engine/tests/scripts/`).
-- Deterministic math: musl 1.2.5 libm (same as Emscripten → engine-web) linked into every executable, built
-  without FMA paths; math results identical to engine-web on all ~170 sampled values, golden bits pass on native
-  debug/release and web. Before: 20 values differed between macOS libm and engine-web.
-- Speed: native Luau ~1.8x engine-web's WASM Luau on a mixed benchmark (2.8x on pure compute; vec2 math only
-  1.7x because every vec2 allocates a table → evidence for the OPEN fast-vectors item). No Luau codegen yet.
-- Contract fixes (2026-11-17, both engines + LUAU_API.md): `random(max)` → [0,max) (it returned `max`; no game used
-  the one-argument form); the "Not available" list now allows `@kit/` requires; `tostring(entity)` prints the id
-  (the prelude stringified the value tag, so every entity printed `Entity(0)`).
-- `dreamsy-tool check <pkg>`: Luau type checking against `format/dreamsy.d.luau` (Entity props generated from
-  the catalog), requires resolved like the runtime. Catches misspelled globals, wrong argument types/counts,
-  Vec2 misuse, entity prop typos (strict scripts). Valid games: 0 errors (56 warnings across 30 games).
-  The new Luau solver crashed on kit-puzzle, so the old solver is used.
-- Still TODO in E2: Luau native codegen on desktop/Android/server, per-script profiling, hot reload.
-- format: `Package.fromPack/toPack/contentHash` in TS, byte-identical with the C++ tool on 25 games
-  (CLI `pack x.dpk`). API/harness/engine-web still move zips.
-
-**Parallel agents (2026-11-17), merged into engine-v2:**
-- E3 world + physics (2.5D-native): `engine/src/world`, `engine/src/physics` (Box2D v3, 32 px = 1 m, Rapier's
-  average friction/restitution, Area2D overlaps at step start like Rapier), every entity op in the host,
-  tweens, anims, particles, camera, dialogs, headless input, leaderboards. 2.5D: z/height/z-velocity per
-  entity, view mode, z-range collision filtering, landing on tops, falling off ledges (engine-internal until E7).
-  Conformance: 25/25 games + 6/6 script tests identical to engine-web at script level; state hashes identical
-  across debug/release/wasm. Physics drift vs Rapier: tiny when scripts steer bodies (coin-dash 0.004 px,
-  feature-demo 0.17 px max); free bouncing diverges (physics_mix ball ends 318 px off) — accepted per §14.8.
-- E4 renderer foundation: `engine/src/render` (batched sokol renderer, own Metal/GLSL shaders, per-view depth
-  sorting + drop shadows, PNG/JPG/SVG atlases, 4 bundled OFL fonts, letterboxing, pixel-perfect mode).
-  Topdown sort is layer, z_index, then y (decided 2026-11-17: backgrounds with negative z_index stay behind).
-- Phones: iOS simulator build verified (screenshot, 42/42 tests in the simulator); device build compiles
-  unsigned; Android presets + Gradle skeleton untested (no SDK/NDK installed). engine/README.md "Phones".
-- TS .dpk (format/src/pack.ts), byte-identical with C++ on 25 games.
-- Integration: `engine/src/play/scene_draw` (world -> draw list); dreamsy-player runs games at 60 Hz:
-  feature-demo, coin-dash, tile-quest run natively and on the web with 0 script errors (keyboard stand-in input).
-- Audio: skipped on purpose — the user is designing an audio harness. The host still records sfx/music events.
-- Known: web player is ~1.44 MB gzipped because all kit sources are embedded → ship kits separately.
-
-- E5 input + platform UI merged: input/ (keys, mouse, touch, gestures, on-screen controls), ui/ (layout, overlay,
-  dialogs, toasts), UI entities drawn and tappable, pause menu.
-- E6: web player loads any game by URL (?pkg=<.dpk|.zip>, kits fetched per game); engine/tools/make_play_page.py
-  builds a picker. Visual parity pass (engine/tools/parity.mts side-by-side harness): mean difference 2.64 → 0.70 over
-  113 shots; Lighting2D/Light2D, scissor, symbol fallback font, SVG fixes (bbox gradients, <use>, <pattern>, <text>),
-  full pause menu (settings/controls/leaderboard/quit). Pixel theme font is DejaVu Sans Mono Bold = engine-web's
-  effective font (Press Start 2P kept in the repo; switch back once engine-web is retired, decision in §14.10).
-- E7 minimal slice merged: manifest/scene `view`, entity `z`/`height`, Body2D `z_velocity`/`z_gravity_scale`, Sprite2D
-  `anchor`; e.onGround/e.groundZ, camera.screenDirToWorld; both engines simulate height identically; blocks render in
-  2.5D; harness prompt teaches 2.5D. Claude built games/showcase/cloud-hopper (oblique, 3 levels, $9.53, one round).
-- Contract fixes: random(max) → [0,max); @kit/ requires documented; tostring(entity) prints the id.
-- CI: first run (pushed by the user) found Linux issues (glibc math.h clash with musl, libstdc++ pair<..., Json>,
-  missing includes, a test-helper leak) — fixed and verified in an ubuntu:24.04 container (ctest 8/8). Needs a re-push.
-- Checks now: C++ tests green (debug ASan/UBSan, release, web, Linux), run_compare 12/12 + 26/26 + 6/6, validator
-  conformance 113/113.
-- Local servers (started for the user): engine-web dev on :2005 (games/mine/ = the user's old games, gitignored),
-  C++ web builds on :2006 (index.html picker).
-- stash@{0}: a stray "yeah" typed at the top of engine/apps/player/main.cpp, set aside for a merge; drop if accidental.
-
-Next: harness playtests/screenshots on the C++ engine, app WebView on the C++ web build, API/harness move to .dpk;
-E7 rest (tilemap elevation, lighting with height, kit updates); E8 multiplayer v2.
-
-**E7 2.5D, minimal slice: done (branch engine-v2-e7).** 2.5D is a package feature now (DREAMSY.MD §3, §14.5):
-- Format: manifest/scene `view` (side|topdown|oblique|iso), `z`/`height` on spatial 2D types, Body2D `z_velocity`/
-  `z_gravity_scale`, Sprite2D `anchor` (center|bottom). Both validators + conformance mutations (113/113 agree).
-- Both engines simulate height identically (engine-web via Rapier hooks): z gravity, landing on blocks and raised
-  tile maps (ground under the body's center), z-range collision filtering, no planar gravity outside side view.
-  `e.onGround`, `e.groundZ`, `camera.view()`, `camera.screenDirToWorld()`; iso-aware screenToWorld and taps.
-- C++ renderer: blocks (Sprite2D/TileMap2D `height`), shadows on the ground under things, sorting with blocks.
-  Fixed: Box2D contact recycling skipped the z filter (a hero pressed against a block stayed blocked after jumping).
-- Showcase: `games/showcase/cloud-hopper` (oblique, portrait), built by the harness in one round ($9.53).
-- Not yet: per-tile elevation in one map, side art for blocks, sort offsets, lighting with height, parallax,
-  moving platforms carrying riders, kit updates, engine-web drawing the views (its previews are flat).
-
----
-
-## 2026-11-16 — after the hackathon
-
-### Prod is gone
-The user asked for prod to be torn down:
-- EC2 `i-03475cd33072e0156` terminated, and its disk was deleted with it.
-- Elastic IP 15.252.199.188 released; security group and `dreamsy-ec2` key pair deleted.
-- AWS access key AKIA6H4S4CP4OH6RRRPR deleted.
-
-`scripts/deploy.sh` and `ssh dreamsy-ec2` no longer work. A new host needs a new key and box.
-
-### Lost
-The prod Postgres (users, coins, notifications, friends) and every game built on prod, including:
-- Tidal Dash, Nope. (the onboarding troll game)
-- Skyforge Saga, Turbo Tiles, Crownbreak Chess, Calibre, Rat Race
-- Riddle Rumble, Sky Sprint, Brass Era Rally, Gem Drop Duel, Orb Duel, Saboteur Blocks, Riddle Keeper, Sugar & Spice
-
-There is no backup. Rebuild them from prompts if needed. `docs/BEST-GAMES.md` has the ideas.
-
-### Surviving games (local)
-- `games/examples/`: kit templates plus mp-duel, block-tower, coin-dash, tile-quest, feature-demo.
-- `games/showcase/`: fox-quest, fort-raiders, street-racer, summer-ride.
-- `.data/blobs/packages/*.zip`: 21 local-dev builds of Dragons & Ladders, Petalbrook Farm, City Rush, Bop Up!, Village Raiders, Tile Quest, Summer Ride, Fox Explorer, Feature Demo and Coin Dash.
-
-### Still pointing at nothing / still live
-- Cloudflare DNS (dreamsy.dev, www, api, play, pwa → dead IP).
-- IAM user `dreamsy-ses-smtp`.
-- Convex `vivid-vulture-808` (live build feed).
-- Resend, Anthropic and OpenAI keys in `deploy/.env.prod` (gitignored).
-- EAS project 4da22b8e-13c3-4cff-9880-6b9275245537.
-
-### Next idea: open-source the games and host them free
-- Use Cloudflare Pages (or GitHub Pages) to serve `engine-web/dist` plus a `games/` folder of zips and an index page.
-- The engine already supports `?zip=<url>` (`engine-web/dev/main.ts`, loadPackage), so single-player needs no server.
-- Multiplayer, leaderboards, coins and accounts need `services/api` + `services/gameserver`. The free path is Cloudflare Workers + D1/Durable Objects, which is new work.
-
----
-
-## 2026-11-15 — end of day 1 (historical)
-
-## Run it
-```sh
-# Docker Desktop running; EXPO_TOKEN in repo-root .env; Expo Go signed in on the phone (same account)
-./scripts/dev.sh            # Postgres, migrations, API, seed showcase (once), harness worker, engine, Expo Go
-# fresh DB:  docker compose -f services/api/docker-compose.yml down -v && rm -f .dev-logs/.seeded
-```
-Engine alone: `pnpm -C engine-web dev` → http://localhost:2005 (game picker). One game build without API:
-`pnpm -C harness local --prompt "..." --out /tmp/x [--rounds N]`.
-
-## Built
 | Area | Where | State |
 |---|---|---|
-| Spec | `DREAMSY.MD` (§3 format, §4 runtime, §11 platform, §12 kits) | current |
-| Format | `format/` | 38 tests; catalog, styles, scenes, tilemaps, anims, sfx/music, store, kits, orientation |
-| Engine | `engine-web/` (three.js + Rapier + Luau→WASM) | 54 tests; 2D, portrait/landscape, anim/tween/particles/camera/save/dialog/layers, store, platform menu, audio, kit loader, playtest/screenshot tools |
-| API | `services/api/` | 31 tests; auth, games/versions, generations (+checkpoints/ETA), Stars store/ledger, feed/search/likes/plays/remix/follow/public/marketplace/reports/thumbnails |
-| Harness | `harness/` | 10 tests; Haiku router (kit/style/pack/orientation), Opus director + build_content fan-out, playtest + art-director review, multi-round worker, taste packs |
-| App | `apps/mobile/` (Expo SDK 58, Expo Go) | feed, game page, remix, profiles, market, create w/ ETA + checkpoints, WebView player |
-| Taste | `taste/packs/*.md` + `taste/refs/` | 11 house styles from Pinterest refs |
-| Games | `games/showcase/` (fox-quest, fort-raiders, street-racer, summer-ride), `games/examples/` | |
+| Package format | `format/` | spec (docs/format.md §3), validator, edit ops, `.dpk` packs + zips, CLI; 50 tests |
+| Engine | `engine/` (C++20) | 2D + 2.5D (side, topdown, oblique, iso), Luau 0.747, Box2D v3 + engine-handled height, sokol renderer (Metal / WebGL2), input + touch controls, platform UI, deterministic math, web player loading games by URL, iOS simulator build; E0–E6 done + a first E7 slice (docs/engine.md §14.10) |
+| Kits | `kits/` | 21 genre kits with KIT.md, schemas, examples; balance sims run on the C++ engine (`dreamsy-tool eval`) |
+| Harness | `harness/` | router, director + content fan-out, playtests on the C++ engine (`dreamsy-tool playtest` + web player screenshots), art-director review; Claude or OpenAI builders; 28 tests |
+| API | `services/api/` | auth, games/versions, generations, coins economy, feed/remix/marketplace, leaderboards/ghosts/groups; 95 tests (PGlite, no Docker) |
+| Rooms | `services/gameserver/` | multiplayer v1 room server (codes, quick match, relay; docs/runtime.md §4.5); 27 tests |
+| App | `apps/mobile/` | Expo app: feed, play (C++ web player in a WebView), create, remix, profiles, market |
+| Studio | `apps/web/` | build and edit games by chat in the browser, publish; to be deployed so games are playable by link |
+| Games | `games/examples/`, `games/showcase/` | a minimal example per kit, engine feature demos, showcase games incl. Cloud Hopper (Claude-built oblique 2.5D) |
 
-## Kits (kits, DREAMSY.MD §12) — all 21 built, documented (KIT.md), schema'd, tested
-- Foundation: core · progression · juice · combat · ai · procgen
-- Genres: rpg · platformer · topdown · tower-defense · tycoon · puzzle · simulator · racing · roguelite · runner · story · deckbuilder · farming · survival · shooter
-- Each has `kit.json` (deps auto-enabled), reads content via `data.read`, a minimal example in `games/examples/kit-*`, headless tests and (most) a balance/pacing sim.
-- Engine extras landed: lighting (Light2D/Lighting2D, emissive, additive), game-time playtests (reproducible taps/shots, start mid-game with scene/params/save), gestures, UI stack/scroll/radius/clip, look stick, data reader, clock, timeScale.
-- Harness: kit selection + kit (and dependency) docs in prompt, director → build_content fan-out with JSON-Schema checks (ajv), lighting guidance, mid-game playtests.
+Tests (macOS, 2026-11-18): engine ctest debug 8/8 (ASan/UBSan), release 9/9 (incl. slow kit sims), web 2/2; conformance:
+script output identical to engine-web's recorded goldens (12/12 scenarios, 26/26 games), C++ loader vs the TS validator
+113/113; `pnpm -r typecheck` clean. CI (`.github/workflows/engine.yml`): macOS, Linux headless, web, conformance, fuzzers.
+
+## Run it
+
+```sh
+./scripts/dev.sh              # laptop stack: Postgres, API, seed, harness worker, C++ web player on :2005, Expo Go (--prod: hosted)
+pnpm -C harness local --prompt "..." --out /tmp/x [--rounds N]     # one game, no API
+cd engine && cmake --preset release && cmake --build --preset release && ctest --preset release
+engine/build/release/dreamsy-tool playtest games/showcase/cloud-hopper    # headless playtest report
+python3 engine/tools/make_play_page.py    # packs every game for the web player + build/index.html picker
+```
+Engine build details (web, iOS, Android, sanitizers, embedding): `engine/README.md`.
+
+## Gaps
+
+- **Multiplayer:** the C++ engine has no online room client yet; multiplayer games run solo until E8 (authoritative
+  netcode, docs/engine.md §14.6).
+- **Web player vs the old engine:** no API store (purchases are free, in memory), no API leaderboards / ghosts / ranks,
+  saves last only for the session. 34 ported-test cases wait on these and E8; the 5 run-end ones can be ported now
+  (`HostOptions::on_run_end` exists).
+- **Untested:** `deploy/Dockerfile` end to end (the player stage built), Android builds (no SDK on this machine).
+- **Audio:** playback not wired in the C++ engine; the user is designing an audio harness.
+- `third_party/luau/DREAMSY_VENDOR.md` still mentions engine-web's WASM build (vendored folder, left as is).
 
 ## Next
-- All suites green (day 2 morning): format 41, engine 328, API 38, harness 23 (+1 live Supermemory smoke, skipped without key), web + app build. Engine context doc: https://claude.ai/artifact/Pr2oGVnJTSgRZ6tuBzmFiY
-- First flagship 1–2h game on a kit (e.g. `pnpm -C harness local --prompt "..." --out /tmp/x --rounds 8`), ~$40–60.
-- UI + taste pass on the app; a dark/gothic taste pack (send refs); Nano Banana backgrounds once Gemini billing is enabled (`GEMINI` key is free tier → 0 image quota).
-- Hackathon: hosted backend + web player (venue Wi-Fi), pre-generated hero games, live tweak/remix demo, QR for judges.
-- Multiplayer v1 built, not deployed (DREAMSY.MD §4.5): `services/gameserver` (rooms, codes, 1v1 quick match red/blue, relay; `pnpm -C services/gameserver start`, :8790, also in dev.sh + compose + Caddy `/rooms*`), engine lobby/HUD/winner card, Luau `room`/`players`/remote events, `games/examples/mp-duel`, racing kit versus. v2: server-authoritative sim on engine core, reconnect.
-- Not started: moderation beyond Haiku pre-check, real payments (Stars are free), TestFlight (Apple Developer + EAS cloud build), macOS/Xcode update.
-- Network note: this Mac's network has broken IPv6 + slow IPv4 → Node needs `--network-family-autoselection-attempt-timeout=2000` (set in scripts/dev.sh and harness).
-- Nothing is committed to git yet.
 
-## Production (2026-11-15)
-- One EC2 box, ap-south-1: `i-03475cd33072e0156` (t3.large, 60 GB), Elastic IP 15.252.199.188, SSH `ssh dreamsy-ec2` (key ~/.ssh/dreamsy-ec2.pem, port 22 open only to the laptop IP).
-- Mirrors the dev stack via `deploy/docker-compose.yml`: postgres:17, api, worker (Chromium playtests), caddy (80/443). Data on the host: `/srv/dreamsy/pg` (DB), `/srv/dreamsy/data/{blobs,memory,sprites}` (= local `.data`). Secrets in `deploy/.env.prod` (gitignored).
-- Deploy code: `./scripts/deploy.sh` (rsync + rebuild; data kept).
-- DNS (Cloudflare, proxied): api.dreamsy.dev + play.dreamsy.dev → A 15.252.199.188. Caddy: api → API, play → engine (static build copied to /srv/dreamsy/engine by deploy.sh). App + web point at prod by default; `dev.sh --local` for the laptop stack.
-- Migrated from local on 2026-11-15 12:06: 5 users, 13 games, 24 versions, blobs + memory + sprite library.
-- Convex live feed (`services/live`): prod deployment `vivid-vulture-808` (dashboard https://dashboard.convex.dev/d/vivid-vulture-808), dev `uncommon-fox-891`. API mirrors key build steps (`services/api/src/live.ts`, env CONVEX_SITE_URL + LIVE_INGEST_SECRET) → `POST /ingest` → tables builds/events/stats; clients subscribe to `live:feed` / `live:build`. Web "Live now" panel on Home (`VITE_CONVEX_URL`). Deploy functions: `cd services/live && npx convex deploy -y`.
-- Web dashboard on https://dreamsy.dev (+www): static apps/web build served by Caddy from /srv/dreamsy/web; `scripts/deploy.sh` builds + uploads it (requires apps/web/.env.local → prod API).
-- Demo sign-in bypass: `POST /v1/auth/demo {username}` → `{user, token}` with no email code, for usernames ending in `_demo` and the special names in DEMO_USERNAMES (default `demo,judge`); same username = same account; DEMO_LOGIN=0 disables. Dashboard: type a username instead of an email.
-- Email sign-in is OURS now (not Supabase): `POST /v1/auth/email/start {email}` emails a 6-digit code via Resend (RESEND_API_KEY, EMAIL_FROM = noreply@thoughts.engineering), `POST /v1/auth/email/verify {email, code}` → `{user, token}`. 10-min codes, single use, 5 tries, 30 s between sends, 8/hour. Links to an existing user with the same email (old Supabase sign-ins). Supabase is only used for Google OAuth now. Table `email_codes` (migration 0007).
-- Builders: Claude (default) or OpenAI per generation (`provider` on POST /v1/games/:id/generations; migration 0008). `harness/src/openai.ts` adapts the agent loop to the OpenAI Responses API (gpt-6.1-sol builder, gpt-6.1-terra content workers, service_tier priority = fast). Router/critic/lessons stay on Claude. Prod runs two workers: `worker` (Claude, WORKER_CONCURRENCY=5) and `worker-openai` (DREAMSY_PROVIDER=openai, 4). OpenAI $ in the cost meter are estimates (OPENAI_PRICE_*).
-- Leaderboards + ghosts + family groups (DREAMSY §13) live on prod (API migration 0009, engine `leaderboard` Luau API + results card, kits racing/platformer/runner/puzzle wired, web Leaderboard tab + Groups page + /join/:code).
-- Touch controls: fixed, smaller joystick (only the stick takes touches); buttons also appear when a game first reads them at runtime (kits read buttons via config, so the static scan missed e.g. the platformer's jump).
-- Deploy: `./scripts/deploy.sh --keep-workers [--no-engine]` never interrupts running builds. Engine-only: `cd engine-web && npx vite build && rsync -az --delete dist/ dreamsy-ec2:/srv/dreamsy/engine/`. Workers still run the pre-leaderboard harness prompt until restarted when idle.
-- Multiplayer v1 live: room server `gameserver` (wss://api.dreamsy.dev/rooms, DREAMSY §4.5: server-relayed state, devices simulate). Example "Orb Duel" published on @apxrv: https://play.dreamsy.dev/?public=g_01m7gkv3zzcazkvwhd2dm4y1rz.
-- All @apxrv games published (2026-11-15 ~13:57); re-publish after the batch finishes (publish pins a version).
-- Touch controls now show only while the game reads them (InputState.recentlyRead, ~0.75 s grace): hidden on title screens/menus/shops.
-- Coins economy live (DREAMSY §11.6): 1M starter coins ($10), play 10K (90% creator / 10% platform, 30-min pass), first build 100K (refund on failure), remix 25K → original owner, spin-off plays: 8K spin-off creator + 1K royalty to direct parent owner + 1K platform. Notifications inbox + Expo push (EAS project 4da22b8e…, apxrvs-team; iOS Expo Go only; Android needs a dev build). seed-showcase needs CREATE_PRICE=0 or a topped-up account.
+- Harness: quality, speed and cost of generation.
+- Deploy the studio (`apps/web`) so games built there are playable by link.
+- Engine slices when wanted: E7 2.5D content, E8 netcode, E9 native mobile, E10 polish.
+
+## Production and accounts
+
+Prod was torn down 2026-11-16 (EC2 box, IP, key pair and AWS access key deleted); its database and every game built
+on it are gone, with no backup. `deploy/` keeps the stack for the next host (README "Production").
+Still around, for cleanup or reuse:
+- Cloudflare DNS for dreamsy.dev (www, api, play, pwa) pointing at the dead IP.
+- IAM user `dreamsy-ses-smtp`; Resend, Anthropic and OpenAI keys in `deploy/.env.prod` (gitignored).
+- Convex deployments `vivid-vulture-808` / `uncommon-fox-891` (the live feed, removed from the code 2026-11-18).
+- EAS project 4da22b8e-13c3-4cff-9880-6b9275245537.
+Local copies of older builds: `.data/blobs/packages/*.zip` (21 local-dev builds).
+
+Machine note: this Mac's network has broken IPv6; Node needs `--network-family-autoselection-attempt-timeout=2000`
+(set in `scripts/dev.sh` and the harness).

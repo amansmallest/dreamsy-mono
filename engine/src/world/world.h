@@ -1,4 +1,4 @@
-// The entity world: a tree of typed entities built from a scene (DREAMSY.MD §3.3).
+// The entity world: a tree of typed entities built from a scene (docs/format.md §3.3).
 //
 // A port of engine-web/core/world.ts. Entities live in a Pool and are referenced by EntityId
 // (generational handle, base/pool.h). Each entity also has a numeric `handle`: a sequence number

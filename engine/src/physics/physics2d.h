@@ -1,4 +1,4 @@
-// 2D physics on Box2D v3, plus engine-handled height (z) for 2.5D (DREAMSY.MD §14.5).
+// 2D physics on Box2D v3, plus engine-handled height (z) for 2.5D (docs/engine.md §14.5).
 //
 // A port of engine-web/core/physics2d.ts (Rapier). Same bodies, shapes, events and rules:
 //

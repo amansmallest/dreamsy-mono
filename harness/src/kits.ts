@@ -5,7 +5,7 @@ import { registerKitDependencies } from "@dreamsy/format";
 
 const ROOT = fileURLToPath(new URL("../../kits/", import.meta.url));
 
-/** Kit → kits it requires, from kits/<kit>/kit.json `requires` (DREAMSY.MD §12.1). */
+/** Kit → kits it requires, from kits/<kit>/kit.json `requires` (docs/kits.md §12.1). */
 export function kitDependencies(root = ROOT): Record<string, string[]> {
   const out: Record<string, string[]> = {};
   if (!existsSync(root)) return out;
@@ -26,7 +26,7 @@ export function kitDependencies(root = ROOT): Record<string, string[]> {
 // listing only "rpg" that also requires @kit/core would be flagged.
 registerKitDependencies(kitDependencies());
 
-/** Genre kits shipped with the engine (DREAMSY.MD §12.1): kits/<kit>/KIT.md + schemas. */
+/** Genre kits shipped with the engine (docs/kits.md §12.1): kits/<kit>/KIT.md + schemas. */
 export interface Kit {
   id: string;
   /** API reference pasted into the builder's prompt. */

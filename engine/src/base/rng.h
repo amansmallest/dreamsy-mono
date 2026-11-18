@@ -1,7 +1,7 @@
 // Deterministic random numbers.
 //
 // sfc32, bit-for-bit identical to engine-web/core/random.ts, so the same seed gives the same
-// sequence in both engines (the conformance suite relies on this, DREAMSY.MD §14.8).
+// sequence in both engines (the conformance suite relies on this, docs/engine.md §14.8).
 // The simulation must only use this, never rand() or the OS RNG (§14.4).
 #pragma once
 

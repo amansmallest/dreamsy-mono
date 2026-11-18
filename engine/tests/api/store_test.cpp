@@ -3,7 +3,7 @@
 //
 // The C++ Host has no pluggable store backend yet (engine-web's StoreHost: owned/pending loaded at
 // boot, a prompt that the user cancels, host failures), so "boot loads owned + pending" and "host
-// failures are logged, not fatal" are not ported (app integration: DREAMSY.MD §14.10 E6/E9).
+// failures are logged, not fatal" are not ported (app integration: docs/engine.md §14.10 E6/E9).
 #include "kits/kit_test.h"
 
 using namespace dreamsy;

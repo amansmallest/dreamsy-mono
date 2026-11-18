@@ -2,7 +2,7 @@
 // scene building, entity props and methods, spawn/clone/destroy, tile maps, physics events,
 // tweens, sprite animation, particles, the camera, dialogs and leaderboards.
 //
-// Functions that can fail return Status (errors are values, DREAMSY.MD §14.2); the op handlers
+// Functions that can fail return Status (errors are values, docs/engine.md §14.2); the op handlers
 // turn a failed Status into a Lua error with exactly engine-web's message.
 #include <algorithm>
 #include <cmath>
@@ -41,7 +41,7 @@ bool is_tweenable(pkg::PropKind k) {
   return k == pkg::PropKind::Number || k == pkg::PropKind::Int || k == pkg::PropKind::Vec2 || k == pkg::PropKind::Color;
 }
 
-// ^[a-z0-9_]{1,40}$ (leaderboard board names, DREAMSY.MD §13)
+// ^[a-z0-9_]{1,40}$ (leaderboard board names, docs/platform.md §13)
 bool is_board_name(std::string_view s) {
   if (s.empty() || s.size() > 40) return false;
   return std::all_of(s.begin(), s.end(), [](char c) { return pkg::is_lower(c) || pkg::is_digit(c) || c == '_'; });

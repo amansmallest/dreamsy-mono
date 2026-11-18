@@ -6,7 +6,7 @@ import { toHex } from "./sha256.js";
 
 /**
  * In-memory game package: posix path → bytes. Immutable; every change returns a new Package.
- * Layout (DREAMSY.MD §3): dreamsy.toml, scenes/, scripts/{client,server,shared}/, data/, assets/.
+ * Layout (docs/format.md §3): dreamsy.toml, scenes/, scripts/{client,server,shared}/, data/, assets/.
  */
 export class Package {
   private constructor(private readonly files: ReadonlyMap<string, Uint8Array>) {}
@@ -36,7 +36,7 @@ export class Package {
     return Package.fromFiles(files);
   }
 
-  /** Reads a Dreamsy pack (.dpk, DREAMSY.MD §3.6); throws PackError unless it is canonical and intact. */
+  /** Reads a Dreamsy pack (.dpk, docs/format.md §3.6); throws PackError unless it is canonical and intact. */
   static fromPack(bytes: Uint8Array, opts?: { verifyHashes?: boolean }): Package {
     return new Package(readPack(bytes, opts));
   }

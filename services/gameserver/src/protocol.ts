@@ -1,4 +1,4 @@
-// Room protocol (DREAMSY.MD §4.5): JSON messages over one WebSocket at <api>/rooms.
+// Room protocol (docs/runtime.md §4.5): JSON messages over one WebSocket at <api>/rooms.
 // The gameserver owns this contract (moved from the retired engine-web/net/protocol.ts). Room clients (the C++ engine
 // from E8, test/client.ts here) must speak exactly this. Dependency-free.
 

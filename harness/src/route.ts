@@ -81,7 +81,7 @@ export async function routeRequest(
   if (args.gameIsEmpty && route.kind !== "reject") route.kind = "new_game";
   if (route.kind === "new_game") {
     route.style ??= "clean";
-    route.dimension = "2d"; // 2D only until the 3D renderer ships (DREAMSY.MD §4.3)
+    route.dimension = "2d"; // 2D only until the 3D renderer ships (docs/runtime.md §4.3)
     route.orientation ??= "portrait";
     route.kits = (route.kits ?? []).filter((k) => kits().has(k));
     const pack = route.pack ? tastePacks().get(route.pack) : undefined;

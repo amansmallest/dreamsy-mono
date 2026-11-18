@@ -18,7 +18,7 @@ namespace {
 void playtest(const std::string& dir) {
   CAPTURE(dir);
   FileMap files = read_dir(dir);
-  // 3D games aren't supported (DREAMSY.MD §14: the engine is 2D/2.5D only): skipped, as in engine-web.
+  // 3D games aren't supported (docs/engine.md §14: the engine is 2D/2.5D only): skipped, as in engine-web.
   if (contains(files["dreamsy.toml"], "dimension = \"3d\"")) {
     MESSAGE(dir << ": skipped (3D games are not supported)");
     return;

@@ -44,7 +44,7 @@ export const HIDE_AT_REPORTS = 3;
 
 const statsOf = (g: Game) => ({ plays: g.plays, likes: g.likes, remixes: g.remixes });
 
-/** DREAMSY.MD §11.2–11.7: feed, search, plays, likes, remix, reports, public links, marketplace. */
+/** docs/platform.md §11.2–11.7: feed, search, plays, likes, remix, reports, public links, marketplace. */
 export function socialRoutes({ db, storage, config, pusher }: Deps) {
   const r = router();
   // /v1/games/* is already behind requireUser (registered in gameRoutes).

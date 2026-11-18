@@ -1,4 +1,4 @@
-// Dreamsy pack (.dpk) reader and writer — DREAMSY.MD §3.6. Byte-identical with engine/src/pkg/pack.cpp:
+// Dreamsy pack (.dpk) reader and writer — docs/format.md §3.6. Byte-identical with engine/src/pkg/pack.cpp:
 // the writer emits one canonical layout and the reader accepts only that layout.
 import { sha256 } from "./sha256.js";
 

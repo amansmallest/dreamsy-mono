@@ -2,7 +2,7 @@
 
 An AI-native game platform: describe a game (text + reference images) on iPhone or the web, and Dreamsy builds it, hosts it, and lets others play, remix, and share it, single or multiplayer. Think Roblox where the studio is an agent harness.
 
-[DREAMSY.MD](DREAMSY.MD) is the source of truth for architecture and decisions. [STATUS.md](STATUS.md) tracks what's built, what's next, and production notes.
+[DREAMSY.MD](DREAMSY.MD) is the overview and the map of the spec in [`docs/`](docs/) (format, runtime, harness, platform, kits, engine), the source of truth for architecture and decisions. [STATUS.md](STATUS.md) is the current state.
 
 ## How it fits together
 
@@ -11,13 +11,12 @@ flowchart LR
   mobile["apps/mobile<br/>Expo app"] --> api
   web["apps/web<br/>Studio dashboard"] --> api
   api["services/api<br/>Hono + Postgres + blobs"] <-- "claim jobs, upload versions" --> harness["harness<br/>generation workers"]
-  api --> live["services/live<br/>Convex live feed"]
   mobile -- WebView --> engine["engine (C++)<br/>web player: WASM + WebGL2 + Luau"]
   engine -. "WS /rooms (E8)" .-> gs["services/gameserver<br/>multiplayer rooms"]
   harness -- "headless playtests" --> engine
 ```
 
-Everything speaks one contract: the **game package** defined in `format/` (DREAMSY.MD §3). The harness writes packages, the API validates and versions them, and the C++ engine runs them in the browser, the app's WebView, natively, and in headless playtests.
+Everything speaks one contract: the **game package** defined in `format/` (docs/format.md §3). The harness writes packages, the API validates and versions them, and the C++ engine runs them in the browser, the app's WebView, natively, and in headless playtests.
 
 ## Repository layout
 
@@ -27,14 +26,14 @@ Everything speaks one contract: the **game package** defined in `format/` (DREAM
 | `engine/` | | The engine: C++20, 2D and 2.5D, one core for web (WASM), iOS, Android and headless tools. See [engine/README.md](engine/README.md). |
 | `kits/` | | 21 genre kits: Luau libraries games load with `require("@kit/...")`, plus their docs and schemas. |
 | `services/api/` | `@dreamsy/api` | Platform API: auth, games/versions, generation jobs, feed, remix, Stars store, leaderboards, groups. |
-| `services/gameserver/` | `@dreamsy/gameserver` | Multiplayer room server: invite codes, 1v1 quick match, relay (DREAMSY.MD §4.5). |
-| `services/live/` | `@dreamsy/live` | Convex functions for the live build feed. |
+| `services/gameserver/` | `@dreamsy/gameserver` | Multiplayer room server: invite codes, 1v1 quick match, relay (docs/runtime.md §4.5). |
 | `harness/` | `@dreamsy/harness` | Generation workers: router, director + content fan-out, playtest and art-director review. Claude or OpenAI builders. See [DESIGN.md](harness/DESIGN.md). |
 | `apps/mobile/` | `@dreamsy/mobile` | iOS-first Expo app: feed, play, create, remix, profiles, market. |
 | `apps/web/` | `@dreamsy/web` | Dreamsy Studio: build and edit games by chat in the browser, watch builds live, publish. |
 | `games/examples/` | | Hand-written golden packages, including a minimal example per kit. |
 | `games/showcase/` | | Generated showcase games seeded into the API. |
 | `taste/` | | House-style packs (`packs/*.md`) and their reference images. |
+| `docs/` | | The spec by topic (indexed from DREAMSY.MD) and the C++ guide for TypeScript developers. |
 | `deploy/` | | Production Docker Compose, Dockerfile, Caddyfile. |
 | `scripts/` | | `dev.sh` (local stack, builds and serves the C++ web player). |
 | `third_party/` | | Vendored libraries (Luau, Box2D, sokol, ...). Don't modify. |
@@ -134,7 +133,6 @@ One box behind Caddy, mirroring the dev stack via `deploy/docker-compose.yml` (P
 
 ```sh
 docker compose -f deploy/docker-compose.yml --env-file deploy/.env.prod up -d --build   # on the box
-cd services/live && npx convex deploy -y     # Convex live-feed functions
 ```
 
 Static sites (`apps/web` dashboard, `apps/mobile` PWA via `pnpm -C apps/mobile build:web`) are built and copied to the
@@ -142,7 +140,7 @@ box's `/srv/dreamsy/{web,pwa}` by hand.
 
 ## Conventions
 
-- The game package format is the central contract. Don't change `format/` without updating DREAMSY.MD §3.
+- The game package format is the central contract. Don't change `format/` without updating docs/format.md §3.
 - 2D and 2.5D only; the format keeps 3D types, but the engine rejects 3D packages.
 - `third_party/` is vendored; don't modify it.
 - Per-package details live in each package's own README.

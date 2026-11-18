@@ -1,5 +1,5 @@
 /**
- * Kits (DREAMSY.MD §12.1): tested Luau libraries shipped with the engine in kits/<kit>/.
+ * Kits (docs/kits.md §12.1): tested Luau libraries shipped with the engine in kits/<kit>/.
  * A game opts in with `kits = ["rpg"]` in dreamsy.toml and requires them as `require("@kit/rpg")`
  * or `require("@kit/rpg/battle")`. This list is the contract between format, engine and harness.
  */

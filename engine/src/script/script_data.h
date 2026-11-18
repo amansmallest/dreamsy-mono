@@ -5,6 +5,6 @@
 
 namespace dreamsy::script::data {
 
-std::string_view prelude();  // extracted from engine-web/core/prelude.ts
+std::string_view prelude();  // src/script/prelude.luau with the op numbers from ops.h filled in
 
 }  // namespace dreamsy::script::data

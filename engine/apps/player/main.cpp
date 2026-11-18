@@ -151,7 +151,7 @@ struct Options {
   std::string package_source;                       // web: the package downloaded from the query (embed.js)
   std::string kits_url = "kits/";                   // web: where <kit>.dpk files are (?kits=<url>)
   // Forces a view mode (dev: --view / #iso / keys 1-4). Unset = the scene's own view (manifest
-  // or scene `view`, DREAMSY.MD §14.5).
+  // or scene `view`, docs/engine.md §14.5).
   std::optional<render::ViewMode> view;
   int frames = 0;  // quit after this many frames (0 = run until closed)
   bool smooth = false;  // force smooth mode (linear filtering, no pixel snap) to check it on any package

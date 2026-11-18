@@ -15,7 +15,7 @@
 //   dreamsy-tool smoke [--seed N] [--bodies N] [--steps N]
 //
 // <package> is a directory, a .dpk pack, or a legacy .zip (converted on the fly).
-// Later slices add: replay, screenshot (DREAMSY.MD §14.3).
+// Later slices add: replay, screenshot (docs/engine.md §14.3).
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>

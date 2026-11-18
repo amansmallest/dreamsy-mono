@@ -5,7 +5,6 @@ import { z } from "zod";
 import { requireWorker } from "../auth.js";
 import { fail, parseJson, router, type Deps } from "../context.js";
 import { schema } from "../db/client.js";
-import { mirrorToLive } from "../live.js";
 import { refundCreateIfUnbuilt } from "../economy.js";
 import { notifyBuildDone } from "../notifications.js";
 import { pushAfterCommit } from "../push.js";
@@ -126,7 +125,6 @@ export function workerRoutes({ db, storage, config, pusher }: Deps) {
     });
 
     if (!claimed) return c.body(null, 204);
-    mirrorToLive(db, claimed.id, "started", {});
 
     const game = await getGame(db, claimed.gameId);
     const images = claimed.imageIds.length
@@ -174,7 +172,6 @@ export function workerRoutes({ db, storage, config, pusher }: Deps) {
       }).where(eq(generations.id, c.req.param("id")));
       await appendEvent(tx, c.req.param("id"), body.type, body.data);
     });
-    mirrorToLive(db, c.req.param("id"), body.type, body.data);
     return c.json({ ok: true, leaseSeconds: config.leaseSeconds });
   });
 
@@ -229,7 +226,6 @@ export function workerRoutes({ db, storage, config, pusher }: Deps) {
       return { version, notes };
     });
     pushAfterCommit(db, pusher, notes);
-    mirrorToLive(db, c.req.param("id"), "checkpoint", { version: version.version, summary: res.summary });
     return c.json({ version: versionView(version) }, 201);
   });
 
@@ -250,7 +246,6 @@ export function workerRoutes({ db, storage, config, pusher }: Deps) {
       return { gen: done!, version, notes };
     });
     pushAfterCommit(db, pusher, notes);
-    mirrorToLive(db, gen.id, "succeeded", { version: version.version, summary: res.summary });
     return c.json({ generation: generationView(gen), version: versionView(version) }, 201);
   });
 
@@ -267,7 +262,6 @@ export function workerRoutes({ db, storage, config, pusher }: Deps) {
       if (!retry && (await refundCreateIfUnbuilt(tx, config, updated!)) > 0) return getGeneration(tx, gen.id);
       return updated!;
     });
-    if (gen.status === "failed") mirrorToLive(db, gen.id, "failed", { error: body.error });
     return c.json({ generation: generationView(gen) });
   });
 

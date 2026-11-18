@@ -6,7 +6,7 @@ import type { Generation, Tx } from "./services.js";
 
 const { wallets, ledger, games, generations } = schema;
 
-/** Coins → USD: 10,000 coins = $0.10 (DREAMSY.MD §11.6). */
+/** Coins → USD: 10,000 coins = $0.10 (docs/platform.md §11.6). */
 export const COINS_PER_USD = 100_000;
 /** Defaults for config.createPrice / config.remixPrice (CREATE_PRICE / REMIX_PRICE env). */
 export const CREATE_PRICE = 100_000;

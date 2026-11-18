@@ -6,7 +6,7 @@ import type { Emit } from "./workspace.js";
 import { contentValidator } from "./schemas.js";
 
 /**
- * Parallel content builders (DREAMSY.MD §12.2 step 2). The director hands over a list of specs
+ * Parallel content builders (docs/kits.md §12.2 step 2). The director hands over a list of specs
  * (creatures, enemies, items, levels, NPCs…); N Sonnet workers each build a slice, writing only
  * files named after their own ids. Results are checked and merged into the director's package.
  */

@@ -4,12 +4,12 @@
 // scene's view mode (sort.h), turns it into batched quads (geometry.h) and draws them (renderer.h).
 // Nothing here touches the GPU, so the world, tools and tests can build draw lists anywhere.
 //
-// Coordinates (same as engine-web, DREAMSY.MD §11.1):
+// Coordinates (same as engine-web, docs/platform.md §11.1):
 //   - World space: world pixels, x right, y down (in every view mode). 2.5D items also have a height
 //     `z` above the ground (z up). At camera zoom 1, one world pixel is one reference pixel.
 //   - Screen space: reference pixels (720x1280 portrait, 1280x720 landscape), (0,0) top-left. UI.
 //
-// How world points reach the screen depends on the view mode (DREAMSY.MD §14.5, view.h project()):
+// How world points reach the screen depends on the view mode (docs/engine.md §14.5, view.h project()):
 //   side, topdown, oblique:  screen = (x, y - z)
 //   iso (2:1 diamond):       screen = (x - y, (x + y) / 2 - z)
 //
@@ -49,7 +49,7 @@ struct ImageId {
   friend bool operator==(ImageId a, ImageId b) { return a.value == b.value; }
 };
 
-// Per scene (manifest `view`, DREAMSY.MD §14.5).
+// Per scene (manifest `view`, docs/engine.md §14.5).
 enum class ViewMode : uint8_t { Side, TopDown, Oblique, Iso };
 
 // Alpha = normal blending; Add = additive (glows, particles). Entity prop `blend`: "normal" | "add".

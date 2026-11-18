@@ -18,7 +18,7 @@ pnpm test   # end-to-end: real API (PGlite) + worker + scripted fake model; no n
 PLAYTEST_BROWSER_TEST=1 pnpm test   # also screenshots through the C++ web player
 ```
 
-Playtests run on the C++ engine (DREAMSY.MD §5.1). Build it first:
+Playtests run on the C++ engine (docs/harness.md §5.1). Build it first:
 
 ```sh
 cd ../engine && cmake --preset release && cmake --build --preset release --target dreamsy-tool   # headless playtests

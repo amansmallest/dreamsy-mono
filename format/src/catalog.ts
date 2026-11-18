@@ -73,7 +73,7 @@ const transform3d = {
 };
 
 /**
- * 2.5D height (DREAMSY.MD §14.5). Appended after each type's other props so existing prop indices stay put.
+ * 2.5D height (docs/engine.md §14.5). Appended after each type's other props so existing prop indices stay put.
  * The world is still 2D (x, y on the ground; +y is down / toward the viewer); `z` lifts things off the ground.
  */
 const elevation = {

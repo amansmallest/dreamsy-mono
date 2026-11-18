@@ -1,4 +1,4 @@
-// A loaded, validated game package (DREAMSY.MD §3), as typed C++ data.
+// A loaded, validated game package (docs/format.md §3), as typed C++ data.
 //
 // Produced by load_package() (validate.h). Everything here has passed the same checks as the
 // TypeScript validator, so the runtime can rely on it: ids are unique, the scene trees are

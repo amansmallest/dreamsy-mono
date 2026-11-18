@@ -10,7 +10,7 @@ import { canAccessGame, getGame, type Q } from "../services.js";
 
 const { friendships, users, notifications, games } = schema;
 
-/** DREAMSY.MD §13.4 limits. */
+/** docs/platform.md §13.4 limits. */
 export const INVITES_PER_MINUTE = 10;
 export const INVITE_TTL_MS = 10 * 60 * 1000;
 export const SEARCH_LIMIT = 20;

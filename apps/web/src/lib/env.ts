@@ -6,7 +6,6 @@ export const env = {
   supabaseUrl: noSlash(v(import.meta.env.VITE_SUPABASE_URL)),
   supabaseKey: v(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY),
   appDeeplink: v(import.meta.env.VITE_APP_DEEPLINK) || 'dreamsy://',
-  convexUrl: v(import.meta.env.VITE_CONVEX_URL),
   /** Game player (engine) used for in-studio play. */
   engineUrl: noSlash(v(import.meta.env.VITE_ENGINE_URL) || 'https://play.dreamsy.dev'),
   shareUrl: noSlash(v(import.meta.env.VITE_SHARE_URL) || 'https://dreamsy.app'),
@@ -20,7 +19,7 @@ export function deepLink(gameId: string): string {
   return `${base}game/${encodeURIComponent(gameId)}`;
 }
 
-/** Public share page (DREAMSY.MD §11.5). */
+/** Public share page (docs/platform.md §11.5). */
 export const shareLink = (gameId: string) => `${env.shareUrl}/g/${encodeURIComponent(gameId)}`;
 
 /** App link into a live room: `${VITE_APP_DEEPLINK}/game/<id>?room=<code>[&spectate=1]` (join = paid play, spectate = free). */

@@ -36,7 +36,7 @@ struct Vec2 {
   float y = 0;
 };
 
-// The fixed simulation step (DREAMSY.MD §14.4): 60 Hz.
+// The fixed simulation step (docs/engine.md §14.4): 60 Hz.
 inline constexpr double kTickDt = 1.0 / 60.0;
 
 // Swipe thresholds (engine-web core/game.ts SWIPE_MIN_DIST / SWIPE_MAX_TIME).

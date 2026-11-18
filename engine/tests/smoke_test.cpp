@@ -35,7 +35,7 @@ TEST_CASE("Box2D simulation is deterministic") {
 
 TEST_CASE("Box2D simulation gives the same hash on every platform") {
   // Golden value, recorded on macOS arm64 (debug and release) and WebAssembly; CI checks Linux x86-64.
-  // If this changes, determinism broke (DREAMSY.MD §14.4) or Box2D was upgraded: find out which
+  // If this changes, determinism broke (docs/engine.md §14.4) or Box2D was upgraded: find out which
   // before updating the value.
   CHECK(dev::physics_hash(1, 20, 300) == 0x8f2b7e35f5951775ull);
 }

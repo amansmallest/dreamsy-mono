@@ -19,7 +19,7 @@ Result<std::string> run_luau(std::string_view source);
 
 // Drops `bodies` boxes (x positions from Rng(seed)) onto the ground, steps the Box2D world
 // `steps` times at 60 Hz, and hashes every body's position and rotation. The same inputs
-// must give the same hash on every platform (DREAMSY.MD §14.4).
+// must give the same hash on every platform (docs/engine.md §14.4).
 uint64_t physics_hash(uint32_t seed, int bodies, int steps);
 
 }  // namespace dreamsy::dev

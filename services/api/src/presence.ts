@@ -1,4 +1,4 @@
-/** Friend presence, read from the room server (DREAMSY.MD §13.4). */
+/** Friend presence, read from the room server (docs/platform.md §13.4). */
 
 export type PresenceStatus = "offline" | "online" | "in_room" | "in_match";
 

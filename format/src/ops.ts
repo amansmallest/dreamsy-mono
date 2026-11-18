@@ -4,7 +4,7 @@ import { Package, PathError, normalizePath } from "./package.js";
 import { AssetMeta, FORMAT_VERSION, Id, Scene, ScriptPath, type Entity } from "./schema.js";
 
 /**
- * Edit ops (DREAMSY.MD §3.3). The harness and in-app edits both speak this language.
+ * Edit ops (docs/format.md §3.3). The harness and in-app edits both speak this language.
  * Ops address entities by id only — ids are unique across the package, so the scene is implied.
  * A batch applies all-or-nothing; run validatePackage() on the result before committing.
  */

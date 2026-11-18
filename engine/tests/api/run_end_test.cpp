@@ -2,7 +2,7 @@
 //
 // The C++ host doesn't emit run-end events to an app host yet (Host has no onRunEnd: OP_PLATFORM
 // only validates the call), so the event payloads, the 3 s throttle, the leaderboard- and
-// room-driven run ends are not ported (app integration, DREAMSY.MD §14.10 E6/E9; rooms: E8).
+// room-driven run ends are not ported (app integration, docs/engine.md §14.10 E6/E9; rooms: E8).
 // The WebView / iframe bridge tests are browser-only (obsolete for C++).
 #include "kits/kit_test.h"
 

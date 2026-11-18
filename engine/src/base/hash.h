@@ -1,4 +1,4 @@
-// Stable hashing for state hashes (DREAMSY.MD §14.4).
+// Stable hashing for state hashes (docs/engine.md §14.4).
 //
 // FNV-1a, 64-bit. Not cryptographic; used to compare simulation state across runs, machines
 // and engines. Values are hashed by their bytes in little-endian order, so the result is the

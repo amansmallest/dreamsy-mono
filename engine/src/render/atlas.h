@@ -1,5 +1,5 @@
 // Runtime texture atlas: packs many small images into a few big pages (stb_rect_pack), so the
-// renderer can draw sprites from different images in one draw call (DREAMSY.MD §14.12).
+// renderer can draw sprites from different images in one draw call (docs/engine.md §14.12).
 //
 // CPU only. Each page keeps its pixels and a version number that changes whenever an image is
 // added; the renderer re-uploads a page when its version changes. Images are packed on the fly

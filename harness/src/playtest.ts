@@ -1,5 +1,5 @@
 /**
- * Playtests on the C++ engine (DREAMSY.MD §5.1, §14.8):
+ * Playtests on the C++ engine (docs/harness.md §5.1, §14.8):
  *  - simulate(): headless, `dreamsy-tool playtest` (engine/apps/tool/playtest.cpp). Fast; catches load and
  *    runtime script errors, traces the avatar, logs dialogs, sounds, save data and scene changes.
  *  - browser (./browser.ts): the C++ web player in headless Chromium, stepped tick by tick; screenshots.

@@ -1,4 +1,4 @@
-// 2.5D height (DREAMSY.MD §14.5): z-range collision filtering through the host, z props from
+// 2.5D height (docs/engine.md §14.5): z-range collision filtering through the host, z props from
 // scripts, camera.view, iso camera math and the scene view override.
 // Port of engine-web/test/height25d.test.ts.
 //

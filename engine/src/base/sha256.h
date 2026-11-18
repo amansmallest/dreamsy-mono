@@ -1,5 +1,5 @@
 // SHA-256 (FIPS 180-4). Used for content addressing: every file in a Dreamsy pack carries its
-// hash, and a package version is identified by the hash of its index (DREAMSY.MD §3.6).
+// hash, and a package version is identified by the hash of its index (docs/format.md §3.6).
 #pragma once
 
 #include <array>

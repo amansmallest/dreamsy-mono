@@ -1,4 +1,4 @@
-// The web player's embedding contract (DREAMSY.MD §6), linked with --pre-js so it runs inside the module
+// The web player's embedding contract (docs/platform.md §6), linked with --pre-js so it runs inside the module
 // (it can reach HEAPU8 and the exported _dreamsy_* functions). main.cpp calls it through EM_JS.
 //
 // Package source, from the query (first match wins; the download starts before the WASM is compiled):

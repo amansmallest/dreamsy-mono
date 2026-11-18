@@ -1,14 +1,14 @@
 # Dreamsy engine v2 (C++)
 
 The native 2D/2.5D engine: one C++20 core for web (WebAssembly), iOS, Android and headless game
-servers. Design and roadmap: `DREAMSY.MD` §14. New to C++? Start with `docs/CPP-FOR-TS-DEVS.md`.
+servers. Design and roadmap: `DREAMSY.MD` §14. New to C++? Start with `docs/cpp-for-ts-devs.md`.
 
-Status: **E0 (scaffold), E1 (packages), E2 (scripting), E3 (world + physics) done; E4 (renderer) foundation done; E5 input + platform UI (keys, mouse, touch, on-screen controls, gestures, UI entities, dialogs, toasts, pause) done, audio pending; E7 2.5D minimal slice done (package `view`, `z`/`height`, blocks, raised tile maps, shadows; DREAMSY.MD §14.5); E6 parity done: the harness, the app and share links run on this engine and engine-web (the TypeScript engine) was deleted 2026-11-18 (tag `engine-web-final`).**
+Status: **E0 (scaffold), E1 (packages), E2 (scripting), E3 (world + physics) done; E4 (renderer) foundation done; E5 input + platform UI (keys, mouse, touch, on-screen controls, gestures, UI entities, dialogs, toasts, pause) done, audio pending; E7 2.5D minimal slice done (package `view`, `z`/`height`, blocks, raised tile maps, shadows; docs/engine.md §14.5); E6 parity done: the harness, the app and share links run on this engine and engine-web (the TypeScript engine) was deleted 2026-11-18 (tag `engine-web-final`).**
 It loads and validates every game in `games/` (same verdicts as the TypeScript validator), reads/writes
 Dreamsy packs (`.dpk`, §3.6), and runs games headless natively: entities, Box2D physics with 2.5D height,
 tweens, sprite animation, particles, camera, tile maps, dialogs. Every 2D game in `games/` produces the same
 script output as engine-web did (`tests/conformance/run_compare.py --all`, against golden reports recorded from it).
-The harness playtests on this engine (`dreamsy-tool playtest`, the web player for screenshots; DREAMSY.MD §5.1) and the
+The harness playtests on this engine (`dreamsy-tool playtest`, the web player for screenshots; docs/harness.md §5.1) and the
 app plays games in the web player (see [Embedding the web player](#embedding-the-web-player-the-app-share-links)).
 
 ## Build
@@ -93,7 +93,7 @@ of the host's safe area. Not supported yet (engine-web's dev page had them): `{t
 
 ## Phones
 
-The player runs natively on phones (DREAMSY.MD §14.7, groundwork for E9): Metal on iOS, GLES3 on
+The player runs natively on phones (docs/engine.md §14.7, groundwork for E9): Metal on iOS, GLES3 on
 Android, both through sokol_app. Today it shows the E0 spinning square. Scripts run the same as
 everywhere else; Luau is always the interpreter (Luau.CodeGen is never linked), which is what iOS
 requires anyway. Platform files live in `platform/ios/` (Info.plist template, `ios.cmake`) and
@@ -182,6 +182,10 @@ The engine's own logging (`base/log.cpp`) writes to stderr, which Android drops;
 
 ## Layout
 
+Comments that cite `engine-web/...` ("same rules as engine-web/core/world.ts") name the TypeScript engine this one
+replaced, where the behavior came from. It was deleted 2026-11-18; read any of those files with
+`git show engine-web-final:engine-web/core/world.ts`.
+
 | Path | What |
 |---|---|
 | `src/base/` | `Result`/`Status` errors, `Pool`/`Id` handles, `Arena`, `Rng` (bit-identical to the TS engine), `Hasher`, logging, checks |
@@ -213,7 +217,7 @@ Third-party code lives in `../third_party/` (vendored, unmodified; each folder h
 
 ## Renderer notes (E4)
 
-- Draw order per view mode (DREAMSY.MD §14.5): layer, then `z_index` (a sub-layer, as in Godot), then
+- Draw order per view mode (docs/engine.md §14.5): layer, then `z_index` (a sub-layer, as in Godot), then
   side: submission order; topdown: y; oblique: y, z; iso: x+y, z; ties by submission order. Tiles and
   ground rects draw under upright items of the same layer/z_index, shadows between.
 - One draw call per atlas page: images, glyphs, alpha and additive blending share batches
@@ -228,7 +232,7 @@ Third-party code lives in `../third_party/` (vendored, unmodified; each folder h
 - SVG: nanosvg gaps are patched before parsing (unitless bounding-box gradients, `<use>`, rect fills with
   `<pattern>`), and `<text>` is drawn with the bundled fonts (no transforms on text).
 - Fonts: characters a bundled font lacks come from a DejaVu symbol subset (arrows, shapes, ★ ♥ ▶ ...);
-  the pixel theme font is DejaVu Sans Mono Bold (engine-web's effective font, see DREAMSY.MD §14.10).
+  the pixel theme font is DejaVu Sans Mono Bold (engine-web's effective font, see docs/engine.md §14.10).
 - Not supported yet: WebP images (clear error, drawn as a solid rect; no package uses WebP), emoji and
   scripts beyond the subsets, MSDF text (outlines are 8 offset copies), per-tile elevation inside one tile map (E7; today one raised TileMap2D per height level), render
   targets and post effects.

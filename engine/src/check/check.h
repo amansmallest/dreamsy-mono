@@ -1,4 +1,4 @@
-// Type checking for game scripts (DREAMSY.MD §14.13): `dreamsy-tool check <package>`.
+// Type checking for game scripts (docs/engine.md §14.13): `dreamsy-tool check <package>`.
 //
 // Runs Luau's analyzer over every script in the package against the typed API declarations
 // (format/dreamsy.d.luau, with the Entity props generated from format/catalog.json). Requires resolve

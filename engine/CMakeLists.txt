@@ -1,4 +1,4 @@
-# Dreamsy engine v2 (DREAMSY.MD §14).
+# Dreamsy engine v2 (docs/engine.md §14).
 #
 #   cmake --preset debug && cmake --build --preset debug && ctest --preset debug
 #

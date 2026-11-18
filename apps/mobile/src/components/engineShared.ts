@@ -29,7 +29,7 @@ export type EngineViewProps = {
   /** A run ended (game over, round finished, score submitted, match over). */
   onRunEnd?: (run: RunEnd) => void;
   /** Multiplayer room code to join straight away (skips the lobby menu). Ignored until the C++ engine has a
-   * room client (DREAMSY.MD §14.10 E8); multiplayer games run solo meanwhile. */
+   * room client (docs/engine.md §14.10 E8); multiplayer games run solo meanwhile. */
   room?: string;
   /** With `room`: watch as a spectator (no avatar, no controls). Ignored until E8, like `room`. */
   spectate?: boolean;

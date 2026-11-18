@@ -1,4 +1,4 @@
-// Family/friends groups (DREAMSY.MD §13): invite links, the pending join from a deep link, and
+// Family/friends groups (docs/platform.md §13): invite links, the pending join from a deep link, and
 // the user's group list.
 
 import { useCallback, useEffect, useState } from 'react';

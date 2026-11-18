@@ -22,7 +22,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 GAMES = [ROOT / "games/examples", ROOT / "games/showcase"]
 
-# Differences that are intended (DREAMSY.MD §14): the C++ engine rejects 3D games.
+# Differences that are intended (docs/engine.md §14): the C++ engine rejects 3D games.
 CPP_ONLY_CODES = {"manifest.dimension_unsupported"}
 
 

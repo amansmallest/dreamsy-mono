@@ -1,4 +1,4 @@
-# C++ engine v2 (DREAMSY.MD §14): build + test on every target we support so far.
+# C++ engine v2 (docs/engine.md §14): build + test on every target we support so far.
 name: engine
 
 on:

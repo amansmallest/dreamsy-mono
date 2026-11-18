@@ -1,4 +1,4 @@
-// Dreamsy pack (.dpk) reader and writer. Format: DREAMSY.MD §3.6.
+// Dreamsy pack (.dpk) reader and writer. Format: docs/format.md §3.6.
 //
 //   header (80 bytes, little-endian)
 //     0   magic        "DREAMSY" 0x1A

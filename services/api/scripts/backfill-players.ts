@@ -1,6 +1,6 @@
 /**
  * Backfill game_versions.players_min / players_max from each version's package (`[players]` in
- * dreamsy.toml, DREAMSY.MD §3.1). Idempotent: only rows whose values differ are updated.
+ * dreamsy.toml, docs/format.md §3.1). Idempotent: only rows whose values differ are updated.
  * Migration 0010 already backfills from the stored manifest; this re-derives from the blobs.
  *
  *   DATABASE_URL=... [STORAGE_DIR=/data/blobs | S3_BUCKET=...] npx tsx scripts/backfill-players.ts [--dry-run]

@@ -14,7 +14,7 @@ import { schema, type DB } from "../src/db/client.js";
 import { PLATFORM_USER_ID } from "../src/db/schema.js";
 import { MemoryStorage } from "../src/storage.js";
 
-/** DREAMSY.MD §11.6 pay-per-play coins economy. */
+/** docs/platform.md §11.6 pay-per-play coins economy. */
 
 const config: Config = {
   jwtSecret: "test-secret-test-secret-test-secret-123",

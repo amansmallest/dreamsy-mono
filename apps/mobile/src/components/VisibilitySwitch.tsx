@@ -6,7 +6,7 @@ import { Txt } from '../ui';
 export const visibilityHint = (v: Visibility) =>
   v === 'public' ? 'Public: everyone can play the newest version' : 'Private: only you (and groups you share with)';
 
-/** DREAMSY.MD §11.8: Public (newest version auto-live) / Private switch with its one-line explainer. */
+/** docs/platform.md §11.8: Public (newest version auto-live) / Private switch with its one-line explainer. */
 export function VisibilitySwitch({ value, onChange, disabled, style }: {
   value: Visibility;
   onChange: (v: Visibility) => void;

@@ -1,4 +1,4 @@
-// Leaderboards (DREAMSY.MD §13), the parts the C++ host implements: the game-time run timer, the
+// Leaderboards (docs/platform.md §13), the parts the C++ host implements: the game-time run timer, the
 // Luau API (start / finish / elapsed / cancel / running / submit and its argument checks) and the
 // local scores the pause menu shows; plus the m:ss.cc time format.
 // Port of engine-web/test/leaderboard.test.ts.

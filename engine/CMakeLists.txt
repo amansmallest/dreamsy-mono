@@ -374,8 +374,20 @@ endif()
 
 if(DREAMSY_BUILD_TESTS)
   enable_testing()
+  # Kit and game tests (ports of engine-web/test): tests/kits/*_test.cpp plus their shared helpers.
+  # DREAMSY_TESTS_ONLY="tycoon;loader" builds just those kit test files (faster iteration).
+  file(GLOB DREAMSY_KIT_TESTS CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/kits/*_test.cpp)
+  set(DREAMSY_TESTS_ONLY "" CACHE STRING "Build only these tests/kits/<name>_test.cpp files (;-list, empty = all)")
+  if(DREAMSY_TESTS_ONLY)
+    set(DREAMSY_KIT_TESTS "")
+    foreach(name ${DREAMSY_TESTS_ONLY})
+      list(APPEND DREAMSY_KIT_TESTS ${CMAKE_CURRENT_SOURCE_DIR}/tests/kits/${name}_test.cpp)
+    endforeach()
+  endif()
   add_executable(dreamsy-tests tests/main.cpp tests/base_test.cpp tests/smoke_test.cpp tests/pkg_test.cpp tests/pack_test.cpp tests/script_test.cpp tests/dmath_test.cpp
-    tests/check_test.cpp tests/render_test.cpp tests/input_test.cpp tests/world_test.cpp tests/physics_test.cpp tests/host_world_test.cpp)
+    tests/check_test.cpp tests/render_test.cpp tests/input_test.cpp tests/world_test.cpp tests/physics_test.cpp tests/host_world_test.cpp
+    tests/kits/kit_test.cpp ${DREAMSY_KIT_TESTS})
+  target_include_directories(dreamsy-tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tests)
   dreamsy_target_defaults(dreamsy-tests)
   # doctest needs RTTI; tests are not engine code.
   target_compile_options(dreamsy-tests PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-frtti>)

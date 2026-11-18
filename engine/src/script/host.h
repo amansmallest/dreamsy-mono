@@ -28,6 +28,7 @@
 #include "pkg/package.h"
 #include "input/input_state.h"
 #include "script/json_value.h"
+#include "script/kits.h"
 #include "script/vm.h"
 #include "ui/dialog.h"
 #include "ui/toasts.h"
@@ -46,6 +47,7 @@ struct HostOptions {
   std::optional<Json> scene_params;
   Json save;                                 // initial save data (an object)
   std::function<void(const struct LogLine&)> on_log;
+  KitLookup kits;  // where kit sources come from; empty = script::default_kits() (script/kits.h)
   // 2.5D view mode for every scene (engine-internal until slice E7 adds it to the format).
   world::ViewMode view = world::ViewMode::Side;
 };

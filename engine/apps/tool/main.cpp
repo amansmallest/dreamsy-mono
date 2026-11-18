@@ -33,6 +33,7 @@
 #include "pkg/validate.h"
 #include "pkg/zip_import.h"
 #include "check/check.h"
+#include "script/embedded_kits.h"
 #include "script/host.h"
 
 using namespace dreamsy;
@@ -490,6 +491,7 @@ int cmd_smoke(int argc, char** argv) {
 }  // namespace
 
 int main(int argc, char** argv) {
+  script::use_embedded_kits();  // the tool carries every kit
   if (argc < 2) return usage();
   std::string_view cmd = argv[1];
   if (cmd == "version") {

@@ -239,10 +239,9 @@ void Host::remove_timer(int64_t id, bool unref) {
 // ================================================================ require
 
 std::optional<std::string_view> Host::kit_source(const std::string& path) const {
-  auto kits = data::kit_sources();
-  auto it = std::lower_bound(kits.begin(), kits.end(), path, [](const data::KitSource& k, const std::string& p) { return k.path < p; });
-  if (it == kits.end() || it->path != path) return std::nullopt;
-  return it->source;
+  const KitLookup& lookup = options_.kits ? options_.kits : default_kits();
+  if (!lookup) return std::nullopt;
+  return lookup(path);
 }
 
 std::string Host::resolve_module(lua_State* L, const std::string& from, const std::string& name) {

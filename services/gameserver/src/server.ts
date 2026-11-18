@@ -7,7 +7,7 @@ import { randomBytes, timingSafeEqual } from "node:crypto";
 import type { AddressInfo } from "node:net";
 import { jwtVerify } from "jose";
 import { WebSocketServer, type RawData, type WebSocket } from "ws";
-import { LIMITS, type ServerMsg } from "@dreamsy/engine/net";
+import { LIMITS, type ServerMsg } from "./protocol.js";
 import { RoomManager, type Peer } from "./rooms.js";
 import { parseClientMsg, sanitizeName } from "./validate.js";
 

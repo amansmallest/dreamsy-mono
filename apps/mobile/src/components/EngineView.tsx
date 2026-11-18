@@ -5,11 +5,14 @@ import { useAuth } from '../auth';
 import { walletChanged } from '../wallet';
 import { ENGINE_BG, engineUrl, type EngineViewProps } from './engineShared';
 
-// The game player: a WebView running the engine-web page in embed mode, which loads the package
-// for (gameId, version) from services/api and posts JSON messages back (see engine-web/dev/main.ts):
-//   {type:"ready"} | {type:"error", message} | {type:"quit"} | {type:"purchase", itemId, balance}
-//   | {type:"runEnd", reason, board?, value?, rank?} (a run finished: leaderboard finish/submit, the
-//     script's platform.runEnded(), or a multiplayer match ended; at most one per 3 s)
+// The game player: a WebView running the C++ engine's web player in embed mode, which loads the
+// package for (gameId, version) from services/api and posts JSON messages back (contract:
+// engine/apps/player/embed.js, engine/README.md "Embedding the web player"):
+//   {type:"ready"} | {type:"error", message} | {type:"quit"}
+//   | {type:"runEnd", reason, board?, value?} (a run finished: leaderboard finish/submit, the
+//     script's platform.runEnded(), or a room finished; at most one per 3 s)
+// {type:"purchase"} and runEnd's `rank` came from engine-web's API store / leaderboards; the C++
+// player doesn't send them yet, the handlers stay for when it does.
 
 // react-native-webview's types default P = undefined, and `WebViewProps & undefined` is never under
 // current TS; instantiate with {} instead.

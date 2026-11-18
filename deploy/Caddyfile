@@ -16,9 +16,14 @@ http://api.dreamsy.dev, https://api.dreamsy.dev, http://:80 {
     }
   }
 }
-# Engine: the game player for the app's WebView and ?public= share links
+# Engine: the C++ web player (deploy/Dockerfile) for the app's WebView and ?public= share links
 http://play.dreamsy.dev, https://play.dreamsy.dev {
   tls internal
+  # /g/<gameId> share links: the player's scripts and kits load relative to /, so redirect to the query form
+  @share path_regexp share ^/g/([^/]+)/?$
+  redir @share /?public={re.share.1} 302
+  @wasm path *.wasm
+  header @wasm Content-Type application/wasm
   root * /srv/engine
   try_files {path} /index.html
   file_server

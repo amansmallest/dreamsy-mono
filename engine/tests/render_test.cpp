@@ -669,11 +669,11 @@ TEST_CASE("geometry: blocks draw sides then top; oblique top is raised by the he
   TextureStore textures(nullptr, atlas, false);
   FontStore fonts(atlas, FontId::Bold);
   REQUIRE(fonts.init().ok());
-  auto build = [&](ViewMode view) {
+  auto build = [&](ViewMode view, float height = 20) {
     DrawList list;
     list.view = view;
     list.camera = DrawList::default_camera(1280, 720);
-    SpriteCmd b = block_at(640, 360, 40, 20, 30);
+    SpriteCmd b = block_at(640, 360, 40, 20, height);
     b.tint = {1, 0, 0, 1};
     list.add(b);
     SortedDrawList sorted;
@@ -685,15 +685,17 @@ TEST_CASE("geometry: blocks draw sides then top; oblique top is raised by the he
   const FrameGeometry ob = build(ViewMode::Oblique);
   REQUIRE(ob.quad_count() == 3);  // background, front face, top face
   // Front face: from the footprint's front edge (y 370) up by the height.
-  CHECK(ob.vertices[4].y == doctest::Approx(370 - 30));
+  CHECK(ob.vertices[4].y == doctest::Approx(370 - 20));
   CHECK(ob.vertices[4 + 2].y == doctest::Approx(370));
   CHECK((ob.vertices[4].color & 0xff) < 255);  // shaded darker than the top
-  // Top face: the footprint (y 350..370) lifted by 30.
-  CHECK(ob.vertices[8].y == doctest::Approx(350 - 30));
-  CHECK(ob.vertices[8 + 2].y == doctest::Approx(370 - 30));
+  // Top face: the footprint (y 350..370) lifted by 20.
+  CHECK(ob.vertices[8].y == doctest::Approx(350 - 20));
+  CHECK(ob.vertices[8 + 2].y == doctest::Approx(370 - 20));
   CHECK((ob.vertices[8].color & 0xff) == 255);
   const FrameGeometry iso = build(ViewMode::Iso);
   CHECK(iso.quad_count() == 4);  // background, two side faces, top
+  // A side three times as tall as the top is deep repeats the image three times.
+  CHECK(build(ViewMode::Oblique, 60).quad_count() == 5);
 }
 
 TEST_CASE("geometry: shadows lie on the ground under the sprite (a block's top when over one)") {

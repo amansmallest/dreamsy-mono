@@ -131,7 +131,9 @@ struct Builder {
   }
 
   // A 2.5D block: the top face over the footprint at z + height, then the side faces facing the
-  // viewer (draw_list.h). The image (or solid tint) covers the top; the sides reuse it, darkened.
+  // viewer (draw_list.h). The image (or solid tint) covers the top; the sides reuse it, darkened,
+  // at the top face's scale: tall sides repeat it (like stacked stones), short sides show its
+  // bottom strip instead of squashing it.
   void block(const SpriteCmd& s) {
     std::optional<AtlasRegion> region;
     if (s.image.valid()) region = textures.region(s.image, std::max(std::abs(s.size.x), std::abs(s.size.y)) * zoom * raster_scale);
@@ -154,26 +156,32 @@ struct Builder {
       return pack_color(c, s.blend);
     };
     // Corners in quad order: top-left, top-right, bottom-right, bottom-left (as seen on screen).
-    auto face = [&](Vec2 a, Vec2 b, Vec2 c, Vec2 d, uint32_t color) {
+    auto face = [&](Vec2 a, Vec2 b, Vec2 c, Vec2 d, const UvRect& face_uv, uint32_t color) {
       Vec2 q[4] = {a, b, c, d};
       if (params.pixel_snap && list.view != ViewMode::Iso) {
         for (Vec2& p : q) p = {snap(p.x), snap(p.y)};
       }
-      quad(region->page, q, uv, color);
+      quad(region->page, q, face_uv, color);
     };
+    // A side standing on the ground edge (ax, ay) -> (bx, by). `unit`: how much height one copy of
+    // the image covers (the top face's size across the other axis, so the image keeps its aspect).
+    auto side = [&](float ax, float ay, float bx, float by, float unit, uint32_t color) {
+      unit = std::max(unit, 1.0f);
+      const int copies = std::clamp(static_cast<int>(std::lround(s.height / unit)), 1, 64);
+      const float seg = s.height / static_cast<float>(copies);
+      UvRect su = uv;
+      if (seg < unit) su.v0 = uv.v1 - (uv.v1 - uv.v0) * (seg / unit);  // bottom strip
+      for (int i = 0; i < copies; ++i) {
+        const float top = z1 - seg * static_cast<float>(i), bottom = top - seg;
+        face(to_ref(ax, ay, top), to_ref(bx, by, top), to_ref(bx, by, bottom), to_ref(ax, ay, bottom), su, color);
+      }
+    };
+    const float w = f.x1 - f.x0, d = f.y1 - f.y0;
     const BlockShade& shade = list.block_shade;
-    if (list.view == ViewMode::Iso) {
-      // Visible sides: y = y1 (lower left on screen) and x = x1 (lower right).
-      face(to_ref(f.x0, f.y1, z1), to_ref(f.x1, f.y1, z1), to_ref(f.x1, f.y1, z0), to_ref(f.x0, f.y1, z0),
-           shaded(shade.front));
-      face(to_ref(f.x1, f.y1, z1), to_ref(f.x1, f.y0, z1), to_ref(f.x1, f.y0, z0), to_ref(f.x1, f.y1, z0),
-           shaded(shade.right));
-    } else {
-      // topdown / oblique: the front face (y = y1) hangs below the top face.
-      face(to_ref(f.x0, f.y1, z1), to_ref(f.x1, f.y1, z1), to_ref(f.x1, f.y1, z0), to_ref(f.x0, f.y1, z0),
-           shaded(shade.front));
-    }
-    face(to_ref(f.x0, f.y0, z1), to_ref(f.x1, f.y0, z1), to_ref(f.x1, f.y1, z1), to_ref(f.x0, f.y1, z1),
+    // The front side, y = y1: hangs below the top face in topdown/oblique, lower left in iso.
+    side(f.x0, f.y1, f.x1, f.y1, d, shaded(shade.front));
+    if (list.view == ViewMode::Iso) side(f.x1, f.y1, f.x1, f.y0, w, shaded(shade.right));  // x = x1, lower right
+    face(to_ref(f.x0, f.y0, z1), to_ref(f.x1, f.y0, z1), to_ref(f.x1, f.y1, z1), to_ref(f.x0, f.y1, z1), uv,
          pack_color(s.tint, s.blend));
   }
 

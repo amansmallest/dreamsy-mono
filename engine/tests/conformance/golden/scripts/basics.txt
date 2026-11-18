@@ -1,0 +1,18 @@
+[info] server first (scripts/server runs before scripts/client)
+[info] hello	1	true	nil
+[info] vec2(4, 6)	vec2(2, 4)	5	vec2(-0.7071067811865475, -0.7071067811865475)	11	vec3(-3, 0, 1)
+[info] #ff8000	1	#804000	#aabbcc
+[info] 0.041752 19.993876 1.031197
+[info] 0.24457141710445285	5	3
+[info] theme	#3d7eff	rounded
+[info] clock	1767225600
+[info] false	false	table	scripts/client/main.luau	nil
+[info] tick	3	0.016667	0.050000
+[info] every	1	0.2500
+[info] after 0.5	0.5000	10
+[info] every	2	0.5000
+[info] every	3	0.7500
+[info] timeScale	2
+[info] scaled after	1.5000
+save {}
+time 3.000000000000001

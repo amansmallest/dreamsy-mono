@@ -1,0 +1,18 @@
+[info] 3	data/levels/one.txt,data/levels/two.txt
+[info] info	2	true	nil
+[info] info
+[info] ..G..
+GGGGG
+
+[info] true	false	true
+[info] false	data.read: bad path "../x.json" (use package paths like "data/creatures")
+[info] false	data.read: only .json, .txt, .luau and .md files can be read ("data/info.png")
+[info] false	data.read: no file "data/none.json"
+[info] 7
+[info] 42	3	best,profile
+[info] false	dreamsy:383: save value nested too deeply
+[info] false	save values must be nil, booleans, numbers, strings or plain tables of those (not function)
+[info] false	save.set expects a key string (1..128 chars)
+[info] false	save: save data would be 70085 bytes; max 65536 (64KB) per game
+save {"best":42,"profile":{"flags":{"music":true},"levels":[1,2,3],"name":"fox"}}
+time 1.9999999999999978

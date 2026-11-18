@@ -135,17 +135,18 @@ endfunction()
 # Luau must call these functions, not fold or replace them with builtins.
 target_compile_options(Luau.VM PRIVATE -fno-builtin)
 
-# Scripting (E2, §14.13). The prelude is extracted from engine-web/core/prelude.ts and the kit
-# sources from kits at build time (engine-web stays the source of truth until parity).
+# Scripting (E2, §14.13). The prelude (src/script/prelude.luau, op numbers from ops.h) and the kit
+# sources are embedded at build time.
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
-set(DREAMSY_PRELUDE_TS ${CMAKE_CURRENT_SOURCE_DIR}/../engine-web/core/prelude.ts)
+set(DREAMSY_PRELUDE_LUAU ${CMAKE_CURRENT_SOURCE_DIR}/src/script/prelude.luau)
+set(DREAMSY_OPS_H ${CMAKE_CURRENT_SOURCE_DIR}/src/script/ops.h)
 file(GLOB_RECURSE DREAMSY_KIT_SOURCES CONFIGURE_DEPENDS ${DREAMSY_KITS_DIR}/*.luau)
 set(DREAMSY_PRELUDE_CPP ${CMAKE_BINARY_DIR}/generated/prelude.cpp)
 set(DREAMSY_KITS_CPP ${CMAKE_BINARY_DIR}/generated/kits.cpp)
 add_custom_command(
   OUTPUT ${DREAMSY_PRELUDE_CPP} ${DREAMSY_KITS_CPP}
-  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/gen_script_data.py ${DREAMSY_PRELUDE_TS} ${DREAMSY_KITS_DIR} ${DREAMSY_PRELUDE_CPP} ${DREAMSY_KITS_CPP}
-  DEPENDS ${DREAMSY_PRELUDE_TS} ${DREAMSY_KIT_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/gen_script_data.py
+  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/gen_script_data.py ${DREAMSY_PRELUDE_LUAU} ${DREAMSY_OPS_H} ${DREAMSY_KITS_DIR} ${DREAMSY_PRELUDE_CPP} ${DREAMSY_KITS_CPP}
+  DEPENDS ${DREAMSY_PRELUDE_LUAU} ${DREAMSY_OPS_H} ${DREAMSY_KIT_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/gen_script_data.py
   COMMENT "Embedding the Luau prelude and kit sources")
 add_library(dreamsy_script_data STATIC ${DREAMSY_PRELUDE_CPP})
 target_include_directories(dreamsy_script_data PRIVATE src)

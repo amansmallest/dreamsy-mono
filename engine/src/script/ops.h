@@ -1,5 +1,5 @@
-// Host op numbers and value tags shared with the Luau prelude (engine-web/core/prelude.ts OP / TAG;
-// the prelude is embedded from there, so these must stay in sync with it).
+// Host op numbers and value tags shared with the Luau prelude (src/script/prelude.luau). The build
+// substitutes these numbers into the prelude (cmake/gen_script_data.py), so this is the only copy.
 #pragma once
 
 namespace dreamsy::script {

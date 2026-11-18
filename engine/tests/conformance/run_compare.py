@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
-"""Engine conformance: runs packages in engine-web and in the C++ engine and diffs the reports.
-See ts_run.mts and `dreamsy-tool run`.
+"""Engine conformance: runs packages in the C++ engine and diffs the reports against golden files
+recorded from engine-web, the TypeScript engine the C++ engine replaced (engine/tests/conformance/golden).
 
-    python3 engine/tests/conformance/run_compare.py [--tool PATH] [--scripts|--games|--all] [package dirs...]
+    python3 engine/tests/conformance/run_compare.py [--tool PATH] [--scripts|--games|--all] [--update]
+
+The goldens were recorded with engine-web's headless runner before it was deleted, so they pin the
+script-level behavior games were written against. `--update` rewrites the script-level lines of the
+goldens from the C++ engine (for an intentional behavior change: review the diff before committing);
+the entity dump rows are never rewritten, they stay engine-web's so drift keeps measuring parity.
 
 Three suites:
   scripts  engine/tests/scripts/*: script-only games. Logs, errors, audio, save data and time must
@@ -75,18 +80,38 @@ def default_tool():
     return str(ROOT / "engine/build/debug/dreamsy-tool")
 
 
-def run_both(tool, pkg, ticks, budget, plan="", dump=""):
-    ts_args = ["npx", "tsx", str(ROOT / "engine/tests/conformance/ts_run.mts"), str(pkg), str(ticks), SEED, budget]
-    if plan or dump:
-        ts_args += [plan, dump]
-    ts = subprocess.run(ts_args, cwd=ROOT / "engine-web", capture_output=True, text=True)
+GOLDEN = ROOT / "engine/tests/conformance/golden"
+UPDATE = False
+
+
+class Golden:
+    """engine-web's report for one run, read from golden/<suite>/<name>.txt (shaped like a process result)."""
+    def __init__(self, path):
+        self.path = path
+        self.returncode = 0 if path.exists() else 1
+        self.stdout = path.read_text() if path.exists() else ""
+        self.stderr = "" if path.exists() else f"no golden file {path.relative_to(ROOT)}"
+
+
+def update_golden(path, cpp_stdout):
+    """Script lines from the C++ run, dump rows kept from the golden (engine-web physics)."""
+    old_dumps = [l for l in Golden(path).stdout.splitlines() if l.startswith("dump ")]
+    script = [l for l in norm(cpp_stdout) if not l.startswith(("dump ", "hash "))]
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("\n".join(old_dumps + script) + "\n")
+
+
+def run_both(tool, pkg, ticks, budget, plan="", dump="", suite="scripts", name=None):
+    path = GOLDEN / suite / f"{name or Path(pkg).name}.txt"
     cpp_args = [tool, "run", str(pkg), "--ticks", str(ticks), "--seed", SEED, "--budget", budget]
     if plan:
         cpp_args += ["--input", plan]
     if dump:
         cpp_args += ["--dump", dump]
     cpp = subprocess.run(cpp_args, capture_output=True, text=True)
-    return ts, cpp
+    if UPDATE and cpp.returncode == 0:
+        update_golden(path, cpp.stdout)
+    return Golden(path), cpp
 
 
 def norm(text):
@@ -119,7 +144,7 @@ def drift(a, b):
 
 
 def report_diff(a, b, limit=40):
-    lines = list(difflib.unified_diff(a, b, "engine-web", "c++", lineterm="", n=1))
+    lines = list(difflib.unified_diff(a, b, "golden (engine-web)", "c++", lineterm="", n=1))
     for line in lines[:limit]:
         print("   ", line)
     if len(lines) > limit:
@@ -144,8 +169,8 @@ def compare_scripts(tool, pkgs):
     return failures
 
 
-def compare_game(tool, name, pkg, ticks, plan, dump):
-    ts, cpp = run_both(tool, pkg, ticks, GAME_BUDGET, plan, dump)
+def compare_game(tool, name, pkg, ticks, plan, dump, suite="games"):
+    ts, cpp = run_both(tool, pkg, ticks, GAME_BUDGET, plan, dump, suite, name)
     if ts.returncode != 0 or cpp.returncode != 0:
         print(f"✗ {name}: ts exit {ts.returncode}, c++ exit {cpp.returncode}\n{ts.stderr[-800:]}\n{cpp.stderr[-800:]}")
         return 1
@@ -173,35 +198,32 @@ def main():
     ap.add_argument("--scripts", action="store_true", help="engine/tests/scripts only")
     ap.add_argument("--games", action="store_true", help="the physics/entity scenarios only")
     ap.add_argument("--all", action="store_true", help="every game in games/examples and games/showcase")
-    ap.add_argument("packages", nargs="*")
+    ap.add_argument("--update", action="store_true", help="rewrite the goldens' script lines from the C++ engine")
     args = ap.parse_args()
+    global UPDATE
+    UPDATE = args.update
     print(f"tool: {args.tool}")
     failures = total = 0
 
-    if args.packages:
-        pkgs = [Path(p).resolve() for p in args.packages]
+    default = not (args.scripts or args.games or args.all)
+    if args.scripts or default:
+        pkgs = sorted(p for p in (ROOT / "engine/tests/scripts").iterdir() if p.is_dir())
         failures += compare_scripts(args.tool, pkgs)
         total += len(pkgs)
-    else:
-        default = not (args.scripts or args.games or args.all)
-        if args.scripts or default:
-            pkgs = sorted(p for p in (ROOT / "engine/tests/scripts").iterdir() if p.is_dir())
-            failures += compare_scripts(args.tool, pkgs)
-            total += len(pkgs)
-        if args.games or default:
-            print("\nphysics/entity scenarios (drift = |engine-web - c++| over the dumped entities):")
-            for name, (pkg, ticks, plan, dump) in GAMES.items():
-                failures += compare_game(args.tool, name, ROOT / pkg, ticks, plan, dump)
+    if args.games or default:
+        print("\nphysics/entity scenarios (drift = |golden engine-web - c++| over the dumped entities):")
+        for name, (pkg, ticks, plan, dump) in GAMES.items():
+            failures += compare_game(args.tool, name, ROOT / pkg, ticks, plan, dump)
+            total += 1
+    if args.all:
+        print("\nall games, generic input (600 ticks):")
+        for group in ("games/examples", "games/showcase"):
+            for pkg in sorted(p for p in (ROOT / group).iterdir() if p.is_dir()):
+                if 'dimension = "3d"' in (pkg / "dreamsy.toml").read_text():
+                    print(f"- {pkg.name}: 3D, not supported by either engine (skipped)")
+                    continue
+                failures += compare_game(args.tool, pkg.name, pkg, 600, GENERIC_INPUT, "20:#player", "all")
                 total += 1
-        if args.all:
-            print("\nall games, generic input (600 ticks):")
-            for group in ("games/examples", "games/showcase"):
-                for pkg in sorted(p for p in (ROOT / group).iterdir() if p.is_dir()):
-                    if 'dimension = "3d"' in (pkg / "dreamsy.toml").read_text():
-                        print(f"- {pkg.name}: 3D, not supported by either engine (skipped)")
-                        continue
-                    failures += compare_game(args.tool, pkg.name, pkg, 600, GENERIC_INPUT, "20:#player")
-                    total += 1
     print(f"\n{total - failures}/{total} identical at script level")
     sys.exit(1 if failures else 0)
 

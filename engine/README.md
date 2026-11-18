@@ -203,7 +203,7 @@ The engine's own logging (`base/log.cpp`) writes to stderr, which Android drops;
 | `apps/player/` | `dreamsy-player`, the windowed engine; `demo_scene` draws a test scene from a package's assets until E3/E6 |
 | `apps/player/embed.js` | the web player's embedding contract: package source from the query, messages to the host app (see [Embedding](#embedding-the-web-player-the-app-share-links)) |
 | `tools/` | `web_screenshot.cjs` (screenshots of the web player), `web_touch_screenshot.cjs` (phone touch input), `make_play_page.py` (packs games for the web player) |
-| `tests/` | doctest unit tests, one binary: `dreamsy-tests` |
+| `tests/` | doctest unit tests, one binary: `dreamsy-tests`; `tests/kits/` kit tests + shared helpers, `tests/api/` Luau API and every-game tests (see [Tests](#tests)) |
 | `tests/conformance/` | `conformance.py`: C++ vs `format/src/validate.ts` on every game plus ~80 generated broken packages; `run_compare.py`: C++ vs golden reports recorded from engine-web (`golden/`, `--update` after an intentional change): `tests/scripts/*` (identical logs, errors, audio, save, time), physics scenarios with scripted input (identical script output + measured position/velocity drift), `--all` over every game |
 | `tests/scripts/` | script-only test games (basics, modules, data/save, errors/budget, scenes/room/store/audio, math) |
 | `tests/scenes/` | entity test scenes (`z_jump`: the 2.5D jump/land/ledge scene with test overrides; `z_platforms`: 2.5D from the package, compared with engine-web) |
@@ -236,6 +236,29 @@ Third-party code lives in `../third_party/` (vendored, unmodified; each folder h
   side faces in iso), a TileMap2D with `height` draws one block per tile. Blocks sort by footprint center;
   whatever stands on a block sorts right after it (`render/sort.h`). Drop shadows lie on the ground under
   the item: physics `ground_below()` gives the top of the block it is over.
+
+## Tests
+
+`dreamsy-tests` is one doctest binary. Besides the engine unit tests (`tests/*_test.cpp`) it holds the
+ports of engine-web's test suite (2026-11-18): `tests/kits/<kit>_test.cpp` (every kit: behavior, battle
+math, economy, content vs schemas, example games, balance sims) and `tests/api/*_test.cpp` (Luau API
+behavior, plus `games_test.cpp`: every game in `games/` runs 300 ticks of scripted input with zero script
+errors). Shared helpers are in `tests/kits/kit_test.h`: `start()` (a game from files), `run_luau()` (run a
+Luau snippet inside a package and read what it saved as JSON, like the kits' TS harnesses), `simulate()`
+(playtest timelines), a JSON view `J`, `schema_check()`, and `budget()` (the 250 ms per-call CPU budget,
+x8 under AddressSanitizer).
+
+doctest suites: `kit <kit>`, `api <name>`, plus two tags:
+- `slow`: balance sims, generator sweeps and long end-to-end runs (minutes under ASan). ctest runs them as
+  their own entry, `dreamsy-tests-slow` (label `slow`); the `debug` and `headless` test presets skip it,
+  `release` and `web` run it. Under ASan: `ctest --test-dir build/debug -L slow` or
+  `build/debug/dreamsy-tests -ts=slow`.
+- `engine-gap`: ported tests the C++ engine doesn't pass yet (none today); excluded from ctest.
+
+```sh
+build/debug/dreamsy-tests -ts="kit rpg"                 # one kit (its slow tests: -ts=slow -tc="rpg*")
+cmake --preset debug -DDREAMSY_TESTS_ONLY="rpg;games"    # build only some tests/{kits,api} files
+```
 
 ## Rules
 

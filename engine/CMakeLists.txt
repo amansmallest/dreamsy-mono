@@ -377,8 +377,23 @@ endif()
 
 if(DREAMSY_BUILD_TESTS)
   enable_testing()
+  # Ports of engine-web/test: tests/kits/*_test.cpp (one file per kit, plus shared helpers in
+  # tests/kits/kit_test.*) and tests/api/*_test.cpp (Luau API behavior, every game headless).
+  # DREAMSY_TESTS_ONLY="tycoon;games" builds just those files from either folder (faster iteration).
+  file(GLOB DREAMSY_PORTED_TESTS CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/kits/*_test.cpp
+       ${CMAKE_CURRENT_SOURCE_DIR}/tests/api/*_test.cpp)
+  set(DREAMSY_TESTS_ONLY "" CACHE STRING "Build only these tests/{kits,api}/<name>_test.cpp files (;-list, empty = all)")
+  if(DREAMSY_TESTS_ONLY)
+    set(DREAMSY_PORTED_TESTS "")
+    foreach(name ${DREAMSY_TESTS_ONLY})
+      file(GLOB found ${CMAKE_CURRENT_SOURCE_DIR}/tests/kits/${name}_test.cpp ${CMAKE_CURRENT_SOURCE_DIR}/tests/api/${name}_test.cpp)
+      list(APPEND DREAMSY_PORTED_TESTS ${found})
+    endforeach()
+  endif()
   add_executable(dreamsy-tests tests/main.cpp tests/base_test.cpp tests/smoke_test.cpp tests/pkg_test.cpp tests/pack_test.cpp tests/script_test.cpp tests/dmath_test.cpp
-    tests/check_test.cpp tests/render_test.cpp tests/input_test.cpp tests/world_test.cpp tests/physics_test.cpp tests/host_world_test.cpp)
+    tests/check_test.cpp tests/render_test.cpp tests/input_test.cpp tests/world_test.cpp tests/physics_test.cpp tests/host_world_test.cpp
+    tests/kits/kit_test.cpp ${DREAMSY_PORTED_TESTS})
+  target_include_directories(dreamsy-tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tests)
   dreamsy_target_defaults(dreamsy-tests)
   # doctest needs RTTI; tests are not engine code.
   target_compile_options(dreamsy-tests PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-frtti>)
@@ -392,16 +407,30 @@ if(DREAMSY_BUILD_TESTS)
   target_link_libraries(dreamsy-tests PRIVATE dreamsy_dev dreamsy_zip_import dreamsy_script dreamsy_kits_embedded dreamsy_check dreamsy_render dreamsy_overlay miniz)
   dreamsy_link_dmath(dreamsy-tests)
   target_compile_definitions(dreamsy-tests PRIVATE DREAMSY_REPO_ROOT="${CMAKE_CURRENT_SOURCE_DIR}/..")
+  # Two ctest entries over the one binary (they run in parallel with ctest -j):
+  #   dreamsy-tests       everything except the doctest suites "slow" and "engine-gap"
+  #   dreamsy-tests-slow  the "slow" suite: kit balance sims and long scripted runs (label "slow";
+  #                       skip with ctest -LE slow)
+  # "engine-gap" holds ported engine-web tests the C++ engine doesn't pass yet (run them with
+  # dreamsy-tests -ts=engine-gap); see the comment on each.
+  set(DREAMSY_TEST_ARGS --test-suite-exclude=slow,engine-gap)
+  set(DREAMSY_SLOW_TEST_ARGS --test-suite=slow)
   if(EMSCRIPTEN)
     target_link_options(dreamsy-tests PRIVATE -sENVIRONMENT=node -sALLOW_MEMORY_GROWTH=1 -sNODERAWFS=1)
-    add_test(NAME dreamsy-tests COMMAND node $<TARGET_FILE:dreamsy-tests>)
+    add_test(NAME dreamsy-tests COMMAND node $<TARGET_FILE:dreamsy-tests> ${DREAMSY_TEST_ARGS})
+    add_test(NAME dreamsy-tests-slow COMMAND node $<TARGET_FILE:dreamsy-tests> ${DREAMSY_SLOW_TEST_ARGS})
   elseif(IOS)
     # A plain command-line binary run inside the booted simulator (it can read the host's files).
-    add_test(NAME dreamsy-tests COMMAND xcrun simctl spawn booted $<TARGET_FILE:dreamsy-tests>)
+    add_test(NAME dreamsy-tests COMMAND xcrun simctl spawn booted $<TARGET_FILE:dreamsy-tests> ${DREAMSY_TEST_ARGS})
+    add_test(NAME dreamsy-tests-slow COMMAND xcrun simctl spawn booted $<TARGET_FILE:dreamsy-tests> ${DREAMSY_SLOW_TEST_ARGS})
   elseif(ANDROID)
     # Push and run by hand: adb push dreamsy-tests /data/local/tmp (tests needing repo files will fail).
   else()
-    add_test(NAME dreamsy-tests COMMAND dreamsy-tests)
+    add_test(NAME dreamsy-tests COMMAND dreamsy-tests ${DREAMSY_TEST_ARGS})
+    add_test(NAME dreamsy-tests-slow COMMAND dreamsy-tests ${DREAMSY_SLOW_TEST_ARGS})
+  endif()
+  if(TEST dreamsy-tests-slow)
+    set_tests_properties(dreamsy-tests-slow PROPERTIES LABELS slow)
   endif()
 endif()
 

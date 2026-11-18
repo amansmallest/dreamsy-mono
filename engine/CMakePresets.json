@@ -123,6 +123,11 @@
       "configurePreset": "debug",
       "output": {
         "outputOnFailure": true
+      },
+      "filter": {
+        "exclude": {
+          "label": "slow"
+        }
       }
     },
     {
@@ -137,6 +142,11 @@
       "configurePreset": "headless",
       "output": {
         "outputOnFailure": true
+      },
+      "filter": {
+        "exclude": {
+          "label": "slow"
+        }
       }
     },
     {

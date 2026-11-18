@@ -622,7 +622,8 @@ not re-implement core systems per game.
   - `schemas/*.json` — JSON Schemas for the kit's content files (e.g. `data/creatures/*.json`); the
     harness validates content against them.
   - `example/` — a small complete game package using the kit (also a golden test).
-  - tests — headless C++ tests in `engine/tests/kits/<kit>_test.cpp` (doctest, run by ctest).
+  - tests — headless core simulation tests in `engine/tests/kits/<kit>_test.cpp` (C++ doctest; ported from
+    `engine-web/test/kits/<kit>.test.ts`, 2026-11-18).
 - Manifest: `kits = ["rpg"]` (array; validated against the shipped kit list).
   - `kit.json` (optional) — `{ "requires": ["core", "progression"] }`: dependencies are enabled automatically when a game
     lists the kit (engine `expandKits` / `kitDependencies()`; format `registerKitDependencies` for the validator; the

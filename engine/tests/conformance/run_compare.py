@@ -57,6 +57,10 @@ GAMES = {
                        "10:#player"),
     # the 2.5D test scene, planar only (engine-web has no z): walk into a crate
     "z_jump": ("engine/tests/scenes/z_jump", 300, "", "5:player"),
+    # free dynamics, no script control: bounce, friction, rotation, a stack, a kinematic pusher.
+    # The honest Rapier-vs-Box2D number (the games above steer their bodies every tick).
+    "physics_mix": ("engine/tests/scenes/physics_mix", 600, "",
+                    "30:ball,box_tumble,capsule,stack_0,stack_2,stack_4,pusher,light"),
 }
 
 

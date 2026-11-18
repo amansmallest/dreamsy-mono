@@ -159,10 +159,44 @@ The `debug` preset turns on **sanitizers**. AddressSanitizer catches memory bugs
 out-of-bounds) and UndefinedBehaviorSanitizer catches things like integer overflow, both at runtime
 with a stack trace. If a test passes in debug, those bug classes didn't happen.
 
-## 10. Reading order for the engine
+## 10. Talking to C libraries (Box2D, Luau)
+
+Box2D and Luau are C APIs: plain functions and structs, no classes. Two patterns show up in
+`src/physics/physics2d.cpp`:
+
+```cpp
+b2BodyDef bd = b2DefaultBodyDef();   // C "options object": start from defaults, set fields
+bd.type = b2_dynamicBody;
+b2BodyId body = b2CreateBody(world, &bd);   // the library returns a handle, like our Id<T>
+```
+
+**Callbacks with a context pointer.** C has no closures, so a callback is a plain function plus a
+`void*` the library hands back to you. We pass `this` and cast it back, which is what a TS arrow
+function capturing `this` does for you:
+
+```cpp
+b2World_SetPreSolveCallback(world, &Physics2D::pre_solve, &Physics2D::pre_continuous, this);
+
+void Physics2D::pre_solve(b2ShapeId a, b2ShapeId b, b2Manifold* m, void* context) {
+  auto* self = static_cast<Physics2D*>(context);   // `this` again
+  ...
+}
+```
+
+A capture-free lambda converts to a plain function pointer, so short callbacks can be written inline
+(`b2World_OverlapAABB(..., [](b2ShapeId s, void* ctx) { ... }, &query)` in `update_areas`).
+
+**Errors inside Lua host ops.** Engine functions return `Status`/`Result` (section 6). Only at the
+boundary, where a script called us, does a failed `Status` become a Lua error
+(`raise(L, s.error())` in `src/script/host_world.cpp`), with exactly the message engine-web gives.
+
+## 11. Reading order for the engine
 
 1. `src/base/result.h`, `src/base/pool.h`: the two patterns used everywhere.
 2. `src/base/rng.h`: a tiny class, compare it with `engine-web/core/random.ts`.
 3. `src/dev/smoke.cpp`: calling C libraries (Luau, Box2D) from C++.
-4. `apps/player/main.cpp`: the frame loop and drawing.
-5. `tests/base_test.cpp`: how each piece is meant to be used.
+4. `src/world/world.h`: entities in a `Pool`, props, the scene tree; compare with `engine-web/core/world.ts`.
+5. `src/physics/physics2d.h`: Box2D behind a small API, and how 2.5D height works.
+6. `src/script/host_world.cpp`: how a script's `e.position = v` reaches the world.
+7. `apps/player/main.cpp`: the frame loop and drawing.
+8. `tests/base_test.cpp`, `tests/world_test.cpp`: how each piece is meant to be used.

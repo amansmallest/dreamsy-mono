@@ -1,0 +1,233 @@
+{
+ "format": "0",
+ "root": "world",
+ "entities": {
+  "world": {
+   "type": "Node2D",
+   "children": [
+    "floor",
+    "wall_l",
+    "wall_r",
+    "ramp",
+    "ball",
+    "box_tumble",
+    "capsule",
+    "stack_0",
+    "stack_1",
+    "stack_2",
+    "stack_3",
+    "stack_4",
+    "pusher",
+    "light"
+   ]
+  },
+  "floor": {
+   "type": "Body2D",
+   "props": {
+    "position": [
+     320,
+     400
+    ],
+    "size": [
+     640,
+     20
+    ]
+   }
+  },
+  "wall_l": {
+   "type": "Body2D",
+   "props": {
+    "position": [
+     0,
+     300
+    ],
+    "size": [
+     20,
+     220
+    ]
+   }
+  },
+  "wall_r": {
+   "type": "Body2D",
+   "props": {
+    "position": [
+     640,
+     300
+    ],
+    "size": [
+     20,
+     220
+    ]
+   }
+  },
+  "ramp": {
+   "type": "Body2D",
+   "props": {
+    "position": [
+     200,
+     250
+    ],
+    "size": [
+     200,
+     12
+    ],
+    "rotation": 20
+   }
+  },
+  "ball": {
+   "type": "Body2D",
+   "props": {
+    "position": [
+     150,
+     100
+    ],
+    "body": "dynamic",
+    "shape": "circle",
+    "size": [
+     20,
+     20
+    ],
+    "bounce": 0.8,
+    "friction": 0.2
+   }
+  },
+  "box_tumble": {
+   "type": "Body2D",
+   "props": {
+    "position": [
+     120,
+     180
+    ],
+    "body": "dynamic",
+    "size": [
+     24,
+     24
+    ],
+    "rotation": 10,
+    "friction": 0.6
+   }
+  },
+  "capsule": {
+   "type": "Body2D",
+   "props": {
+    "position": [
+     260,
+     120
+    ],
+    "body": "dynamic",
+    "shape": "capsule",
+    "size": [
+     16,
+     36
+    ],
+    "mass": 2
+   }
+  },
+  "stack_0": {
+   "type": "Body2D",
+   "props": {
+    "position": [
+     480,
+     378
+    ],
+    "body": "dynamic",
+    "size": [
+     20,
+     20
+    ],
+    "friction": 0.7
+   }
+  },
+  "stack_1": {
+   "type": "Body2D",
+   "props": {
+    "position": [
+     480,
+     358
+    ],
+    "body": "dynamic",
+    "size": [
+     20,
+     20
+    ],
+    "friction": 0.7
+   }
+  },
+  "stack_2": {
+   "type": "Body2D",
+   "props": {
+    "position": [
+     480,
+     338
+    ],
+    "body": "dynamic",
+    "size": [
+     20,
+     20
+    ],
+    "friction": 0.7
+   }
+  },
+  "stack_3": {
+   "type": "Body2D",
+   "props": {
+    "position": [
+     480,
+     318
+    ],
+    "body": "dynamic",
+    "size": [
+     20,
+     20
+    ],
+    "friction": 0.7
+   }
+  },
+  "stack_4": {
+   "type": "Body2D",
+   "props": {
+    "position": [
+     480,
+     298
+    ],
+    "body": "dynamic",
+    "size": [
+     20,
+     20
+    ],
+    "friction": 0.7
+   }
+  },
+  "pusher": {
+   "type": "Body2D",
+   "props": {
+    "position": [
+     380,
+     378
+    ],
+    "body": "kinematic",
+    "size": [
+     30,
+     24
+    ]
+   }
+  },
+  "light": {
+   "type": "Body2D",
+   "props": {
+    "position": [
+     560,
+     50
+    ],
+    "body": "dynamic",
+    "size": [
+     10,
+     10
+    ],
+    "mass": 0.2,
+    "bounce": 0.5,
+    "gravity_scale": 0.5
+   }
+  }
+ }
+}

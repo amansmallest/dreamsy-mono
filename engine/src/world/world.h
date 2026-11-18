@@ -6,9 +6,11 @@
 // engine-web uses, so both engines hand out the same numbers in the same order.
 //
 // 2.5D (§14.5) is part of the model from the start: every entity has a height above the ground
-// (`z`) and a vertical extent (`height`), and the world has a view mode. Neither is a package
-// format field yet (that comes with slice E7 and a §3 update); physics uses them, the renderer
-// will. With the defaults (z = 0, height = 0, view = side) everything behaves exactly like 2D.
+// (`z`) and a vertical extent (`height`), and the world has a view mode (manifest / scene `view`).
+// The catalog props `z`, `height`, `z_velocity` and `z_gravity_scale` (§3.3, slice E7) are stored in
+// the Entity fields below, not in `props`: physics moves `z` every tick, and get_prop / set_raw /
+// unset route those keys to the fields, so scripts, tweens and the scene loader all see one value.
+// With the defaults (z = 0, height = 0, view = side) everything behaves exactly like 2D.
 #pragma once
 
 #include <cmath>
@@ -36,9 +38,13 @@ namespace dreamsy::world {
 struct Entity;
 using EntityId = Id<Entity>;
 
-// How a scene is projected (§14.5). Engine-internal until E7 adds the manifest/scene field.
+// How a scene is projected (§14.5): manifest `view`, overridden per scene.
 enum class ViewMode : uint8_t { Side, TopDown, Oblique, Iso };
 const char* view_mode_name(ViewMode v);
+// "side" | "topdown" | "oblique" | "iso" -> mode; anything else (or nothing) -> Side.
+ViewMode parse_view_mode(std::string_view name);
+// The view a scene runs in: its own `view`, else the manifest's, else side.
+ViewMode scene_view(const pkg::Manifest& manifest, const pkg::SceneDef& scene);
 
 struct Entity {
   uint32_t handle = 0;  // script handle: 1, 2, 3, ... never reused
@@ -55,6 +61,8 @@ struct Entity {
 
   // 2.5D: height of the entity's base above the ground, and its vertical extent (px). Bodies
   // with height 0 are "flat" and collide with everything, as in plain 2D (see physics2d.h).
+  // These are the catalog props of the same names (see is_elevation_key()). `z` is relative to
+  // the parent, like `position`.
   double z = 0;
   double height = 0;
   double z_velocity = 0;       // px/s, + = up; integrated by physics for moving bodies
@@ -91,6 +99,12 @@ struct Point {
 };
 Point apply(const Mat2D& m, double x, double y);
 double rotation_of(const Mat2D& m);  // radians
+
+// A point on the ground (z = 0) -> where the view draws it, before the camera: identity in
+// side/topdown/oblique, the 2:1 diamond (x - y, (x + y) / 2) in iso (render/view.h project()).
+// unproject_ground() is the inverse (screen taps -> world, camera.screenToWorld).
+Point project_ground(ViewMode v, double x, double y);
+Point unproject_ground(ViewMode v, double px, double py);
 
 // ---------------------------------------------------------------- the world
 
@@ -161,6 +175,12 @@ class World {
   uint32_t next_handle_ = 1;
   uint32_t next_auto_ = 1;
 };
+
+// The 2.5D props stored in Entity fields instead of `props`: z, height, z_velocity, z_gravity_scale.
+bool is_elevation_key(std::string_view key);
+// The Entity field behind an elevation key (nullptr for other keys).
+double* elevation_field(Entity& e, std::string_view key);
+const double* elevation_field(const Entity& e, std::string_view key);
 
 // Index of a prop in its type's catalog list, or -1.
 int prop_index(const pkg::EntityType& type, std::string_view key);

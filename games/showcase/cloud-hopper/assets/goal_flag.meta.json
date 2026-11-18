@@ -1,0 +1,8 @@
+{
+  "kind": "image",
+  "file": "goal_flag.svg",
+  "source": {
+    "model": "claude-opus-5-5",
+    "prompt": "drawn as SVG"
+  }
+}

@@ -71,6 +71,12 @@ std::string utf16_prefix(const std::string& s, size_t max_units) {
 
 // ================================================================ scene building
 
+world::ViewMode Host::view_for(const std::string& scene_path) const {
+  if (options_.view) return *options_.view;
+  auto it = pkg_->scenes.find(scene_path);
+  return it == pkg_->scenes.end() ? world::ViewMode::Side : world::scene_view(pkg_->manifest, it->second);
+}
+
 void Host::new_physics() {
   physics_ = std::make_unique<physics::Physics2D>(world_, dt_, pkg_->manifest.physics_layers.value_or(std::vector<std::string>{}));
 }
@@ -169,6 +175,17 @@ int Host::push_prop(lua_State* L, EntityId id, const std::string& key_in) {
     lua_pushboolean(L, floor);
     return 2;
   }
+  // 2.5D (§14.5): resting on the ground / the ground height under the body's center.
+  if (key_in == "onGround" && type == "Body2D") {
+    lua_pushnumber(L, TAG_PLAIN);
+    lua_pushboolean(L, physics_->on_ground(id));
+    return 2;
+  }
+  if (key_in == "groundZ" && type == "Body2D") {
+    lua_pushnumber(L, TAG_PLAIN);
+    lua_pushnumber(L, physics_->ground_of(id));
+    return 2;
+  }
   if ((key_in == "cols" || key_in == "rows") && type == "TileMap2D") {
     lua_pushnumber(L, TAG_PLAIN);
     lua_pushnumber(L, !e.tiles ? 0 : key_in == "cols" ? e.tiles->cols() : e.tiles->rows());
@@ -239,7 +256,8 @@ Status Host::set_prop(EntityId id, const std::string& key, const std::optional<V
     after_transform(id);
     return Status::success();
   }
-  if (key == "id" || key == "type" || key == "onFloor" || key == "particleCount") return Error{key + " is read-only"};
+  if (key == "id" || key == "type" || key == "onFloor" || key == "onGround" || key == "groundZ" || key == "particleCount")
+    return Error{key + " is read-only"};
   if ((key == "cols" || key == "rows") && type == "TileMap2D") return Error{key + " is read-only (edit tiles with setTile)"};
 
   const int index = world::prop_index(*e->type, key);
@@ -249,6 +267,13 @@ Status Host::set_prop(EntityId id, const std::string& key, const std::optional<V
     auto c = world_.coerce(*e, key, *value);
     if (!c) return Error{c.error()};
     v = std::move(c).value();
+  }
+  if (world::is_elevation_key(key)) {
+    // 2.5D props live in Entity fields that physics reads and writes every tick (world.h).
+    if (v) world_.set_raw(*e, key, *v);
+    else world_.unset(*e, key);
+    if (key == "height" && physics_) physics_->height_changed(id);
+    return Status::success();
   }
   std::optional<Value>& slot = e->props[static_cast<size_t>(index)];
   const std::optional<Value> prev = slot;
@@ -325,6 +350,7 @@ EntityId Host::clone_entity(EntityId src_id, EntityId parent) {
     ce->tags = src->tags;
     ce->z = src->z;
     ce->height = src->height;
+    ce->z_velocity = src->z_velocity;
     ce->z_gravity_scale = src->z_gravity_scale;
     const std::vector<EntityId> kids = src->children;
     world_.attach(c, to);
@@ -936,16 +962,24 @@ int Host::camera_op(lua_State* L) {
     return 2;
   }
   if (what == "toWorld" || what == "toScreen") {
+    // Through the view's projection (iso: the 2:1 diamond), on the ground plane (z = 0).
     const CameraView v = camera_view();
-    const double cx = v.x - cam_.ox, cy = v.y - cam_.oy, x = lua_tonumber(L, 3), y = lua_tonumber(L, 4);
+    const Point c = world::project_ground(world_.view, v.x - cam_.ox, v.y - cam_.oy);
+    const double x = lua_tonumber(L, 3), y = lua_tonumber(L, 4);
     if (what == "toWorld") {
-      lua_pushnumber(L, cx + (x - rw / 2) / v.zoom);
-      lua_pushnumber(L, cy + (y - rh / 2) / v.zoom);
+      const Point w = world::unproject_ground(world_.view, c.x + (x - rw / 2) / v.zoom, c.y + (y - rh / 2) / v.zoom);
+      lua_pushnumber(L, w.x);
+      lua_pushnumber(L, w.y);
     } else {
-      lua_pushnumber(L, (x - cx) * v.zoom + rw / 2);
-      lua_pushnumber(L, (y - cy) * v.zoom + rh / 2);
+      const Point p = world::project_ground(world_.view, x, y);
+      lua_pushnumber(L, (p.x - c.x) * v.zoom + rw / 2);
+      lua_pushnumber(L, (p.y - c.y) * v.zoom + rh / 2);
     }
     return 2;
+  }
+  if (what == "view") {
+    push_str(L, world::view_mode_name(world_.view));
+    return 1;
   }
   raise(L, "camera: unknown call " + what);
 }

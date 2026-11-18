@@ -1,0 +1,5 @@
+{
+  "idle": { "frames": ["asset:hero_idle_1", "asset:hero_idle_2"], "fps": 2.5 },
+  "run": { "frames": ["asset:hero_run_1", "asset:hero_idle_1", "asset:hero_run_2", "asset:hero_idle_1"], "fps": 12 },
+  "jump": { "frames": ["asset:hero_jump"], "fps": 1 }
+}

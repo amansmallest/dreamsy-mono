@@ -190,6 +190,8 @@ void Physics2D::build(EntityId id) {
     bd.gravityScale = static_cast<float>(world_.num(*e, "gravity_scale"));
     if (world_.flag(*e, "lock_rotation")) bd.motionLocks.angularZ = true;
   }
+  // 2.5D: contacts between bodies with a height are re-checked every step (physics2d.h).
+  bd.enableContactRecycling = e->height <= 0;
   b2BodyId body = b2CreateBody(b2world_, &bd);
 
   const double sx = std::hypot(m.a, m.b) != 0 ? std::hypot(m.a, m.b) : 1;
@@ -271,6 +273,7 @@ void Physics2D::build_tiles(EntityId id, bool rebuilt) {
   bd.position = b2Vec2{to_m(m.tx), to_m(m.ty)};
   bd.rotation = make_rot(world::rotation_of(m));
   bd.userData = handle_data(e->handle);
+  bd.enableContactRecycling = e->height <= 0;  // see the 2.5D notes in physics2d.h
   b2BodyId body = b2CreateBody(b2world_, &bd);
   const double sx = std::hypot(m.a, m.b) != 0 ? std::hypot(m.a, m.b) : 1;
   const double sy = std::hypot(m.c, m.d) != 0 ? std::hypot(m.c, m.d) : 1;
@@ -431,21 +434,58 @@ bool Physics2D::z_allows(b2ShapeId a, b2ShapeId b) const {
   return !(ea && eb) || z_overlap(*ea, *eb);
 }
 
-double Physics2D::ground_height(const BodyRec& mover, double z) {
-  std::optional<Aabb> box = aabb(mover.entity);
-  if (!box) return 0;
+// Does the body's footprint (or, for a tile map, a solid tile) contain the world point?
+bool Physics2D::covers(const BodyRec& r, double x, double y) {
+  const Entity* e = world_.get(r.entity);
+  if (!e) return false;
+  if (r.kind == Kind::Tiles) {
+    if (!e->tiles) return false;
+    // World point -> the map's local pixels -> cell.
+    const Point local = world::apply(world::invert(world_.global(r.entity)), x, y);
+    const double ts = world_.num(*e, "tile_size");
+    if (!(ts > 0)) return false;
+    const int col = static_cast<int>(std::floor(local.x / ts)), row = static_cast<int>(std::floor(local.y / ts));
+    if (!e->tiles->in_bounds(col, row)) return false;
+    const world::TileKind* kind = e->tiles->kind_at(col, row);
+    return kind && kind->solid;
+  }
+  std::optional<Aabb> box = aabb(r.entity);
+  return box && box->x0 <= x && x <= box->x1 && box->y0 <= y && y <= box->y1;
+}
+
+double Physics2D::ground_below(double x, double y, double z, uint32_t ignore) {
   double ground = 0;
   for (auto& [seq, r] : recs_) {
-    if (r.handle == mover.handle || (r.kind != Kind::Static && r.kind != Kind::Kinematic)) continue;
+    if (r.handle == ignore) continue;
+    if (r.kind != Kind::Static && r.kind != Kind::Kinematic && r.kind != Kind::Tiles) continue;
+    if (!b2Body_IsEnabled(r.body)) continue;
     const Entity* s = world_.get(r.entity);
     if (!s || s->height <= 0) continue;
     const double top = s->z + s->height;
-    if (top > z + 1e-6 || top <= ground) continue;
-    std::optional<Aabb> sb = aabb(r.entity);
-    if (!sb || sb->x0 >= box->x1 || box->x0 >= sb->x1 || sb->y0 >= box->y1 || box->y0 >= sb->y1) continue;
-    ground = top;
+    if (top > z + 1e-6 || top <= ground) continue;  // above us, or no higher than what we have
+    if (covers(r, x, y)) ground = top;
   }
   return ground;
+}
+
+double Physics2D::ground_of(EntityId id) {
+  const Entity* e = world_.get(id);
+  BodyRec* r = e ? rec(id) : nullptr;
+  if (!r) return 0;
+  const b2Vec2 p = b2Body_GetPosition(r->body);
+  return ground_below(to_px(p.x), to_px(p.y), e->z, r->handle);
+}
+
+void Physics2D::height_changed(EntityId id) {
+  const Entity* e = world_.get(id);
+  BodyRec* r = e ? find(e->handle) : nullptr;
+  if (r) b2Body_EnableContactRecycling(r->body, e->height <= 0);
+}
+
+bool Physics2D::on_ground(EntityId id) {
+  const Entity* e = world_.get(id);
+  if (!e) return false;
+  return e->z_velocity <= 0 && e->z <= ground_of(id) + 1e-6;
 }
 
 void Physics2D::step_z(double dt) {
@@ -453,8 +493,10 @@ void Physics2D::step_z(double dt) {
     if (r.kind != Kind::Dynamic && r.kind != Kind::Kinematic) continue;
     Entity* e = world_.get(r.entity);
     if (!e || (e->z == 0 && e->z_velocity == 0 && e->height <= 0) || !b2Body_IsEnabled(r.body)) continue;
-    const double ground = ground_height(r, e->z);
+    const b2Vec2 p = b2Body_GetPosition(r.body);
+    const double ground = ground_below(to_px(p.x), to_px(p.y), e->z, r.handle);
     if (e->z > ground || e->z_velocity > 0) {
+      // In the air: semi-implicit Euler (velocity first), then land when we reach the ground.
       e->z_velocity -= kZGravity * e->z_gravity_scale * dt;
       e->z += e->z_velocity * dt;
       if (e->z <= ground) {
@@ -462,7 +504,7 @@ void Physics2D::step_z(double dt) {
         e->z_velocity = 0;
       }
     } else {
-      e->z = ground;
+      e->z = ground;  // on the ground (or pushed below it, e.g. a script set z < ground)
       e->z_velocity = 0;
     }
   }

@@ -138,6 +138,68 @@ map.tileTouched:connect(fn(other: Entity, char: string, col: number, row: number
 - `setTile` updates drawing and collision immediately (e.g. breaking a brick, collecting a coin tile).
 - Bodies get one `bodyEntered(map)` / `bodyExited(map)` per map, not per tile.
 
+## Height & 2.5D views
+
+The world is always 2D (`x`, `y` on the ground, +y down) plus a **height** `z` (+ up). `dreamsy.toml`
+`view` picks how it is drawn (a scene file may override it with a top-level `"view"`):
+
+| `view` | Looks like | Draw order (inside a z_index) | Planar gravity | For |
+|---|---|---|---|---|
+| `"side"` (default) | x right, y down | tree order | yes (980 px/s² down) | platformers, runners |
+| `"topdown"` | straight down; z lifts things up the screen | y | none | top-down RPGs, shooters |
+| `"oblique"` | top-down at an angle: z draws upward, blocks show their front | y, then z | none | Zelda-likes, beat-'em-ups, 2.5D platformers |
+| `"iso"` | 2:1 isometric diamond: world (x, y) draws at (x − y, (x + y) / 2 − z) | x + y, then z | none | city builders, tactics, iso adventures |
+
+Props (catalog): `z` (height above the ground, px, relative to the parent like `position`) and `height` (vertical
+extent, px) on Node2D, Sprite2D, Body2D, Area2D, Text2D and TileMap2D; Body2D also has `z_velocity` (px/s, + up) and
+`z_gravity_scale` (1). Sprite2D `anchor = "bottom"` stands an image on its position (its feet).
+
+- **Jumping.** Dynamic/kinematic Body2Ds fall with z gravity (980 px/s² × `z_gravity_scale`) and land on the ground.
+  Jump with `if input.pressed("jump") and me.onGround then me.z_velocity = 420 end` (420 → ~90 px high, 0.86 s in the air).
+  Move with `me.velocity` as usual (x, y on the ground); z is separate.
+- **Platforms / blocks.** A static (or kinematic) Body2D with a `height` is a block: things only collide with it while
+  their z ranges overlap (`a.z < b.z + b.height` and `b.z < a.z + a.height`), so a body walks into its side like a wall,
+  and once it jumps higher than the top it passes over and **lands on top** (z = block z + height). A body stands on a
+  block while its **center** is over the block's footprint; walking off the edge (a ledge) makes it fall. Things with
+  `height = 0` are flat and collide with everything, as in plain 2D — give moving bodies a height (e.g. 24–32).
+- **Raised terrain.** A TileMap2D with a `height` makes every solid tile a block of that height (one map per level of
+  height: e.g. ground map `height = 0` with `collision = false`, a `height = 32` map for cliffs/walls you can jump onto,
+  a `height = 64` map above it). Area2D `z`/`height` work the same way: a coin floating at `z = 40` is only collected
+  by a jump.
+- **Reading it.** `e.onGround` (Body2D, read-only): resting on the floor or a block top, not rising. `e.groundZ` (Body2D,
+  read-only): height of the ground under its center (a block's top, else 0). `e.z` / `e.z_velocity` read and write.
+  Falling to the floor (`e.z == 0 and e.onGround`) works as "fell in the water/lava" in games with a deadly floor.
+- **Drawing.** In topdown/oblique/iso a **Sprite2D with `height` > 0 is drawn as a solid block** of that height over its
+  footprint (`size`, centered on its position): top face = its texture or color, sides shaded darker — give a platform's
+  Body2D a Sprite2D child with the same `size` and `height`. Sprites with height 0 are upright billboards: characters,
+  trees, coins (use `anchor = "bottom"`). Raised things get a **drop shadow** on the ground (or block top) below them.
+  Depth sorting is automatic (table above); something standing on a block draws after it.
+- **Floors** are TileMap2Ds (drawn flat on the ground; in iso as diamonds), or ground art with a lower `z_index`
+  (e.g. -10) so everything standing on it draws on top. A full-screen floor Sprite2D at the same z_index would be
+  depth-sorted like a standing object.
+- **Laying out levels.** Positions are always ground coordinates. topdown/oblique: what you see is (x, y − z) — design
+  on a grid, rows further down the screen are closer to the viewer; a block of footprint w×d and height h covers the
+  screen from y − d/2 − h to y + d/2. iso: lay the level out on a square grid in world x, y (e.g. tile_size 32); +x
+  runs down-right and +y down-left on screen, so the camera and HUD math go through `camera.worldToScreen`.
+  The camera follows ground positions (Camera2D `follow` works as usual).
+- **Controls in iso.** The joystick is in screen directions; turn it into a world direction with
+  `camera.screenDirToWorld(vec2(input.axis("move_x"), input.axis("move_y")))` (unchanged in the other views).
+  `camera.screenToWorld` / `worldToScreen` (and world taps) go through the view's projection on the ground (z = 0).
+  `camera.view()` returns the scene's view mode.
+
+```luau
+-- oblique hero: move on the ground, jump onto blocks
+local me = script.entity
+onTick(function(dt)
+	local dir = camera.screenDirToWorld(vec2(input.axis("move_x"), input.axis("move_y")))
+	me.velocity = dir * 160
+	if input.pressed("jump") and me.onGround then me.z_velocity = 420; sfx.play("jump") end
+end)
+```
+
+The current engine (engine-web) simulates heights exactly but previews every view flat (no z, blocks or shadows in its
+screenshots); the native/C++ engine draws the views.
+
 ## Sprite animation
 
 Frame lists live in `data/anims/<name>.json` and attach to a Sprite2D with `anims`:
@@ -207,6 +269,8 @@ camera.snap()                                            -- jump to the target n
 camera.viewSize() : Vec2                                 -- visible world size: reference size / zoom
 camera.screenToWorld(p: Vec2) : Vec2                     -- UI/screen px (e.g. input.pointer()) → world
 camera.worldToScreen(p: Vec2) : Vec2
+camera.view() : string                                   -- "side" | "topdown" | "oblique" | "iso" (this scene)
+camera.screenDirToWorld(dir: Vec2) : Vec2                -- joystick direction → world direction (iso rotates it)
 ```
 
 Shake and smoothing are deterministic (seeded) and identical in headless playtests.
@@ -306,6 +370,7 @@ e.destroyed : boolean    -- true after destroy / scene change (safe on dead enti
 e:clone(parent: Entity?) : Entity
 -- physics bodies (Body2D/Body3D)
 e.velocity : Vec2|Vec3   e.onFloor : boolean (read-only)
+e.onGround : boolean     e.groundZ : number      -- Body2D, read-only, 2.5D (see "Height & 2.5D views")
 e:applyImpulse(v)
 -- signals (connect returns a Connection with :disconnect())
 e.bodyEntered:connect(fn(other: Entity))     -- Area*/Body*

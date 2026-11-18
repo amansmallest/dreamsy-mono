@@ -1,0 +1,27 @@
+format = "0"
+name = "Cloud Hopper"
+dimension = "2d"
+entry_scene = "scenes/main.scene.json"
+orientation = "portrait"
+view = "oblique"
+
+[style]
+preset = "toon"
+
+[physics]
+layers = [ "hero", "block", "ghost" ]
+
+[server]
+mode = "none"
+
+[players]
+max = 1
+
+[ui]
+primary = "#ff8a3d"
+accent = "#ffd84a"
+background = "#1d3a6b"
+text = "#ffffff"
+panel = "rounded"
+font = "rounded"
+

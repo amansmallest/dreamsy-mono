@@ -3,7 +3,7 @@
 The native 2D/2.5D engine: one C++20 core for web (WebAssembly), iOS, Android and headless game
 servers. Design and roadmap: `DREAMSY.MD` §14. New to C++? Start with `docs/CPP-FOR-TS-DEVS.md`.
 
-Status: **E0 (scaffold), E1 (packages), E2 (scripting), E3 (world + physics) done; E4 (renderer) foundation done; E5 input + platform UI (keys, mouse, touch, on-screen controls, gestures, UI entities, dialogs, toasts, pause) done, audio/save/settings pending.**
+Status: **E0 (scaffold), E1 (packages), E2 (scripting), E3 (world + physics) done; E4 (renderer) foundation done; E5 input + platform UI (keys, mouse, touch, on-screen controls, gestures, UI entities, dialogs, toasts, pause) done, audio/save/settings pending; E7 2.5D minimal slice done (package `view`, `z`/`height`, blocks, raised tile maps, shadows; DREAMSY.MD §14.5).**
 It loads and validates every game in `games/` (same verdicts as the TypeScript validator), reads/writes
 Dreamsy packs (`.dpk`, §3.6), and runs games headless natively: entities, Box2D physics with 2.5D height,
 tweens, sprite animation, particles, camera, tile maps, dialogs. Every 2D game in `games/` produces the same
@@ -27,11 +27,12 @@ ctest --preset debug                                   # run the tests
 ./build/debug/dreamsy-tool check ../games/examples/feature-demo   # type-check scripts (format/dreamsy.d.luau)
 ./build/release/dreamsy-tool run ../games/examples/coin-dash --ticks 300 \
     --input "10-200:move_x=1;40:jump" --dump "10:player,#coin" --hash   # scripted input, entity dumps, state hashes
+./build/release/dreamsy-tool run tests/scenes/z_platforms --ticks 240   # 2.5D from the package (view, z, height)
 ./build/release/dreamsy-tool run tests/scenes/z_jump --view topdown \
-    --height player=16,crate=16,ledge=48 --zjump 50:player=300 --dump 10:player   # 2.5D height (engine-internal)
+    --height player=16,crate=16,ledge=48 --zjump 50:player=300 --dump 10:player   # 2.5D test overrides
 ./build/debug/dreamsy-player                           # window (Metal): runs feature-demo (keys, mouse, Esc/P pause)
 ./build/debug/dreamsy-player ../games/examples/kit-tycoon --touch   # --touch: on-screen controls with the mouse
-./build/debug/dreamsy-player --view iso                # side | topdown | oblique | iso; keys 1-4 / Tab; --smooth; --frames N; --demo
+./build/debug/dreamsy-player --view iso                # force a view: side | topdown | oblique | iso (default: the package's); keys 1-4 / Tab; --smooth; --frames N; --demo
 ```
 
 Other presets: `release`, `headless` (no window; for Linux CI), `web`, and `ios-sim`, `ios-device`,
@@ -51,6 +52,9 @@ NODE_PATH=../engine-web/node_modules node tools/web_touch_screenshot.cjs /tmp/dr
 # Another game in the web player (kit games need their kit packs embedded):
 cmake --preset web -DDREAMSY_DEMO_PACKAGE_DIR=$PWD/../games/examples/kit-tycoon -DDREAMSY_WEB_EMBED_KITS=ON
 #   headless Chromium screenshots of every view mode (Playwright page.route, no server)
+# A game's own view, from its own build folder, holding keys on the way (see the script header):
+DREAMSY_WEB_BUILD=build/web-mygame DREAMSY_SHOT_KEYS="d@0,Space@800" NODE_PATH=../engine-web/node_modules \
+    node tools/web_screenshot.cjs /tmp/shots 540x960 game
 ```
 
 ## Phones
@@ -167,7 +171,7 @@ The engine's own logging (`base/log.cpp`) writes to stderr, which Android drops;
 | `tests/` | doctest unit tests, one binary: `dreamsy-tests` |
 | `tests/conformance/` | `conformance.py`: C++ vs `format/src/validate.ts` on every game plus ~80 generated broken packages; `run_compare.py`: C++ vs engine-web: `tests/scripts/*` (identical logs, errors, audio, save, time), physics scenarios with scripted input (identical script output + measured position/velocity drift), `--all` over every game |
 | `tests/scripts/` | script-only test games (basics, modules, data/save, errors/budget, scenes/room/store/audio, math) |
-| `tests/scenes/` | entity test scenes (`z_jump`: the 2.5D jump/land/ledge scene) |
+| `tests/scenes/` | entity test scenes (`z_jump`: the 2.5D jump/land/ledge scene with test overrides; `z_platforms`: 2.5D from the package, compared with engine-web) |
 | `fuzz/` | fuzz targets (pack, package, zip import); `-replay` builds run in ctest, libFuzzer builds in CI |
 
 Third-party code lives in `../third_party/` (vendored, unmodified; each folder has `DREAMSY_VENDOR.md`).
@@ -183,8 +187,12 @@ Third-party code lives in `../third_party/` (vendored, unmodified; each folder h
   filtering; the UI is drawn on top at full resolution. Other styles draw directly (linear filtering).
 - Not supported yet: WebP images (clear error, drawn as a solid rect; no package uses WebP), SVG `<text>`
   (nanosvg; two kit icons use it), characters outside Latin-1 (fonts are subset; fallback is later),
-  MSDF text (outlines are 8 offset copies), tilemap elevation (E7), lighting, particles, render targets
-  and post effects.
+  MSDF text (outlines are 8 offset copies), per-tile elevation inside one tile map (E7; today one raised
+  TileMap2D per height level), lighting, particles, render targets and post effects.
+- 2.5D (E7): in topdown/oblique/iso a Sprite2D with `height` is a block (top face + shaded front face; two
+  side faces in iso), a TileMap2D with `height` draws one block per tile. Blocks sort by footprint center;
+  whatever stands on a block sorts right after it (`render/sort.h`). Drop shadows lie on the ground under
+  the item: physics `ground_below()` gives the top of the block it is over.
 
 ## Rules
 

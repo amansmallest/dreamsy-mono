@@ -48,8 +48,9 @@ struct HostOptions {
   Json save;                                 // initial save data (an object)
   std::function<void(const struct LogLine&)> on_log;
   KitLookup kits;  // where kit sources come from; empty = script::default_kits() (script/kits.h)
-  // 2.5D view mode for every scene (engine-internal until slice E7 adds it to the format).
-  world::ViewMode view = world::ViewMode::Side;
+  // Forces one 2.5D view mode for every scene (tools/tests). Unset = each scene's own view
+  // (scene `view`, else manifest `view`, else side; DREAMSY.MD §14.5).
+  std::optional<world::ViewMode> view;
 };
 
 struct LogLine {
@@ -202,6 +203,9 @@ class Host {
 
   // ---- host_world.cpp: entities, physics, tweens, anims, particles, camera
   void new_physics();
+  double bottom_anchor_shift(const world::Entity& e) const;  // host_input.cpp
+  // The view a scene runs in (options_.view overrides it).
+  world::ViewMode view_for(const std::string& scene_path) const;
   void build_scene();
   world::EntityId entity_arg(lua_State* L, int index);  // raises "entity was destroyed"
   void push_entity(lua_State* L, uint32_t handle);       // the prelude's proxy for a handle

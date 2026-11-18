@@ -234,6 +234,7 @@ export class Renderer2D {
     const size = e.get<number[]>("size");
     const flip = e.get<boolean>("flip_h") ? -1 : 1, flipV = e.get<boolean>("flip_v") ? -1 : 1;
     mesh.scale.set((size[0]! || 1e-6) * flip, (size[1]! || 1e-6) * flipV, 1);
+    mesh.position.y = e.get<string>("anchor") === "bottom" ? -size[1]! / 2 : 0; // stands on its position (y down)
     const c = (e.get<RGBA>("modulate") ?? [1, 1, 1, 1]) as RGBA;
     const mat = mesh.material;
     mat.color.setRGB(c[0], c[1], c[2], THREE.SRGBColorSpace);

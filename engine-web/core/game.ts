@@ -1,6 +1,6 @@
 // Dreamsy simulation core: package → entity world + physics + Luau scripts, fixed timestep.
 // No DOM dependency: runs in browsers and in Node (harness playtests, future multiplayer server).
-import { registerKitDependencies, musicPath, parseAnims, parseMusic, parseSfx, referenceSize, sfxPath, validatePackage, type AnimSet, type AssetMeta, type Manifest, type Music, type Package, type Scene, type Sfx } from "@dreamsy/format";
+import { registerKitDependencies, musicPath, parseAnims, parseMusic, parseSfx, referenceSize, sfxPath, validatePackage, viewOf, type AnimSet, type AssetMeta, type Manifest, type Music, type Package, type Scene, type Sfx } from "@dreamsy/format";
 import { LuauVM, LUA_TNUMBER, LUA_TSTRING, LUA_TBOOLEAN, LUA_TTABLE, type LuaState, type LuauOptions } from "../luau/index.js";
 import { Dialogs, type DialogLine, type DialogState } from "./dialog.js";
 import { InputState } from "./input.js";
@@ -9,7 +9,7 @@ import { resolveTheme } from "./theme.js";
 import { Emitter } from "./particles.js";
 import { MAX_SAVE_BYTES, MemorySaveHost, type SaveData, type SaveHost } from "./save.js";
 import { DEFAULT_EASING, EASINGS, trackValue, tweenProgress, type TweenRec, type TweenTrack } from "./tween.js";
-import { anchorRect, refToWorld, uiChildRect, worldToRef } from "./view2d.js";
+import { anchorRect, projectGround, refToWorld, uiChildRect, unprojectGround, worldToRef } from "./view2d.js";
 import { Physics2D, initRapier2D } from "./physics2d.js";
 import { OP, PRELUDE, TAG } from "./prelude.js";
 import { Random } from "./random.js";
@@ -92,6 +92,11 @@ const TWEENABLE = new Set(["number", "int", "vec2", "color"]);
 const TILE_KEYS = new Set(["tileset", "data"]);
 /** Max scene switches processed back-to-back (loadScene from a sceneLoaded handler). */
 const MAX_SCENE_CHAIN = 8;
+
+/** A Sprite2D with anchor = "bottom" stands on its position: local y to add to center its box on the origin. */
+function bottomAnchorShift(e: Entity): number {
+  return e.type === "Sprite2D" && e.get<string>("anchor") === "bottom" ? e.get<number[]>("size")[1]! / 2 : 0;
+}
 
 export class GameLoadError extends Error {}
 
@@ -642,7 +647,7 @@ export class Game {
 
   private async init() {
     await initRapier2D();
-    this.physics = new Physics2D(this.dt, this.manifest.physics?.layers ?? []);
+    this.physics = new Physics2D(this.dt, this.manifest.physics?.layers ?? [], viewOf(this.manifest, this.scene));
     this.vm = await LuauVM.create(this.opts);
     this.vm.host = (L) => this.host(L);
     this.net = new NetSession(this.opts.net ?? null, {
@@ -727,7 +732,7 @@ export class Game {
     this.scripts = this.scripts.filter((s) => !dead(s));
     this.tileTouching.clear();
     this.physics?.dispose();
-    this.physics = new Physics2D(this.dt, this.manifest.physics?.layers ?? []);
+    this.physics = new Physics2D(this.dt, this.manifest.physics?.layers ?? [], viewOf(this.manifest, scene));
     this.tweens = this.tweens.filter((t) => t.e.alive);
     this.dialogs.clear();
     this.cam.init = false;
@@ -943,7 +948,8 @@ export class Game {
         const m = global2D(e);
         const [lx, ly] = apply(invert(m), x, y);
         const s = e.get<number[]>("size");
-        if (Math.abs(lx) <= s[0]! / 2 && Math.abs(ly) <= s[1]! / 2) {
+        const sy = ly + bottomAnchorShift(e); // Sprite2D anchor = "bottom": the box sits above its position
+        if (Math.abs(lx) <= s[0]! / 2 && Math.abs(sy) <= s[1]! / 2) {
           const key = zz * 1e6 + order;
           if (key > bestKey) { bestKey = key; best = target; bestCell = null; }
         }
@@ -963,7 +969,7 @@ export class Game {
       // local position inside the target: (0,0) = top-left corner of its `size` box (unrotated, unscaled)
       const [lx, ly] = apply(invert(global2D(hit)), x, y);
       const sz = "size" in hit.def.props ? hit.get<number[]>("size") : [0, 0];
-      const off = hit.type === "TileMap2D" ? [0, 0] : [sz[0]! / 2, sz[1]! / 2];
+      const off = hit.type === "TileMap2D" ? [0, 0] : [sz[0]! / 2, sz[1]! / 2 + bottomAnchorShift(hit)];
       this.fire(hit, "tappedAt", (L) => this.pushVec2(L, lx + off[0]!, ly + off[1]!));
     }
     if (hit) this.tapEntity(hit.id);
@@ -996,6 +1002,21 @@ export class Game {
   // ---------------------------------------------------------------- camera
 
   /** View center (smoothing, limits and shake applied) and zoom. Same in Node and the renderer. */
+  /** Reference px → world point on the ground, through the scene's view (iso: 2:1 diamond, like the C++ engine). */
+  private refToGround(cx: number, cy: number, zoom: number, x: number, y: number): [number, number] {
+    const view = viewOf(this.manifest, this.scene);
+    const [pcx, pcy] = projectGround(view, cx, cy);
+    const [px, py] = refToWorld(pcx, pcy, zoom, this.refSize, x, y);
+    return unprojectGround(view, px, py);
+  }
+
+  private groundToRef(cx: number, cy: number, zoom: number, x: number, y: number): [number, number] {
+    const view = viewOf(this.manifest, this.scene);
+    const [pcx, pcy] = projectGround(view, cx, cy);
+    const [px, py] = projectGround(view, x, y);
+    return worldToRef(pcx, pcy, zoom, this.refSize, px, py);
+  }
+
   cameraView(): { x: number; y: number; zoom: number } {
     if (!this.cam.init) this.updateCamera(true);
     const cam = this.cam.entity && this.cam.entity.alive ? this.cam.entity : null;
@@ -1114,7 +1135,7 @@ export class Game {
       return ui.id;
     }
     const v = this.cameraView();
-    const [wx, wy] = refToWorld(v.x, v.y, v.zoom, this.refSize, x, y);
+    const [wx, wy] = this.refToGround(v.x, v.y, v.zoom, x, y);
     return this.tapWorld(wx, wy)?.id ?? null;
   }
 
@@ -1585,6 +1606,12 @@ export class Game {
       case "onFloor":
         if (e.type === "Body2D") { vm.pushNumber(L, TAG.PLAIN); vm.pushBoolean(L, this.physics!.onFloor(e)); return 2; }
         break;
+      case "onGround": // 2.5D: resting on the ground / ground height under the body (DREAMSY.MD §14.5)
+        if (e.type === "Body2D") { vm.pushNumber(L, TAG.PLAIN); vm.pushBoolean(L, this.physics!.onGround(e)); return 2; }
+        break;
+      case "groundZ":
+        if (e.type === "Body2D") { vm.pushNumber(L, TAG.PLAIN); vm.pushNumber(L, this.physics!.groundOf(e)); return 2; }
+        break;
       case "cols": case "rows":
         if (e.type === "TileMap2D") { vm.pushNumber(L, TAG.PLAIN); vm.pushNumber(L, e.tiles ? e.tiles[key as "cols" | "rows"] : 0); return 2; }
         break;
@@ -1638,7 +1665,7 @@ export class Game {
         this.afterTransform(e);
         return;
       }
-      case "id": case "type": case "onFloor": case "particleCount":
+      case "id": case "type": case "onFloor": case "onGround": case "groundZ": case "particleCount":
         throw new Error(`${key} is read-only`);
       case "cols": case "rows":
         if (e.type === "TileMap2D") throw new Error(`${key} is read-only (edit tiles with setTile)`);
@@ -1657,6 +1684,7 @@ export class Game {
       if (key === "scale") this.markPhysicsSubtree(e);
     } else if (PHYSICS_KEYS.has(key)) this.physics?.markDirty(e);
     else if (key === "visible") this.physics?.applyEnabled(e);
+    else if (key === "height") this.physics?.zHooks(e);
     else if (e.type === "TileMap2D" && TILE_KEYS.has(key) && !this.spawning.has(e)) this.loadTiles(e, true);
   }
 
@@ -2178,12 +2206,14 @@ export class Game {
           case "viewSize": { const z = this.cameraView().zoom; vm.pushNumber(L, this.refSize[0] / z); vm.pushNumber(L, this.refSize[1] / z); return 2; }
           case "screenSize": vm.pushNumber(L, this.refSize[0]); vm.pushNumber(L, this.refSize[1]); return 2;
           case "toWorld": case "toScreen": {
-            const v = this.cameraView();
-            const f = what === "toWorld" ? refToWorld : worldToRef;
-            const [x, y] = f(v.x - this.cam.ox, v.y - this.cam.oy, v.zoom, this.refSize, vm.toNumber(L, 3), vm.toNumber(L, 4));
+            const v = this.cameraView(), cx = v.x - this.cam.ox, cy = v.y - this.cam.oy;
+            const [x, y] = what === "toWorld"
+              ? this.refToGround(cx, cy, v.zoom, vm.toNumber(L, 3), vm.toNumber(L, 4))
+              : this.groundToRef(cx, cy, v.zoom, vm.toNumber(L, 3), vm.toNumber(L, 4));
             vm.pushNumber(L, x); vm.pushNumber(L, y);
             return 2;
           }
+          case "view": vm.pushString(L, viewOf(this.manifest, this.scene)); return 1;
         }
         throw new Error(`camera: unknown call ${what}`);
       }

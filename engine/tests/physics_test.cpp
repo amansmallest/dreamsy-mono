@@ -190,5 +190,5 @@ TEST_CASE("2.5D z-jump scene: jump onto a crate, walk off, blocked by a ledge; d
   char hex[17];
   std::snprintf(hex, sizeof hex, "%016llx", static_cast<unsigned long long>(hash));
   MESSAGE("z_jump state hash: " << hex);
-  CHECK(std::string(hex) == "05d49a68880dccb1");
+  CHECK(std::string(hex) == "103db0029ce82c88");  // E7: ground = under the center, not the footprint
 }

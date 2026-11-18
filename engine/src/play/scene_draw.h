@@ -3,8 +3,13 @@
 // Walks the entity tree the same way engine-web's renderer does (render/renderer2d.ts sync): an
 // invisible entity hides its whole subtree; draw order is the accumulated z_index down the tree,
 // then tree order (the renderer's sort: layer, z_index, then submission order in side view); every
-// spatial entity is placed by its full parent transform. 2.5D height (Entity::z) goes straight into
-// the commands, so raised sprites get drop shadows and every view mode projects correctly.
+// spatial entity is placed by its full parent transform.
+//
+// 2.5D (DREAMSY.MD §14.5): `z` accumulates down the tree like `position` (a Sprite2D under a jumping
+// Body2D rises with it). In topdown/oblique/iso a Sprite2D with a `height` is a block; a TileMap2D
+// with a `height` draws every tile as a block (iso: long sprite blocks are split into square cells
+// so depth sorting stays right, see render/sort.h). Raised sprites get a drop shadow on the ground
+// under them: the top of the block they are over (physics ground_below()), else the floor.
 //
 // Drawn today: Sprite2D (texture or solid rect, current animation frame, flip, modulate, blend),
 // Text2D, TileMap2D, Particles2D. UI entities (UIPanel/UIText/UIButton) are screen-space and drawn by

@@ -1,0 +1,133 @@
+{
+  "format": "0",
+  "root": "win_root",
+  "entities": {
+    "win_root": {
+      "type": "Node2D",
+      "scripts": [
+        "scripts/client/win.luau"
+      ],
+      "children": [
+        "win_world",
+        "win_camera",
+        "win_title",
+        "win_sub",
+        "win_gems",
+        "win_again",
+        "win_menu"
+      ]
+    },
+    "win_world": {
+      "type": "Node2D"
+    },
+    "win_camera": {
+      "type": "Camera2D",
+      "props": {
+        "zoom": 1.5,
+        "position": [
+          0,
+          0
+        ]
+      }
+    },
+    "win_title": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top",
+        "offset": [
+          0,
+          120
+        ],
+        "size": [
+          700,
+          130
+        ],
+        "text": "You did it!",
+        "font_size": 96,
+        "font": "bold",
+        "align": "center",
+        "color": "#ffd84a",
+        "outline": "#2b2140",
+        "outline_size": 10
+      }
+    },
+    "win_sub": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top",
+        "offset": [
+          0,
+          250
+        ],
+        "size": [
+          700,
+          60
+        ],
+        "text": "Pip crossed the whole sky!",
+        "font_size": 34,
+        "align": "center",
+        "color": "#ffffff",
+        "outline": "#1d3a6b",
+        "outline_size": 5
+      }
+    },
+    "win_gems": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top",
+        "offset": [
+          0,
+          320
+        ],
+        "size": [
+          700,
+          70
+        ],
+        "text": "Gems found: 0 / 0",
+        "font_size": 44,
+        "font": "bold",
+        "align": "center",
+        "color": "#ff9cc8",
+        "outline": "#2b2140",
+        "outline_size": 6
+      }
+    },
+    "win_again": {
+      "type": "UIButton",
+      "props": {
+        "anchor": "center",
+        "offset": [
+          0,
+          300
+        ],
+        "size": [
+          460,
+          104
+        ],
+        "text": "Play again",
+        "font_size": 44,
+        "font": "bold",
+        "background": "#ff8a3d",
+        "color": "#ffffff"
+      }
+    },
+    "win_menu": {
+      "type": "UIButton",
+      "props": {
+        "anchor": "center",
+        "offset": [
+          0,
+          430
+        ],
+        "size": [
+          320,
+          80
+        ],
+        "text": "Title",
+        "font_size": 32,
+        "background": "#3a5fa0",
+        "color": "#ffffff"
+      }
+    }
+  }
+}

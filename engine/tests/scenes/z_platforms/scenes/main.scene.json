@@ -1,0 +1,23 @@
+{
+  "format": "0",
+  "root": "world",
+  "entities": {
+    "world": { "type": "Node2D", "children": ["floor", "hero", "step", "tower", "coin", "cam"] },
+    "floor": { "type": "Sprite2D", "props": { "position": [200, 100], "size": [480, 160], "color": "#3d6b4a", "z_index": -1 } },
+    "hero": {
+      "type": "Body2D",
+      "props": { "position": [40, 100], "body": "dynamic", "size": [20, 14], "height": 28, "lock_rotation": true, "friction": 0 },
+      "scripts": ["scripts/client/hero.luau"],
+      "tags": ["player"],
+      "children": ["hero_art"]
+    },
+    "hero_art": { "type": "Sprite2D", "props": { "size": [20, 30], "color": "#f2c14e", "anchor": "bottom" } },
+    "step": { "type": "Body2D", "props": { "position": [150, 100], "size": [48, 48], "height": 24 }, "children": ["step_art"] },
+    "step_art": { "type": "Sprite2D", "props": { "size": [48, 48], "height": 24, "color": "#8a6d5a" } },
+    "tower": { "type": "Body2D", "props": { "position": [260, 100], "size": [48, 48], "height": 80 }, "children": ["tower_art"] },
+    "tower_art": { "type": "Sprite2D", "props": { "size": [48, 48], "height": 80, "color": "#6a7fa8" } },
+    "coin": { "type": "Area2D", "props": { "position": [160, 100], "size": [12, 12], "z": 30, "height": 12 }, "tags": ["coin"], "children": ["coin_art"] },
+    "coin_art": { "type": "Sprite2D", "props": { "size": [12, 12], "color": "#ffe066", "anchor": "bottom" } },
+    "cam": { "type": "Camera2D", "props": { "position": [180, 100], "zoom": 2 } }
+  }
+}

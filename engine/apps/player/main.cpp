@@ -109,7 +109,9 @@ struct Options {
   std::string package_dir = DREAMSY_DEMO_PACKAGE;  // a directory, a .dpk or a .zip
   std::string package_url;                          // web: ?pkg=<url> (.dpk or .zip), fetched at start
   std::string kits_url = "kits/";                   // web: where <kit>.dpk files are (?kits=<url>)
-  render::ViewMode view = render::ViewMode::Side;
+  // Forces a view mode (dev: --view / #iso / keys 1-4). Unset = the scene's own view (manifest
+  // or scene `view`, DREAMSY.MD §14.5).
+  std::optional<render::ViewMode> view;
   int frames = 0;  // quit after this many frames (0 = run until closed)
   bool smooth = false;  // force smooth mode (linear filtering, no pixel snap) to check it on any package
   bool demo = false;    // renderer test scene instead of running the game
@@ -325,7 +327,7 @@ void init() {
     start = end + 1;
   }
 #endif
-  app.view = app.options.view;
+  app.view = app.options.view.value_or(render::ViewMode::Side);
 
 #ifdef __EMSCRIPTEN__
   // ?pkg=<url to a .dpk or .zip>[&kits=<base url>]: load a game over HTTP instead of the embedded one.
@@ -351,7 +353,8 @@ void finish_init(App& app) {
   }
   app.ok = true;
   app.last_ticks = stm_now();
-  if (app.host && app.options.view != render::ViewMode::Side) set_view(app, app.options.view);
+  if (app.host && app.options.view) set_view(app, *app.options.view);
+  if (app.host && !app.options.view) app.view = static_cast<render::ViewMode>(static_cast<int>(app.host->world().view));
   log_info("package \"" + app.package->manifest.name + "\": reference " + std::to_string(app.style.ref_w) + "x" +
            std::to_string(app.style.ref_h) + (app.style.pixel_snap ? ", pixel-art mode" : ", smooth mode"));
 }

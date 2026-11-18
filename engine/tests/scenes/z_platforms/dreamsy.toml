@@ -1,0 +1,6 @@
+format = "0"
+name = "z_platforms"
+description = "2.5D test scene (package fields, slice E7): an oblique view, a walker that jumps onto a step, picks up a raised coin, walks off the ledge and bumps a tower too tall to climb. Both engines run the same z physics."
+dimension = "2d"
+view = "oblique"
+entry_scene = "scenes/main.scene.json"

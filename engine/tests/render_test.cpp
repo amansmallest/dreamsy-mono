@@ -628,6 +628,97 @@ TEST_CASE("geometry: drop shadows shrink and fade with height") {
   CHECK(sprite_mid == doctest::Approx(350));
 }
 
+// ---------------------------------------------------------------- 2.5D blocks (E7)
+
+namespace {
+
+SpriteCmd block_at(float x, float y, float w, float d, float height, float z = 0) {
+  SpriteCmd s = sprite_at(x, y, z);
+  s.size = {w, d};
+  s.height = height;
+  return s;
+}
+
+}  // namespace
+
+TEST_CASE("sort: blocks sort by footprint center; things on a block sort right after it") {
+  for (ViewMode view : {ViewMode::Oblique, ViewMode::TopDown, ViewMode::Iso}) {
+    CAPTURE(static_cast<int>(view));
+    DrawList list;
+    list.view = view;
+    list.add(block_at(100, 100, 48, 48, 24));  // 0: block, footprint y 76..124
+    SpriteCmd on_back = sprite_at(100, 80, 24);  // 1: stands on its back half (y < center)
+    on_back.ground_z = 24;
+    on_back.shadow = true;
+    on_back.z = 40;  // jumping on it: shadow on the block's top
+    list.add(on_back);
+    list.add(sprite_at(100, 60));   // 2: behind the block, on the floor
+    list.add(sprite_at(100, 140));  // 3: in front of it
+    // behind first, then the block, then the shadow on its top and the jumper, then the one in front
+    CHECK(world_order(list) == std::vector<int>{2, 0, -2, 1, 3});
+    CHECK(is_block(view, list.sprites[0]));
+  }
+  DrawList side;
+  side.view = ViewMode::Side;
+  side.add(block_at(0, 0, 10, 10, 10));
+  CHECK_FALSE(is_block(ViewMode::Side, side.sprites[0]));  // side view: just a sprite
+}
+
+TEST_CASE("geometry: blocks draw sides then top; oblique top is raised by the height") {
+  Atlas atlas(AtlasOptions{.page_size = 256});
+  TextureStore textures(nullptr, atlas, false);
+  FontStore fonts(atlas, FontId::Bold);
+  REQUIRE(fonts.init().ok());
+  auto build = [&](ViewMode view) {
+    DrawList list;
+    list.view = view;
+    list.camera = DrawList::default_camera(1280, 720);
+    SpriteCmd b = block_at(640, 360, 40, 20, 30);
+    b.tint = {1, 0, 0, 1};
+    list.add(b);
+    SortedDrawList sorted;
+    sort_draw_list(list, sorted);
+    FrameGeometry geo;
+    build_geometry(list, sorted, textures, fonts, GeometryParams{}, geo);
+    return geo;
+  };
+  const FrameGeometry ob = build(ViewMode::Oblique);
+  REQUIRE(ob.quad_count() == 3);  // background, front face, top face
+  // Front face: from the footprint's front edge (y 370) up by the height.
+  CHECK(ob.vertices[4].y == doctest::Approx(370 - 30));
+  CHECK(ob.vertices[4 + 2].y == doctest::Approx(370));
+  CHECK((ob.vertices[4].color & 0xff) < 255);  // shaded darker than the top
+  // Top face: the footprint (y 350..370) lifted by 30.
+  CHECK(ob.vertices[8].y == doctest::Approx(350 - 30));
+  CHECK(ob.vertices[8 + 2].y == doctest::Approx(370 - 30));
+  CHECK((ob.vertices[8].color & 0xff) == 255);
+  const FrameGeometry iso = build(ViewMode::Iso);
+  CHECK(iso.quad_count() == 4);  // background, two side faces, top
+}
+
+TEST_CASE("geometry: shadows lie on the ground under the sprite (a block's top when over one)") {
+  Atlas atlas(AtlasOptions{.page_size = 256});
+  TextureStore textures(nullptr, atlas, false);
+  FontStore fonts(atlas, FontId::Bold);
+  REQUIRE(fonts.init().ok());
+  DrawList list;
+  list.view = ViewMode::Oblique;
+  list.camera = DrawList::default_camera(1280, 720);
+  SpriteCmd s = sprite_at(640, 360, 50);
+  s.size = {20, 20};
+  s.shadow = true;
+  s.ground_z = 24;
+  list.add(s);
+  SortedDrawList sorted;
+  sort_draw_list(list, sorted);
+  FrameGeometry geo;
+  build_geometry(list, sorted, textures, fonts, GeometryParams{}, geo);
+  REQUIRE(geo.quad_count() == 3);
+  CHECK((geo.vertices[4].y + geo.vertices[4 + 2].y) / 2 == doctest::Approx(360 - 24));
+  s.z = 24;  // standing on it: no shadow
+  CHECK_FALSE(casts_shadow(s));
+}
+
 // ---------------------------------------------------------------- style
 
 TEST_CASE("style: colors and manifest render settings (engine-web rules)") {

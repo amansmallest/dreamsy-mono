@@ -5,6 +5,7 @@
 #include <string>
 
 #include "doctest.h"
+#include "physics/physics2d.h"
 #include "pkg/validate.h"
 #include "script/host.h"
 
@@ -201,4 +202,122 @@ TEST_CASE("state hashes are reproducible and change with the simulation") {
   auto a = run(pkg, 30), b = run(pkg, 30), c = run(pkg, 31);
   CHECK(a.host->state_hash() == b.host->state_hash());
   CHECK(a.host->state_hash() != c.host->state_hash());
+}
+
+// ---------------------------------------------------------------- 2.5D from the package (E7)
+
+namespace {
+
+std::shared_ptr<const pkg::Package> game25(const std::string& manifest_extra, const std::string& scene,
+                                           const std::string& script) {
+  std::map<std::string, std::string> files;
+  files["dreamsy.toml"] =
+      "format = \"0\"\nname = \"t\"\ndimension = \"2d\"\nentry_scene = \"scenes/main.scene.json\"\n" + manifest_extra;
+  files["scenes/main.scene.json"] = scene;
+  files["scenes/side.scene.json"] = R"({"format": "0", "root": "s", "view": "side", "entities": {"s": {"type": "Node2D"}}})";
+  files["scripts/client/main.luau"] = script;
+  files["data/tilesets/t.json"] = R"({"tiles": {"#": {"color": "#8080ff", "solid": true}}})";
+  auto f = pkg::Files::from_map(files);
+  REQUIRE(f.ok());
+  pkg::LoadResult r = pkg::load_package(std::move(f).value());
+  for (const auto& i : r.issues) MESSAGE(pkg::format_issue(i));
+  REQUIRE(r.ok);
+  return std::shared_ptr<const pkg::Package>(std::move(r.package));
+}
+
+const char* kScene25 = R"({"format": "0", "root": "world", "entities": {
+  "world": {"type": "Node2D", "children": ["hero", "step", "terrace", "cam"]},
+  "hero": {"type": "Body2D", "props": {"position": [40, 100], "body": "dynamic", "size": [16, 12], "height": 24, "z": 5}},
+  "step": {"type": "Body2D", "props": {"position": [200, 100], "size": [40, 40], "height": 20}},
+  "terrace": {"type": "TileMap2D", "props": {"position": [300, 80], "tile_size": 20, "tileset": "data/tilesets/t.json", "data": "##\n##", "height": 40}},
+  "cam": {"type": "Camera2D", "props": {"position": [100, 100]}}
+}})";
+
+}  // namespace
+
+TEST_CASE("2.5D: manifest view, scene override, z props from the scene and from scripts") {
+  auto r = run(game25("view = \"oblique\"\n", kScene25, R"(
+    local hero = entity("hero")
+    print(camera.view(), hero.z, hero.height, hero.z_velocity, hero.z_gravity_scale)
+    hero.z_gravity_scale = 0.5
+    hero.z_velocity = 100
+    print(hero.z_velocity, hero.z_gravity_scale, entity("step").z, entity("terrace").height)
+    local ok, err = pcall(function() hero.onGround = true end)
+    print(err)
+    ok, err = pcall(function() entity("cam").z = 3 end)
+    print(err)
+    hero.z_gravity_scale = nil
+    print(hero.z_gravity_scale)
+  )"), 0);
+  // The script runs at spawn; the scene's z = 5 is what it sees.
+  CHECK(r.errors == "");
+  CHECK(r.logs.find("oblique\t5\t24\t0\t1\n") != std::string::npos);
+  CHECK(r.logs.find("100\t0.5\t0\t40\n") != std::string::npos);
+  CHECK(r.logs.find("onGround is read-only") != std::string::npos);
+  CHECK(r.logs.find("Camera2D \"cam\" has no property \"z\"") != std::string::npos);
+  CHECK(r.logs.find("\n1\n") != std::string::npos);  // nil resets to the catalog default
+  CHECK(r.host->world().view == world::ViewMode::Oblique);
+}
+
+TEST_CASE("2.5D: jump onto a block and a raised tile map; onGround, groundZ; tweens and clones keep z") {
+  auto pkg = game25("view = \"topdown\"\n", kScene25, R"(
+    local hero = entity("hero")
+    local log = {}
+    onTick(function()
+      log[#log + 1] = { hero.z, hero.onGround, hero.groundZ }
+    end)
+    _G.log = log
+  )");
+  auto h = Host::create(pkg);
+  REQUIRE(h.ok());
+  Host& host = *h.value();
+  world::World& w = host.world();
+  world::Entity* hero = w.get(w.by_id("hero"));
+  physics::Physics2D& ph = *host.physics();
+  host.step();
+  // z = 5 from the scene, nothing under it: falls to the floor.
+  for (int i = 0; i < 30; ++i) host.step();
+  CHECK(hero->z == 0);
+  CHECK(ph.on_ground(w.by_id("hero")));
+  // Teleport over the block and drop onto it.
+  hero->z = 60;
+  w.set_raw(*hero, "position", world::Value::vec(200, 100));
+  ph.sync_transform(w.by_id("hero"));
+  for (int i = 0; i < 60; ++i) host.step();
+  CHECK(hero->z == 20);
+  CHECK(ph.ground_of(w.by_id("hero")) == 20);
+  CHECK(ph.on_ground(w.by_id("hero")));
+  // Over a solid tile of the raised map (top at 40).
+  hero->z = 80;
+  w.set_raw(*hero, "position", world::Value::vec(310, 90));
+  ph.sync_transform(w.by_id("hero"));
+  for (int i = 0; i < 60; ++i) host.step();
+  CHECK(hero->z == 40);
+  CHECK(ph.ground_below(310, 90, 100) == 40);
+  CHECK(ph.ground_below(310, 90, 30) == 0);  // below the map's top: the map doesn't count
+  CHECK(ph.ground_below(200, 100, 100) == 20);
+  CHECK(ph.ground_below(240, 100, 100) == 0);  // beside the block
+  // A jump leaves the ground.
+  hero->z_velocity = 300;
+  host.step();
+  CHECK_FALSE(ph.on_ground(w.by_id("hero")));
+  CHECK(hero->z > 40);
+}
+
+TEST_CASE("2.5D: scene view overrides the manifest; side scenes keep planar gravity; iso camera math") {
+  auto r = run(game25("view = \"iso\"\n", kScene25, R"(
+    local p = camera.worldToScreen(vec2(140, 60))
+    local back = camera.screenToWorld(p)
+    print(math.floor(back.x + 0.5), math.floor(back.y + 0.5))
+    local d = camera.screenDirToWorld(vec2(1, 0))
+    print(math.floor(d.x * 1000 + 0.5) / 1000, math.floor(d.y * 1000 + 0.5) / 1000)
+    loadScene("scenes/side.scene.json")
+    game.sceneLoaded:connect(function(path) print(path, camera.view()) end)
+  )"), 3);
+  CHECK(r.errors == "");
+  CHECK(r.logs.find("140\t60\n") != std::string::npos);
+  // iso: screen right = world (+x, -y) / sqrt(2)
+  CHECK(r.logs.find("0.707\t-0.707\n") != std::string::npos);
+  CHECK(r.logs.find("scenes/side.scene.json\tside") != std::string::npos);
+  CHECK(r.host->world().view == world::ViewMode::Side);
 }

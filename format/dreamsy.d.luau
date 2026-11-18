@@ -96,6 +96,8 @@ declare extern type Entity with
 	destroyed: boolean
 	velocity: Vec2
 	onFloor: boolean
+	onGround: boolean -- 2.5D (Body2D): resting on the ground or a block top (not rising)
+	groundZ: number -- 2.5D (Body2D): height of the ground under its center (a block's top, else 0)
 	cols: number
 	rows: number
 	particleCount: number
@@ -183,6 +185,8 @@ declare camera: {
 	viewSize: () -> Vec2,
 	screenToWorld: (p: Vec2) -> Vec2,
 	worldToScreen: (p: Vec2) -> Vec2,
+	view: () -> string, -- "side" | "topdown" | "oblique" | "iso"
+	screenDirToWorld: (dir: Vec2) -> Vec2, -- joystick/screen direction -> world direction (iso: rotated)
 }
 
 declare input: {

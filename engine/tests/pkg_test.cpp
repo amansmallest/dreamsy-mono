@@ -77,6 +77,14 @@ TEST_CASE("manifest: defaults, strictness, TOML errors") {
   for (const char* part : {"name: must not be empty", "dimension:", "entry_scene:", "unknown key \"colour\""}) {
     CHECK_MESSAGE(bad.error().find(part) != std::string::npos, bad.error());
   }
+  CHECK_FALSE(m.value().view);  // 2.5D view: absent = side
+  auto iso = parse_manifest("format = \"0\"\nname = \"X\"\ndimension = \"2d\"\nview = \"iso\"\nentry_scene = \"scenes/main.scene.json\"\n");
+  REQUIRE_MESSAGE(iso.ok(), iso.error());
+  CHECK(*iso.value().view == "iso");
+  auto bad_view = parse_manifest("format = \"0\"\nname = \"X\"\ndimension = \"2d\"\nview = \"isometric\"\nentry_scene = \"scenes/main.scene.json\"\n");
+  REQUIRE_FALSE(bad_view);
+  CHECK_MESSAGE(bad_view.error().find("view:") != std::string::npos, bad_view.error());
+
   auto toml = parse_manifest("name = ");
   REQUIRE_FALSE(toml);
   CHECK(starts_with(toml.error(), "not valid TOML:"));

@@ -199,6 +199,20 @@ MUTATIONS = {
         put_js(f, "scenes/main.scene.json", s)))(js(f, "scenes/main.scene.json"))),
     "utf16_prop_length": m("feature-demo", scene_edit(FD)(lambda s: ent(s, "player_sprite")["props"].update({"anim": "🦊" * 33}))),
     "utf8_name_long": m("feature-demo", scene_edit(FD)(lambda s: ent(s, "player").update({"name": "🦊" * 101}))),
+    # ---- 2.5D (E7): view, z / height / z_velocity / z_gravity_scale, Sprite2D anchor
+    "view_ok": m("feature-demo", lambda f: (toml_edit(f, 'entry_scene', 'view = "oblique"\nentry_scene'),
+        scene_edit(FD)(lambda s: (s.update({"view": "iso"}),
+            ent(s, "player")["props"].update({"z": 12, "height": 24, "z_velocity": 0, "z_gravity_scale": 0.5}),
+            ent(s, "player_sprite")["props"].update({"height": 0, "anchor": "bottom"}),
+            ent(s, "map")["props"].update({"z": 0, "height": 32})))(f))),
+    "view_invalid": m("feature-demo", lambda f: toml_edit(f, 'entry_scene', 'view = "isometric"\nentry_scene')),
+    "view_scene_invalid": m("feature-demo", scene_edit(FD)(lambda s: s.update({"view": "3d"}))),
+    "view_3d": m("block-tower", lambda f: (toml_edit(f, 'entry_scene', 'view = "iso"\nentry_scene'),
+        (lambda s: (s.update({"view": "oblique"}), put_js(f, "scenes/main.scene.json", s)))(js(f, "scenes/main.scene.json")))),
+    "props_25d_invalid": m("feature-demo", scene_edit(FD)(lambda s: (
+        ent(s, "player")["props"].update({"height": -3, "z": "up", "z_gravity_scale": True}),
+        ent(s, "player_sprite")["props"].update({"z_velocity": 5, "anchor": "feet"}),
+        ent(s, "cam").setdefault("props", {}).update({"z": 4})))),
 }
 
 

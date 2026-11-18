@@ -55,8 +55,11 @@ GAMES = {
     "kit-platformer": ("games/examples/kit-platformer", 600,
                        "20:jump;90-560:move_x=1;120:jump;160-175:jump;220:jump;300-320:jump;380:jump;450:jump",
                        "10:#player"),
-    # the 2.5D test scene, planar only (engine-web has no z): walk into a crate
+    # the 2.5D test scene, planar only (its heights come from the C++ tests): walk into a crate
     "z_jump": ("engine/tests/scenes/z_jump", 300, "", "5:player"),
+    # 2.5D from the package (view, z, height; slice E7): jump onto a step, take a raised coin,
+    # walk off the ledge, bump a tower too tall to climb. Both engines run the z physics.
+    "z_platforms": ("engine/tests/scenes/z_platforms", 240, "", "10:hero"),
     # free dynamics, no script control: bounce, friction, rotation, a stack, a kinematic pusher.
     # The honest Rapier-vs-Box2D number (the games above steer their bodies every tick).
     "physics_mix": ("engine/tests/scenes/physics_mix", 600, "",

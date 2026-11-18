@@ -12,8 +12,8 @@ flowchart LR
   web["apps/web<br/>Studio dashboard"] --> api
   api["services/api<br/>Hono + Postgres + blobs"] <-- "claim jobs, upload versions" --> harness["harness<br/>generation workers"]
   api --> live["services/live<br/>Convex live feed"]
-  mobile -- WebView --> engine["engine-web<br/>three.js + Rapier + Luau/WASM"]
-  engine <-- "WS /rooms" --> gs["services/gameserver<br/>multiplayer rooms"]
+  mobile -- WebView --> engine["engine (C++)<br/>web player: WASM + WebGL2 + Luau"]
+  engine -. "WS /rooms (E8)" .-> gs["services/gameserver<br/>multiplayer rooms"]
   harness -- "headless playtests" --> engine
 ```
 
@@ -36,7 +36,7 @@ Everything speaks one contract: the **game package** defined in `format/` (DREAM
 | `taste/` | | House-style packs (`packs/*.md`) and their reference images. |
 | `pipelines/assets/` | | 2D/3D asset generation (DREAMSY.MD §5.2). |
 | `deploy/` | | Production Docker Compose, Dockerfile, Caddyfile. |
-| `scripts/` | | `dev.sh` (local stack) and `deploy.sh` (production). |
+| `scripts/` | | `dev.sh` (local stack, builds and serves the C++ web player). |
 | `third_party/luau/` | | Vendored Luau, compiled to WASM. Don't modify. |
 
 ## Prerequisites
@@ -91,8 +91,9 @@ pnpm -C services/api seed:showcase
 # 5. harness worker (builds games)
 pnpm -C harness worker
 
-# 6. engine page the app's WebView loads (0.0.0.0:2005) and the web dashboard (:3000)
-pnpm -C engine-web dev
+# 6. the C++ web player the app's WebView loads (0.0.0.0:2005; needs emsdk 4.0.11, engine/README.md) and the web dashboard (:3000)
+(cd engine && cmake --preset web && cmake --build --preset web --target dreamsy-player && cp build/web/dreamsy-player.html build/web/index.html)
+python3 -m http.server 2005 --directory engine/build/web
 pnpm -C apps/web dev
 
 # 7. app in Expo Go (plain `expo start` targets a dev build)
@@ -109,7 +110,6 @@ On networks with broken IPv6 (VPNs, venue Wi-Fi), Node needs `NODE_OPTIONS=--net
 pnpm test                                    # every package's tests
 pnpm typecheck                               # every package's typecheck
 
-pnpm -C engine-web dev                       # engine alone, game picker at http://localhost:2005
 pnpm -C harness local --prompt "a pixel game where a frog collects coins" --out /tmp/frog [--rounds N]
 pnpm -C harness local --prompt "make the frog faster" --base /tmp/frog --select player --out /tmp/frog2
 pnpm -C format cli validate /tmp/frog        # validate a game package
@@ -123,22 +123,22 @@ API tests run on PGlite with in-memory storage, so they don't need Docker.
 
 ## Production
 
+Prod is down (torn down 2026-11-16, STATUS.md) and there is no deploy script; `deploy/` keeps the stack for the next host.
 One box behind Caddy, mirroring the dev stack via `deploy/docker-compose.yml` (Postgres, API, Claude and OpenAI harness workers, room server, Caddy). Secrets live in `deploy/.env.prod` (gitignored).
 
 | Host | Serves |
 |---|---|
 | `api.dreamsy.dev` | API; `/rooms*` routes to the room server |
-| `play.dreamsy.dev` | Engine (static build) |
+| `play.dreamsy.dev` | C++ web player (built in `deploy/Dockerfile`, published by the compose `player` service) |
 | `dreamsy.dev` | Web dashboard (static `apps/web` build) |
 
 ```sh
-./scripts/deploy.sh                          # everything; restarts workers, interrupting running builds
-./scripts/deploy.sh --keep-workers           # API + web + engine; builds keep running
-./scripts/deploy.sh --no-engine              # skip republishing the engine
+docker compose -f deploy/docker-compose.yml --env-file deploy/.env.prod up -d --build   # on the box
 cd services/live && npx convex deploy -y     # Convex live-feed functions
 ```
 
-`deploy.sh` requires `apps/web/.env.local` to point `VITE_API_URL` at `https://api.dreamsy.dev`. Box access and other operational details are in [STATUS.md](STATUS.md#production-2026-11-15).
+Static sites (`apps/web` dashboard, `apps/mobile` PWA via `pnpm -C apps/mobile build:web`) are built and copied to the
+box's `/srv/dreamsy/{web,pwa}` by hand.
 
 ## Conventions
 

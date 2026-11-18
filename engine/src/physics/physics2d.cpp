@@ -1,6 +1,7 @@
 #include "physics/physics2d.h"
 
 #include <algorithm>
+#include <cfloat>
 #include <cmath>
 #include <numbers>
 
@@ -44,7 +45,6 @@ Physics2D::Physics2D(world::World& world, double dt, std::vector<std::string> la
   def.workerCount = 1;  // single-threaded: deterministic event order
   b2world_ = b2CreateWorld(&def);
   b2World_SetPreSolveCallback(b2world_, &Physics2D::pre_solve, &Physics2D::pre_continuous, this);
-  b2World_SetCustomFilterCallback(b2world_, &Physics2D::custom_filter, this);
 }
 
 Physics2D::~Physics2D() { b2DestroyWorld(b2world_); }
@@ -201,10 +201,8 @@ void Physics2D::build(EntityId id) {
   b2ShapeDef sd = b2DefaultShapeDef();
   sd.userData = handle_data(e->handle);
   sd.filter = filter_of(*e);
-  sd.enableSensorEvents = true;  // areas detect it (and, for an area, it detects)
   if (is_area) {
-    sd.isSensor = true;
-    sd.enableCustomFiltering = true;  // z ranges (custom_filter)
+    sd.isSensor = true;  // never pushes; overlaps are found by update_areas()
   } else {
     sd.enableContactEvents = true;
     sd.enablePreSolveEvents = true;  // z ranges (pre_solve)
@@ -288,7 +286,6 @@ void Physics2D::build_tiles(EntityId id, bool rebuilt) {
     sd.filter = filter_of(*e);
     sd.material.friction = 0.5f;
     sd.material.restitution = 0;
-    sd.enableSensorEvents = true;
     sd.enableContactEvents = true;
     sd.enablePreSolveEvents = true;
     sd.invokeContactCreation = true;
@@ -425,13 +422,12 @@ void Physics2D::pre_solve(b2ShapeId a, b2ShapeId b, b2Manifold* manifold, void* 
 }
 
 bool Physics2D::pre_continuous(b2ShapeId a, b2ShapeId b, b2Pos, b2Vec2, void* context) {
-  return custom_filter(a, b, context);  // continuous collision (anti-tunneling) respects z too
+  return static_cast<Physics2D*>(context)->z_allows(a, b);  // continuous collision respects z too
 }
 
-bool Physics2D::custom_filter(b2ShapeId a, b2ShapeId b, void* context) {
-  auto* self = static_cast<Physics2D*>(context);
-  const Entity* ea = self->entity_of_shape(a);
-  const Entity* eb = self->entity_of_shape(b);
+bool Physics2D::z_allows(b2ShapeId a, b2ShapeId b) const {
+  const Entity* ea = entity_of_shape(a);
+  const Entity* eb = entity_of_shape(b);
   return !(ea && eb) || z_overlap(*ea, *eb);
 }
 
@@ -469,6 +465,82 @@ void Physics2D::step_z(double dt) {
       e->z = ground;
       e->z_velocity = 0;
     }
+  }
+}
+
+// ================================================================ Area2D overlaps
+
+namespace {
+
+b2ShapeProxy proxy_of(b2ShapeId s) {
+  switch (b2Shape_GetType(s)) {
+    case b2_circleShape: {
+      b2Circle c = b2Shape_GetCircle(s);
+      return b2MakeProxy(&c.center, 1, c.radius);
+    }
+    case b2_capsuleShape: {
+      b2Capsule c = b2Shape_GetCapsule(s);
+      b2Vec2 pts[2] = {c.center1, c.center2};
+      return b2MakeProxy(pts, 2, c.radius);
+    }
+    default: {
+      b2Polygon p = b2Shape_GetPolygon(s);
+      return b2MakeProxy(p.vertices, p.count, p.radius);
+    }
+  }
+}
+
+bool shape_less(b2ShapeId a, b2ShapeId b) { return a.index1 != b.index1 ? a.index1 < b.index1 : a.generation < b.generation; }
+
+}  // namespace
+
+// The exact overlap test Box2D's sensors use (GJK distance below a tiny epsilon).
+bool Physics2D::shapes_overlap(b2ShapeId a, b2ShapeId b) const {
+  b2DistanceInput in{};
+  in.proxyA = proxy_of(a);
+  in.proxyB = proxy_of(b);
+  in.transform = b2InvMulWorldTransforms(b2Body_GetTransform(b2Shape_GetBody(a)), b2Body_GetTransform(b2Shape_GetBody(b)));
+  in.useRadii = true;
+  b2SimplexCache cache{};
+  return b2ComputeShapeDistance(&in, &cache, nullptr, 0).distance < 10.0f * FLT_EPSILON;
+}
+
+// Area2D overlaps at the start of the step (where Rapier's narrow phase ran in engine-web):
+// diff each area's overlapping shapes against the last step's and report begins and ends.
+// Shapes that were destroyed (their body was removed or rebuilt) end silently, as in engine-web.
+void Physics2D::update_areas(std::vector<ContactEvent>& out) {
+  struct Query {
+    const Physics2D* self;
+    b2ShapeId sensor;
+    b2BodyId body;
+    std::vector<b2ShapeId> hits;
+  };
+  for (auto& [seq, r] : recs_) {
+    if (r.kind != Kind::Area) continue;
+    Query q{this, r.shapes[0], r.body, {}};
+    if (b2Body_IsEnabled(r.body)) {
+      const b2Filter f = b2Shape_GetFilter(q.sensor);
+      b2QueryFilter qf = b2DefaultQueryFilter();
+      qf.categoryBits = f.categoryBits;
+      qf.maskBits = f.maskBits;
+      b2World_OverlapAABB(b2world_, b2Pos{0, 0}, b2Shape_GetBounds(q.sensor), qf, [](b2ShapeId s, void* ctx) {
+        auto* query = static_cast<Query*>(ctx);
+        if (B2_ID_EQUALS(b2Shape_GetBody(s), query->body) || b2Shape_IsSensor(s)) return true;  // areas never detect areas
+        if (!query->self->z_allows(query->sensor, s) || !query->self->shapes_overlap(query->sensor, s)) return true;
+        query->hits.push_back(s);
+        return true;
+      }, &q);
+      std::sort(q.hits.begin(), q.hits.end(), shape_less);
+    }
+    for (b2ShapeId s : q.hits) {
+      bool known = std::any_of(r.overlaps.begin(), r.overlaps.end(), [&](b2ShapeId o) { return B2_ID_EQUALS(o, s); });
+      if (!known) push_events(out, q.sensor, s, true);
+    }
+    for (b2ShapeId o : r.overlaps) {
+      bool still = std::any_of(q.hits.begin(), q.hits.end(), [&](b2ShapeId s) { return B2_ID_EQUALS(o, s); });
+      if (!still && b2Shape_IsValid(o)) push_events(out, q.sensor, o, false);
+    }
+    r.overlaps = std::move(q.hits);
   }
 }
 
@@ -510,6 +582,8 @@ void Physics2D::push_events(std::vector<ContactEvent>& out, b2ShapeId s1, b2Shap
 
 std::vector<ContactEvent> Physics2D::step(double dt) {
   flush();
+  std::vector<ContactEvent> area_events;
+  update_areas(area_events);
   b2World_Step(b2world_, static_cast<float>(dt), kSubSteps);
 
   // Write simulated transforms back to entities (relative to their parents).
@@ -532,11 +606,9 @@ std::vector<ContactEvent> Physics2D::step(double dt) {
 
   std::vector<ContactEvent> events;
   const b2ContactEvents contacts = b2World_GetContactEvents(b2world_);
-  const b2SensorEvents sensors = b2World_GetSensorEvents(b2world_);
   for (int i = 0; i < contacts.beginCount; ++i) push_events(events, contacts.beginEvents[i].shapeIdA, contacts.beginEvents[i].shapeIdB, true);
-  for (int i = 0; i < sensors.beginCount; ++i) push_events(events, sensors.beginEvents[i].sensorShapeId, sensors.beginEvents[i].visitorShapeId, true);
+  events.insert(events.end(), area_events.begin(), area_events.end());
   for (int i = 0; i < contacts.endCount; ++i) push_events(events, contacts.endEvents[i].shapeIdA, contacts.endEvents[i].shapeIdB, false);
-  for (int i = 0; i < sensors.endCount; ++i) push_events(events, sensors.endEvents[i].sensorShapeId, sensors.endEvents[i].visitorShapeId, false);
   for (const auto& [key, pair] : stale_tile_pairs_) {
     events.push_back({pair.second, pair.first, false});
     events.push_back({pair.first, pair.second, false});

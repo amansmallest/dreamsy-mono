@@ -14,6 +14,10 @@
 // Friction and restitution combine as the average of the two shapes, which is Rapier's default
 // rule (Box2D's own default is sqrt(a*b) for friction and max for restitution).
 //
+// Event timing follows Rapier: contacts begin/end when Box2D updates contacts at the start of a
+// step, and Area2D overlaps are evaluated here at the start of the step too (Box2D's own sensor
+// events come at the end of the step, which would fire bodyEntered one tick early).
+//
 // 2.5D height. Every entity has `z` (base height above the ground) and `height` (vertical
 // extent), both 0 by default. The planar simulation is Box2D's; z is integrated here:
 //   - Two shapes interact (contacts and Area2D overlaps) only when their z ranges overlap:
@@ -25,7 +29,7 @@
 //     ledge makes the ground lower, so the body falls. A script/engine jump sets z_velocity > 0.
 //   - Semi-implicit Euler per tick, in a fixed order (body creation order): deterministic.
 //   - The z rule is applied to contacts (pre-solve), continuous collision (pre-continuous) and
-//     Area2D overlaps (custom filter on sensor shapes).
+//     Area2D overlaps.
 // Planar gravity applies in the `side` view only; topdown/oblique/iso scenes have no planar
 // gravity (y is depth there), and z gravity takes its role.
 #pragma once
@@ -116,6 +120,7 @@ class Physics2D {
     b2BodyId body{};
     std::vector<b2ShapeId> shapes;
     Kind kind = Kind::Static;
+    std::vector<b2ShapeId> overlaps;  // Area2D: shapes overlapping it after the last step, sorted
   };
 
   BodyRec* rec(world::EntityId e);  // builds the body first when dirty
@@ -131,11 +136,13 @@ class Physics2D {
   void step_z(double dt);
   double ground_height(const BodyRec& mover, double z);
   void push_events(std::vector<ContactEvent>& out, b2ShapeId s1, b2ShapeId s2, bool started);
+  void update_areas(std::vector<ContactEvent>& out);
+  bool shapes_overlap(b2ShapeId a, b2ShapeId b) const;
 
   static bool z_overlap(const world::Entity& a, const world::Entity& b);
   static void pre_solve(b2ShapeId a, b2ShapeId b, b2Manifold* manifold, void* context);
   static bool pre_continuous(b2ShapeId a, b2ShapeId b, b2Pos point, b2Vec2 normal, void* context);
-  static bool custom_filter(b2ShapeId a, b2ShapeId b, void* context);
+  bool z_allows(b2ShapeId a, b2ShapeId b) const;
   const world::Entity* entity_of_shape(b2ShapeId s) const;
 
   world::World& world_;

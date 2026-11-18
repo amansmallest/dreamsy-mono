@@ -1,0 +1,5 @@
+format = "0"
+name = "z_jump"
+description = "2.5D test scene: a walker, a crate it can jump onto and a ledge too high to jump. Planar motion matches engine-web; height (z) is driven by the C++ tests and dreamsy-tool run --zjump."
+dimension = "2d"
+entry_scene = "scenes/main.scene.json"

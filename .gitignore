@@ -27,3 +27,6 @@ dist/
 
 # credentials
 *credentials*.csv
+
+# local copies of previously built games (not committed)
+games/mine/

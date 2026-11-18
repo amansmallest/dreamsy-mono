@@ -8,7 +8,7 @@ import { randomInt } from "node:crypto";
 import {
   CODE_ALPHABET, LIMITS, matchResult, normalizeCode,
   type ClientMsg, type ErrorCode, type MatchResult, type Presence, type RoomInfo, type RoomPlayer, type ServerMsg, type Team,
-} from "@dreamsy/engine/net";
+} from "./protocol.js";
 
 export interface Peer {
   /** Player id (per connection). */

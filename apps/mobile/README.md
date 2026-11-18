@@ -33,8 +33,8 @@ native dependencies.
 
 The same app, built for the browser for people without the native app (phones and laptops):
 `pnpm -C apps/mobile build:web` → `apps/mobile/dist` (SPA, prod API + engine URLs passed on the command
-line, so `.env.local` doesn't leak in). `scripts/deploy.sh` builds it and rsyncs it to
-`/srv/dreamsy/pwa` (Caddy `pwa.dreamsy.dev`). Shell, manifest and icons are in `public/`.
+line, so `.env.local` doesn't leak in), served as static files (Caddy `pwa.dreamsy.dev` in `deploy/Caddyfile`;
+prod is down and there is no deploy script for now, see STATUS.md). Shell, manifest and icons are in `public/`.
 
 Web-only files (`*.web.ts(x)`, picked by Metro on web): `EngineView.web.tsx` (the player in an
 `<iframe>`, engine messages via `postMessage`, keyboard focus), `auth/tokenStore.web.ts` (token in
@@ -51,7 +51,7 @@ sits in a 480 px column (`useAppDimensions`).
 | Var | Used by | What |
 |---|---|---|
 | `EXPO_PUBLIC_API_URL` | JS | `services/api` base URL (LAN IP on device) |
-| `EXPO_PUBLIC_ENGINE_URL` | JS | engine-web page the player WebView loads (LAN IP, `:2005/`) |
+| `EXPO_PUBLIC_ENGINE_URL` | JS | C++ web player page the player WebView loads (LAN IP, `:2005/`, served by `scripts/dev.sh`) |
 | `EXPO_PUBLIC_WEB_URL` | JS | optional public web base for share links (`<base>/g/<id>`); falls back to the engine URL. Built in `src/social.ts` `shareUrl()` |
 | `DREAMSY_IOS_BUNDLE_ID` | app.config | iOS bundle id |
 | `DREAMSY_ANDROID_PACKAGE` | app.config | Android package (later) |
@@ -113,7 +113,7 @@ src/
                      presentation, push taps. Skipped in Expo Go on Android and without a projectId
   toast.tsx          app-wide top toasts (<ToastHost /> in app/_layout.tsx)
   components/
-    EngineView.tsx   the game player: WebView of engine-web in embed mode + message bridge
+    EngineView.tsx   the game player: WebView of the C++ web player in embed mode + message bridge
     GamePreview.tsx  inline 16:10 player card (workspace, discover detail)
   auth/              ALL auth logic; screens import only from '@/auth'
     index.ts         public surface: AuthProvider, useAuth, SignInCancelled
@@ -154,16 +154,22 @@ stored as `{ hat, head, eyes, mouth, extra, body }` indices; users without one g
 
 `src/components/EngineView.tsx` renders a WebView of
 `${EXPO_PUBLIC_ENGINE_URL}?api=${EXPO_PUBLIC_API_URL}&game=<id>&version=<n>&token=<jwt>&embed=1`.
-The page (`engine-web/dev/main.ts`) downloads the package from the API, hides its dev UI in embed
-mode, and posts JSON back via `window.ReactNativeWebView.postMessage`:
+The page is the C++ engine's web player (`engine/build/web`; contract in `engine/apps/player/embed.js` and
+`engine/README.md` "Embedding the web player"). It downloads the package from the API (bearer token) and
+posts JSON back via `window.ReactNativeWebView.postMessage` (in the PWA iframe: `window.parent.postMessage`):
 
 | message | app does |
 |---|---|
 | `{type:"ready"}` | hide the spinner |
 | `{type:"error", message}` | banner (load errors + script errors, rate-limited) |
 | `{type:"quit"}` | pause-menu Quit: closes the Play screen |
-| `{type:"purchase", itemId, balance}` | Coins purchase in the engine's sheet: wallet refetch |
-| `{type:"runEnd", reason, board?, value?, rank?}` | `onRunEnd`; the first-run player moves on to the Welcome sheet |
+| `{type:"purchase", itemId, balance}` | Coins purchase in the engine's sheet: wallet refetch (not sent by the C++ player yet: its store is the free in-memory one) |
+| `{type:"runEnd", reason, board?, value?, rank?}` | `onRunEnd`; the first-run player moves on to the Welcome sheet (`rank` needs API leaderboards, not in the C++ player yet) |
+
+`&insets=top,right,bottom,left` (full-screen player) keeps the engine's pause button and controls out of the notch.
+`&room=` / `&spectate=` (friends: join / watch a room) are ignored until the C++ engine has a room client
+(DREAMSY.MD §14.10 E8); multiplayer games run solo meanwhile.
 
 The workspace preview is keyed by `latestVersion`, so a finished generation (or a restore)
-reloads it. Production will point `EXPO_PUBLIC_ENGINE_URL` at a hosted build of the engine page.
+reloads it. Production will point `EXPO_PUBLIC_ENGINE_URL` at a hosted build of the web player
+(`deploy/Dockerfile` builds it into `/app/player`).

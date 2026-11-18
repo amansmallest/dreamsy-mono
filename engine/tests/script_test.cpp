@@ -4,6 +4,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "doctest.h"
 #include "pkg/validate.h"
@@ -58,6 +59,37 @@ TEST_CASE("host runs session scripts, timers and onTick in engine-web order") {
   // server dir first; the timer fires at tick 6 (0.1 s), before that tick's onTick: n = 5.
   CHECK(logs == "[info] server\n[info] client\n[info] after\t5\n");
   CHECK(host.value()->errors().empty());
+}
+
+TEST_CASE("run ends reach the host app: platform.runEnded, leaderboard finish/submit, room.finish") {
+  auto pkg = package_with({{"scripts/client/main.luau", R"(
+    platform.runEnded()
+    platform.runEnded("dead")
+    platform.runEnded("quit")
+    leaderboard.start("time")
+    after(0.5, function() leaderboard.finish("time") end)
+    after(0.6, function() leaderboard.submit("score", 1200) end)
+    after(0.7, function() room.finish() end)
+  )"}});
+  HostOptions o;
+  std::vector<RunEnd> ends;
+  o.on_run_end = [&](const RunEnd& r) { ends.push_back(r); };
+  auto host = Host::create(pkg, o);
+  REQUIRE_MESSAGE(host.ok(), host.error());
+  for (int i = 0; i < 60; ++i) host.value()->step();
+  CHECK(host.value()->errors().empty());
+  REQUIRE(ends.size() == 6);
+  CHECK(ends[0].reason == "gameover");
+  CHECK(ends[1].reason == "gameover");  // unknown reasons end the run as a game over (engine-web)
+  CHECK(ends[2].reason == "quit");
+  CHECK(ends[3].reason == "finish");
+  CHECK(ends[3].board == "time");
+  CHECK(ends[3].value.value_or(0) == doctest::Approx(0.5).epsilon(0.05));
+  CHECK(ends[4].reason == "submit");
+  CHECK(ends[4].board == "score");
+  CHECK(ends[4].value == 1200);
+  CHECK(ends[5].reason == "finish");
+  CHECK(!ends[5].board);
 }
 
 TEST_CASE("the same seed gives the same random numbers; another seed doesn't") {

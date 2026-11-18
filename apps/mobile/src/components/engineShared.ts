@@ -3,7 +3,7 @@ import { apiBaseUrl } from '../api';
 
 // Shared by EngineView.tsx (react-native-webview, iOS/Android) and EngineView.web.tsx (iframe, PWA).
 
-export const ENGINE_BG = '#0d1117'; // engine-web page background, so loading doesn't flash white
+export const ENGINE_BG = '#141220'; // the web player's page background (engine/apps/player/shell.html), so loading doesn't flash white
 
 export type RunEnd = {
   reason: 'finish' | 'submit' | 'gameover' | 'quit' | string;
@@ -28,9 +28,10 @@ export type EngineViewProps = {
   onPurchase?: (itemId: string, balance: number | null) => void;
   /** A run ended (game over, round finished, score submitted, match over). */
   onRunEnd?: (run: RunEnd) => void;
-  /** Multiplayer room code to join straight away (skips the lobby menu). */
+  /** Multiplayer room code to join straight away (skips the lobby menu). Ignored until the C++ engine has a
+   * room client (DREAMSY.MD §14.10 E8); multiplayer games run solo meanwhile. */
   room?: string;
-  /** With `room`: watch as a spectator (no avatar, no controls). */
+  /** With `room`: watch as a spectator (no avatar, no controls). Ignored until E8, like `room`. */
   spectate?: boolean;
 };
 

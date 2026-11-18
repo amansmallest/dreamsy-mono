@@ -5,8 +5,7 @@
 .dev-logs
 .git
 apps
-engine/build
 *credentials*.csv
 **/*.pem
 **/*.key
-engine-web/dist
+engine/build

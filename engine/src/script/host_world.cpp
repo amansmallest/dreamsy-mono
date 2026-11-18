@@ -1287,6 +1287,7 @@ int Host::leaderboard_op(lua_State* L) {
     lb_runs_.erase(it);
     const double seconds = world::js_round((time_ - t0) * 1000) / 1000;
     local_scores_.push_back({board, seconds, true});
+    if (options_.on_run_end) options_.on_run_end(RunEnd{"finish", board, seconds});
     lua_pushnumber(L, seconds);
     return 1;
   }
@@ -1297,6 +1298,7 @@ int Host::leaderboard_op(lua_State* L) {
     const std::string order = lua_isnoneornil(L, 5) ? "desc" : str_arg(L, 5);
     if (order != "asc" && order != "desc") raise(L, "leaderboard.submit: order must be \"asc\" (lower is better) or \"desc\" (higher is better)");
     local_scores_.push_back({*board, lua_tonumber(L, 4), order == "asc"});
+    if (options_.on_run_end) options_.on_run_end(RunEnd{"submit", *board, lua_tonumber(L, 4)});
     return 0;  // the submission resolves asynchronously (never during a headless run)
   }
   if (what == "cancel") {

@@ -652,7 +652,11 @@ int Host::dispatch(lua_State* L) {
     case OP_PLATFORM: {
       std::string what = str_arg(L, 2);
       if (what != "runEnded") raise(L, "platform: unknown call " + what);
-      return 0;  // run-end events reach the app host in E6
+      // unknown reasons still end the run (AI-written games say "dead", "win", ...), as in engine-web
+      std::string reason = lua_isnoneornil(L, 3) ? "gameover" : str_arg(L, 3);
+      if (reason != "gameover" && reason != "finish" && reason != "quit") reason = "gameover";
+      if (options_.on_run_end) options_.on_run_end(RunEnd{reason, std::nullopt, std::nullopt});
+      return 0;
     }
     case OP_SAVE: {
       std::string what = str_arg(L, 2);
@@ -967,6 +971,7 @@ int Host::net_op(lua_State* L) {
     r.set("scores", room_scores_);
     r.set("match", Json::number_value(1));
     net_inbox_.push_back({"ended", "", r});
+    if (options_.on_run_end) options_.on_run_end(RunEnd{"finish", std::nullopt, std::nullopt});
     return 0;
   }
   if (what == "teamColor") {

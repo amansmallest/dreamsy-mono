@@ -11,9 +11,13 @@
 // on UI and world, dialogs and (on touch devices, or with --touch / #touch) the on-screen controls.
 // Esc/P pause. In game mode, keys 1-4 preview the world in another view mode (2.5D projection).
 //
-// --smooth forces smooth mode (linear filtering) on a pixel-art package. On the web the package
-// is embedded at /pkg and the URL hash sets the options as dash-separated words
-// (dreamsy-player.html#iso, #iso-smooth, #demo-iso, #touch). Keys: 1-4 pick the view mode, Tab cycles.
+// --smooth forces smooth mode (linear filtering) on a pixel-art package. On the web the URL hash sets
+// the options as dash-separated words (dreamsy-player.html#iso, #iso-smooth, #demo-iso, #touch).
+// Keys: 1-4 pick the view mode, Tab cycles.
+//
+// Web: the package comes from the query (?public=<id> | ?api=&game=&version=&token= | ?pkg=<url>, see
+// embed.js), else the embedded demo at /pkg. Embedded in the app (?embed=1, a React Native WebView, or
+// ?public=) the player posts {type:"ready" | "error" | "quit" | "runEnd"} messages to the host (embed.js).
 //
 // Tools (web, like engine-web dev/main.ts): ?manual=1 stops the real-time loop; the page then steps
 // the game itself with window.__dreamsy.step(ticks) (game time, so screenshots are reproducible
@@ -22,6 +26,7 @@
 // Harness playtests start mid-game with ?scene=<path>&params=<json>&save=<json> (scene params and
 // preloaded save data, like engine-web's playtest boot options).
 #include <algorithm>
+#include <cmath>
 #include <functional>
 #include <map>
 #include <cstdio>
@@ -59,6 +64,7 @@
 #endif
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
+#include <emscripten/em_js.h>
 #define EMSCRIPTEN_KEEPALIVE_IF_WEB EMSCRIPTEN_KEEPALIVE  // exported to JavaScript
 #else
 #define EMSCRIPTEN_KEEPALIVE_IF_WEB
@@ -142,7 +148,7 @@ Result<script::KitLookup> load_kits(const pkg::Manifest& m, const KitBytes& kit_
 
 struct Options {
   std::string package_dir = DREAMSY_DEMO_PACKAGE;  // a directory, a .dpk or a .zip
-  std::string package_url;                          // web: ?pkg=<url> (.dpk or .zip), fetched at start
+  std::string package_source;                       // web: the package downloaded from the query (embed.js)
   std::string kits_url = "kits/";                   // web: where <kit>.dpk files are (?kits=<url>)
   // Forces a view mode (dev: --view / #iso / keys 1-4). Unset = the scene's own view (manifest
   // or scene `view`, DREAMSY.MD §14.5).
@@ -152,6 +158,8 @@ struct Options {
   bool demo = false;    // renderer test scene instead of running the game
   bool touch = false;   // force the on-screen controls (they show by default on touch devices only)
   bool manual = false;  // tools: no real-time ticks; window.__dreamsy.step(n) advances the game
+  bool embed = false;   // web: inside the app (or a share link); messages go to the host (embed.js)
+  ui::SafeArea insets;  // web: the host's safe-area insets, CSS px (?insets=)
   uint32_t seed = 1;
   std::optional<double> clock;  // fixed clock.now() base (unix seconds); default: the wall clock
   // Tools: start in this scene with these params / this save data (JSON text; empty = none).
@@ -189,9 +197,94 @@ struct App {
   std::map<std::string, std::shared_ptr<Bytes>> fetched_kits;
   double manual_elapsed = 0;  // manual mode: game time stepped since the last frame
   bool error_published = false;
+  std::string load_error;  // the first reason the game didn't load (shown to the host app)
+  // Host messages (embed): script errors reported so far, error and run-end rate limits (wall clock, s).
+  size_t errors_reported = 0;
+  std::string last_error;
+  double last_error_at = -1e9;
+  std::optional<std::string> queued_error;
+  double last_run_end_at = -1e9;
 };
 
 std::unique_ptr<App> g_app;
+
+// A reason the game can't start: logged, and the first one is what the host app is told.
+void load_failed(App& app, const std::string& message) {
+  log_error(message);
+  if (app.load_error.empty()) app.load_error = message;
+}
+
+#ifdef __EMSCRIPTEN__
+EM_JS(int, dreamsy_js_has_source, (), { return dreamsyHost.download ? 1 : 0; });
+EM_JS(void, dreamsy_js_deliver, (), { dreamsyHost.deliver(); });
+EM_JS(void, dreamsy_js_post, (const char* json), { dreamsyHost.post(UTF8ToString(json)); });
+EM_JS(void, dreamsy_js_quit, (), { dreamsyHost.quit(); });
+#endif
+
+// A message to the host app (embed mode only; embed.js lists them).
+void post_to_host(const App& app, const script::Json& msg) {
+#ifdef __EMSCRIPTEN__
+  if (app.options.embed) dreamsy_js_post(msg.stringify().c_str());
+#else
+  (void)app;
+  (void)msg;
+#endif
+}
+
+double wall_seconds() { return stm_sec(stm_now()); }
+
+// {type:"error"} to the host: at most one every 2 s (the latest waits, see flush_error), the same
+// message at most every 30 s (engine-web dev/main.ts reportError).
+void report_error(App& app, std::string message) {
+  if (!app.options.embed) return;
+  if (message.size() > 500) {
+    message.resize(500);
+    while (!message.empty() && (static_cast<unsigned char>(message.back()) & 0xC0) == 0x80) message.pop_back();
+    if (!message.empty() && (static_cast<unsigned char>(message.back()) & 0x80) != 0) message.pop_back();
+  }
+  const double now = wall_seconds();
+  if (message == app.last_error && now - app.last_error_at < 30) return;
+  if (now - app.last_error_at < 2) {
+    app.queued_error = message;
+    return;
+  }
+  app.last_error_at = now;
+  app.last_error = message;
+  app.queued_error.reset();
+  script::Json m = script::Json::object_value();
+  m.set("type", script::Json::string_value("error"));
+  m.set("message", script::Json::string_value(message));
+  post_to_host(app, m);
+}
+
+// Called every frame: sends a held-back error once the gap has passed, and new script errors.
+void flush_errors(App& app) {
+  if (!app.options.embed) return;
+  if (app.host && app.host->errors().size() > app.errors_reported) {
+    app.errors_reported = app.host->errors().size();
+    const script::ScriptError& e = app.host->errors().back();
+    report_error(app, e.script + (e.line ? ":" + std::to_string(e.line) : "") + ": " + e.message);
+  }
+  if (app.queued_error && wall_seconds() - app.last_error_at >= 2) {
+    std::string m = *app.queued_error;
+    app.queued_error.reset();
+    report_error(app, m);
+  }
+}
+
+// {type:"runEnd", reason, board?, value?}: at most one every 3 s (engine-web RUN_END_GAP_MS).
+void report_run_end(App& app, const script::RunEnd& r) {
+  if (!app.options.embed) return;
+  const double now = wall_seconds();
+  if (now - app.last_run_end_at < 3) return;
+  app.last_run_end_at = now;
+  script::Json m = script::Json::object_value();
+  m.set("type", script::Json::string_value("runEnd"));
+  m.set("reason", script::Json::string_value(r.reason));
+  if (r.board) m.set("board", script::Json::string_value(*r.board));
+  if (r.value && std::isfinite(*r.value)) m.set("value", script::Json::number_value(*r.value));
+  post_to_host(app, m);
+}
 
 }  // namespace
 
@@ -212,10 +305,13 @@ extern "C" EMSCRIPTEN_KEEPALIVE_IF_WEB int dreamsy_error_count() {
 
 namespace {
 
-// A package from a directory, a .dpk or a .zip (bytes already read for the last two).
+// A package from a directory, or from the bytes of a .zip or a Dreamsy pack (told apart by the zip
+// signature, so downloads need no extension).
 Result<pkg::Files> open_package(const std::string& name, std::shared_ptr<Bytes> bytes) {
   if (!bytes) return pkg::Files::from_dir(name);
-  if (pkg::ends_with(name, ".zip")) return pkg::import_zip(*bytes);
+  if (bytes->size() >= 4 && (*bytes)[0] == 'P' && (*bytes)[1] == 'K' && ((*bytes)[2] == 3 || (*bytes)[2] == 5)) {
+    return pkg::import_zip(*bytes);
+  }
   return pkg::Files::from_pack(std::move(bytes));
 }
 
@@ -245,12 +341,7 @@ void hook_platform(play::PlatformUi& ui, bool tools) {
                   s.music, s.sfx, s.mute ? "true" : "false", s.vibration ? "true" : "false", static_cast<double>(s.touch_size));
     emscripten_run_script(script);
   };
-  ui.on_quit = [] {
-    emscripten_run_script(
-        "if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(JSON.stringify({type: 'quit'}));"
-        " else if (window.parent !== window) window.parent.postMessage({type: 'quit'}, '*');"
-        " else if (history.length > 1) history.back(); else location.href = '../';");
-  };
+  ui.on_quit = [] { dreamsy_js_quit(); };  // embed: {type:"quit"} to the host app, else back
 #else
   (void)tools;
   ui.on_quit = [] { sapp_request_quit(); };
@@ -261,9 +352,12 @@ void hook_platform(play::PlatformUi& ui, bool tools) {
 bool start(App& app, pkg::Files files, const KitBytes& kit_bytes) {
   pkg::LoadResult loaded = pkg::load_package(std::move(files));
   for (const pkg::Issue& issue : loaded.issues) {
-    if (issue.severity == pkg::Severity::Error) log_error(pkg::format_issue(issue));
+    if (issue.severity == pkg::Severity::Error) load_failed(app, "invalid package: " + pkg::format_issue(issue));
   }
-  if (!loaded.ok) return false;
+  if (!loaded.ok) {
+    load_failed(app, "invalid package");
+    return false;
+  }
   app.package = std::shared_ptr<const pkg::Package>(std::move(loaded.package));
   app.style = render::style_from_manifest(app.package->manifest);
   if (app.options.smooth) {
@@ -274,7 +368,7 @@ bool start(App& app, pkg::Files files, const KitBytes& kit_bytes) {
   app.textures = std::make_unique<render::TextureStore>(app.package.get(), *app.atlas, app.style.nearest);
   app.fonts = std::make_unique<render::FontStore>(*app.atlas, app.style.theme_font);
   if (Status s = app.fonts->init(); !s) {
-    log_error(s.error());
+    load_failed(app, s.error());
     return false;
   }
   if (app.options.demo) {
@@ -289,7 +383,7 @@ bool start(App& app, pkg::Files files, const KitBytes& kit_bytes) {
   std::string kit_sources;
   auto kits = load_kits(app.package->manifest, kit_bytes, required_kits(game_scripts), kit_sources);
   if (!kits) {
-    log_error(kits.error());
+    load_failed(app, kits.error());
     return false;
   }
   host_options.kits = std::move(kits).value();
@@ -312,9 +406,12 @@ bool start(App& app, pkg::Files files, const KitBytes& kit_bytes) {
   host_options.on_log = [](const script::LogLine& l) {
     (l.level == "error" ? log_error : l.level == "warn" ? log_warn : log_info)("[game] " + l.text);
   };
+  host_options.on_run_end = [](const script::RunEnd& r) {
+    if (g_app) report_run_end(*g_app, r);
+  };
   auto host = script::Host::create(app.package, host_options);
   if (!host) {
-    log_error("game failed to start: " + host.error());
+    load_failed(app, "game failed to start: " + host.error());
     return false;
   }
   app.host = std::move(host).value();
@@ -330,7 +427,7 @@ bool start(App& app, pkg::Files files, const KitBytes& kit_bytes) {
   app.ui = std::make_unique<play::PlatformUi>(*app.host, *app.textures, *app.fonts, usage,
                                               !input::scripts_mention_move_y(game_scripts), touch);
   if (Status s = app.ui->init(); !s) {
-    log_error(s.error());
+    load_failed(app, s.error());
     return false;
   }
   hook_platform(*app.ui, app.options.manual);
@@ -344,13 +441,13 @@ bool load(App& app) {
   if (pkg::ends_with(name, ".dpk") || pkg::ends_with(name, ".zip")) {
     bytes = read_file(name);
     if (!bytes) {
-      log_error("can't read " + name);
+      load_failed(app, "can't read " + name);
       return false;
     }
   }
   auto files = open_package(name, std::move(bytes));
   if (!files) {
-    log_error("can't open package " + name + ": " + files.error());
+    load_failed(app, "can't open package " + name + ": " + files.error());
     return false;
   }
   return start(app, std::move(files).value(), kit_from_disk);
@@ -360,40 +457,27 @@ void set_view(App& app, render::ViewMode v);
 void finish_init(App& app);
 
 #ifdef __EMSCRIPTEN__
-// Web: ?pkg=<url> loads a package over HTTP, then each kit it enables from <kits_url><kit>.dpk.
+// Web: embed.js downloads the package named in the query (it starts before the WASM is ready) and
+// hands it over with dreamsy_package_buffer + dreamsy_package_ready; then each kit the package enables
+// is fetched from <kits_url><kit>.dpk.
 struct Download {
-  std::string what;  // "" = the package, else a kit name
+  std::string kit;
 };
 std::shared_ptr<Bytes> g_package_bytes;
 std::vector<std::string> g_kits_to_fetch;
 
 void fetch_next(App& app);
 
-void on_fetch_error(void* arg) {
+void on_kit_error(void* arg) {
   std::unique_ptr<Download> d(static_cast<Download*>(arg));
-  log_error(d->what.empty() ? "can't download " + g_app->options.package_url : "can't download kit \"" + d->what + "\"");
+  load_failed(*g_app, "can't download kit \"" + d->kit + "\"");
   g_app->loading = false;
 }
 
-void on_fetch(void* arg, void* data, int size) {
+void on_kit(void* arg, void* data, int size) {
   std::unique_ptr<Download> d(static_cast<Download*>(arg));
-  auto bytes = std::make_shared<Bytes>(static_cast<uint8_t*>(data), static_cast<uint8_t*>(data) + size);
-  App& app = *g_app;
-  if (d->what.empty()) {
-    g_package_bytes = bytes;
-    // Peek at the manifest to learn which kits to fetch.
-    auto files = open_package(app.options.package_url, bytes);
-    if (!files) {
-      log_error("can't open " + app.options.package_url + ": " + files.error());
-      app.loading = false;
-      return;
-    }
-    pkg::LoadResult peek = pkg::load_package(std::move(files).value());
-    if (peek.ok) g_kits_to_fetch = kits_of(peek.package->manifest);
-  } else {
-    app.fetched_kits[d->what] = bytes;
-  }
-  fetch_next(app);
+  g_app->fetched_kits[d->kit] = std::make_shared<Bytes>(static_cast<uint8_t*>(data), static_cast<uint8_t*>(data) + size);
+  fetch_next(*g_app);
 }
 
 void fetch_next(App& app) {
@@ -401,13 +485,13 @@ void fetch_next(App& app) {
     std::string kit = g_kits_to_fetch.back();
     g_kits_to_fetch.pop_back();
     std::string url = app.options.kits_url + kit + ".dpk";
-    emscripten_async_wget_data(url.c_str(), new Download{kit}, on_fetch, on_fetch_error);
+    emscripten_async_wget_data(url.c_str(), new Download{kit}, on_kit, on_kit_error);
     return;
   }
   app.loading = false;
-  auto files = open_package(app.options.package_url, g_package_bytes);
+  auto files = open_package(app.options.package_source, g_package_bytes);
   if (!files) {
-    log_error("can't open " + app.options.package_url + ": " + files.error());
+    load_failed(app, "can't open " + app.options.package_source + ": " + files.error());
     return;
   }
   auto kit_bytes = [&app](const std::string& kit) -> std::shared_ptr<Bytes> {
@@ -417,6 +501,38 @@ void fetch_next(App& app) {
   if (start(app, std::move(files).value(), kit_bytes)) finish_init(app);
 }
 #endif
+
+}  // namespace
+
+#ifdef __EMSCRIPTEN__
+// embed.js: room for the downloaded package (`size` bytes), filled from JavaScript.
+extern "C" EMSCRIPTEN_KEEPALIVE uint8_t* dreamsy_package_buffer(int size) {
+  g_package_bytes = std::make_shared<Bytes>(static_cast<size_t>(std::max(size, 0)));
+  return g_package_bytes->data();
+}
+
+// embed.js: the package is in the buffer. Peek at the manifest to learn which kits to fetch.
+extern "C" EMSCRIPTEN_KEEPALIVE void dreamsy_package_ready() {
+  App& app = *g_app;
+  auto files = open_package(app.options.package_source, g_package_bytes);
+  if (!files) {
+    load_failed(app, "can't open " + app.options.package_source + ": " + files.error());
+    app.loading = false;
+    return;
+  }
+  pkg::LoadResult peek = pkg::load_package(std::move(files).value());
+  if (peek.ok) g_kits_to_fetch = kits_of(peek.package->manifest);
+  fetch_next(app);
+}
+
+// embed.js: the download failed (dreamsyHost.error says why).
+extern "C" EMSCRIPTEN_KEEPALIVE void dreamsy_package_failed() {
+  load_failed(*g_app, emscripten_run_script_string("dreamsyHost.error"));
+  g_app->loading = false;
+}
+#endif
+
+namespace {
 
 void init() {
   App& app = *g_app;
@@ -457,14 +573,21 @@ void init() {
 #endif
 
 #ifdef __EMSCRIPTEN__
-  // ?pkg=<url to a .dpk or .zip>[&kits=<base url>]: load a game over HTTP instead of the embedded one.
-  app.options.package_url = emscripten_run_script_string("new URLSearchParams(location.search).get('pkg') || ''");
+  // The embedding contract (embed.js): package source, embed mode, the host's safe-area insets.
+  app.options.embed = emscripten_run_script_int("dreamsyHost.embed ? 1 : 0") != 0;
+  std::sscanf(emscripten_run_script_string("dreamsyHost.insets.join(' ')"), "%lf %lf %lf %lf", &app.options.insets.top,
+              &app.options.insets.right, &app.options.insets.bottom, &app.options.insets.left);
   const std::string kits = emscripten_run_script_string("new URLSearchParams(location.search).get('kits') || ''");
   if (!kits.empty()) app.options.kits_url = kits.back() == '/' ? kits : kits + "/";
-  if (!app.options.package_url.empty()) {
+  if (dreamsy_js_has_source()) {
+    app.options.package_source = emscripten_run_script_string("dreamsyHost.source");
     app.loading = true;
-    log_info("downloading " + app.options.package_url);
-    emscripten_async_wget_data(app.options.package_url.c_str(), new Download{""}, on_fetch, on_fetch_error);
+    log_info("downloading " + app.options.package_source);
+    dreamsy_js_deliver();
+    return;
+  }
+  if (app.options.embed) {  // the app always names a game; the demo is for development
+    load_failed(app, "no game to load (missing ?public= or ?api=&game=)");
     return;
   }
 #endif
@@ -496,6 +619,11 @@ void finish_init(App& app) {
 #ifdef __EMSCRIPTEN__
   publish_tool_state("");
 #endif
+  if (app.host) {
+    script::Json ready = script::Json::object_value();
+    ready.set("type", script::Json::string_value("ready"));
+    post_to_host(app, ready);
+  }
   log_info("package \"" + app.package->manifest.name + "\": reference " + std::to_string(app.style.ref_w) + "x" +
            std::to_string(app.style.ref_h) + (app.style.pixel_snap ? ", pixel-art mode" : ", smooth mode"));
 }
@@ -507,6 +635,7 @@ void frame() {
     if (!app.loading && !app.error_published) {
       app.error_published = true;
       publish_tool_state("the game failed to load (see the console)");
+      report_error(app, app.load_error.empty() ? "the game failed to load" : app.load_error);
     }
 #endif
     // Still downloading: dark grey. Nothing loaded: dark red, so the failure is visible.
@@ -521,12 +650,19 @@ void frame() {
   }
   if (app.host) {
     // Layout points per reference px: the game rect's scale over the display's pixel density
-    // (on the web, CSS px per game px). Safe-area insets: TODO(E9), read from the platform.
-    const render::Fit fit = render::fit_rect(app.style.ref_w, app.style.ref_h, static_cast<float>(sapp_width()),
-                                             static_cast<float>(sapp_height()));
-    // The whole window in reference px: the pause button, menu and touch controls use it.
-    const ui::Rect window{-fit.x / fit.s, -fit.y / fit.s, sapp_width() / fit.s, sapp_height() / fit.s};
-    app.ui->set_screen(fit.s / std::max(0.5f, sapp_dpi_scale()), {}, window);
+    // (on the web, CSS px per game px). Safe-area insets: the host's (?insets=) on the web;
+    // native platforms: TODO(E9).
+    const float W = static_cast<float>(sapp_width()), H = static_cast<float>(sapp_height());
+    const render::Fit fit = render::fit_rect(app.style.ref_w, app.style.ref_h, W, H);
+    const float dpi = std::max(0.5f, sapp_dpi_scale());
+    const ui::SafeArea& in = app.options.insets;  // CSS px
+    const double it = in.top * dpi, ir = in.right * dpi, ib = in.bottom * dpi, il = in.left * dpi;  // framebuffer px
+    // The window inside the insets, in reference px: the pause button, menu and touch controls use it.
+    const ui::Rect window{(il - fit.x) / fit.s, (it - fit.y) / fit.s, (W - il - ir) / fit.s, (H - it - ib) / fit.s};
+    // The game's UI anchors: only the part of an inset that reaches into the game rect (past the letterbox bars).
+    const ui::SafeArea safe{std::max(0.0, it - fit.y) / fit.s, std::max(0.0, ir - (W - fit.x - fit.w)) / fit.s,
+                            std::max(0.0, ib - (H - fit.y - fit.h)) / fit.s, std::max(0.0, il - fit.x) / fit.s};
+    app.ui->set_screen(fit.s / dpi, safe, window);
     // Fixed 60 Hz simulation, at most 5 ticks per frame (engine-web Game.advance). Paused: no ticks.
     constexpr double kDt = 1.0 / 60.0;
     double elapsed = stm_sec(stm_laptime(&app.last_ticks));
@@ -545,6 +681,7 @@ void frame() {
       app.host->step();
     }
     app.ui->update(static_cast<float>(elapsed));
+    flush_errors(app);
     play::draw_world(*app.host, *app.textures, app.draw_list);
     app.ui->draw(app.draw_list);
   } else {

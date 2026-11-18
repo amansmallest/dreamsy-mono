@@ -1,6 +1,6 @@
 // RoomManager: lifecycle, quick match, teams, ready/start, relay routing, state/scores, results.
 import { describe, expect, it } from "vitest";
-import type { ClientMsg, ServerMsg } from "@dreamsy/engine/net";
+import type { ClientMsg, ServerMsg } from "../src/protocol.js";
 import { RoomManager, type Peer } from "../src/rooms.js";
 
 type FakePeer = Peer & { inbox: ServerMsg[]; last<T extends ServerMsg["t"]>(t: T): Extract<ServerMsg, { t: T }> | undefined; clear(): void };

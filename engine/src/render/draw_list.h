@@ -61,6 +61,17 @@ enum class FontId : uint8_t { Default, Pixel, Rounded, Bold, Serif };
 
 enum class TextAlign : uint8_t { Left, Center, Right };
 
+// A clip rectangle (scissor): only the part of an item inside it is drawn. Coordinates are those
+// of the item's pass: reference px for Screen items (scroll lists, clipped panels), reference px
+// after the camera for World items. `enabled = false` draws everything.
+struct ClipRect {
+  float x = 0, y = 0, w = 0, h = 0;
+  bool enabled = false;
+  friend bool operator==(const ClipRect& a, const ClipRect& b) {
+    return a.enabled == b.enabled && (!a.enabled || (a.x == b.x && a.y == b.y && a.w == b.w && a.h == b.h));
+  }
+};
+
 // Where an item sits in the draw order. Every item has one.
 //
 // Order of drawing (sort.h), within the same Space:
@@ -94,7 +105,9 @@ struct SpriteCmd {
   Color tint;
   BlendMode blend = BlendMode::Alpha;
   bool shadow = false;  // draw a drop shadow on the ground under the sprite when z > 0
+  bool emissive = false;  // under Lighting2D: drawn after the darkness, at full brightness
   Space space = Space::World;
+  ClipRect clip;
   SortInfo sort;
 };
 
@@ -108,6 +121,7 @@ struct RectCmd {
   bool ground = false;
   BlendMode blend = BlendMode::Alpha;
   Space space = Space::World;
+  ClipRect clip;
   SortInfo sort;
 };
 
@@ -126,7 +140,9 @@ struct TextCmd {
   float outline_size = 0;
   Color shadow{0, 0, 0, 0};  // alpha 0 = none
   Vec2 shadow_offset{2, 2};
+  bool emissive = false;  // under Lighting2D: drawn after the darkness, at full brightness
   Space space = Space::World;
+  ClipRect clip;
   SortInfo sort;
 };
 
@@ -164,11 +180,34 @@ struct ShadowStyle {
   float fade_height = 160;  // z at which the shadow is smallest and faintest
 };
 
+// Lighting2D + Light2D (engine-web core/lighting.ts, render/lighting.ts). When enabled, the
+// renderer multiplies the drawn world by a light level after the world pass:
+//   light = base + sum over lights of color * (1 - d / radius)^falloff   (d < radius), capped at 1
+//   then darker towards the screen edges by `vignette`.
+// Emissive items (SpriteCmd/TextCmd::emissive) are drawn after that, so they stay bright. The UI
+// (Space::Screen) is never darkened.
+inline constexpr int kMaxLights = 64;
+
+struct Light {
+  Vec2 position;      // world px (ground plane)
+  float radius = 1;   // world px
+  float falloff = 1;  // 1 linear, 2 soft, 4 tight core
+  Color color;        // rgb already multiplied by energy (and flicker); may exceed 1
+};
+
+struct Lighting {
+  bool enabled = false;
+  Color base{1, 1, 1, 1};  // light level of unlit areas: 1 - darkness + darkness * ambient
+  float vignette = 0;      // 0..1
+  std::vector<Light> lights;  // nearest to the view first, at most kMaxLights
+};
+
 struct DrawList {
   ViewMode view = ViewMode::Side;
   Camera camera;
   Color clear_color{0.1f, 0.11f, 0.17f, 1};  // inside the game rect
   ShadowStyle shadows;
+  Lighting lighting;
 
   std::vector<SpriteCmd> sprites;
   std::vector<RectCmd> rects;
@@ -193,6 +232,7 @@ struct DrawList {
     rects.clear();
     texts.clear();
     tile_chunks.clear();
+    lighting = {};
     next_order_ = 0;
   }
   size_t item_count() const { return sprites.size() + rects.size() + texts.size() + tile_chunks.size(); }

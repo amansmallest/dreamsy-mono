@@ -62,6 +62,13 @@ class Svg {
   std::unique_ptr<NSVGimage, Deleter> image_;
 };
 
+// nanosvg reads unitless gradient coordinates (x1="0" y2="1", the SVG default
+// gradientUnits="objectBoundingBox") as pixels instead of fractions of the shape's box, so a
+// top-to-bottom sky gradient ends after one pixel. This rewrites them as percentages
+// (y2="1" -> y2="100%"), which nanosvg scales correctly. Gradients in userSpaceOnUse are left alone.
+// Svg::parse applies it; exposed for tests.
+std::string fix_bbox_gradients(std::string_view svg);
+
 // Premultiplies alpha in place (the renderer blends premultiplied colors).
 void premultiply(Image& img);
 

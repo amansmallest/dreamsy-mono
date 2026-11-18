@@ -309,6 +309,30 @@ TEST_CASE("image: SVG sprites parse and rasterize at any size") {
   CHECK_FALSE(Svg::parse("not svg").ok());
 }
 
+TEST_CASE("image: bounding-box gradients span the shape (nanosvg unitless fix)") {
+  // Unitless coordinates become percentages; user-space gradients and units stay as they are.
+  CHECK(fix_bbox_gradients(R"(<linearGradient id="g" x1="0" y1="0" x2="0" y2="1">)") ==
+        R"(<linearGradient id="g" x1="0%" y1="0%" x2="0%" y2="100%">)");
+  CHECK(fix_bbox_gradients(R"(<radialGradient cx=".5" r='0.45'/>)") == R"(<radialGradient cx="50%" r='45%'/>)");
+  const std::string user = R"(<linearGradient gradientUnits="userSpaceOnUse" x1="0" y2="25">)";
+  CHECK(fix_bbox_gradients(user) == user);
+  CHECK(fix_bbox_gradients(R"(<linearGradient x2="10px" y2="50%">)") == R"(<linearGradient x2="10px" y2="50%">)");
+
+  // A top-to-bottom sky: blue at the top, pale at the bottom, in between halfway down.
+  auto svg = Svg::parse(R"svg(<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 64"><defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000000"/>
+    <stop offset="1" stop-color="#ffffff"/></linearGradient></defs>
+    <rect width="8" height="64" fill="url(#g)"/></svg>)svg");
+  REQUIRE(svg.ok());
+  auto img = svg.value().rasterize(8, 64);
+  REQUIRE(img.ok());
+  auto red = [&](int y) { return static_cast<int>(img.value().pixels[(static_cast<size_t>(y) * 8 + 4) * 4]); };
+  CHECK(red(0) < 16);
+  CHECK(red(32) > 100);
+  CHECK(red(32) < 156);
+  CHECK(red(63) > 240);
+}
+
 TEST_CASE("image: every SVG in games/ parses and draws something") {
   int count = 0, with_text = 0;
   std::string failures;
@@ -594,6 +618,49 @@ TEST_CASE("geometry: one batch per atlas page; additive shares it; culling; soli
   // Additive quads carry alpha 0 (premultiplied "add").
   CHECK((pack_color({1, 1, 1, 1}, BlendMode::Add) >> 24) == 0);
   CHECK(pack_color({1, 0, 0, 0.5f}) == (128u | (128u << 24)));
+}
+
+TEST_CASE("geometry: clip rects split batches and cull what's outside; emissive items need lighting") {
+  auto pkg = load_demo();
+  Atlas atlas;
+  TextureStore textures(pkg.get(), atlas, true);
+  FontStore fonts(atlas, FontId::Bold);
+  REQUIRE(fonts.init().ok());
+  DrawList list;
+  list.camera = DrawList::default_camera(720, 1280);
+  const ClipRect clip{100, 100, 200, 50, true};
+  TextCmd inside;
+  inside.text = "AB";
+  inside.position = {200, 120};
+  inside.space = Space::Screen;
+  inside.clip = clip;
+  list.add(inside);
+  TextCmd outside = inside;
+  outside.position = {200, 400};  // entirely below the clip: culled
+  list.add(outside);
+  TextCmd free = inside;
+  free.clip = {};
+  list.add(free);
+  SpriteCmd glow = sprite_at(50, 50);
+  glow.emissive = true;
+  list.add(glow);
+
+  SortedDrawList sorted;
+  sort_draw_list(list, sorted);
+  FrameGeometry geo;
+  GeometryParams params{.ref_w = 720, .ref_h = 1280};
+  build_geometry(list, sorted, textures, fonts, params, geo);
+  REQUIRE(geo.screen.size() == 2);  // clipped glyphs, then unclipped ones
+  CHECK(geo.screen[0].clip == clip);
+  CHECK(geo.screen[0].quad_count == 2);
+  CHECK_FALSE(geo.screen[1].clip.enabled);
+  CHECK(geo.screen[1].quad_count == 2);
+  CHECK(geo.emissive.empty());  // no Lighting2D: emissive draws with the world
+
+  list.lighting.enabled = true;
+  build_geometry(list, sorted, textures, fonts, params, geo);
+  REQUIRE(geo.emissive.size() == 1);
+  CHECK(geo.emissive[0].quad_count == 1);
 }
 
 TEST_CASE("geometry: drop shadows shrink and fade with height") {

@@ -20,11 +20,11 @@ uint32_t pack_color(Color c, BlendMode blend) {
 }
 
 void push_quad(FrameGeometry& geo, std::vector<Batch>& batches, uint16_t page, const Vec2 corners[4], const UvRect& uv,
-               uint32_t color) {
+               uint32_t color, const ClipRect& clip) {
   const uint32_t quad = geo.quad_count();
   if (batches.empty() || batches.back().page != page || batches.back().first_quad + batches.back().quad_count != quad ||
-      batches.back().quad_count >= kMaxQuadsPerBatch) {
-    batches.push_back(Batch{page, quad, 0});
+      batches.back().quad_count >= kMaxQuadsPerBatch || !(batches.back().clip == clip)) {
+    batches.push_back(Batch{page, quad, 0, clip});
   }
   batches.back().quad_count++;
   // Corners: top-left, top-right, bottom-right, bottom-left.
@@ -46,6 +46,7 @@ struct Builder {
 
   // The pass being built.
   std::vector<Batch>* batches = nullptr;
+  ClipRect clip{};  // the current item's clip (set per item in item())
   bool world = true;
   float zoom = 1;          // world pass: camera zoom; screen pass: 1
   float raster_scale = 1;  // real pixels per reference px in this pass
@@ -72,12 +73,24 @@ struct Builder {
     return x1 < 0 || y1 < 0 || x0 > static_cast<float>(params.ref_w) || y0 > static_cast<float>(params.ref_h);
   }
 
+  bool clipped_out(const Vec2 c[4]) const {
+    if (!clip.enabled) return false;
+    float x0 = c[0].x, x1 = c[0].x, y0 = c[0].y, y1 = c[0].y;
+    for (int i = 1; i < 4; i++) {
+      x0 = std::min(x0, c[i].x);
+      x1 = std::max(x1, c[i].x);
+      y0 = std::min(y0, c[i].y);
+      y1 = std::max(y1, c[i].y);
+    }
+    return x1 < clip.x || y1 < clip.y || x0 > clip.x + clip.w || y0 > clip.y + clip.h;
+  }
+
   void quad(uint16_t page, const Vec2 c[4], const UvRect& uv, uint32_t color) {
-    if (off_screen(c)) {
+    if (off_screen(c) || clipped_out(c)) {
       out.culled++;
       return;
     }
-    push_quad(out, *batches, page, c, uv, color);
+    push_quad(out, *batches, page, c, uv, color, clip);
   }
 
   // An axis-aligned quad (optionally rotated about `pivot`).
@@ -221,7 +234,18 @@ struct Builder {
     }
   }
 
+  // Routes the item to its batch list and clip, then builds its quads.
   void item(const DrawRef& ref) {
+    clip = {};
+    bool emissive = false;
+    switch (ref.kind) {
+      case DrawKind::Sprite: clip = list.sprites[ref.index].clip; emissive = list.sprites[ref.index].emissive; break;
+      case DrawKind::Shadow: clip = list.sprites[ref.index].clip; break;
+      case DrawKind::Rect: clip = list.rects[ref.index].clip; break;
+      case DrawKind::Text: clip = list.texts[ref.index].clip; emissive = list.texts[ref.index].emissive; break;
+      case DrawKind::TileChunk: break;
+    }
+    if (world) batches = emissive && list.lighting.enabled ? &out.emissive : &out.world;
     switch (ref.kind) {
       case DrawKind::Sprite: sprite(list.sprites[ref.index]); break;
       case DrawKind::Shadow: shadow(list.sprites[ref.index]); break;

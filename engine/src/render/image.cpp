@@ -1,5 +1,7 @@
 #include "render/image.h"
 
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <string>
 
@@ -64,9 +66,49 @@ Result<Image> decode_raster(std::span<const uint8_t> bytes, ImageFormat format) 
 
 void Svg::Deleter::operator()(NSVGimage* image) const { nsvgDelete(image); }
 
+std::string fix_bbox_gradients(std::string_view svg) {
+  std::string out;
+  out.reserve(svg.size() + 64);
+  size_t pos = 0;
+  while (true) {
+    // The next <linearGradient or <radialGradient start tag.
+    const size_t lin = svg.find("<linearGradient", pos), rad = svg.find("<radialGradient", pos);
+    const size_t start = std::min(lin, rad);
+    if (start == std::string_view::npos) break;
+    const size_t end = svg.find('>', start);
+    if (end == std::string_view::npos) break;
+    out.append(svg.substr(pos, start - pos));
+    std::string tag(svg.substr(start, end - start));
+    if (tag.find("userSpaceOnUse") == std::string::npos) {
+      // Each coordinate attribute: name="number" (no unit, no %) -> name="number*100%".
+      for (const char* name : {"x1", "y1", "x2", "y2", "cx", "cy", "r", "fx", "fy"}) {
+        const std::string key = std::string(" ") + name + "=";
+        const size_t at = tag.find(key);
+        if (at == std::string::npos) continue;
+        const size_t q = at + key.size();
+        if (q >= tag.size() || (tag[q] != '"' && tag[q] != '\'')) continue;
+        const size_t close = tag.find(tag[q], q + 1);
+        if (close == std::string::npos) continue;
+        const std::string value = tag.substr(q + 1, close - q - 1);
+        char* rest = nullptr;
+        const double v = std::strtod(value.c_str(), &rest);
+        if (value.empty() || rest == value.c_str() || *rest != '\0') continue;  // has a unit or %
+        char buf[32];
+        std::snprintf(buf, sizeof buf, "%g%%", v * 100);
+        tag.replace(q + 1, close - q - 1, buf);
+      }
+    }
+    out.append(tag);
+    pos = end;
+  }
+  out.append(svg.substr(pos));
+  return out;
+}
+
 Result<Svg> Svg::parse(std::string_view text) {
-  // nsvgParse() edits the string it parses, so it gets a private, NUL-terminated copy.
-  std::string copy(text);
+  // nsvgParse() edits the string it parses, so it gets a private, NUL-terminated copy (with the
+  // gradient fix applied).
+  std::string copy = fix_bbox_gradients(text);
   NSVGimage* image = nsvgParse(copy.data(), "px", 96.0f);
   if (!image) return Error{"can't parse SVG"};
   std::unique_ptr<NSVGimage, Deleter> owned(image);

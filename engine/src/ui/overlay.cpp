@@ -92,8 +92,9 @@ struct Pen {
             Color outline = {0, 0, 0, 0}, float outline_size = 0, Color shadow = {0, 0, 0, 0},
             render::Vec2 shadow_offset = {2, 2}) {
     if (str.empty() || !(color.a > 0)) return;
-    if (clip && (y < clip->y || y > clip->y + clip->h)) return;  // drop lines outside the clip
     render::TextCmd t;
+    // Text is cut by the renderer's scissor (a line half inside a scroll list shows its visible half).
+    if (clip) t.clip = {f(clip->x), f(clip->y), f(clip->w), f(clip->h), true};
     t.space = render::Space::Screen;
     t.text = std::string(str);
     t.font = font;

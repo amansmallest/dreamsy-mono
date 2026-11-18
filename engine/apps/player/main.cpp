@@ -14,6 +14,11 @@
 // --smooth forces smooth mode (linear filtering) on a pixel-art package. On the web the package
 // is embedded at /pkg and the URL hash sets the options as dash-separated words
 // (dreamsy-player.html#iso, #iso-smooth, #demo-iso, #touch). Keys: 1-4 pick the view mode, Tab cycles.
+//
+// Tools (web, like engine-web dev/main.ts): ?manual=1 stops the real-time loop; the page then steps
+// the game itself with window.__dreamsy.step(ticks) (game time, so screenshots are reproducible
+// however slow the browser is). ?seed=<n> seeds the RNG, ?clock=<unix seconds> fixes clock.now()
+// (plus game time). window.__dreamsy.ready / .error tell the page when the game is running.
 #include <algorithm>
 #include <functional>
 #include <map>
@@ -50,6 +55,9 @@
 #endif
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
+#define EMSCRIPTEN_KEEPALIVE_IF_WEB EMSCRIPTEN_KEEPALIVE  // exported to JavaScript
+#else
+#define EMSCRIPTEN_KEEPALIVE_IF_WEB
 #endif
 
 namespace {
@@ -114,6 +122,9 @@ struct Options {
   bool smooth = false;  // force smooth mode (linear filtering, no pixel snap) to check it on any package
   bool demo = false;    // renderer test scene instead of running the game
   bool touch = false;   // force the on-screen controls (they show by default on touch devices only)
+  bool manual = false;  // tools: no real-time ticks; window.__dreamsy.step(n) advances the game
+  uint32_t seed = 1;
+  std::optional<double> clock;  // fixed clock.now() base (unix seconds); default: the wall clock
 };
 
 std::optional<render::ViewMode> parse_view(const char* s) {
@@ -145,9 +156,30 @@ struct App {
   bool ok = false;
   bool loading = false;  // web: waiting for ?pkg= / kit downloads
   std::map<std::string, std::shared_ptr<Bytes>> fetched_kits;
+  double manual_elapsed = 0;  // manual mode: game time stepped since the last frame
+  bool error_published = false;
 };
 
 std::unique_ptr<App> g_app;
+
+}  // namespace
+
+// Manual mode (tools): runs `ticks` fixed ticks now (none while paused) and returns how many ran.
+// Called from JavaScript as window.__dreamsy.step(n); the next frame draws the result.
+extern "C" EMSCRIPTEN_KEEPALIVE_IF_WEB int dreamsy_step(int ticks) {
+  if (!g_app || !g_app->host) return 0;
+  int ran = 0;
+  for (; ran < ticks && !g_app->host->paused(); ran++) g_app->host->step();
+  g_app->manual_elapsed += ran / 60.0;
+  return ran;
+}
+
+// Script errors so far (distinct errors; tools fail a run that has any).
+extern "C" EMSCRIPTEN_KEEPALIVE_IF_WEB int dreamsy_error_count() {
+  return g_app && g_app->host ? static_cast<int>(g_app->host->errors().size()) : 0;
+}
+
+namespace {
 
 // A package from a directory, a .dpk or a .zip (bytes already read for the last two).
 Result<pkg::Files> open_package(const std::string& name, std::shared_ptr<Bytes> bytes) {
@@ -188,6 +220,12 @@ bool start(App& app, pkg::Files files, const KitBytes& kit_bytes) {
     return false;
   }
   host_options.kits = std::move(kits).value();
+  host_options.seed = app.options.seed;
+  if (app.options.clock) {
+    // engine-web: fixed base + game time, so timers that read clock.now() still advance.
+    const double base = *app.options.clock;
+    host_options.clock = [base] { return base + (g_app && g_app->host ? g_app->host->time() : 0.0); };
+  }
   host_options.on_log = [](const script::LogLine& l) {
     (l.level == "error" ? log_error : l.level == "warn" ? log_warn : log_info)("[game] " + l.text);
   };
@@ -328,6 +366,14 @@ void init() {
   app.view = app.options.view;
 
 #ifdef __EMSCRIPTEN__
+  // Tool options in the query (engine-web names): ?manual=1&seed=1&clock=1767225600.
+  app.options.manual = emscripten_run_script_int("new URLSearchParams(location.search).get('manual') === '1' ? 1 : 0") != 0;
+  app.options.seed = static_cast<uint32_t>(emscripten_run_script_int("Number(new URLSearchParams(location.search).get('seed') || 1) | 0"));
+  const std::string clock = emscripten_run_script_string("new URLSearchParams(location.search).get('clock') || ''");
+  if (!clock.empty()) app.options.clock = std::strtod(clock.c_str(), nullptr);
+#endif
+
+#ifdef __EMSCRIPTEN__
   // ?pkg=<url to a .dpk or .zip>[&kits=<base url>]: load a game over HTTP instead of the embedded one.
   app.options.package_url = emscripten_run_script_string("new URLSearchParams(location.search).get('pkg') || ''");
   const std::string kits = emscripten_run_script_string("new URLSearchParams(location.search).get('kits') || ''");
@@ -343,6 +389,17 @@ void init() {
   finish_init(app);
 }
 
+#ifdef __EMSCRIPTEN__
+// window.__dreamsy for tools: { ready, error, step(ticks) } (engine-web dev/main.ts has the same).
+void publish_tool_state(const std::string& error) {
+  // `error` is fixed engine text (no quotes), so it can go straight into the script.
+  const std::string fields = error.empty()
+      ? "{ ready: true, step: (n) => _dreamsy_step(n), errors: () => _dreamsy_error_count() }"
+      : "{ error: '" + error + "' }";
+  emscripten_run_script(("window.__dreamsy = Object.assign(window.__dreamsy || {}, " + fields + ");").c_str());
+}
+#endif
+
 // After the package is loaded: renderer, first frame timing, view mode.
 void finish_init(App& app) {
   if (Status s = app.renderer.init(app.style); !s) {
@@ -352,6 +409,9 @@ void finish_init(App& app) {
   app.ok = true;
   app.last_ticks = stm_now();
   if (app.host && app.options.view != render::ViewMode::Side) set_view(app, app.options.view);
+#ifdef __EMSCRIPTEN__
+  publish_tool_state("");
+#endif
   log_info("package \"" + app.package->manifest.name + "\": reference " + std::to_string(app.style.ref_w) + "x" +
            std::to_string(app.style.ref_h) + (app.style.pixel_snap ? ", pixel-art mode" : ", smooth mode"));
 }
@@ -359,6 +419,12 @@ void finish_init(App& app) {
 void frame() {
   App& app = *g_app;
   if (!app.ok) {
+#ifdef __EMSCRIPTEN__
+    if (!app.loading && !app.error_published) {
+      app.error_published = true;
+      publish_tool_state("the game failed to load (see the console)");
+    }
+#endif
     // Still downloading: dark grey. Nothing loaded: dark red, so the failure is visible.
     sg_pass pass{};
     pass.action.colors[0].load_action = SG_LOADACTION_CLEAR;
@@ -377,8 +443,13 @@ void frame() {
     app.ui->set_screen(fit.s / std::max(0.5f, sapp_dpi_scale()), {});
     // Fixed 60 Hz simulation, at most 5 ticks per frame (engine-web Game.advance). Paused: no ticks.
     constexpr double kDt = 1.0 / 60.0;
-    const double elapsed = stm_sec(stm_laptime(&app.last_ticks));
-    if (app.host->paused()) {
+    double elapsed = stm_sec(stm_laptime(&app.last_ticks));
+    if (app.options.manual) {
+      // Tools step the game (dreamsy_step); the UI animates in game time too.
+      elapsed = app.manual_elapsed;
+      app.manual_elapsed = 0;
+      app.accumulator = 0;
+    } else if (app.host->paused()) {
       app.accumulator = 0;
     } else {
       app.accumulator = std::min(app.accumulator + elapsed, kDt * 5);
@@ -389,7 +460,7 @@ void frame() {
     }
     app.ui->update(static_cast<float>(elapsed));
     play::draw_world(*app.host, *app.textures, app.draw_list);
-    app.ui->draw(app.draw_list, stm_sec(stm_since(app.start_ticks)));
+    app.ui->draw(app.draw_list, app.options.manual ? app.host->time() : stm_sec(stm_since(app.start_ticks)));
   } else {
     const double t = stm_sec(stm_since(app.start_ticks));
     app.scene->build(app.draw_list, app.view, t, app.renderer.stats());

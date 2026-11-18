@@ -11,8 +11,8 @@
 //   layer 3  touch controls
 //   layer 4  pause button
 //
-// The renderer has no scissor yet, so clipping (scroll lists, clip = true) is done here: rects and
-// images are cut exactly; a text line is dropped when its middle is outside the clip.
+// Clipping (scroll lists, clip = true): rects and images are cut exactly here; text gets a clip
+// rect that the renderer applies as a scissor.
 // Rounded corners are drawn with quarter-circle sprites (UiImages), shadows as offset shapes.
 #pragma once
 

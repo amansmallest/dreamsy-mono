@@ -13,6 +13,7 @@
 #include "render/geometry.h"
 #include "render/image.h"
 #include "render/sort.h"
+#include "render/style.h"
 #include "render/textures.h"
 #include "render/view.h"
 
@@ -625,4 +626,37 @@ TEST_CASE("geometry: drop shadows shrink and fade with height") {
   const float sprite_mid = (low.vertices[8].y + low.vertices[8 + 2].y) / 2;
   CHECK(shadow_mid == doctest::Approx(360));
   CHECK(sprite_mid == doctest::Approx(350));
+}
+
+// ---------------------------------------------------------------- style
+
+TEST_CASE("style: colors and manifest render settings (engine-web rules)") {
+  auto c = parse_hex_color("#ff8000");
+  REQUIRE(c);
+  CHECK(c->r == doctest::Approx(1));
+  CHECK(c->g == doctest::Approx(128 / 255.0));
+  CHECK(c->a == 1);
+  CHECK(parse_hex_color("#fff")->b == doctest::Approx(1));
+  CHECK(parse_hex_color("#00000080")->a == doctest::Approx(128 / 255.0));
+  CHECK_FALSE(parse_hex_color("red"));
+  CHECK_FALSE(parse_hex_color("#12345"));
+
+  // feature-demo: portrait, pixel preset, palette[0] #1a1c2c, [ui] background #1a1c2c, font pixel.
+  auto pkg = load_demo();
+  const RenderStyle s = style_from_manifest(pkg->manifest);
+  CHECK(s.ref_w == 720);
+  CHECK(s.ref_h == 1280);
+  CHECK(s.nearest);
+  CHECK(s.pixel_snap);
+  CHECK(s.clear_color.r == doctest::Approx(0x1a / 255.0));
+  CHECK(s.letterbox_color.b == doctest::Approx(0x2c / 255.0));
+  CHECK(s.theme_font == FontId::Pixel);
+
+  pkg::Manifest m;
+  m.style.preset = "toon";
+  const RenderStyle toon = style_from_manifest(m);
+  CHECK(toon.ref_w == 1280);  // landscape by default
+  CHECK_FALSE(toon.nearest);
+  CHECK(toon.theme_font == FontId::Rounded);
+  CHECK(toon.clear_color.r == doctest::Approx(0x20 / 255.0));  // #20232a
 }

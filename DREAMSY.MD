@@ -917,6 +917,13 @@ Parity (E6) is the floor, not the goal. Each slice from E4 on includes the §14.
 2.5D is built into the world model (E3) and renderer (E4) from the start, not added later: every entity
 has `z` and `height`, and depth sorting follows the scene's view mode. E7 adds the 2.5D content features.
 
+**E4 decisions (2026-11-17):** the renderer consumes a plain draw list (`engine/src/render/draw_list.h`)
+filled by the world; `z_index` is a sub-layer under §14.5's depth keys (layer, z_index, then y / x+y / z);
+alpha and additive blending share batches via premultiplied alpha; pixel-art styles render into a
+reference-size target with nearest upscaling; shaders are hand-written MSL + GLSL ES 3.0 until custom
+materials need sokol-shdc; bundled fonts are Press Start 2P, Nunito, Inter, Source Serif 4 (OFL; Latin-1
+subsets); WebP is deferred (clear error) because no package uses it and libwebp costs ~100 KB.
+
 ### 14.11 Open questions
 
 - **OPEN:** WebGPU from the start or after WebGL2 parity (default: after).

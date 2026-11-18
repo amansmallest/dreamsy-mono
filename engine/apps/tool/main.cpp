@@ -5,21 +5,25 @@
 //   dreamsy-tool info <package>                summary + content hash
 //   dreamsy-tool pack <package> <out.dpk>      validate, then write a Dreamsy pack
 //   dreamsy-tool unpack <pack.dpk> <dir>       extract a pack into a directory
-//   dreamsy-tool run <package> [--ticks N] [--seed S] [--budget MS]   run scripts headless
+//   dreamsy-tool run <package> [--ticks N] [--seed S] [--budget MS] [--input PLAN] [--dump SPEC] [--hash]
+//                    [--view side|topdown|oblique|iso] [--height ID=H,...] [--zjump TICK:ID=VZ;...]
+//                                              run headless (see cmd_run)
 //   dreamsy-tool check <package> [--strict] [--json]   type-check scripts; exit 1 on errors
 //   dreamsy-tool check --print-defs                    print the Luau API definitions
 //   dreamsy-tool smoke [--seed N] [--bodies N] [--steps N]
 //
 // <package> is a directory, a .dpk pack, or a legacy .zip (converted on the fly).
-// Later slices add: run, playtest, replay, hash, screenshot (DREAMSY.MD §14.3).
+// Later slices add: playtest, replay, screenshot (DREAMSY.MD §14.3).
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include "base/log.h"
 #include "base/version.h"
@@ -44,7 +48,8 @@ int usage() {
                "  dreamsy-tool info <package>\n"
                "  dreamsy-tool pack <package> <out.dpk>\n"
                "  dreamsy-tool unpack <pack.dpk> <dir>\n"
-               "  dreamsy-tool run <package> [--ticks N] [--seed S] [--budget MS]\n"
+               "  dreamsy-tool run <package> [--ticks N] [--seed S] [--budget MS] [--input PLAN] [--dump SPEC] [--hash]\n"
+               "                   [--view MODE] [--height ID=H,...] [--zjump TICK:ID=VZ;...]\n"
                "  dreamsy-tool check <package> [--strict] [--json] | --print-defs\n"
                "  dreamsy-tool smoke [--seed N] [--bodies N] [--steps N]\n"
                "<package> is a directory, a .dpk pack or a .zip\n");
@@ -249,17 +254,156 @@ int cmd_check(int argc, char** argv) {
   return r.errors ? 1 : 0;
 }
 
-// Runs the package's scripts for N ticks with a fixed clock and prints the same report as
-// engine/tests/conformance/ts_run.mts does for engine-web.
+// A scripted input plan: what a player presses, tick by tick (ticks count from 1).
+//   "30-200:move_x=1"   axis move_x = 1 on ticks 30..200 (back to 0 after)
+//   "40-45:jump"        button jump held on ticks 40..45
+//   "60:jump"           a tap of jump on tick 60
+// Items are separated by ';'. engine/tests/conformance/ts_run.mts reads the same format.
+struct InputItem {
+  int64_t from = 0, to = 0;
+  std::string name;
+  bool axis = false, tap = false;
+  double value = 0;
+};
+
+Result<std::vector<InputItem>> parse_input_plan(std::string_view plan) {
+  std::vector<InputItem> out;
+  for (std::string_view item : pkg::split(plan, ';')) {
+    item = pkg::trim(item);
+    if (item.empty()) continue;
+    size_t colon = item.find(':');
+    if (colon == std::string_view::npos) return Error{"input item \"" + std::string(item) + "\" needs ticks:name"};
+    std::string ticks(item.substr(0, colon)), what(item.substr(colon + 1));
+    InputItem it;
+    size_t dash = ticks.find('-');
+    int64_t a = 0, b = 0;
+    if (!parse_int(ticks.substr(0, dash).c_str(), 1, 10000000, &a)) return Error{"bad tick in \"" + std::string(item) + "\""};
+    b = a;
+    if (dash != std::string::npos && !parse_int(ticks.substr(dash + 1).c_str(), a, 10000000, &b)) return Error{"bad tick range in \"" + std::string(item) + "\""};
+    it.from = a, it.to = b, it.tap = dash == std::string::npos;
+    size_t eq = what.find('=');
+    if (eq != std::string::npos) {
+      it.axis = true, it.tap = false;
+      it.value = std::strtod(what.c_str() + eq + 1, nullptr);
+      what = what.substr(0, eq);
+    }
+    it.name = what;
+    out.push_back(it);
+  }
+  return out;
+}
+
+void apply_input(script::Input& input, const std::vector<InputItem>& plan, int64_t tick) {
+  for (const InputItem& it : plan) {
+    if (it.tap) {
+      if (tick == it.from) input.tap(it.name);
+    } else if (it.axis) {
+      if (tick == it.from) input.set_axis(it.name, it.value);
+      if (tick == it.to + 1) input.set_axis(it.name, 0);
+    } else {
+      if (tick == it.from) input.set_button(it.name, true);
+      if (tick == it.to + 1) input.set_button(it.name, false);
+    }
+  }
+}
+
+// "--dump N:a,b,#tag": every N ticks print "dump <tick> <id> <x> <y> [<vx> <vy>]" for the
+// entities with id a and b and every entity tagged `tag` (global position; velocity for Body2D).
+void dump_entities(script::Host& host, int64_t tick, const std::vector<std::string>& selectors, bool with_z) {
+  world::World& w = host.world();
+  for (const std::string& sel : selectors) {
+    std::vector<world::EntityId> ids;
+    if (pkg::starts_with(sel, "#")) ids = w.tagged(sel.substr(1));
+    else if (w.alive(w.by_id(sel))) ids.push_back(w.by_id(sel));
+    for (world::EntityId id : ids) {
+      const world::Entity* e = w.get(id);
+      const world::Mat2D m = w.global(id);
+      std::string line = "dump " + std::to_string(tick) + " " + e->id + " " + pkg::number_text(m.tx) + " " + pkg::number_text(m.ty);
+      if (e->type->name == "Body2D" && host.physics()) {
+        const world::Point v = host.physics()->velocity(id);
+        line += " " + pkg::number_text(v.x) + " " + pkg::number_text(v.y);
+      }
+      if (with_z) line += " z=" + pkg::number_text(e->z);
+      std::printf("%s\n", line.c_str());
+    }
+  }
+}
+
+// Runs the package for N ticks with a fixed clock and prints the same report as
+// engine/tests/conformance/ts_run.mts does for engine-web: logs as they happen, dumps, then
+// errors, audio events, save data and game time. --hash adds "hash <tick> <state hash>" per tick.
+//
+// 2.5D (engine-internal until the format gets these fields in slice E7, so engine-web has no
+// equivalent): --view sets every scene's view mode, --height ID=H gives entities a vertical
+// extent, --zjump TICK:ID=VZ sets an entity's z velocity (px/s, up) before that tick. With any of
+// them, dumps add the entity's z.
 int cmd_run(int argc, char** argv) {
   if (argc < 3) return usage();
-  int64_t ticks = 120, seed = 1, budget = 250;
-  for (int i = 3; i < argc; i += 2) {
+  int64_t ticks = 120, seed = 1, budget = 250, dump_every = 0;
+  bool hash = false;
+  std::optional<world::ViewMode> view;
+  std::vector<std::pair<std::string, double>> heights;
+  struct ZJump {
+    int64_t tick;
+    std::string id;
+    double vz;
+  };
+  std::vector<ZJump> zjumps;
+  std::vector<InputItem> plan;
+  std::vector<std::string> dump_selectors;
+  for (int i = 3; i < argc; ++i) {
     std::string_view flag = argv[i];
+    if (flag == "--hash") {
+      hash = true;
+      continue;
+    }
     if (i + 1 >= argc) return usage();
+    std::string_view value = argv[++i];
+    if (flag == "--input") {
+      auto p = parse_input_plan(value);
+      if (!p) {
+        std::fprintf(stderr, "✗ --input: %s\n", p.error().c_str());
+        return 2;
+      }
+      plan = std::move(p).value();
+      continue;
+    }
+    if (flag == "--dump") {
+      size_t colon = value.find(':');
+      if (colon == std::string_view::npos || !parse_int(std::string(value.substr(0, colon)).c_str(), 1, 1000000, &dump_every)) return usage();
+      for (std::string_view sel : pkg::split(value.substr(colon + 1), ','))
+        if (!pkg::trim(sel).empty()) dump_selectors.emplace_back(pkg::trim(sel));
+      continue;
+    }
+    if (flag == "--view") {
+      const world::ViewMode modes[] = {world::ViewMode::Side, world::ViewMode::TopDown, world::ViewMode::Oblique, world::ViewMode::Iso};
+      for (world::ViewMode m : modes)
+        if (value == world::view_mode_name(m)) view = m;
+      if (!view) return usage();
+      continue;
+    }
+    if (flag == "--height" || flag == "--zjump") {
+      for (std::string_view item : pkg::split(value, flag == "--height" ? ',' : ';')) {
+        item = pkg::trim(item);
+        size_t eq = item.find('=');
+        if (eq == std::string_view::npos) return usage();
+        const double number = std::strtod(std::string(item.substr(eq + 1)).c_str(), nullptr);
+        std::string target(item.substr(0, eq));
+        if (flag == "--height") {
+          heights.emplace_back(target, number);
+          continue;
+        }
+        size_t colon = target.find(':');
+        int64_t tick = 0;
+        if (colon == std::string::npos || !parse_int(target.substr(0, colon).c_str(), 1, 10000000, &tick)) return usage();
+        zjumps.push_back({tick, target.substr(colon + 1), number});
+      }
+      continue;
+    }
     int64_t* target = flag == "--ticks" ? &ticks : flag == "--seed" ? &seed : flag == "--budget" ? &budget : nullptr;
-    if (!target || !parse_int(argv[i + 1], 0, flag == "--seed" ? int64_t{0xffffffff} : 10000000, target)) return usage();
+    if (!target || !parse_int(std::string(value).c_str(), 0, flag == "--seed" ? int64_t{0xffffffff} : 10000000, target)) return usage();
   }
+  const bool with_z = view || !heights.empty() || !zjumps.empty();
   auto files = load_files(argv[2]);
   if (!files) {
     std::fprintf(stderr, "✗ %s\n", files.error().c_str());
@@ -277,13 +421,24 @@ int cmd_run(int argc, char** argv) {
   script::Host* host_ptr = nullptr;
   opts.clock = [&host_ptr] { return 1767225600.0 + (host_ptr ? host_ptr->time() : 0.0); };
   opts.on_log = [](const script::LogLine& l) { std::printf("[%s] %s\n", l.level.c_str(), l.text.c_str()); };
+  if (view) opts.view = *view;
   auto host = script::Host::create(package, opts);
   if (!host) {
     std::fprintf(stderr, "✗ %s\n", host.error().c_str());
     return 1;
   }
   host_ptr = host.value().get();
-  for (int64_t i = 0; i < ticks; ++i) host_ptr->step();
+  world::World& w = host_ptr->world();
+  for (const auto& [id, h] : heights)
+    if (world::Entity* e = w.get(w.by_id(id))) e->height = h;
+  for (int64_t i = 1; i <= ticks; ++i) {
+    apply_input(host_ptr->input(), plan, i);
+    for (const ZJump& j : zjumps)
+      if (world::Entity* e = j.tick == i ? w.get(w.by_id(j.id)) : nullptr) e->z_velocity = j.vz;
+    host_ptr->step();
+    if (dump_every > 0 && i % dump_every == 0) dump_entities(*host_ptr, i, dump_selectors, with_z);
+    if (hash) std::printf("hash %lld %016llx\n", static_cast<long long>(i), static_cast<unsigned long long>(host_ptr->state_hash()));
+  }
   auto num = [](double v) { return pkg::number_text(v); };
   for (const script::ScriptError& e : host_ptr->errors()) {
     std::printf("error %s:%d x%d: %s\n", e.script.c_str(), e.line, e.count, e.message.c_str());
@@ -294,6 +449,7 @@ int cmd_run(int argc, char** argv) {
     else std::printf("audio music_stop    %s %s\n", num(a.fade).c_str(), num(a.time).c_str());
   }
   std::printf("save %s\ntime %s\n", host_ptr->save_data().stringify().c_str(), num(host_ptr->time()).c_str());
+  if (hash) std::printf("hash final %016llx\n", static_cast<unsigned long long>(host_ptr->state_hash()));
   return 0;
 }
 

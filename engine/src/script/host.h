@@ -1,14 +1,15 @@
 // The script host: runs a package's Luau scripts with the platform API (format/LUAU_API.md).
 //
-// A port of engine-web/core/game.ts's scripting half (DREAMSY.MD §14.13). The prelude
-// (engine-web/core/prelude.ts, embedded at build time) builds the public API in Luau and calls
-// numbered host ops, which are implemented here, natively. Same op numbers, value tags, script
-// order and tick order as engine-web, so the two engines can be compared op by op.
+// A port of engine-web/core/game.ts (DREAMSY.MD §14.13). The prelude (engine-web/core/prelude.ts,
+// embedded at build time) builds the public API in Luau and calls numbered host ops, which are
+// implemented here, natively. Same op numbers, value tags, script order and tick order as
+// engine-web, so the two engines can be compared op by op.
 //
-// Slice E2 covers everything that doesn't need entities: scripts, modules, kits, timers, onTick,
-// game signals, random, time, save data, package data, scenes, audio/store/settings events, the
-// offline room. Entity ops (GET/SET/CALL/SPAWN/...) raise a clear error until the world arrives
-// in E3, and attached scripts (which need their entity) don't run yet.
+// The host owns the simulation of one game: the entity world (world/), physics (physics/), tweens,
+// sprite animation, particles, the camera, dialogs and the scripts that drive them. host.cpp has
+// scripts, modules, timers, scenes and the non-entity ops; host_world.cpp has everything that
+// touches entities (props, methods, spawn/clone/destroy, tile maps, tweens, anims, particles,
+// camera, physics events).
 #pragma once
 
 #include <cstdint>
@@ -23,9 +24,14 @@
 
 #include "base/result.h"
 #include "base/rng.h"
+#include "physics/physics2d.h"
 #include "pkg/package.h"
+#include "script/dialog.h"
+#include "script/input.h"
 #include "script/json_value.h"
 #include "script/vm.h"
+#include "world/tween.h"
+#include "world/world.h"
 
 namespace dreamsy::script {
 
@@ -39,6 +45,8 @@ struct HostOptions {
   std::optional<Json> scene_params;
   Json save;                                 // initial save data (an object)
   std::function<void(const struct LogLine&)> on_log;
+  // 2.5D view mode for every scene (engine-internal until slice E7 adds it to the format).
+  world::ViewMode view = world::ViewMode::Side;
 };
 
 struct LogLine {
@@ -87,11 +95,25 @@ class Host {
   double time_scale() const { return time_scale_; }
   size_t memory_used() const { return vm_->memory_used(); }
 
+  // The simulation (tools and tests may read and poke it between ticks).
+  world::World& world() { return world_; }
+  const world::World& world() const { return world_; }
+  physics::Physics2D* physics() { return physics_.get(); }
+  Input& input() { return input_; }
+  size_t tween_count() const { return tweens_.size(); }
+  struct CameraView {
+    double x = 0, y = 0, zoom = 1;  // view center (smoothing, limits and shake applied)
+  };
+  CameraView camera_view();
+  // Hash of the simulation state: tick, time, entities, physics bodies, camera (§14.4).
+  uint64_t state_hash();
+
   Settings settings;
 
  private:
   struct ScriptInst {
     std::string path;
+    world::EntityId owner;  // null = session (unattached scripts and module top levels)
   };
   struct TickCb {
     int64_t id;
@@ -108,7 +130,7 @@ class Host {
   };
   struct Conn {
     int64_t id;
-    double entity;  // 0 = game-level signal
+    world::EntityId entity;  // null = game-level signal
     std::string signal;
     int ref;
     ScriptInst* inst;
@@ -123,12 +145,13 @@ class Host {
   static int host_call(lua_State* L);
   int dispatch(lua_State* L);
   int net_op(lua_State* L);
-  [[noreturn]] void not_yet(lua_State* L, const char* api);
 
-  void run_script(const std::string& path);
-  void setup_script_globals(lua_State* T, const std::string& path);
+  void run_script(const std::string& path, world::EntityId owner = {});
+  void setup_script_globals(lua_State* T, world::EntityId owner, const std::string& path);
   void call_ref(int ref, ScriptInst* inst, int nargs, const std::function<void(lua_State*)>& push_args = {});
-  void fire(double entity, const std::string& signal, const std::function<int(lua_State*)>& push_args);
+  void fire(world::EntityId entity, const std::string& signal, const std::function<int(lua_State*)>& push_args);
+  bool has_conn(world::EntityId entity, const std::string& signal) const;
+  bool dead(const ScriptInst* inst) const { return !inst->owner.is_null() && !world_.alive(inst->owner); }
   void record_error(std::string message, const std::string& traceback, const std::string& fallback_script);
   void log(const std::string& level, const std::string& text, const std::string& script = {});
 
@@ -138,6 +161,45 @@ class Host {
 
   void process_scene_change();
   void switch_scene(const std::string& path);
+  void step_dialogs();
+
+  // ---- host_world.cpp: entities, physics, tweens, anims, particles, camera
+  void new_physics();
+  void build_scene();
+  world::EntityId entity_arg(lua_State* L, int index);  // raises "entity was destroyed"
+  void push_entity(lua_State* L, uint32_t handle);       // the prelude's proxy for a handle
+  std::optional<world::Value> read_tagged(lua_State* L, int index);
+  int push_prop(lua_State* L, world::EntityId e, const std::string& key);
+  Status set_prop(world::EntityId e, const std::string& key, const std::optional<world::Value>& value);
+  void after_transform(world::EntityId e);
+  Status destroy_entity(world::EntityId e);
+  world::EntityId clone_entity(world::EntityId e, world::EntityId parent);
+  Status load_tiles(world::EntityId e, bool strict);
+  Result<world::TileGrid*> tiles_of(world::EntityId e);
+  world::Point world_to_cell(world::EntityId e, double x, double y);
+  void detect_tile_touches();
+  void step_physics(double sdt);
+  Result<int64_t> start_tween(world::EntityId e, std::vector<world::TweenTrack> tracks, double duration,
+                              const std::string& easing, double delay, bool loop, bool yoyo);
+  void step_tweens(double sdt);
+  const pkg::AnimSet* anim_set(const std::string& path);
+  Status play_anim(world::EntityId e, const std::string& name, bool restart);
+  void advance_anim(world::EntityId e, double dt);
+  void step_sprites_and_particles(double sdt);
+  world::EmitterParams emitter_params(const world::Entity& e) const;
+  world::Emitter& emitter_of(world::Entity& e);
+  Status burst(world::EntityId e, double n);
+  bool effective_visible(world::EntityId e) const;
+  world::EntityId avatar() const;
+  world::EntityId current_camera() const;
+  void update_camera(bool snap);
+  void shake(double intensity, double seconds);
+  int entity_call(lua_State* L);
+  int spawn_op(lua_State* L);
+  int tween_op(lua_State* L);
+  int camera_op(lua_State* L);
+  int dialog_op(lua_State* L);
+  int leaderboard_op(lua_State* L);
   void remove_timer(int64_t id, bool unref);
   int ref_function(lua_State* L, int index, const std::string& what);
   ScriptInst* inst();
@@ -145,8 +207,17 @@ class Host {
 
   std::shared_ptr<const pkg::Package> pkg_;
   HostOptions options_;
+  // The world and physics are declared before the VM, so the VM (whose scripts may hold
+  // callbacks into them) is destroyed first.
+  world::World world_;
+  std::unique_ptr<physics::Physics2D> physics_;
   std::unique_ptr<Vm> vm_;
   Rng rng_;
+  Rng cam_rng_;
+  Input input_;
+  Dialogs dialogs_;
+  std::optional<int> dialog_tap_;
+  int nav_prev_ = 0;
   Refs refs_;
   std::vector<std::string> enabled_kits_;
 
@@ -159,8 +230,8 @@ class Host {
   std::optional<std::string> pending_scene_;
 
   std::vector<std::unique_ptr<ScriptInst>> scripts_;
-  ScriptInst session_inst_{"(session)"};
-  ScriptInst unknown_inst_{"?"};
+  ScriptInst session_inst_{"(session)", {}};
+  ScriptInst unknown_inst_{"?", {}};
   ScriptInst* current_ = nullptr;
   std::vector<TickCb> ticks_;
   std::vector<Timer> timers_;
@@ -168,6 +239,32 @@ class Host {
   std::unordered_map<std::string, int> modules_;
   std::set<std::string> loading_modules_;
   std::unordered_map<std::string, Json> file_cache_;
+
+  // entities
+  std::vector<world::Tween> tweens_;
+  std::set<uint32_t> spawning_;  // handles of TileMap2Ds being spawned (tiles load at the finish call)
+  std::map<std::string, std::optional<pkg::AnimSet>> anims_cache_;
+  // Per TileMap2D handle: (body handle, cell) pairs touching last tick (tileTouched fires on new ones).
+  std::map<uint32_t, std::set<std::pair<uint32_t, int>>> tile_touching_;
+  struct Camera {
+    double x = 0, y = 0;
+    bool init = false;
+    world::EntityId entity;
+    double shake_t = 0, shake_dur = 0, shake_i = 0, ox = 0, oy = 0;
+  } cam_;
+
+  // leaderboards (offline: submissions never resolve during a headless run, as in engine-web's
+  // synchronous runners; timing and running boards behave the same)
+  struct LbRun {
+    std::string board;
+    double t0 = 0;
+    int64_t seq = 0;
+  };
+  std::vector<LbRun> lb_runs_;  // Map insertion order
+  int64_t lb_seq_ = 0;
+
+  // offline room: the avatar a script replicated (room.replicate)
+  world::EntityId replicated_;
 
   std::vector<LogLine> logs_;
   std::vector<ScriptError> errors_;

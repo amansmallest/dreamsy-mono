@@ -3,9 +3,12 @@
 The native 2D/2.5D engine: one C++20 core for web (WebAssembly), iOS, Android and headless game
 servers. Design and roadmap: `DREAMSY.MD` §14. New to C++? Start with `docs/CPP-FOR-TS-DEVS.md`.
 
-Status: **E0 (scaffold), E1 (packages) done; E2 (scripting) mostly done; E4 (renderer) foundation in progress.** It loads and validates every
-game in `games/` (same verdicts as the TypeScript validator), reads/writes Dreamsy packs (`.dpk`, §3.6), and
-runs game scripts natively with output identical to engine-web, minus entities (E3 world/physics, next).
+Status: **E0 (scaffold), E1 (packages), E2 (scripting), E3 (world + physics) done; E4 (renderer) foundation done.**
+It loads and validates every game in `games/` (same verdicts as the TypeScript validator), reads/writes
+Dreamsy packs (`.dpk`, §3.6), and runs games headless natively: entities, Box2D physics with 2.5D height,
+tweens, sprite animation, particles, camera, tile maps, dialogs. Every 2D game in `games/` produces the same
+script output as engine-web (`tests/conformance/run_compare.py --all`). The renderer draws all four view modes
+from a test scene; connecting it to running games comes next.
 `engine-web/` is still the shipping engine.
 
 ## Build
@@ -22,6 +25,10 @@ ctest --preset debug                                   # run the tests
 ./build/debug/dreamsy-tool info /tmp/fd.dpk            # summary + content hash
 ./build/debug/dreamsy-tool run tests/scripts/basics    # run scripts headless (logs, errors, save)
 ./build/debug/dreamsy-tool check ../games/examples/feature-demo   # type-check scripts (format/dreamsy.d.luau)
+./build/release/dreamsy-tool run ../games/examples/coin-dash --ticks 300 \
+    --input "10-200:move_x=1;40:jump" --dump "10:player,#coin" --hash   # scripted input, entity dumps, state hashes
+./build/release/dreamsy-tool run tests/scenes/z_jump --view topdown \
+    --height player=16,crate=16,ledge=48 --zjump 50:player=300 --dump 10:player   # 2.5D height (engine-internal)
 ./build/debug/dreamsy-player                           # window (Metal): renderer test scene from feature-demo
 ./build/debug/dreamsy-player --view iso                # side | topdown | oblique | iso; keys 1-4 / Tab; --smooth; --frames N
 ```
@@ -136,20 +143,23 @@ The engine's own logging (`base/log.cpp`) writes to stderr, which Android drops;
 |---|---|
 | `src/base/` | `Result`/`Status` errors, `Pool`/`Id` handles, `Arena`, `Rng` (bit-identical to the TS engine), `Hasher`, logging, checks |
 | `src/pkg/` | packages: `Files` (packs, dirs), `pack.cpp` (.dpk), `catalog` (embedded `format/catalog.json` + kit list), `manifest` (TOML), `formats` (tilesets, levels, anims, sfx, music, SVG), `validate` (`load_package()`), `zip_import` (tools only) |
-| `src/script/` | Luau host (§14.13): `vm` (sandbox, memory cap, CPU budget, tracebacks), `host` (scripts, require, kits, scheduler, host ops), prelude + kits embedded from engine-web at build time |
+| `src/world/` | the entity world (E3): `world` (entities with catalog props and 2.5D `z`/`height`, scene tree, generational ids + never-reused script handles, prop coercion, transforms, view mode), `tilemap`, `tween`, `particles` |
+| `src/physics/` | Box2D v3 (32 px = 1 m, Rapier's average friction/restitution) + engine-handled z: gravity, landing, z-range collision filtering (see `physics2d.h`) |
+| `src/script/` | Luau host (§14.13): `vm` (sandbox, memory cap, CPU budget, tracebacks), `host` (scripts, require, kits, scheduler, scenes, non-entity ops), `host_world` (entity ops, physics events, tweens, anims, particles, camera, dialogs), `input`, `dialog`; prelude + kits embedded from engine-web at build time |
 | `src/check/` | `dreamsy-tool check`: Luau analyzer over a package's scripts against `format/dreamsy.d.luau` (tools only) |
 | `src/render/` | renderer (E4). CPU side, no GPU (`dreamsy_render`): `draw_list.h` (what E3 fills each frame), `sort` (depth order per view mode, shadows), `view` (letterbox, projection, camera, pixel snap), `image` (PNG/JPG stb_image, SVG nanosvg), `atlas` (stb_rect_pack pages), `textures` (package images on first use), `font` (bundled fonts, stb_truetype, layout), `geometry` (batched quads), `style` (manifest render settings). GPU side (`dreamsy_render_gpu`): `renderer` (sokol_gfx, hand-written Metal + GLSL ES 3.0 shaders) |
 | `src/dmath/` | deterministic math: musl libm linked into every executable (see its README) |
 | `src/platform/` | sokol implementation unit; web link settings |
 | `platform/ios/` | iOS app bundle: `Info.plist.in`, `ios.cmake` (bundle ID, signing settings) |
 | `platform/android/` | Android Gradle project: NativeActivity manifest loading `libdreamsy-player.so` |
-| `src/dev/` | E0 smoke checks (Luau, Box2D); replaced by `src/script` (E2) and `src/physics` (E3) |
+| `src/dev/` | E0 smoke checks (Luau, Box2D), kept for `dreamsy-tool smoke` |
 | `apps/tool/` | `dreamsy-tool`, the headless CLI |
 | `apps/player/` | `dreamsy-player`, the windowed engine; `demo_scene` draws a test scene from a package's assets until E3/E6 |
 | `tools/` | `web_screenshot.cjs` (screenshots of the web player) |
 | `tests/` | doctest unit tests, one binary: `dreamsy-tests` |
-| `tests/conformance/` | `conformance.py`: C++ vs `format/src/validate.ts` on every game plus ~80 generated broken packages; `run_compare.py`: C++ vs engine-web running `tests/scripts/*` (logs, errors, audio, save, time must be identical) |
+| `tests/conformance/` | `conformance.py`: C++ vs `format/src/validate.ts` on every game plus ~80 generated broken packages; `run_compare.py`: C++ vs engine-web: `tests/scripts/*` (identical logs, errors, audio, save, time), physics scenarios with scripted input (identical script output + measured position/velocity drift), `--all` over every game |
 | `tests/scripts/` | script-only test games (basics, modules, data/save, errors/budget, scenes/room/store/audio, math) |
+| `tests/scenes/` | entity test scenes (`z_jump`: the 2.5D jump/land/ledge scene) |
 | `fuzz/` | fuzz targets (pack, package, zip import); `-replay` builds run in ctest, libFuzzer builds in CI |
 
 Third-party code lives in `../third_party/` (vendored, unmodified; each folder has `DREAMSY_VENDOR.md`).
@@ -180,7 +190,8 @@ Third-party code lives in `../third_party/` (vendored, unmodified; each folder h
 
 ```sh
 python3 tests/conformance/conformance.py              # needs `pnpm install` (format/, engine-web/)
-python3 tests/conformance/run_compare.py
+python3 tests/conformance/run_compare.py               # scripts + physics scenarios (uses build/release if present)
+python3 tests/conformance/run_compare.py --all         # every game in games/examples and games/showcase
 python3 fuzz/make_corpus.py /tmp/corpus build/debug/dreamsy-tool
 DREAMSY_FUZZ_SAVE=/tmp/last.bin ./build/debug/fuzz-package-replay --mutate 1000 /tmp/corpus/package
 ```

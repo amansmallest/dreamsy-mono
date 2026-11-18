@@ -1,0 +1,5 @@
+format = "0"
+name = "physics_mix"
+description = "Free dynamics with no script control (bounce, friction, rotation, stacking, a kinematic pusher): measures how far Box2D drifts from engine-web's Rapier."
+dimension = "2d"
+entry_scene = "scenes/main.scene.json"

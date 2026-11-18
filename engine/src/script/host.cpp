@@ -11,6 +11,7 @@
 #include "pkg/json.h"
 #include "pkg/text.h"
 #include "script/lua_util.h"
+#include "script/ops.h"
 #include "script/require_path.h"
 #include "script/script_data.h"
 #include "script/theme.h"
@@ -18,18 +19,6 @@
 namespace dreamsy::script {
 
 namespace {
-
-// Op numbers and value tags: engine-web/core/prelude.ts OP / TAG (the prelude is embedded from there).
-enum Op {
-  OP_INIT = 1, OP_PRINT = 2, OP_GET = 3, OP_SET = 4, OP_CALL = 5, OP_ENTITY = 6, OP_TAGGED = 7, OP_SPAWN = 8,
-  OP_ONTICK = 9, OP_AFTER = 10, OP_EVERY = 11, OP_CANCEL = 12, OP_RANDOM = 13, OP_TIME = 14,
-  OP_CONNECT = 15, OP_DISCONNECT = 16, OP_AXIS = 17, OP_PRESSED = 18, OP_HELD = 19, OP_POINTER = 20,
-  OP_TOAST = 21, OP_SCREEN = 22, OP_AVATAR = 23, OP_FROMENTITY = 24, OP_REQUIRE = 25, OP_ERROR = 26, OP_SOUND = 27,
-  OP_LOADSCENE = 28, OP_STORE = 29, OP_AUDIO = 30, OP_SETTINGS = 31, OP_TWEEN = 32, OP_SAVE = 33, OP_DIALOG = 34,
-  OP_CAMERA = 35, OP_FILES = 36, OP_CLOCK = 37, OP_GAMEPROP = 38, OP_ALIVE = 39, OP_UNTICK = 40,
-  OP_LEADERBOARD = 41, OP_PLATFORM = 42, OP_NET = 60,
-};
-enum Tag { TAG_PLAIN = 0, TAG_VEC2 = 1 };
 
 constexpr int kMaxSceneChain = 8;
 constexpr size_t kMaxSaveBytes = 64 * 1024;
@@ -45,7 +34,11 @@ double wall_clock() {
 // ================================================================ setup
 
 Host::Host(std::shared_ptr<const pkg::Package> package, HostOptions options)
-    : pkg_(std::move(package)), options_(std::move(options)), rng_(options_.seed), dt_(1.0 / options_.tick_rate) {
+    : pkg_(std::move(package)),
+      options_(std::move(options)),
+      rng_(options_.seed),
+      cam_rng_(options_.seed ^ 0x5bd1e995u),
+      dt_(1.0 / options_.tick_rate) {
   save_ = options_.save;
   if (save_.type != Json::Type::Object) save_ = Json::object_value();
 }
@@ -65,6 +58,8 @@ Status Host::init() {
   scene_path_ = options_.scene.value_or(m.entry_scene);
   if (!pkg_->scenes.count(scene_path_)) return Error{"no scene " + scene_path_};
 
+  world_.view = options_.view;
+  new_physics();
   vm_ = Vm::create({options_.memory_limit, options_.budget_ms});
   lua_State* L = vm_->main();
   lua_pushlightuserdata(L, this);
@@ -81,7 +76,7 @@ Status Host::init() {
     if (options_.scene_params) push_json(S, *options_.scene_params);
     else lua_pushnil(S);
   });
-  // buildScene: entities and their attached scripts arrive with the world (E3).
+  build_scene();
 
   // Unattached client/server scripts: the session (they survive loadScene).
   std::set<std::string> attached;
@@ -92,7 +87,7 @@ Status Host::init() {
       if (pkg::ends_with(p, ".luau") && !attached.count(p)) run_script(p);
   }
   call_ref(refs_.start, nullptr, 0);
-  fire(0, "sceneLoaded", [&](lua_State* S) {
+  fire({}, "sceneLoaded", [&](lua_State* S) {
     push_str(S, scene_path_);
     return 1;
   });
@@ -148,8 +143,8 @@ void Host::record_error(std::string message, const std::string& traceback, const
   log("error", script + (line ? ":" + std::to_string(line) : "") + ": " + message, script);
 }
 
-void Host::run_script(const std::string& path) {
-  scripts_.push_back(std::make_unique<ScriptInst>(ScriptInst{path}));
+void Host::run_script(const std::string& path, world::EntityId owner) {
+  scripts_.push_back(std::make_unique<ScriptInst>(ScriptInst{path, owner}));
   ScriptInst* script = scripts_.back().get();
   auto src = pkg_->files.text(path);
   if (!src) {
@@ -164,7 +159,7 @@ void Host::run_script(const std::string& path) {
     lua_settop(L, top);
     return;
   }
-  setup_script_globals(T, path);
+  setup_script_globals(T, owner, path);
   ScriptInst* prev = current_;
   current_ = script;
   auto err = vm_->pcall(T, 0, 0);
@@ -173,10 +168,11 @@ void Host::run_script(const std::string& path) {
   lua_settop(L, top);
 }
 
-void Host::setup_script_globals(lua_State* T, const std::string& path) {
+void Host::setup_script_globals(lua_State* T, world::EntityId owner, const std::string& path) {
   lua_State* L = vm_->main();
   lua_getref(L, refs_.make_script);
-  lua_pushnil(L);  // owner entity: none until E3
+  if (const world::Entity* e = world_.get(owner)) lua_pushnumber(L, e->handle);
+  else lua_pushnil(L);
   push_str(L, path);
   if (auto err = vm_->pcall(L, 2, 2)) DREAMSY_CHECK(false, "prelude makeScript failed");
   lua_xmove(L, T, 2);
@@ -198,7 +194,13 @@ void Host::call_ref(int ref, ScriptInst* inst, int nargs, const std::function<vo
   lua_settop(L, top);
 }
 
-void Host::fire(double entity, const std::string& signal, const std::function<int(lua_State*)>& push_args) {
+bool Host::has_conn(world::EntityId entity, const std::string& signal) const {
+  for (const auto& [id, c] : conns_)
+    if (c.entity == entity && c.signal == signal) return true;
+  return false;
+}
+
+void Host::fire(world::EntityId entity, const std::string& signal, const std::function<int(lua_State*)>& push_args) {
   std::vector<int64_t> ids;
   for (const auto& [id, c] : conns_)
     if (c.entity == entity && c.signal == signal) ids.push_back(id);
@@ -268,7 +270,7 @@ void Host::require_module(lua_State* L, const std::string& from, const std::stri
   if (Status s = vm_->load(T, "@" + path, *src); !s) {
     failure = s.error();
   } else {
-    setup_script_globals(T, path);
+    setup_script_globals(T, {}, path);
     // Module top level belongs to the session: its onTick/timers/connections survive the requirer.
     ScriptInst* prev = current_;
     current_ = &session_inst_;
@@ -285,7 +287,11 @@ void Host::require_module(lua_State* L, const std::string& from, const std::stri
 
 // ================================================================ ticks and scenes
 
+// One fixed tick, in engine-web's order (Game.step): input edges, flush, room messages, store
+// purchases, dialogs, timers, tweens, onTick, physics (+ bodyEntered/Exited, tileTouched),
+// sprite animation and particles, camera, scene change.
 void Host::step() {
+  input_.begin_tick();
   ++tick_;
   const double sdt = dt_ * time_scale_;
   time_ += sdt;
@@ -319,13 +325,15 @@ void Host::step() {
       else if (std::none_of(store_pending_.begin(), store_pending_.end(),
                             [&](const Purchase& x) { return x.purchase_id == p.purchase_id; }))
         store_pending_.push_back(p);
-      fire(0, "storePurchased", [&](lua_State* S) {
+      fire({}, "storePurchased", [&](lua_State* S) {
         push_str(S, p.item_id);
         push_str(S, p.purchase_id);
         return 2;
       });
     }
   }
+
+  step_dialogs();
 
   // timers: due time, then creation order; `every` reschedules before its call
   for (;;) {
@@ -345,6 +353,8 @@ void Host::step() {
     if (t.interval <= 0) lua_unref(vm_->main(), t.ref);
   }
 
+  step_tweens(sdt);
+
   // onTick: a snapshot; callbacks removed mid-iteration are skipped, new ones start next tick
   std::vector<TickCb> snapshot = ticks_;
   for (const TickCb& cb : snapshot) {
@@ -352,7 +362,38 @@ void Host::step() {
     if (!alive) continue;
     call_ref(cb.ref, cb.inst, 1, [&](lua_State* S) { lua_pushnumber(S, sdt); });
   }
+
+  if (physics_ && sdt > 0) step_physics(sdt);
+  step_sprites_and_particles(sdt);
+  update_camera(false);
   process_scene_change();
+}
+
+void Host::step_dialogs() {
+  const bool was_blocking = dialogs_.current && dialogs_.current->blocking;
+  if (dialogs_.current) {
+    const double ny = input_.raw_axis("move_y");
+    const int dir = ny < -0.5 ? -1 : ny > 0.5 ? 1 : 0;
+    const int nav = dir != nav_prev_ ? dir : 0;
+    nav_prev_ = dir;
+    DialogInput in;
+    in.confirm = input_.raw_pressed("jump") || input_.raw_pressed("action");
+    in.nav = nav;
+    in.tap = dialog_tap_;
+    dialog_tap_.reset();
+    if (auto done = dialogs_.step(dt_, in)) {
+      call_ref(refs_.done_fire, nullptr, 2, [&](lua_State* S) {
+        lua_pushnumber(S, static_cast<double>(done->id));
+        if (done->choice >= 0) lua_pushnumber(S, done->choice + 1);
+        else lua_pushnil(S);
+      });
+    }
+  } else {
+    dialog_tap_.reset();
+    nav_prev_ = 0;
+  }
+  // the tick a blocking dialog closes still swallows its confirm press
+  input_.blocked = was_blocking || (dialogs_.current && dialogs_.current->blocking);
 }
 
 void Host::process_scene_change() {
@@ -364,13 +405,41 @@ void Host::process_scene_change() {
   pending_scene_.reset();
 }
 
+// Tears down the current scene (entities, attached-script instances with their ticks, timers and
+// connections, physics) and builds `path`. Unattached (session) scripts keep running.
 void Host::switch_scene(const std::string& path) {
   if (!pkg_->scenes.count(path)) return;
-  // Entity-owned callbacks die with their entities (E3); session callbacks survive.
+  lua_State* L = vm_->main();
+  world_.clear();
+  for (auto it = conns_.begin(); it != conns_.end();) {
+    const Conn& c = it->second;
+    if ((!c.entity.is_null() && !world_.alive(c.entity)) || dead(c.inst)) {
+      lua_unref(L, c.ref);
+      it = conns_.erase(it);
+    } else {
+      ++it;
+    }
+  }
+  std::erase_if(ticks_, [&](const TickCb& t) {
+    if (!dead(t.inst)) return false;
+    lua_unref(L, t.ref);
+    return true;
+  });
+  std::vector<int64_t> dead_timers;
+  for (const Timer& t : timers_)
+    if (dead(t.inst)) dead_timers.push_back(t.id);
+  for (int64_t id : dead_timers) remove_timer(id, true);
+  std::erase_if(scripts_, [&](const std::unique_ptr<ScriptInst>& s) { return dead(s.get()); });
+  tile_touching_.clear();
+  new_physics();
+  std::erase_if(tweens_, [&](const world::Tween& t) { return !world_.alive(t.entity); });
+  dialogs_.clear();
+  cam_.init = false;
   scene_path_ = path;
   log("info", "[scene] loaded " + path);
   call_ref(refs_.scene_set, nullptr, 1, [&](lua_State* S) { push_str(S, path); });
-  fire(0, "sceneLoaded", [&](lua_State* S) {
+  build_scene();
+  fire({}, "sceneLoaded", [&](lua_State* S) {
     push_str(S, path);
     return 1;
   });
@@ -389,10 +458,6 @@ void Host::write_save(lua_State* L, Json next) {
 int Host::host_call(lua_State* L) {
   Host* host = static_cast<Host*>(lua_tolightuserdata(L, lua_upvalueindex(1)));
   return host->dispatch(L);
-}
-
-void Host::not_yet(lua_State* L, const char* api) {
-  raise(L, std::string(api) + " is not available yet in the C++ engine (entities arrive in slice E3)");
 }
 
 int Host::dispatch(lua_State* L) {
@@ -450,12 +515,11 @@ int Host::dispatch(lua_State* L) {
       lua_pushnumber(L, time_);
       return 1;
     case OP_CONNECT: {
-      double e = num_arg(L, 2);
-      if (e != 0) not_yet(L, "entity signals");
+      world::EntityId e = num_arg(L, 2) == 0 ? world::EntityId{} : entity_arg(L, 2);
       std::string signal = str_arg(L, 3);
       int ref = ref_function(L, 4, signal + ":connect");
       int64_t id = next_id_++;
-      conns_[id] = Conn{id, 0, signal, ref, inst()};
+      conns_[id] = Conn{id, e, signal, ref, inst()};
       lua_pushnumber(L, static_cast<double>(id));
       return 1;
     }
@@ -467,17 +531,25 @@ int Host::dispatch(lua_State* L) {
       }
       return 0;
     }
-    case OP_AXIS:  // input arrives with the platform layer (E5); headless input is idle
-      lua_pushnumber(L, 0);
+    case OP_AXIS:  // devices arrive with the platform layer (E5); tools feed input_ meanwhile
+      lua_pushnumber(L, input_.axis(str_arg(L, 2)));
       return 1;
     case OP_PRESSED:
+      lua_pushboolean(L, input_.pressed(str_arg(L, 2)));
+      return 1;
     case OP_HELD:
-      lua_pushboolean(L, false);
+      lua_pushboolean(L, input_.held(str_arg(L, 2)));
       return 1;
     case OP_POINTER:
-      lua_pushnumber(L, TAG_PLAIN);
-      lua_pushnil(L);
-      return 2;
+      if (!input_.pointer) {
+        lua_pushnumber(L, TAG_PLAIN);
+        lua_pushnil(L);
+        return 2;
+      }
+      lua_pushnumber(L, TAG_VEC2);
+      lua_pushnumber(L, input_.pointer->first);
+      lua_pushnumber(L, input_.pointer->second);
+      return 3;
     case OP_REQUIRE:
       require_module(L, str_arg(L, 2), str_arg(L, 3));
       return 1;
@@ -679,7 +751,7 @@ int Host::dispatch(lua_State* L) {
       raise(L, "data: unknown call " + what);
     }
     case OP_ALIVE:
-      lua_pushboolean(L, false);
+      lua_pushboolean(L, world_.alive(world_.by_handle(num_arg(L, 2))));
       return 1;
     case OP_CLOCK:
       lua_pushnumber(L, options_.clock ? options_.clock() : wall_clock());
@@ -722,26 +794,68 @@ int Host::dispatch(lua_State* L) {
       }
       raise(L, "game: unknown call " + what);
     }
-    case OP_TOAST:  // UI arrives with the platform layer (E5); headless toasts are dropped
+    case OP_TOAST:  // drawn by the platform layer (E5); headless toasts have no effect
       return 0;
-    case OP_SOUND:
+    case OP_SOUND:  // positional asset sounds play in the audio layer (E5)
       return 0;
     case OP_NET:
       return net_op(L);
 
-    case OP_GET:
-    case OP_SET:
-    case OP_CALL: not_yet(L, "entity properties and methods");
-    case OP_ENTITY:
-    case OP_TAGGED: not_yet(L, "entity lookup");
-    case OP_SPAWN: not_yet(L, "spawn()");
-    case OP_SCREEN: not_yet(L, "ui.showScreen");
-    case OP_AVATAR:
-    case OP_FROMENTITY: not_yet(L, "avatars");
-    case OP_TWEEN: not_yet(L, "tween()");
-    case OP_DIALOG: not_yet(L, "ui.dialog");
-    case OP_CAMERA: not_yet(L, "camera");
-    case OP_LEADERBOARD: not_yet(L, "leaderboard");
+    case OP_GET: {
+      world::EntityId e = entity_arg(L, 2);
+      return push_prop(L, e, str_arg(L, 3));
+    }
+    case OP_SET: {
+      world::EntityId e = entity_arg(L, 2);
+      if (Status st = set_prop(e, str_arg(L, 3), read_tagged(L, 4)); !st) raise(L, st.error());
+      return 0;
+    }
+    case OP_CALL: return entity_call(L);
+    case OP_ENTITY: {
+      world::EntityId e = lua_isnoneornil(L, 2) ? world::EntityId{} : world_.by_id(str_arg(L, 2));
+      if (const world::Entity* ent = world_.get(e)) lua_pushnumber(L, ent->handle);
+      else lua_pushnil(L);
+      return 1;
+    }
+    case OP_TAGGED: {
+      std::vector<world::EntityId> list = world_.tagged(str_arg(L, 2));
+      lua_createtable(L, static_cast<int>(list.size()), 0);
+      for (size_t i = 0; i < list.size(); ++i) {
+        lua_pushnumber(L, world_.get(list[i])->handle);
+        lua_rawseti(L, -2, static_cast<int>(i + 1));
+      }
+      return 1;
+    }
+    case OP_SPAWN: return spawn_op(L);
+    case OP_SCREEN: {
+      std::string id = str_arg(L, 2);
+      world::EntityId e = world_.by_id(id);
+      if (!world_.alive(e)) raise(L, "ui screen \"" + id + "\" not found");
+      if (Status st = set_prop(e, "visible", world::Value::boolean(lua_toboolean(L, 3))); !st) raise(L, st.error());
+      return 0;
+    }
+    case OP_AVATAR: {
+      if (const world::Entity* a = world_.get(avatar())) lua_pushnumber(L, a->handle);
+      else lua_pushnil(L);
+      return 1;
+    }
+    case OP_FROMENTITY: {
+      world::EntityId e = entity_arg(L, 2);
+      world::EntityId a = avatar();
+      bool hit = false;
+      for (const world::Entity* x = world_.get(e); x; x = world_.get(x->parent)) {
+        if ((!a.is_null() && world_.get(a) == x) || x->has_tag("player")) {
+          hit = true;
+          break;
+        }
+      }
+      lua_pushboolean(L, hit);
+      return 1;
+    }
+    case OP_TWEEN: return tween_op(L);
+    case OP_DIALOG: return dialog_op(L);
+    case OP_CAMERA: return camera_op(L);
+    case OP_LEADERBOARD: return leaderboard_op(L);
   }
   raise(L, "unknown host op " + std::to_string(op));
 }
@@ -794,7 +908,28 @@ int Host::net_op(lua_State* L) {
     push_str(L, "local");
     return 1;
   }
-  if (what == "avatar" || what == "fromEntity" || what == "replicate") not_yet(L, "avatars");
+  if (what == "avatar") {
+    world::EntityId e;
+    if (str_arg(L, 3) == "local") e = world_.alive(replicated_) ? replicated_ : avatar();
+    if (const world::Entity* ent = world_.get(e)) lua_pushnumber(L, ent->handle);
+    else lua_pushnil(L);
+    return 1;
+  }
+  if (what == "fromEntity") {
+    world::EntityId e = entity_arg(L, 3);
+    for (const world::Entity* x = world_.get(e); x; x = world_.get(x->parent)) {
+      if ((world_.alive(replicated_) && world_.get(replicated_) == x) || x->has_tag("player")) {
+        push_str(L, "local");
+        return 1;
+      }
+    }
+    lua_pushnil(L);
+    return 1;
+  }
+  if (what == "replicate") {
+    replicated_ = entity_arg(L, 3);
+    return 0;
+  }
   if (what == "send") return 0;  // no link: remote events are delivered in-process by the prelude
   if (what == "setState") {
     std::string k = str_arg(L, 3);

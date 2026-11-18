@@ -320,9 +320,9 @@ if(DREAMSY_BUILD_PLAYER)
 
   # The GPU renderer (E4): sokol_gfx, hand-written Metal / GLSL ES 3.0 shaders (render/renderer.cpp).
   # World -> draw list for running games (play::draw_world).
-  add_library(dreamsy_play STATIC src/play/scene_draw.cpp)
+  add_library(dreamsy_play STATIC src/play/platform_ui.cpp src/play/scene_draw.cpp)
   dreamsy_target_defaults(dreamsy_play)
-  target_link_libraries(dreamsy_play PUBLIC dreamsy_script dreamsy_render)
+  target_link_libraries(dreamsy_play PUBLIC dreamsy_script dreamsy_render dreamsy_overlay)
 
   add_library(dreamsy_render_gpu STATIC src/render/renderer.cpp)
   dreamsy_target_defaults(dreamsy_render_gpu)
@@ -330,7 +330,10 @@ if(DREAMSY_BUILD_PLAYER)
 
   # The demo package the player shows until it runs games (E6): native reads it from the repo,
   # the web build embeds it at /pkg.
-  set(DREAMSY_DEMO_PACKAGE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../games/examples/feature-demo)
+  set(DREAMSY_DEMO_PACKAGE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../games/examples/feature-demo CACHE PATH
+      "Package the player runs by default (the web build embeds it at /pkg)")
+  # Web only: also embed every kit pack at /kits, so kit games run before games load by URL (E6).
+  option(DREAMSY_WEB_EMBED_KITS "Embed all kit packs in the web player (for testing kit games)" OFF)
   if(ANDROID)
     # Android loads the player as libdreamsy-player.so from a NativeActivity (platform/android).
     add_library(dreamsy-player SHARED apps/player/main.cpp apps/player/demo_scene.cpp)
@@ -346,6 +349,10 @@ if(DREAMSY_BUILD_PLAYER)
     target_link_options(dreamsy-player PRIVATE
       --shell-file ${CMAKE_CURRENT_SOURCE_DIR}/apps/player/shell.html -sALLOW_MEMORY_GROWTH=1
       --embed-file ${DREAMSY_DEMO_PACKAGE_DIR}@/pkg)
+    if(DREAMSY_WEB_EMBED_KITS)
+      # SHELL: keeps CMake from merging the repeated --embed-file flag with the one above
+      target_link_options(dreamsy-player PRIVATE "SHELL:--embed-file ${DREAMSY_KIT_PACKS_DIR}@/kits")
+    endif()
     set_property(TARGET dreamsy-player APPEND PROPERTY LINK_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/apps/player/shell.html)
   elseif(IOS)
     include(platform/ios/ios.cmake)
@@ -367,7 +374,7 @@ endif()
 if(DREAMSY_BUILD_TESTS)
   enable_testing()
   add_executable(dreamsy-tests tests/main.cpp tests/base_test.cpp tests/smoke_test.cpp tests/pkg_test.cpp tests/pack_test.cpp tests/script_test.cpp tests/dmath_test.cpp
-    tests/check_test.cpp tests/render_test.cpp tests/world_test.cpp tests/physics_test.cpp tests/host_world_test.cpp)
+    tests/check_test.cpp tests/render_test.cpp tests/input_test.cpp tests/world_test.cpp tests/physics_test.cpp tests/host_world_test.cpp)
   dreamsy_target_defaults(dreamsy-tests)
   # doctest needs RTTI; tests are not engine code.
   target_compile_options(dreamsy-tests PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-frtti>)
@@ -378,7 +385,7 @@ if(DREAMSY_BUILD_TESTS)
     target_compile_options(dreamsy-tests PRIVATE -fno-sanitize=vptr)
   endif()
   target_include_directories(dreamsy-tests PRIVATE ${THIRD_PARTY}/doctest)
-  target_link_libraries(dreamsy-tests PRIVATE dreamsy_dev dreamsy_zip_import dreamsy_script dreamsy_kits_embedded dreamsy_check dreamsy_render miniz)
+  target_link_libraries(dreamsy-tests PRIVATE dreamsy_dev dreamsy_zip_import dreamsy_script dreamsy_kits_embedded dreamsy_check dreamsy_render dreamsy_overlay miniz)
   dreamsy_link_dmath(dreamsy-tests)
   target_compile_definitions(dreamsy-tests PRIVATE DREAMSY_REPO_ROOT="${CMAKE_CURRENT_SOURCE_DIR}/..")
   if(EMSCRIPTEN)

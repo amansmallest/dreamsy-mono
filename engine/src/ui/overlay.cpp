@@ -23,7 +23,6 @@ Color hex(uint32_t rgb, float a = 1) {
           static_cast<float>(rgb & 255) / 255.0f, a};
 }
 Color with_alpha(Color c, float a) { return {c.r, c.g, c.b, a}; }
-Color faded(Color c, float k) { return {c.r, c.g, c.b, c.a * k}; }
 Color from_value(const std::optional<world::Value>& v, Color fallback) {
   if (!v || v->kind != world::ValueKind::Vec || v->n != 4) return fallback;
   return {static_cast<float>(v->v[0]), static_cast<float>(v->v[1]), static_cast<float>(v->v[2]),
@@ -346,7 +345,9 @@ void draw_ui_entities(OverlayContext& ctx, const world::World& w, const std::vec
 
     if (type == "UIButton") {
       // background (12 px corners) + box-shadow 0 3px 0 rgba(0,0,0,0.3)
-      round_rect(pen, ctx.images, {r.x, r.y + 3, r.w, r.h}, 12, {0, 0, 0, 0.3f});
+      // CSS paints a box-shadow only outside the box, so a translucent button doesn't darken
+      // itself: draw just the part that peeks out below.
+      pen.rect({r.x + 6, r.y + r.h, r.w - 12, 3}, {0, 0, 0, 0.3f});
       round_rect(pen, ctx.images, r, 12, from_value(w.get_prop(e, "background"), {0.2f, 0.2f, 0.2f, 0.8f}));
       // Content: icon and/or text, centered as a row (icon left) or column (icon top), padding 0 8.
       const std::string text = w.str(e, "text");
@@ -662,6 +663,64 @@ void draw_pause_button(OverlayContext& ctx) {
   const double x0 = r.x + r.w / 2 - gap / 2 - bw, y0 = r.y + r.h / 2 - bh / 2;
   pen.rect({x0, y0, bw, bh}, ctx.theme.text);
   pen.rect({x0 + bw + gap, y0, bw, bh}, ctx.theme.text);
+}
+
+// ---------------------------------------------------------------- pause menu
+
+namespace {
+constexpr const char* kPauseLabels[] = {"Resume", "Restart"};
+}
+
+// Sizes in points (CSS px, engine-web shell.ts): panel min(400, screen) wide, padding 22 22 18,
+// gap 10, title 20 (pixel) / 26 px, buttons padding 13 16 with 15 / 18 px text.
+PauseMenuLayout layout_pause_menu(const UiScreen& screen, float points_per_ref, const UiTheme& theme) {
+  const double k = 1.0 / points_per_ref;
+  const double title = (theme.pixel_font() ? 20 : 26) * k * 1.2;
+  const double button = ((theme.pixel_font() ? 15 : 18) * 1.2 + 26) * k;
+  const double width = std::min(400 * k, screen.ref_w - 32 * k);
+  const double count = static_cast<double>(std::size(kPauseLabels));
+  const double height = 22 * k + title + 8 * k + count * button + (count) * 10 * k + 18 * k;
+  PauseMenuLayout out;
+  out.panel = {screen.ref_w / 2 - width / 2, screen.ref_h / 2 - height / 2, width, height};
+  double y = out.panel.y + 22 * k + title + 8 * k + 10 * k;
+  for (size_t i = 0; i < std::size(kPauseLabels); i++) {
+    out.buttons.push_back({out.panel.x + 22 * k, y, width - 44 * k, button});
+    y += button + 10 * k;
+  }
+  return out;
+}
+
+std::optional<PauseAction> hit_pause_menu(const PauseMenuLayout& layout, double x, double y) {
+  for (size_t i = 0; i < layout.buttons.size(); i++) {
+    if (layout.buttons[i].contains(x, y)) return static_cast<PauseAction>(i);
+  }
+  return std::nullopt;
+}
+
+void draw_pause_menu(OverlayContext& ctx) {
+  const UiTheme& t = ctx.theme;
+  const double k = 1.0 / ctx.points_per_ref;
+  const PauseMenuLayout m = layout_pause_menu(ctx.screen, ctx.points_per_ref, t);
+  Pen pen{ctx.out, 5, std::nullopt};
+  pen.rect({0, 0, ctx.screen.ref_w, ctx.screen.ref_h}, {0, 0, 0, 0.55f});
+  panel_surface(pen, ctx, m.panel, with_alpha(t.background, 0.96f), false);
+  const float title_size = f((t.pixel_font() ? 20 : 26) * k);
+  pen.text(t.pixel_font() ? "PAUSED" : "Paused", t.font, title_size, t.accent, TextAlign::Center,
+           f(m.panel.x + m.panel.w / 2), f(m.panel.y + 22 * k + title_size * 0.6));
+  const float label_size = f((t.pixel_font() ? 15 : 18) * k);
+  for (size_t i = 0; i < m.buttons.size(); i++) {
+    const bool primary = i == 0;
+    const Rect& r = m.buttons[i];
+    if (t.panel == UiTheme::Panel::Outlined) {
+      if (primary) round_rect(pen, ctx.images, r, 10, t.primary);
+      round_outline(pen, ctx.images, r, 10, 2, primary ? t.primary : t.text);
+    } else {
+      panel_surface(pen, ctx, r, primary ? t.primary : with_alpha(t.text, 0.12f), true);
+    }
+    const std::string label = t.pixel_font() ? upper_ascii(kPauseLabels[i]) : kPauseLabels[i];
+    pen.text(label, t.font, label_size, primary ? on_color(t.primary, hex(0xffffff)) : t.text, TextAlign::Center,
+             f(r.x + r.w / 2), f(r.y + r.h / 2));
+  }
 }
 
 }  // namespace dreamsy::ui

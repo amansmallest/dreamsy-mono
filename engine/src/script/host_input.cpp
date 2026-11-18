@@ -26,6 +26,27 @@ input::Vec2 vec(double x, double y) { return {static_cast<float>(x), static_cast
 
 }  // namespace
 
+void Host::pause() {
+  if (paused_) return;
+  paused_ = true;
+  fire({}, "paused", [](lua_State*) { return 0; });
+}
+
+void Host::resume() {
+  if (!paused_) return;
+  paused_ = false;
+  fire({}, "resumed", [](lua_State*) { return 0; });
+}
+
+void Host::request_restart() {
+  if (has_conn({}, "restartRequested")) {
+    fire({}, "restartRequested", [](lua_State*) { return 0; });
+  } else {
+    pending_scene_ = pkg_->manifest.entry_scene;
+  }
+  process_scene_change();
+}
+
 double Host::ref_width() const { return pkg_->manifest.reference_width(); }
 double Host::ref_height() const { return pkg_->manifest.reference_height(); }
 

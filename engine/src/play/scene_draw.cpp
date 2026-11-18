@@ -61,7 +61,7 @@ class Builder {
     else if (type == "TileMap2D") tilemap(*e, id, z);
     else if (type == "Particles2D") particles(*e, z);
 
-    if (type.rfind("UI", 0) == 0) return;  // UI trees are laid out by the UI system (E5)
+    if (type.rfind("UI", 0) == 0) return;  // UI trees: play::PlatformUi::draw (ui/layout.h, ui/overlay.h)
     for (EntityId child : e->children) visit(child, z);
   }
 

@@ -136,6 +136,14 @@ class Host {
   double ref_width() const;
   double ref_height() const;
 
+  // Platform pause menu (engine-web Game.pause / resume / requestRestart). While paused the
+  // player stops calling step(): no ticks, timers or physics.
+  void pause();
+  void resume();
+  bool paused() const { return paused_; }
+  // "Restart": fires game.restartRequested, or (no listeners) reloads the entry scene.
+  void request_restart();
+
   ui::DialogSystem& dialogs() { return dialogs_; }
   const ui::ToastQueue& toasts() const { return toasts_; }
 
@@ -246,6 +254,7 @@ class Host {
   input::InputState input_;
   ui::DialogSystem dialogs_;
   ui::ToastQueue toasts_;
+  bool paused_ = false;
   Refs refs_;
   std::vector<std::string> enabled_kits_;
 

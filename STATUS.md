@@ -86,6 +86,18 @@ In progress: E5 agent (input translation, gestures, on-screen controls, toasts, 
 
 Next: kits outside the binary, E6 parity (every game playable, harness/app switch), E7 2.5D content.
 
+**E7 2.5D, minimal slice: done (branch engine-v2-e7).** 2.5D is a package feature now (DREAMSY.MD §3, §14.5):
+- Format: manifest/scene `view` (side|topdown|oblique|iso), `z`/`height` on spatial 2D types, Body2D `z_velocity`/
+  `z_gravity_scale`, Sprite2D `anchor` (center|bottom). Both validators + conformance mutations (113/113 agree).
+- Both engines simulate height identically (engine-web via Rapier hooks): z gravity, landing on blocks and raised
+  tile maps (ground under the body's center), z-range collision filtering, no planar gravity outside side view.
+  `e.onGround`, `e.groundZ`, `camera.view()`, `camera.screenDirToWorld()`; iso-aware screenToWorld and taps.
+- C++ renderer: blocks (Sprite2D/TileMap2D `height`), shadows on the ground under things, sorting with blocks.
+  Fixed: Box2D contact recycling skipped the z filter (a hero pressed against a block stayed blocked after jumping).
+- Showcase: `games/showcase/cloud-hopper` (oblique, portrait), built by the harness in one round ($9.53).
+- Not yet: per-tile elevation in one map, side art for blocks, sort offsets, lighting with height, parallax,
+  moving platforms carrying riders, kit updates, engine-web drawing the views (its previews are flat).
+
 ---
 
 ## 2026-11-16 — after the hackathon

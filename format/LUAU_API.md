@@ -41,7 +41,7 @@ In single-player (`server.mode = "none"`) client and server scripts run in the s
   → A/B/C buttons. Tap-only games (pointer / `tapped` / UIButton) show no controls.
 - `screen.size()` → the reference size as a Vec2 (720×1280 / 1280×720); `camera.viewSize()` → visible world size
   (reference size / zoom) — use these instead of hard-coding 720/1280 in kits.
-- `onTick` runs at a fixed **60 Hz**. `random(min,max)` → float in [min,max); `math.random` is seeded too.
+- `onTick` runs at a fixed **60 Hz**. `random()` → float in [0,1), `random(max)` → [0,max), `random(min,max)` → [min,max); `math.random` is seeded too.
 - `input.axis("move_y")` is +1 for **down** (screen direction). `input.pointer()` is in UI pixels.
 - Area `bodyEntered` reports bodies only. Hidden bodies (`visible = false`) don't collide.
 - Using a destroyed entity raises "entity was destroyed". Audio is recorded but not played yet.
@@ -57,7 +57,7 @@ onTick(fn: (dt: number) -> ()) : Connection  -- every tick (60 Hz); :disconnect(
 after(seconds: number, fn: () -> ()) : Timer  -- one-shot timer; Timer:cancel() before it fires = never fires
 every(seconds: number, fn: () -> ()) : Timer  -- repeating; Timer:cancel()
 screen.size() : Vec2                          -- reference screen (portrait 720×1280 / landscape 1280×720)
-random(min: number?, max: number?) : number   -- seeded by the platform; deterministic on server
+random(a: number?, b: number?) : number       -- [0,1) | random(max): [0,max) | random(min,max): [min,max); seeded, deterministic on server
 time() : number                               -- game seconds since start (scaled by game.timeScale)
 clock.now() : number                          -- wall clock, unix seconds (daily rewards, offline progress); fixed in playtests
 isEntity(v: any) : boolean                    -- true for Entity proxies (also destroyed ones); never throws
@@ -572,5 +572,5 @@ sound.play(assetId: string, at: Vec2|Vec3?)
 
 ## Not available
 
-Arbitrary HTTP, file access, require of anything outside `scripts/`, threads beyond
+Arbitrary HTTP, file access, require of anything outside `scripts/` other than `@kit/` modules, threads beyond
 `coroutine`, reading other players' private data on the client.

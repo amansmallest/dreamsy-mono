@@ -267,7 +267,7 @@ end
 EntityM.__newindex = function(e, k, v)
 	H(OP_SET, handleOf[e], k, encode(v))
 end
-EntityM.__tostring = function(e) return "Entity(" .. tostring(H(OP_GET, handleOf[e], "id")) .. ")" end
+EntityM.__tostring = function(e) return "Entity(" .. tostring(decode(H(OP_GET, handleOf[e], "id"))) .. ")" end
 EntityM.__metatable = "Entity"
 
 -- ---------- globals ----------

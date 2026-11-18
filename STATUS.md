@@ -53,8 +53,9 @@ Spec: DREAMSY.MD §14 (stack, code style, determinism, 2.5D views, netcode, migr
   debug/release and web. Before: 20 values differed between macOS libm and engine-web.
 - Speed: native Luau ~1.8x engine-web's WASM Luau on a mixed benchmark (2.8x on pure compute; vec2 math only
   1.7x because every vec2 allocates a table → evidence for the OPEN fast-vectors item). No Luau codegen yet.
-- Contract mismatches found (engine-web behavior kept for now): `random(min)` returns `min` (API says [min,max));
-  LUAU_API "Not available" says only scripts/ can be required, but `@kit/` works and is documented.
+- Contract fixes (2026-11-17, both engines + LUAU_API.md): `random(max)` → [0,max) (it returned `max`; no game used
+  the one-argument form); the "Not available" list now allows `@kit/` requires; `tostring(entity)` prints the id
+  (the prelude stringified the value tag, so every entity printed `Entity(0)`).
 - `dreamsy-tool check <pkg>`: Luau type checking against `format/dreamsy.d.luau` (Entity props generated from
   the catalog), requires resolved like the runtime. Catches misspelled globals, wrong argument types/counts,
   Vec2 misuse, entity prop typos (strict scripts). Valid games: 0 errors (56 warnings across 30 games).
@@ -73,7 +74,7 @@ Spec: DREAMSY.MD §14 (stack, code style, determinism, 2.5D views, netcode, migr
   feature-demo 0.17 px max); free bouncing diverges (physics_mix ball ends 318 px off) — accepted per §14.8.
 - E4 renderer foundation: `engine/src/render` (batched sokol renderer, own Metal/GLSL shaders, per-view depth
   sorting + drop shadows, PNG/JPG/SVG atlases, 4 bundled OFL fonts, letterboxing, pixel-perfect mode).
-  Topdown sort is layer, z_index, then y (agent's choice, Godot-style; user to confirm).
+  Topdown sort is layer, z_index, then y (decided 2026-11-17: backgrounds with negative z_index stay behind).
 - Phones: iOS simulator build verified (screenshot, 42/42 tests in the simulator); device build compiles
   unsigned; Android presets + Gradle skeleton untested (no SDK/NDK installed). engine/README.md "Phones".
 - TS .dpk (format/src/pack.ts), byte-identical with C++ on 25 games.

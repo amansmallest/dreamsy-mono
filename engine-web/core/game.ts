@@ -1900,7 +1900,8 @@ export class Game {
         const r = this.rng.next();
         if (vm.isNil(L, 2)) vm.pushNumber(L, r);
         else {
-          const a = vm.toNumber(L, 2), b = vm.isNil(L, 3) ? a : vm.toNumber(L, 3);
+          // random(max) -> [0, max); random(min, max) -> [min, max) (format/LUAU_API.md)
+          const a = vm.isNil(L, 3) ? 0 : vm.toNumber(L, 2), b = vm.isNil(L, 3) ? vm.toNumber(L, 2) : vm.toNumber(L, 3);
           vm.pushNumber(L, a + (b - a) * r);
         }
         return 1;

@@ -489,7 +489,9 @@ int Host::dispatch(lua_State* L) {
       if (lua_isnoneornil(L, 2)) {
         lua_pushnumber(L, r);
       } else {
-        double a = num_arg(L, 2), b = lua_isnoneornil(L, 3) ? a : num_arg(L, 3);
+        // random(max) -> [0, max); random(min, max) -> [min, max) (format/LUAU_API.md)
+        const bool one = lua_isnoneornil(L, 3);
+        double a = one ? 0 : num_arg(L, 2), b = one ? num_arg(L, 2) : num_arg(L, 3);
         lua_pushnumber(L, a + (b - a) * r);
       }
       return 1;

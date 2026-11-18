@@ -143,14 +143,30 @@ add_custom_command(
 add_library(dreamsy_script_data STATIC ${DREAMSY_SCRIPT_DATA_CPP})
 target_include_directories(dreamsy_script_data PRIVATE src)
 
+# World (E3, §14.5): entities with 2.5D fields, scene tree, props, tile grids, tweens, particles.
+add_library(dreamsy_world STATIC
+  src/world/particles.cpp
+  src/world/tilemap.cpp
+  src/world/tween.cpp
+  src/world/world.cpp)
+dreamsy_target_defaults(dreamsy_world)
+target_link_libraries(dreamsy_world PUBLIC dreamsy_pkg)
+
+# Physics (E3): Box2D v3 in the ground plane + engine-handled height (z).
+add_library(dreamsy_physics STATIC src/physics/physics2d.cpp)
+dreamsy_target_defaults(dreamsy_physics)
+target_link_libraries(dreamsy_physics PUBLIC dreamsy_world box2d::box2d)
+
 add_library(dreamsy_script STATIC
+  src/script/dialog.cpp
   src/script/host.cpp
+  src/script/host_world.cpp
   src/script/json_value.cpp
   src/script/require_path.cpp
   src/script/theme.cpp
   src/script/vm.cpp)
 dreamsy_target_defaults(dreamsy_script)
-target_link_libraries(dreamsy_script PUBLIC dreamsy_pkg Luau.Compiler Luau.VM PRIVATE dreamsy_script_data)
+target_link_libraries(dreamsy_script PUBLIC dreamsy_pkg dreamsy_physics Luau.Compiler Luau.VM PRIVATE dreamsy_script_data)
 
 # Type checking (tools only): Luau's analyzer + the API definitions (format/dreamsy.d.luau with
 # Entity props generated from format/catalog.json).

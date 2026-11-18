@@ -96,6 +96,7 @@ class Host {
   size_t memory_used() const { return vm_->memory_used(); }
 
   // The simulation (tools and tests may read and poke it between ticks).
+  const pkg::Package& package() const { return *pkg_; }
   world::World& world() { return world_; }
   const world::World& world() const { return world_; }
   physics::Physics2D* physics() { return physics_.get(); }

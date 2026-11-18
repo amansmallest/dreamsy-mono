@@ -277,6 +277,11 @@ if(DREAMSY_BUILD_PLAYER)
   endif()
 
   # The GPU renderer (E4): sokol_gfx, hand-written Metal / GLSL ES 3.0 shaders (render/renderer.cpp).
+  # World -> draw list for running games (play::draw_world).
+  add_library(dreamsy_play STATIC src/play/scene_draw.cpp)
+  dreamsy_target_defaults(dreamsy_play)
+  target_link_libraries(dreamsy_play PUBLIC dreamsy_script dreamsy_render)
+
   add_library(dreamsy_render_gpu STATIC src/render/renderer.cpp)
   dreamsy_target_defaults(dreamsy_render_gpu)
   target_link_libraries(dreamsy_render_gpu PUBLIC dreamsy_render dreamsy_sokol)
@@ -291,7 +296,7 @@ if(DREAMSY_BUILD_PLAYER)
     add_executable(dreamsy-player apps/player/main.cpp apps/player/demo_scene.cpp)
   endif()
   dreamsy_target_defaults(dreamsy-player)
-  target_link_libraries(dreamsy-player PRIVATE dreamsy_render_gpu)
+  target_link_libraries(dreamsy-player PRIVATE dreamsy_render_gpu dreamsy_play)
   dreamsy_link_dmath(dreamsy-player)
   if(EMSCRIPTEN)
     set_target_properties(dreamsy-player PROPERTIES SUFFIX ".html")

@@ -1,12 +1,17 @@
 // dreamsy-player: the windowed engine (web, macOS, later iOS/Android).
 //
-// E4: loads a package and draws a renderer test scene from its assets (demo_scene.h) with the
-// real renderer (src/render). E3 will fill the draw list from the world instead, and E6 runs games.
+// Runs a game: the package's scripts at a fixed 60 Hz (script::Host: world, physics, tweens,
+// animation, camera) and draws the world every frame (play::draw_world -> render::Renderer).
+// --demo shows the E4 renderer test scene (demo_scene.h) instead.
 //
-//   dreamsy-player [package-dir] [--view side|topdown|oblique|iso] [--smooth] [--frames N]
+//   dreamsy-player [package-dir] [--view side|topdown|oblique|iso] [--smooth] [--frames N] [--demo]
+//
+// Input until E5 lands: arrows/WASD move (move_x/move_y), space/up = jump, Z/J = action, X/K = action2.
+// In game mode, keys 1-4 preview the world in another view mode (2.5D projection).
 //
 // --smooth forces smooth mode (linear filtering) on a pixel-art package. On the web the package
 // is embedded at /pkg and the URL hash sets the options (dreamsy-player.html#iso, #iso-smooth). Keys: 1-4 pick the view mode, Tab cycles, Esc quits.
+#include <algorithm>
 #include <cstdlib>
 #include <cstring>
 #include <memory>
@@ -16,6 +21,8 @@
 #include "base/log.h"
 #include "base/version.h"
 #include "demo_scene.h"
+#include "play/scene_draw.h"
+#include "script/host.h"
 #include "pkg/validate.h"
 #include "render/atlas.h"
 #include "render/font.h"
@@ -45,6 +52,7 @@ struct Options {
   render::ViewMode view = render::ViewMode::Side;
   int frames = 0;  // quit after this many frames (0 = run until closed)
   bool smooth = false;  // force smooth mode (linear filtering, no pixel snap) to check it on any package
+  bool demo = false;    // renderer test scene instead of running the game
 };
 
 std::optional<render::ViewMode> parse_view(const char* s) {
@@ -58,7 +66,10 @@ std::optional<render::ViewMode> parse_view(const char* s) {
 // Everything the player owns. One instance, created in sokol_main, freed in cleanup.
 struct App {
   Options options;
-  std::unique_ptr<pkg::Package> package;
+  std::shared_ptr<const pkg::Package> package;
+  std::unique_ptr<script::Host> host;  // the running game (null in --demo)
+  double accumulator = 0;              // unsimulated time, seconds
+  uint64_t last_ticks = 0;
   render::RenderStyle style;
   std::unique_ptr<render::Atlas> atlas;
   std::unique_ptr<render::TextureStore> textures;
@@ -85,7 +96,7 @@ bool load(App& app) {
     if (issue.severity == pkg::Severity::Error) log_error(pkg::format_issue(issue));
   }
   if (!loaded.ok) return false;
-  app.package = std::move(loaded.package);
+  app.package = std::shared_ptr<const pkg::Package>(std::move(loaded.package));
   app.style = render::style_from_manifest(app.package->manifest);
   if (app.options.smooth) {
     app.style.nearest = false;
@@ -98,9 +109,24 @@ bool load(App& app) {
     log_error(s.error());
     return false;
   }
-  app.scene = std::make_unique<player::DemoScene>(*app.package, *app.textures, app.style);
+  if (app.options.demo) {
+    app.scene = std::make_unique<player::DemoScene>(*app.package, *app.textures, app.style);
+    return true;
+  }
+  script::HostOptions host_options;
+  host_options.on_log = [](const script::LogLine& l) {
+    (l.level == "error" ? log_error : l.level == "warn" ? log_warn : log_info)("[game] " + l.text);
+  };
+  auto host = script::Host::create(app.package, host_options);
+  if (!host) {
+    log_error("game failed to start: " + host.error());
+    return false;
+  }
+  app.host = std::move(host).value();
   return true;
 }
+
+void set_view(App& app, render::ViewMode v);
 
 void init() {
   App& app = *g_app;
@@ -120,6 +146,10 @@ void init() {
     app.options.smooth = hash.substr(dash + 1) == "smooth";
     hash.resize(dash);
   }
+  if (hash.rfind("demo", 0) == 0) {
+    app.options.demo = true;
+    hash = hash.size() > 5 ? hash.substr(5) : "";
+  }
   if (auto v = parse_view(hash.c_str())) app.options.view = *v;
 #endif
   app.view = app.options.view;
@@ -130,6 +160,8 @@ void init() {
     return;
   }
   app.ok = true;
+  app.last_ticks = stm_now();
+  if (app.host && app.options.view != render::ViewMode::Side) set_view(app, app.options.view);
   log_info("package \"" + app.package->manifest.name + "\": reference " + std::to_string(app.style.ref_w) + "x" +
            std::to_string(app.style.ref_h) + (app.style.pixel_snap ? ", pixel-art mode" : ", smooth mode"));
 }
@@ -147,14 +179,27 @@ void frame() {
     sg_commit();
     return;
   }
-  const double t = stm_sec(stm_since(app.start_ticks));
-  app.scene->build(app.draw_list, app.view, t, app.renderer.stats());
+  if (app.host) {
+    // Fixed 60 Hz simulation, at most 5 ticks per frame (engine-web Game.advance).
+    constexpr double kDt = 1.0 / 60.0;
+    app.accumulator = std::min(app.accumulator + stm_sec(stm_laptime(&app.last_ticks)), kDt * 5);
+    while (app.accumulator >= kDt - 1e-9) {
+      app.accumulator -= kDt;
+      app.host->step();
+    }
+    play::draw_world(*app.host, *app.textures, app.draw_list);
+  } else {
+    const double t = stm_sec(stm_since(app.start_ticks));
+    app.scene->build(app.draw_list, app.view, t, app.renderer.stats());
+  }
   app.renderer.draw(app.draw_list, *app.textures, *app.fonts, sglue_swapchain(), sapp_width(), sapp_height());
   sg_commit();
 
   app.frame_count++;
   if (app.options.frames > 0 && app.frame_count >= app.options.frames) {
     const render::FrameStats& s = app.renderer.stats();
+    if (app.host) log_info("game time " + std::to_string(app.host->time()) + "s, " + std::to_string(app.host->world().count()) +
+                           " entities, " + std::to_string(app.host->errors().size()) + " script errors");
     log_info("frame " + std::to_string(app.frame_count) + " (" + player::view_mode_name(app.view) +
              "): " + std::to_string(s.draw_calls) + " draw calls, " + std::to_string(s.quads) + " quads, " +
              std::to_string(s.culled) + " culled, " + std::to_string(s.atlas_pages) + " atlas pages, " +
@@ -170,16 +215,40 @@ void cleanup() {
   g_app.reset();
 }
 
+// Keyboard -> the game's actions (a stand-in until E5's input system: touch, gamepad, gestures).
+void game_key(App& app, sapp_keycode key, bool down) {
+  if (!app.host) return;
+  script::Input& in = app.host->input();
+  auto axis = [&](const char* name, double v) { in.set_axis(name, down ? v : 0); };
+  switch (key) {
+    case SAPP_KEYCODE_LEFT: case SAPP_KEYCODE_A: axis("move_x", -1); break;
+    case SAPP_KEYCODE_RIGHT: case SAPP_KEYCODE_D: axis("move_x", 1); break;
+    case SAPP_KEYCODE_DOWN: case SAPP_KEYCODE_S: axis("move_y", 1); break;
+    case SAPP_KEYCODE_W: axis("move_y", -1); break;
+    case SAPP_KEYCODE_UP: case SAPP_KEYCODE_SPACE: in.set_button("jump", down); break;
+    case SAPP_KEYCODE_Z: case SAPP_KEYCODE_J: in.set_button("action", down); break;
+    case SAPP_KEYCODE_X: case SAPP_KEYCODE_K: in.set_button("action2", down); break;
+    default: break;
+  }
+}
+
+void set_view(App& app, render::ViewMode v) {
+  app.view = v;
+  if (app.host) app.host->world().view = static_cast<world::ViewMode>(static_cast<int>(v));
+}
+
 void event(const sapp_event* e) {
   App& app = *g_app;
+  if (e->type == SAPP_EVENTTYPE_KEY_DOWN && !e->key_repeat) game_key(app, e->key_code, true);
+  if (e->type == SAPP_EVENTTYPE_KEY_UP) game_key(app, e->key_code, false);
   if (e->type != SAPP_EVENTTYPE_KEY_DOWN) return;
   switch (e->key_code) {
     case SAPP_KEYCODE_ESCAPE: sapp_request_quit(); break;
-    case SAPP_KEYCODE_1: app.view = render::ViewMode::Side; break;
-    case SAPP_KEYCODE_2: app.view = render::ViewMode::TopDown; break;
-    case SAPP_KEYCODE_3: app.view = render::ViewMode::Oblique; break;
-    case SAPP_KEYCODE_4: app.view = render::ViewMode::Iso; break;
-    case SAPP_KEYCODE_TAB: app.view = static_cast<render::ViewMode>((static_cast<int>(app.view) + 1) % 4); break;
+    case SAPP_KEYCODE_1: set_view(app, render::ViewMode::Side); break;
+    case SAPP_KEYCODE_2: set_view(app, render::ViewMode::TopDown); break;
+    case SAPP_KEYCODE_3: set_view(app, render::ViewMode::Oblique); break;
+    case SAPP_KEYCODE_4: set_view(app, render::ViewMode::Iso); break;
+    case SAPP_KEYCODE_TAB: set_view(app, static_cast<render::ViewMode>((static_cast<int>(app.view) + 1) % 4)); break;
     default: break;
   }
 }
@@ -197,6 +266,8 @@ sapp_desc sokol_main(int argc, char** argv) {
       } else {
         log_warn(std::string("unknown view mode: ") + argv[i]);
       }
+    } else if (arg == "--demo") {
+      o.demo = true;
     } else if (arg == "--smooth") {
       o.smooth = true;
     } else if (arg == "--frames" && i + 1 < argc) {

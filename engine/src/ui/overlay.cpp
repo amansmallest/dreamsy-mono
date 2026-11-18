@@ -5,6 +5,7 @@
 
 #include "pkg/text.h"
 #include "render/style.h"
+#include "ui/overlay_draw.h"
 
 namespace dreamsy::ui {
 
@@ -13,183 +14,11 @@ using render::FontId;
 using render::ImageId;
 using render::TextAlign;
 using render::UvRect;
+using namespace draw;
 
 namespace {
 
-// ---------------------------------------------------------------- colors
-
-Color hex(uint32_t rgb, float a = 1) {
-  return {static_cast<float>((rgb >> 16) & 255) / 255.0f, static_cast<float>((rgb >> 8) & 255) / 255.0f,
-          static_cast<float>(rgb & 255) / 255.0f, a};
-}
-Color with_alpha(Color c, float a) { return {c.r, c.g, c.b, a}; }
-Color from_value(const std::optional<world::Value>& v, Color fallback) {
-  if (!v || v->kind != world::ValueKind::Vec || v->n != 4) return fallback;
-  return {static_cast<float>(v->v[0]), static_cast<float>(v->v[1]), static_cast<float>(v->v[2]),
-          static_cast<float>(v->v[3])};
-}
-// engine-web theme.ts lum(): relative luminance of the sRGB bytes.
-float lum(Color c) { return 0.2126f * c.r + 0.7152f * c.g + 0.0722f * c.b; }
-// Readable text on `bg` (engine-web onColor).
-Color on_color(Color bg, Color light) { return lum(bg) > 0.6f ? hex(0x111111) : light; }
-
-float f(double v) { return static_cast<float>(v); }
-
-// ---------------------------------------------------------------- clipped primitives
-
-// One drawing pass: where commands go, and the clip / layer they use.
-struct Pen {
-  render::DrawList& out;
-  int32_t layer = 0;
-  std::optional<Rect> clip;
-
-  render::SortInfo sort() const {
-    render::SortInfo s;
-    s.layer = layer;
-    return s;
-  }
-
-  // A solid rect, cut to the clip.
-  void rect(Rect r, Color c) {
-    if (!(c.a > 0)) return;
-    if (clip) r = intersect(r, *clip);
-    if (r.w <= 0 || r.h <= 0) return;
-    render::RectCmd cmd;
-    cmd.space = render::Space::Screen;
-    cmd.position = {f(r.x), f(r.y)};
-    cmd.size = {f(r.w), f(r.h)};
-    cmd.color = c;
-    cmd.sort = sort();
-    out.add(cmd);
-  }
-
-  // An image region stretched over `r`, cut to the clip (the UVs are cut by the same fraction).
-  void image(Rect r, ImageId id, UvRect uv, Color tint) {
-    if (!(tint.a > 0)) return;
-    if (clip) {
-      const Rect c = intersect(r, *clip);
-      if (c.w <= 0 || c.h <= 0) return;
-      const double du = (uv.u1 - uv.u0) / r.w, dv = (uv.v1 - uv.v0) / r.h;
-      uv = {f(uv.u0 + (c.x - r.x) * du), f(uv.v0 + (c.y - r.y) * dv), f(uv.u0 + (c.x + c.w - r.x) * du),
-            f(uv.v0 + (c.y + c.h - r.y) * dv)};
-      r = c;
-    }
-    if (r.w <= 0 || r.h <= 0) return;
-    render::SpriteCmd s;
-    s.space = render::Space::Screen;
-    s.image = id;
-    s.src = uv;
-    s.position = {f(r.x), f(r.y)};
-    s.anchor = {0, 0};
-    s.size = {f(r.w), f(r.h)};
-    s.tint = tint;
-    s.sort = sort();
-    out.add(s);
-  }
-
-  // One line of text. `x` is the left edge / center / right edge (align); `y` the line's middle.
-  void text(std::string_view str, FontId font, float size, Color color, TextAlign align, float x, float y,
-            Color outline = {0, 0, 0, 0}, float outline_size = 0, Color shadow = {0, 0, 0, 0},
-            render::Vec2 shadow_offset = {2, 2}) {
-    if (str.empty() || !(color.a > 0)) return;
-    render::TextCmd t;
-    // Text is cut by the renderer's scissor (a line half inside a scroll list shows its visible half).
-    if (clip) t.clip = {f(clip->x), f(clip->y), f(clip->w), f(clip->h), true};
-    t.space = render::Space::Screen;
-    t.text = std::string(str);
-    t.font = font;
-    t.size = size;
-    t.color = color;
-    t.align = align;
-    t.position = {x, y};
-    t.outline = outline;
-    t.outline_size = outline_size;
-    t.shadow = shadow;
-    t.shadow_offset = shadow_offset;
-    t.sort = sort();
-    out.add(std::move(t));
-  }
-};
-
-// A filled circle (the generated disc image).
-void circle(Pen& pen, const UiImages& img, input::Circle c, Color color) {
-  pen.image({c.center.x - c.radius, c.center.y - c.radius, c.radius * 2.0, c.radius * 2.0}, img.circle, {}, color);
-}
-
-// A rect with rounded corners: a cross of rects plus four quarter discs.
-void round_rect(Pen& pen, const UiImages& img, Rect r, double radius, Color c) {
-  radius = std::max(0.0, std::min({radius, r.w / 2, r.h / 2}));
-  if (radius < 0.5) {
-    pen.rect(r, c);
-    return;
-  }
-  const double d = radius;
-  pen.rect({r.x + d, r.y, r.w - 2 * d, r.h}, c);
-  pen.rect({r.x, r.y + d, d, r.h - 2 * d}, c);
-  pen.rect({r.x + r.w - d, r.y + d, d, r.h - 2 * d}, c);
-  pen.image({r.x, r.y, d, d}, img.circle, {0, 0, 0.5f, 0.5f}, c);
-  pen.image({r.x + r.w - d, r.y, d, d}, img.circle, {0.5f, 0, 1, 0.5f}, c);
-  pen.image({r.x, r.y + r.h - d, d, d}, img.circle, {0, 0.5f, 0.5f, 1}, c);
-  pen.image({r.x + r.w - d, r.y + r.h - d, d, d}, img.circle, {0.5f, 0.5f, 1, 1}, c);
-}
-
-// The outline of a rounded rect, `t` px thick (outlined panels).
-void round_outline(Pen& pen, const UiImages& img, Rect r, double radius, double t, Color c) {
-  radius = std::max(t, std::min({radius, r.w / 2, r.h / 2}));
-  const double d = radius;
-  pen.rect({r.x + d, r.y, r.w - 2 * d, t}, c);
-  pen.rect({r.x + d, r.y + r.h - t, r.w - 2 * d, t}, c);
-  pen.rect({r.x, r.y + d, t, r.h - 2 * d}, c);
-  pen.rect({r.x + r.w - t, r.y + d, t, r.h - 2 * d}, c);
-  // Corners: quarters of the ring image (its stroke is thinner than `t`; close enough).
-  pen.image({r.x, r.y, d, d}, img.ring, {0, 0, 0.5f, 0.5f}, c);
-  pen.image({r.x + r.w - d, r.y, d, d}, img.ring, {0.5f, 0, 1, 0.5f}, c);
-  pen.image({r.x, r.y + r.h - d, d, d}, img.ring, {0, 0.5f, 0.5f, 1}, c);
-  pen.image({r.x + r.w - d, r.y + r.h - d, d, d}, img.ring, {0.5f, 0.5f, 1, 1}, c);
-}
-
-// engine-web render/theme.ts panelSurface: the panel/button look for the theme's panel style.
-void panel_surface(Pen& pen, const OverlayContext& ctx, Rect r, Color bg, bool small) {
-  const UiTheme& t = ctx.theme;
-  switch (t.panel) {
-    case UiTheme::Panel::Pixel: {
-      // Stepped pixel border: a hard outline on the four sides (not the corners) and an inner
-      // shade along the bottom.
-      const double b = small ? 3 : 4;
-      const Color edge = with_alpha(t.text, 0.95f);
-      pen.rect(r, bg);
-      pen.rect({r.x, r.y - b, r.w, b}, edge);
-      pen.rect({r.x, r.y + r.h, r.w, b}, edge);
-      pen.rect({r.x - b, r.y, b, r.h}, edge);
-      pen.rect({r.x + r.w, r.y, b, r.h}, edge);
-      pen.rect({r.x, r.y + r.h - b, r.w, b}, {0, 0, 0, 0.45f});
-      return;
-    }
-    case UiTheme::Panel::Sharp:
-      pen.rect({r.x, r.y + 6, r.w, r.h}, {0, 0, 0, 0.35f});
-      pen.rect(r, bg);
-      return;
-    case UiTheme::Panel::Outlined: {
-      const double radius = small ? 10 : 14;
-      round_rect(pen, ctx.images, r, radius, with_alpha(t.background, 0.6f));
-      round_outline(pen, ctx.images, r, radius, 2, t.text);
-      return;
-    }
-    case UiTheme::Panel::Rounded: {
-      const double radius = small ? 14 : 22;
-      // box-shadow 0 10px 30px rgba(0,0,0,0.35), approximated by one offset shape
-      round_rect(pen, ctx.images, {r.x - 2, r.y + 8, r.w + 4, r.h + 4}, radius + 2, {0, 0, 0, 0.18f});
-      round_rect(pen, ctx.images, r, radius, bg);
-      return;
-    }
-  }
-}
-
 // ---------------------------------------------------------------- text
-
-float measure(const render::Font& font, std::string_view s, float size) {
-  return render::layout_text(font, s, size, TextAlign::Left).width;
-}
 
 struct LineRange {
   size_t begin = 0, end = 0;  // bytes in the source; the next line starts after a consumed break
@@ -245,13 +74,6 @@ size_t utf16_prefix_bytes(std::string_view s, size_t units) {
     i = j;
   }
   return i;
-}
-
-std::string upper_ascii(std::string s) {
-  for (char& c : s) {
-    if (c >= 'a' && c <= 'z') c = static_cast<char>(c - 'a' + 'A');
-  }
-  return s;
 }
 
 FontId font_prop(const world::World& w, const world::Entity& e) {
@@ -641,9 +463,11 @@ void draw_touch_controls(OverlayContext& ctx, const input::ControlsView& view) {
 }
 
 Rect pause_button_rect(const UiScreen& screen, float points_per_ref) {
+  // Top-right of the window (engine-web: the container), 12 points in, 44 points square.
   const double k = 1.0 / points_per_ref;
   const double size = 44 * k, inset = 12 * k;
-  return {screen.ref_w - screen.safe.right - inset - size, screen.safe.top + inset, size, size};
+  const Rect win = screen.window();
+  return {win.x + win.w - inset - size, win.y + inset, size, size};
 }
 
 void draw_pause_button(OverlayContext& ctx) {
@@ -656,64 +480,6 @@ void draw_pause_button(OverlayContext& ctx) {
   const double x0 = r.x + r.w / 2 - gap / 2 - bw, y0 = r.y + r.h / 2 - bh / 2;
   pen.rect({x0, y0, bw, bh}, ctx.theme.text);
   pen.rect({x0 + bw + gap, y0, bw, bh}, ctx.theme.text);
-}
-
-// ---------------------------------------------------------------- pause menu
-
-namespace {
-constexpr const char* kPauseLabels[] = {"Resume", "Restart"};
-}
-
-// Sizes in points (CSS px, engine-web shell.ts): panel min(400, screen) wide, padding 22 22 18,
-// gap 10, title 20 (pixel) / 26 px, buttons padding 13 16 with 15 / 18 px text.
-PauseMenuLayout layout_pause_menu(const UiScreen& screen, float points_per_ref, const UiTheme& theme) {
-  const double k = 1.0 / points_per_ref;
-  const double title = (theme.pixel_font() ? 20 : 26) * k * 1.2;
-  const double button = ((theme.pixel_font() ? 15 : 18) * 1.2 + 26) * k;
-  const double width = std::min(400 * k, screen.ref_w - 32 * k);
-  const double count = static_cast<double>(std::size(kPauseLabels));
-  const double height = 22 * k + title + 8 * k + count * button + (count) * 10 * k + 18 * k;
-  PauseMenuLayout out;
-  out.panel = {screen.ref_w / 2 - width / 2, screen.ref_h / 2 - height / 2, width, height};
-  double y = out.panel.y + 22 * k + title + 8 * k + 10 * k;
-  for (size_t i = 0; i < std::size(kPauseLabels); i++) {
-    out.buttons.push_back({out.panel.x + 22 * k, y, width - 44 * k, button});
-    y += button + 10 * k;
-  }
-  return out;
-}
-
-std::optional<PauseAction> hit_pause_menu(const PauseMenuLayout& layout, double x, double y) {
-  for (size_t i = 0; i < layout.buttons.size(); i++) {
-    if (layout.buttons[i].contains(x, y)) return static_cast<PauseAction>(i);
-  }
-  return std::nullopt;
-}
-
-void draw_pause_menu(OverlayContext& ctx) {
-  const UiTheme& t = ctx.theme;
-  const double k = 1.0 / ctx.points_per_ref;
-  const PauseMenuLayout m = layout_pause_menu(ctx.screen, ctx.points_per_ref, t);
-  Pen pen{ctx.out, 5, std::nullopt};
-  pen.rect({0, 0, ctx.screen.ref_w, ctx.screen.ref_h}, {0, 0, 0, 0.55f});
-  panel_surface(pen, ctx, m.panel, with_alpha(t.background, 0.96f), false);
-  const float title_size = f((t.pixel_font() ? 20 : 26) * k);
-  pen.text(t.pixel_font() ? "PAUSED" : "Paused", t.font, title_size, t.accent, TextAlign::Center,
-           f(m.panel.x + m.panel.w / 2), f(m.panel.y + 22 * k + title_size * 0.6));
-  const float label_size = f((t.pixel_font() ? 15 : 18) * k);
-  for (size_t i = 0; i < m.buttons.size(); i++) {
-    const bool primary = i == 0;
-    const Rect& r = m.buttons[i];
-    if (t.panel == UiTheme::Panel::Outlined) {
-      if (primary) round_rect(pen, ctx.images, r, 10, t.primary);
-      round_outline(pen, ctx.images, r, 10, 2, primary ? t.primary : t.text);
-    } else {
-      panel_surface(pen, ctx, r, primary ? t.primary : with_alpha(t.text, 0.12f), true);
-    }
-    const std::string label = t.pixel_font() ? upper_ascii(kPauseLabels[i]) : kPauseLabels[i];
-    pen.text(label, t.font, label_size, primary ? on_color(t.primary, hex(0xffffff)) : t.text, TextAlign::Center,
-             f(r.x + r.w / 2), f(r.y + r.h / 2));
-  }
 }
 
 }  // namespace dreamsy::ui

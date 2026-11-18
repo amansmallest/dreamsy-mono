@@ -70,6 +70,9 @@ struct Builder {
       y0 = std::min(y0, c[i].y);
       y1 = std::max(y1, c[i].y);
     }
+    if (!world && params.screen_x1 > params.screen_x0) {
+      return x1 < params.screen_x0 || y1 < params.screen_y0 || x0 > params.screen_x1 || y0 > params.screen_y1;
+    }
     return x1 < 0 || y1 < 0 || x0 > static_cast<float>(params.ref_w) || y0 > static_cast<float>(params.ref_h);
   }
 

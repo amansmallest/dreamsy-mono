@@ -264,7 +264,7 @@ dreamsy_target_defaults(dreamsy_render)
 target_link_libraries(dreamsy_render PUBLIC dreamsy_pkg PRIVATE dreamsy_media_libs)
 
 # Platform UI drawing (E5): UI entities, toasts, dialogs, touch controls, pause button -> draw list.
-add_library(dreamsy_overlay STATIC src/ui/overlay.cpp)
+add_library(dreamsy_overlay STATIC src/ui/overlay.cpp src/ui/shell.cpp)
 dreamsy_target_defaults(dreamsy_overlay)
 target_link_libraries(dreamsy_overlay PUBLIC dreamsy_ui dreamsy_render dreamsy_script)
 

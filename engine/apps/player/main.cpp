@@ -22,6 +22,7 @@
 #include <algorithm>
 #include <functional>
 #include <map>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <memory>
@@ -95,18 +96,41 @@ std::vector<std::string> kits_of(const pkg::Manifest& m) {
   return pkg::Catalog::get().expand_kits(m.kits.value_or(std::vector<std::string>{}));
 }
 
+// The kits a game's scripts require (require("@kit/<name>...)), with their dependencies. Only these
+// count for the input-usage scan, like engine-web's detectInputUsage.
+std::vector<std::string> required_kits(std::string_view scripts) {
+  std::vector<std::string> names;
+  for (size_t at = scripts.find("require"); at != std::string_view::npos; at = scripts.find("require", at + 1)) {
+    size_t i = at + 7;
+    while (i < scripts.size() && (scripts[i] == ' ' || scripts[i] == '(')) i++;
+    if (i >= scripts.size() || (scripts[i] != '"' && scripts[i] != '\'')) continue;
+    if (scripts.substr(i + 1, 5) != "@kit/") continue;
+    size_t end = i + 6;
+    while (end < scripts.size() && ((scripts[end] >= 'a' && scripts[end] <= 'z') || (scripts[end] >= '0' && scripts[end] <= '9') ||
+                                    scripts[end] == '-')) {
+      end++;
+    }
+    const std::string name(scripts.substr(i + 6, end - i - 6));
+    if (!name.empty() && std::find(names.begin(), names.end(), name) == names.end()) names.push_back(name);
+  }
+  return names.empty() ? names : pkg::Catalog::get().expand_kits(names);
+}
+
 // The kits a game enables (and their dependencies), each a <kit>.dpk. Kit code isn't in the
 // player binary (script/kits.h); only what a game uses is loaded.
-// `kit_sources` receives every kit script, for the input-usage scan (input/usage.h).
-Result<script::KitLookup> load_kits(const pkg::Manifest& m, const KitBytes& kit_bytes, std::string& kit_sources) {
+// `kit_sources` receives the scripts of the kits in `scanned`, for the input-usage scan (input/usage.h).
+Result<script::KitLookup> load_kits(const pkg::Manifest& m, const KitBytes& kit_bytes,
+                                    const std::vector<std::string>& scanned, std::string& kit_sources) {
   std::vector<std::shared_ptr<const pkg::Files>> packs;
   for (const std::string& kit : kits_of(m)) {
     std::shared_ptr<Bytes> bytes = kit_bytes(kit);
     if (!bytes) return Error{"kit \"" + kit + "\" is not available"};
     auto files = pkg::Files::from_pack(bytes);
     if (!files) return Error{"kit \"" + kit + "\": " + files.error()};
-    for (const std::string& file : files.value().paths("kits/")) {
-      if (auto text = files.value().text(file)) kit_sources.append(*text);
+    if (std::find(scanned.begin(), scanned.end(), kit) != scanned.end()) {
+      for (const std::string& file : files.value().paths("kits/")) {
+        if (auto text = files.value().text(file)) kit_sources.append(*text);
+      }
     }
     packs.push_back(std::make_shared<const pkg::Files>(std::move(files).value()));
   }
@@ -188,6 +212,44 @@ Result<pkg::Files> open_package(const std::string& name, std::shared_ptr<Bytes> 
   return pkg::Files::from_pack(std::move(bytes));
 }
 
+// The pause menu's Quit and settings persistence, per platform. Web: settings live in localStorage
+// under engine-web's key (both engines share them); Quit tells the host app (React Native WebView or
+// a parent frame) like engine-web's embed mode, else goes back. Native: Quit closes the window.
+void hook_platform(play::PlatformUi& ui, bool tools) {
+#ifdef __EMSCRIPTEN__
+  if (!tools) {  // tool runs (?manual=1) start from the defaults, like engine-web's ?save=0
+    const std::string saved = emscripten_run_script_string(
+        "(() => { try { const s = JSON.parse(localStorage.getItem('dreamsy.settings.v1') || 'null');"
+        " return s ? [+s.music, +s.sfx, s.mute ? 1 : 0, s.vibration ? 1 : 0, +(s.touchSize || 1)].join(' ') : ''; }"
+        " catch (e) { return ''; } })()");
+    ui::ShellSettings s;
+    int mute = 0, vibration = 1;
+    if (std::sscanf(saved.c_str(), "%lf %lf %d %d %f", &s.music, &s.sfx, &mute, &vibration, &s.touch_size) == 5) {
+      s.mute = mute != 0;
+      s.vibration = vibration != 0;
+      ui.set_settings(s);
+    }
+  }
+  ui.on_settings = [](const ui::ShellSettings& s) {
+    char script[256];
+    std::snprintf(script, sizeof script,
+                  "try { localStorage.setItem('dreamsy.settings.v1', JSON.stringify({music: %g, sfx: %g, mute: %s,"
+                  " vibration: %s, touchSize: %g})); } catch (e) {}",
+                  s.music, s.sfx, s.mute ? "true" : "false", s.vibration ? "true" : "false", static_cast<double>(s.touch_size));
+    emscripten_run_script(script);
+  };
+  ui.on_quit = [] {
+    emscripten_run_script(
+        "if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(JSON.stringify({type: 'quit'}));"
+        " else if (window.parent !== window) window.parent.postMessage({type: 'quit'}, '*');"
+        " else if (history.length > 1) history.back(); else location.href = '../';");
+  };
+#else
+  (void)tools;
+  ui.on_quit = [] { sapp_request_quit(); };
+#endif
+}
+
 // Validates the package and starts the game (or the --demo scene).
 bool start(App& app, pkg::Files files, const KitBytes& kit_bytes) {
   pkg::LoadResult loaded = pkg::load_package(std::move(files));
@@ -213,8 +275,12 @@ bool start(App& app, pkg::Files files, const KitBytes& kit_bytes) {
     return true;
   }
   script::HostOptions host_options;
+  std::string game_scripts;
+  for (const std::string& path : app.package->files.paths("scripts/")) {
+    if (auto text = app.package->files.text(path)) game_scripts.append(*text);
+  }
   std::string kit_sources;
-  auto kits = load_kits(app.package->manifest, kit_bytes, kit_sources);
+  auto kits = load_kits(app.package->manifest, kit_bytes, required_kits(game_scripts), kit_sources);
   if (!kits) {
     log_error(kits.error());
     return false;
@@ -237,10 +303,6 @@ bool start(App& app, pkg::Files files, const KitBytes& kit_bytes) {
   app.host = std::move(host).value();
 
   // Which controls the game reads (engine-web detectInputUsage), and whether Up/W also jump.
-  std::string game_scripts;
-  for (const std::string& path : app.package->files.paths("scripts/")) {
-    if (auto text = app.package->files.text(path)) game_scripts.append(*text);
-  }
   const input::InputUsage usage = input::detect_input_usage(game_scripts + kit_sources);
   bool touch = app.options.touch;
 #ifdef __EMSCRIPTEN__
@@ -254,6 +316,7 @@ bool start(App& app, pkg::Files files, const KitBytes& kit_bytes) {
     log_error(s.error());
     return false;
   }
+  hook_platform(*app.ui, app.options.manual);
   return true;
 }
 
@@ -440,7 +503,9 @@ void frame() {
     // (on the web, CSS px per game px). Safe-area insets: TODO(E9), read from the platform.
     const render::Fit fit = render::fit_rect(app.style.ref_w, app.style.ref_h, static_cast<float>(sapp_width()),
                                              static_cast<float>(sapp_height()));
-    app.ui->set_screen(fit.s / std::max(0.5f, sapp_dpi_scale()), {});
+    // The whole window in reference px: the pause button, menu and touch controls use it.
+    const ui::Rect window{-fit.x / fit.s, -fit.y / fit.s, sapp_width() / fit.s, sapp_height() / fit.s};
+    app.ui->set_screen(fit.s / std::max(0.5f, sapp_dpi_scale()), {}, window);
     // Fixed 60 Hz simulation, at most 5 ticks per frame (engine-web Game.advance). Paused: no ticks.
     constexpr double kDt = 1.0 / 60.0;
     double elapsed = stm_sec(stm_laptime(&app.last_ticks));

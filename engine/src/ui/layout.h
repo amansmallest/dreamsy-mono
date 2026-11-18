@@ -42,6 +42,13 @@ struct SafeArea {
 struct UiScreen {
   double ref_w = 1280, ref_h = 720;
   SafeArea safe;
+  // The whole window (the "container" in engine-web) in reference px. It includes the letterbox
+  // bars, so x/y are <= 0 and the size >= the reference screen. The platform's own controls (pause
+  // button and menu, touch controls) live here, like engine-web's; the game's UI stays inside the
+  // reference screen. Empty (w = 0) means the window is exactly the reference screen.
+  Rect container;
+
+  Rect window() const { return container.w > 0 && container.h > 0 ? container : Rect{0, 0, ref_w, ref_h}; }
 };
 
 bool is_ui_type(std::string_view type_name);  // UIPanel, UIText, UIButton

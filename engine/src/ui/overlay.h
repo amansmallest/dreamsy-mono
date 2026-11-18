@@ -10,6 +10,7 @@
 //   layer 2  dialog
 //   layer 3  touch controls
 //   layer 4  pause button
+//   layer 5  pause menu (ui/shell.h)
 //
 // Clipping (scroll lists, clip = true): rects and images are cut exactly here; text gets a clip
 // rect that the renderer applies as a scissor.
@@ -90,17 +91,6 @@ void draw_touch_controls(OverlayContext& ctx, const input::ControlsView& view);
 
 Rect pause_button_rect(const UiScreen& screen, float points_per_ref);
 void draw_pause_button(OverlayContext& ctx);
-
-// The pause menu (engine-web render/shell.ts, main view): a dimmed screen with "Paused", Resume
-// and Restart. Settings, Controls help, Leaderboard and Quit come with the full shell (later).
-enum class PauseAction : uint8_t { Resume, Restart };
-struct PauseMenuLayout {
-  Rect panel;
-  std::vector<Rect> buttons;  // indexed by PauseAction
-};
-PauseMenuLayout layout_pause_menu(const UiScreen& screen, float points_per_ref, const UiTheme& theme);
-void draw_pause_menu(OverlayContext& ctx);
-std::optional<PauseAction> hit_pause_menu(const PauseMenuLayout& layout, double x, double y);
 
 // ---- helpers (exposed for tests)
 

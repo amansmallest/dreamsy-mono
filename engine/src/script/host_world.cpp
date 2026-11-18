@@ -1251,7 +1251,9 @@ int Host::leaderboard_op(lua_State* L) {
     }
     const double t0 = it->t0;
     lb_runs_.erase(it);
-    lua_pushnumber(L, world::js_round((time_ - t0) * 1000) / 1000);
+    const double seconds = world::js_round((time_ - t0) * 1000) / 1000;
+    local_scores_.push_back({board, seconds, true});
+    lua_pushnumber(L, seconds);
     return 1;
   }
   if (what == "submit") {
@@ -1260,6 +1262,7 @@ int Host::leaderboard_op(lua_State* L) {
     if (lua_type(L, 4) != LUA_TNUMBER || !std::isfinite(lua_tonumber(L, 4))) raise(L, "leaderboard.submit expects a number value");
     const std::string order = lua_isnoneornil(L, 5) ? "desc" : str_arg(L, 5);
     if (order != "asc" && order != "desc") raise(L, "leaderboard.submit: order must be \"asc\" (lower is better) or \"desc\" (higher is better)");
+    local_scores_.push_back({*board, lua_tonumber(L, 4), order == "asc"});
     return 0;  // the submission resolves asynchronously (never during a headless run)
   }
   if (what == "cancel") {

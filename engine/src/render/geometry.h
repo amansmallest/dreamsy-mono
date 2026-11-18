@@ -60,6 +60,9 @@ struct GeometryParams {
   float world_raster_scale = 1;
   float screen_raster_scale = 1;
   bool pixel_snap = false;  // pixel-art: snap the camera and quads to whole target pixels
+  // The visible area of the screen (UI) pass in reference px; the letterbox bars are part of it,
+  // so platform controls can sit there. Empty = the reference screen.
+  float screen_x0 = 0, screen_y0 = 0, screen_x1 = 0, screen_y1 = 0;
 };
 
 // Packs RGBA (straight alpha) into a premultiplied vertex color. Add blending gives alpha 0.

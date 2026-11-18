@@ -9,6 +9,8 @@
 //   --baseline FILE    an earlier run's results.json: the table shows before -> after
 //   --only cpp|web     re-shoot one engine (the other's PNGs from an earlier run in --out are reused)
 //   --verbose          print every console line of both pages (the C++ log included)
+//   (a tap with neither "at" nor "button" hits the screen center)
+//   --cpp-build DIR    another web build of the C++ player (default engine/build/web), e.g. a baseline
 //
 // Game dirs default to games/examples, games/showcase and games/mine (when present). Needs the web
 // player (cmake --build --preset web --target dreamsy-player) and pnpm-installed engine-web; the
@@ -20,7 +22,9 @@
 //
 // Shots per game (override per game in tools/parity_games.json):
 //   title  1.5 s, no input
-//   play   tap the screen center at 1.6 s, hold ArrowRight, tap Space every second; shot at 4.5 s
+//   play   tap the start button (or the center) at 1.6 s and the center at 2.6 s, hold ArrowRight,
+//          tap Space every second; shot at 4.5 s
+//   pause  Escape at 1.0 s (the platform pause menu); shot at 1.4 s
 //
 // Score: mean absolute RGB difference in percent, measured on both images downscaled 4x (so
 // antialiasing and font hinting barely count; layout, color and missing things do). 0 = identical.
@@ -35,7 +39,7 @@ import { bootPage, defaultViewport, ensureBuilt, refToViewport, stepTo } from ".
 
 const ENGINE = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const REPO = resolve(ENGINE, "..");
-const CPP_BUILD = join(ENGINE, "build/web");
+let CPP_BUILD = join(ENGINE, "build/web");
 const WEB_DIST = join(REPO, "engine-web/dist");
 const HOST = "http://dreamsy.test";
 const MIME: Record<string, string> = { ".html": "text/html", ".js": "text/javascript", ".mjs": "text/javascript", ".wasm": "application/wasm", ".css": "text/css", ".json": "application/json", ".png": "image/png", ".svg": "image/svg+xml", ".zip": "application/zip" };
@@ -46,19 +50,26 @@ const CHROMIUM_ARGS = ["--use-angle=swiftshader", "--enable-unsafe-swiftshader",
 interface Shot {
   name: string;
   seconds: number;
-  /** UI taps in reference px at a game time. */
-  taps?: { t: number; at: [number, number] }[];
+  /** UI taps at a game time: at a point (reference px), or on the first visible UIButton whose text
+   *  matches `button` (a case-insensitive regex, looked up in engine-web; the screen center if none). */
+  taps?: { t: number; at?: [number, number]; button?: string }[];
   /** Keys held from 0 to the shot. */
   hold?: string[];
+  /** Single key presses at a game time, e.g. Escape to open the pause menu. */
+  keys?: { t: number; key: string }[];
   /** Taps Space every N seconds. */
   jumpEvery?: number;
 }
 interface GameConfig { shots?: Shot[]; skip?: string }
 
+// Title-screen buttons that start the game.
+const START_BUTTON = "start|play|new game|new run|race|begin|^go\\b|descend|adventure";
+
 function defaultShots(ref: [number, number]): Shot[] {
   return [
     { name: "title", seconds: 1.5 },
-    { name: "play", seconds: 4.5, taps: [{ t: 1.6, at: [ref[0] / 2, ref[1] / 2] }], hold: ["ArrowRight"], jumpEvery: 1 },
+    { name: "play", seconds: 4.5, taps: [{ t: 1.6, button: START_BUTTON }, { t: 2.6, at: [ref[0] / 2, ref[1] / 2] }], hold: ["ArrowRight"], jumpEvery: 1 },
+    { name: "pause", seconds: 1.4, keys: [{ t: 1.0, key: "Escape" }] },
   ];
 }
 
@@ -71,6 +82,8 @@ const only = flag("--only") as "cpp" | "web" | undefined;
 const gamesFilter = flag("--games")?.split(",");
 const baselineFile = flag("--baseline");
 const verbose = args.includes("--verbose");
+const cppBuildArg = flag("--cpp-build");
+if (cppBuildArg) CPP_BUILD = resolve(cppBuildArg);
 const dirsArg = args.filter((a) => !a.startsWith("--"));
 
 const config: Record<string, GameConfig> = existsSync(join(ENGINE, "tools/parity_games.json"))
@@ -105,11 +118,29 @@ async function routeFiles(page: Page, zip: Uint8Array) {
 
 // ---------------------------------------------------------------- one shot in one engine
 
-interface ShotResult { file: string; errors: string[] }
+interface ShotResult { file: string; errors: string[]; /** tap points used (reference px), in order */ taps: [number, number][] }
 
 type Engine = "web" | "cpp";
 
-async function shoot(browser: Browser, engine: Engine, zip: Uint8Array, ref: [number, number], shot: Shot, file: string): Promise<ShotResult> {
+// engine-web: the center of the first visible UIButton whose text matches `re` (reference px), else
+// of a visible platform button (pause menu: HTML buttons; the viewport is the reference size).
+const FIND_BUTTON = `((re) => {
+  const g = window.__dreamsy.game, rx = new RegExp(re, "i");
+  for (const e of g.world.walk()) {
+    if (e.type !== "UIButton" || !g.effectiveVisible(e) || !rx.test(String(e.get("text") || ""))) continue;
+    const r = g.uiRect(e);
+    return [r[0] + r[2] / 2, r[1] + r[3] / 2];
+  }
+  for (const b of document.querySelectorAll("[data-dreamsy-shell] button")) {
+    const r = b.getBoundingClientRect();
+    if (r.width > 0 && rx.test(b.textContent || "")) return [r.left + r.width / 2, r.top + r.height / 2];
+  }
+  return null;
+})`;
+
+/** `taps`: tap points resolved by an earlier engine-web run of the same shot (the C++ run reuses them). */
+async function shoot(browser: Browser, engine: Engine, zip: Uint8Array, ref: [number, number], shot: Shot, file: string, taps?: [number, number][]): Promise<ShotResult> {
+  const used: [number, number][] = [];
   const [w, h] = ref;
   const page = await browser.newPage({ viewport: { width: w, height: h }, deviceScaleFactor: 1 });
   const errors: string[] = [];
@@ -145,16 +176,23 @@ async function shoot(browser: Browser, engine: Engine, zip: Uint8Array, ref: [nu
     else {
       const events: { t: number; run: () => Promise<unknown> }[] = [];
       for (const k of shot.hold ?? []) events.push({ t: 0, run: () => page.keyboard.down(k) });
+      for (const k of shot.keys ?? []) events.push({ t: k.t, run: () => page.keyboard.press(k.key) });
       if (shot.jumpEvery) {
         for (let t = 0; t < shot.seconds; t += shot.jumpEvery) {
           events.push({ t, run: () => page.keyboard.down("Space") });
           events.push({ t: t + 0.12, run: () => page.keyboard.up("Space") });
         }
       }
-      for (const tap of shot.taps ?? []) {
-        const [x, y] = refToViewport(ref, w, h, tap.at[0], tap.at[1]);
-        events.push({ t: tap.t, run: () => page.mouse.click(x, y) });
-      }
+      (shot.taps ?? []).forEach((tap, i) => {
+        events.push({ t: tap.t, run: async () => {
+          let at: [number, number] | null = taps?.[i] ?? tap.at ?? null;
+          if (!at && tap.button && engine === "web") at = await page.evaluate(`${FIND_BUTTON}(${JSON.stringify(tap.button)})`) as [number, number] | null;
+          at ??= [ref[0] / 2, ref[1] / 2];
+          used.push(at);
+          const [x, y] = refToViewport(ref, w, h, at[0], at[1]);
+          await page.mouse.click(x, y);
+        } });
+      });
       events.sort((a, b) => a.t - b.t);
       for (const e of events) {
         if (e.t > shot.seconds) break;
@@ -178,7 +216,7 @@ async function shoot(browser: Browser, engine: Engine, zip: Uint8Array, ref: [nu
   } finally {
     await page.close();
   }
-  return { file, errors };
+  return { file, errors, taps: used };
 }
 
 // ---------------------------------------------------------------- diff + pair image (in the browser)
@@ -230,7 +268,7 @@ async function compare(browser: Browser, webPng: string, cppPng: string, pairPng
 
 // ---------------------------------------------------------------- main
 
-interface Row { game: string; shot: string; score: number | null; web: string; cpp: string; pair: string; errors: { web: string[]; cpp: string[] } }
+interface Row { game: string; shot: string; score: number | null; web: string; cpp: string; pair: string; errors: { web: string[]; cpp: string[] }; taps?: [number, number][] }
 
 const dirs = gameDirs().filter((d) => !gamesFilter || gamesFilter.includes(basename(d)) || gamesFilter.includes(gameId(d)));
 ensureBuilt();
@@ -251,13 +289,13 @@ for (const dir of dirs) {
   for (const shot of cfg.shots ?? defaultShots(ref)) {
     const stem = join(outDir, "shots", `${game.replace("/", "-")}-${shot.name}`);
     const prev = previous.find((r) => r.game === game && r.shot === shot.name);
-    const web = only === "cpp" && existsSync(`${stem}-web.png`) ? { file: `${stem}-web.png`, errors: prev?.errors.web ?? [] }
+    const web: ShotResult = only === "cpp" && existsSync(`${stem}-web.png`) && prev ? { file: `${stem}-web.png`, errors: prev.errors.web, taps: prev.taps ?? [] }
       : await shoot(browser, "web", zip, ref, shot, `${stem}-web.png`);
-    const cpp = only === "web" && existsSync(`${stem}-cpp.png`) ? { file: `${stem}-cpp.png`, errors: prev?.errors.cpp ?? [] }
-      : await shoot(browser, "cpp", zip, ref, shot, `${stem}-cpp.png`);
+    const cpp: ShotResult = only === "web" && existsSync(`${stem}-cpp.png`) && prev ? { file: `${stem}-cpp.png`, errors: prev.errors.cpp, taps: prev.taps ?? [] }
+      : await shoot(browser, "cpp", zip, ref, shot, `${stem}-cpp.png`, web.taps);
     let score: number | null = null;
     try { score = await compare(browser, web.file, cpp.file, `${stem}-pair.png`); } catch (e) { cpp.errors.push(`compare: ${String(e).slice(0, 200)}`); }
-    const row: Row = { game, shot: shot.name, score, web: web.file, cpp: cpp.file, pair: `${stem}-pair.png`, errors: { web: web.errors, cpp: cpp.errors } };
+    const row: Row = { game, shot: shot.name, score, web: web.file, cpp: cpp.file, pair: `${stem}-pair.png`, errors: { web: web.errors, cpp: cpp.errors }, taps: web.taps };
     rows.push(row);
     const before = baseline.find((r) => r.game === game && r.shot === shot.name)?.score;
     const errs = [...web.errors.map((e) => `web: ${e}`), ...cpp.errors.map((e) => `cpp: ${e}`)];

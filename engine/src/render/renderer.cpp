@@ -494,6 +494,11 @@ void Renderer::draw(const DrawList& list, TextureStore& textures, FontStore& fon
   params.world_raster_scale = pixel ? 1.0f : fit_.s;
   params.screen_raster_scale = fit_.s;
   params.pixel_snap = pixel;
+  // The UI pass covers the whole framebuffer (letterbox bars included), in reference px.
+  params.screen_x0 = -fit_.x / fit_.s;
+  params.screen_y0 = -fit_.y / fit_.s;
+  params.screen_x1 = (static_cast<float>(fb_w) - fit_.x) / fit_.s;
+  params.screen_y1 = (static_cast<float>(fb_h) - fit_.y) / fit_.s;
   build_geometry(list, sorted_, textures, fonts, params, geometry_);
 
   composite_.clear();
@@ -568,6 +573,14 @@ void Renderer::draw(const DrawList& list, TextureStore& textures, FontStore& fon
       draw_batches(geometry_.emissive, atlas_sampler_, area);
     }
   }
+  // The UI over the whole framebuffer: reference px -> clip space through the letterbox offset,
+  // so platform controls may sit in the bars (engine-web draws them in the container).
+  sg_apply_viewportf(0, 0, static_cast<float>(fb_w), static_cast<float>(fb_h), true);
+  const float fw = static_cast<float>(fb_w), fh = static_cast<float>(fb_h);
+  const Uniforms screen_u{{2.0f * fit_.s / fw, -2.0f * fit_.s / fh, 2.0f * fit_.x / fw - 1.0f, 1.0f - 2.0f * fit_.y / fh}};
+  const sg_range screen_range{&screen_u, sizeof screen_u};
+  sg_apply_pipeline(pipeline_screen_);
+  sg_apply_uniforms(0, &screen_range);
   draw_batches(geometry_.screen, atlas_sampler_, area);
   sg_end_pass();
 }

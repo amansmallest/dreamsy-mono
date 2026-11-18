@@ -17,6 +17,7 @@
 // (tapped / tileTapped / tappedAt).
 #pragma once
 
+#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
@@ -30,6 +31,7 @@
 #include "script/host.h"
 #include "ui/layout.h"
 #include "ui/overlay.h"
+#include "ui/shell.h"
 
 namespace dreamsy::play {
 
@@ -49,8 +51,9 @@ class PlatformUi {
   Status init();
 
   // The window: layout points per reference px (CSS px per game px on the web; framebuffer px per
-  // reference px / dpi scale natively) and the safe area inside the game rect, reference px.
-  void set_screen(float points_per_ref, ui::SafeArea safe);
+  // reference px / dpi scale natively), the safe area inside the game rect, and the whole window in
+  // reference px (letterbox bars included; the pause button, menu and touch controls go there).
+  void set_screen(float points_per_ref, ui::SafeArea safe, ui::Rect window = {});
   // Touch-control size setting (0.75..1.5).
   void set_touch_scale(float scale) { controls_.set_scale(scale); }
   bool touch_controls_enabled() const { return touch_enabled_; }
@@ -69,6 +72,13 @@ class PlatformUi {
 
   bool paused() const { return host_.paused(); }
 
+  // The pause menu's Quit: the player decides what quitting means (close the app, go back).
+  std::function<void()> on_quit;
+  // Settings changed in the pause menu (already applied to the host and the controls), to persist.
+  std::function<void(const ui::ShellSettings&)> on_settings;
+  // Settings loaded by the player at start (applied to the host and the controls).
+  void set_settings(const ui::ShellSettings& s);
+
   // The laid-out UI of the last update() (tests, tools).
   const std::vector<ui::UiNode>& ui_nodes() const { return nodes_; }
 
@@ -76,7 +86,10 @@ class PlatformUi {
   ui::UiScreen screen() const;
   void relayout();
   void tap_game(int64_t id, input::Vec2 p);
-  void toggle_pause();
+  void open_pause();
+  void close_pause();
+  ui::ShellData shell_data() const;
+  void apply(ui::ShellAction action, const ui::ShellData& data);
 
   script::Host& host_;
   render::TextureStore& textures_;
@@ -91,6 +104,12 @@ class PlatformUi {
 
   float points_per_ref_ = 1;
   ui::SafeArea safe_;
+  ui::Rect window_;
+  input::InputUsage usage_;
+  std::vector<std::string> boards_;  // leaderboard boards named in the scripts
+  float touch_size_ = 1;
+  ui::PauseShell shell_;
+  std::set<int64_t> shell_fingers_;  // fingers on the open pause menu (slider drags)
   ui::ScrollOffsets scroll_;
   std::vector<ui::UiNode> nodes_;
 

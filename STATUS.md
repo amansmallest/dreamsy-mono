@@ -1,5 +1,32 @@
 # Dreamsy — status
 
+## 2026-11-18 — engine-web deleted; everything runs on the C++ engine
+
+The TypeScript engine (`engine-web/`) is gone (last version: git tag `engine-web-final`). E6 parity done (DREAMSY.MD §14.8).
+- **Harness** (§5.1): `dreamsy-tool playtest` (headless JSON report, same fields as engine-web's PlaytestReport, byte-identical
+  output on the games checked) and `dreamsy-tool eval` (Luau in a package; kit balance sims in `kits/tycoon`,
+  `kits/tower-defense` via `kits/_tools/engine.ts`, identical reports). Browser screenshots from the C++ web player
+  (`harness/src/browser.ts`, real 2.5D). One real generation run: $0.11.
+- **App + share links**: the web player has the embedding contract (`engine/apps/player/embed.js`: `?public=`,
+  `?api=&game=&version=&token=`, `embed=1`, messages ready/error/quit/runEnd). `scripts/dev.sh` builds and serves it
+  on :2005 (laptop stack is now the default, `--prod` for hosted); `scripts/deploy.sh` deleted; `deploy/Dockerfile`
+  builds dreamsy-tool + the web player (untested end to end: apt mirrors failed locally; the player stage built).
+- **Gameserver** owns the room protocol (`services/gameserver/src/protocol.ts`).
+- **Tests**: engine-web's suite ported to doctest (`engine/tests/kits`, `engine/tests/api`): 307 of 351 TS tests ported
+  (all 232 kit tests, same thresholds), 5 already covered, 5 obsolete, 34 need missing features (net/spectate: E8;
+  API leaderboards/ghosts, pluggable store, run-end events — `HostOptions::on_run_end` now exists, so those 5 can be
+  ported next). Slow sims are ctest label `slow` (skipped in debug/headless presets, run in release/web).
+- **Prelude** is `engine/src/script/prelude.luau` (op numbers from `ops.h`). **Conformance** diffs against golden
+  reports recorded from engine-web (`engine/tests/conformance/golden`, `run_compare.py --update` for intentional changes):
+  12/12 + 26/26 identical; `conformance.py` 113/113.
+- **Removed**: engine-web, `pipelines/`, `tools/parity.mts`, `ts_run.mts`, godot .gitignore lines.
+- **Gaps vs engine-web**: no online room client (multiplayer games run solo until E8), no API store / leaderboards /
+  cross-session saves in the web player.
+- Results (macOS): ctest debug 8/8 (ASan/UBSan), release 9/9 (incl. slow), web 2/2; harness 28, api 95, gameserver 27,
+  format 50; `pnpm -r typecheck` clean.
+- Not mine to change: `third_party/luau/DREAMSY_VENDOR.md` still mentions engine-web's WASM build (third_party is
+  vendored, don't modify; the note is stale).
+
 ## 2026-11-17 — engine v2 (C++) started
 
 Decision: Dreamsy becomes a 2D + 2.5D engine (no 3D), rewritten in C++ with server-authoritative multiplayer.

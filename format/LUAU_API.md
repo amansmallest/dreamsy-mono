@@ -197,8 +197,8 @@ onTick(function(dt)
 end)
 ```
 
-The current engine (engine-web) simulates heights exactly but previews every view flat (no z, blocks or shadows in its
-screenshots); the native/C++ engine draws the views.
+The engine simulates heights exactly and draws every view (heights, blocks, drop shadows, depth order), in the
+player and in playtest screenshots.
 
 ## Sprite animation
 

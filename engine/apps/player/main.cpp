@@ -19,6 +19,8 @@
 // the game itself with window.__dreamsy.step(ticks) (game time, so screenshots are reproducible
 // however slow the browser is). ?seed=<n> seeds the RNG, ?clock=<unix seconds> fixes clock.now()
 // (plus game time). window.__dreamsy.ready / .error tell the page when the game is running.
+// Harness playtests start mid-game with ?scene=<path>&params=<json>&save=<json> (scene params and
+// preloaded save data, like engine-web's playtest boot options).
 #include <algorithm>
 #include <functional>
 #include <map>
@@ -33,6 +35,7 @@
 #include "base/version.h"
 #include "demo_scene.h"
 #include "pkg/catalog.h"
+#include "pkg/json.h"
 #include "pkg/text.h"
 #include "pkg/zip_import.h"
 #include "input/usage.h"
@@ -151,6 +154,8 @@ struct Options {
   bool manual = false;  // tools: no real-time ticks; window.__dreamsy.step(n) advances the game
   uint32_t seed = 1;
   std::optional<double> clock;  // fixed clock.now() base (unix seconds); default: the wall clock
+  // Tools: start in this scene with these params / this save data (JSON text; empty = none).
+  std::string start_scene, start_params, start_save;
 };
 
 std::optional<render::ViewMode> parse_view(const char* s) {
@@ -289,6 +294,16 @@ bool start(App& app, pkg::Files files, const KitBytes& kit_bytes) {
   }
   host_options.kits = std::move(kits).value();
   host_options.seed = app.options.seed;
+  if (!app.options.start_scene.empty()) host_options.scene = app.options.start_scene;
+  for (auto [text, what] : {std::pair{&app.options.start_params, "params"}, std::pair{&app.options.start_save, "save"}}) {
+    if (text->empty()) continue;
+    auto doc = pkg::JsonDoc::parse(*text);
+    if (!doc || !yyjson_is_obj(doc.value().root())) {
+      log_error(std::string("?") + what + "= must be a JSON object");
+      return false;
+    }
+    (what == std::string_view("save") ? host_options.save : host_options.scene_params.emplace()) = script::Json::from_yyjson(doc.value().root());
+  }
   if (app.options.clock) {
     // engine-web: fixed base + game time, so timers that read clock.now() still advance.
     const double base = *app.options.clock;
@@ -436,6 +451,9 @@ void init() {
   app.options.seed = static_cast<uint32_t>(emscripten_run_script_int("Number(new URLSearchParams(location.search).get('seed') || 1) | 0"));
   const std::string clock = emscripten_run_script_string("new URLSearchParams(location.search).get('clock') || ''");
   if (!clock.empty()) app.options.clock = std::strtod(clock.c_str(), nullptr);
+  app.options.start_scene = emscripten_run_script_string("new URLSearchParams(location.search).get('scene') || ''");
+  app.options.start_params = emscripten_run_script_string("new URLSearchParams(location.search).get('params') || ''");
+  app.options.start_save = emscripten_run_script_string("new URLSearchParams(location.search).get('save') || ''");
 #endif
 
 #ifdef __EMSCRIPTEN__

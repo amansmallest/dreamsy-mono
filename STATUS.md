@@ -83,9 +83,27 @@ Spec: DREAMSY.MD §14 (stack, code style, determinism, 2.5D views, netcode, migr
 - Audio: skipped on purpose — the user is designing an audio harness. The host still records sfx/music events.
 - Known: web player is ~1.44 MB gzipped because all kit sources are embedded → ship kits separately.
 
-In progress: E5 agent (input translation, gestures, on-screen controls, toasts, UI layout + drawing + hit-testing).
+- E5 input + platform UI merged: input/ (keys, mouse, touch, gestures, on-screen controls), ui/ (layout, overlay,
+  dialogs, toasts), UI entities drawn and tappable, pause menu.
+- E6: web player loads any game by URL (?pkg=<.dpk|.zip>, kits fetched per game); engine/tools/make_play_page.py
+  builds a picker. Visual parity pass (engine/tools/parity.mts side-by-side harness): mean difference 2.64 → 0.70 over
+  113 shots; Lighting2D/Light2D, scissor, symbol fallback font, SVG fixes (bbox gradients, <use>, <pattern>, <text>),
+  full pause menu (settings/controls/leaderboard/quit). Pixel theme font is DejaVu Sans Mono Bold = engine-web's
+  effective font (Press Start 2P kept in the repo; switch back once engine-web is retired, decision in §14.10).
+- E7 minimal slice merged: manifest/scene `view`, entity `z`/`height`, Body2D `z_velocity`/`z_gravity_scale`, Sprite2D
+  `anchor`; e.onGround/e.groundZ, camera.screenDirToWorld; both engines simulate height identically; blocks render in
+  2.5D; harness prompt teaches 2.5D. Claude built games/showcase/cloud-hopper (oblique, 3 levels, $9.53, one round).
+- Contract fixes: random(max) → [0,max); @kit/ requires documented; tostring(entity) prints the id.
+- CI: first run (pushed by the user) found Linux issues (glibc math.h clash with musl, libstdc++ pair<..., Json>,
+  missing includes, a test-helper leak) — fixed and verified in an ubuntu:24.04 container (ctest 8/8). Needs a re-push.
+- Checks now: C++ tests green (debug ASan/UBSan, release, web, Linux), run_compare 12/12 + 26/26 + 6/6, validator
+  conformance 113/113.
+- Local servers (started for the user): engine-web dev on :2005 (games/mine/ = the user's old games, gitignored),
+  C++ web builds on :2006 (index.html picker).
+- stash@{0}: a stray "yeah" typed at the top of engine/apps/player/main.cpp, set aside for a merge; drop if accidental.
 
-Next: kits outside the binary, E6 parity (every game playable, harness/app switch), E7 2.5D content.
+Next: harness playtests/screenshots on the C++ engine, app WebView on the C++ web build, API/harness move to .dpk;
+E7 rest (tilemap elevation, lighting with height, kit updates); E8 multiplayer v2.
 
 **E7 2.5D, minimal slice: done (branch engine-v2-e7).** 2.5D is a package feature now (DREAMSY.MD §3, §14.5):
 - Format: manifest/scene `view` (side|topdown|oblique|iso), `z`/`height` on spatial 2D types, Body2D `z_velocity`/

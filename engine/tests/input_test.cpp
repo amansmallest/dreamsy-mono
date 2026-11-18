@@ -16,10 +16,12 @@
 #include "pkg/validate.h"
 #include "render/atlas.h"
 #include "render/font.h"
+#include "render/textures.h"
 #include "script/host.h"
 #include "ui/dialog.h"
 #include "ui/layout.h"
 #include "ui/overlay.h"
+#include "ui/shell.h"
 #include "ui/toasts.h"
 
 using namespace dreamsy;
@@ -525,7 +527,7 @@ TEST_CASE("UI layout: anchors in the safe area, stack panels, z order, scroll cl
 
   CHECK(ui::anchor_rect("center", {0, 0}, {100, 50}, 0, 0, 1280, 720).x == 590);
 
-  ui::UiScreen screen{1280, 720, {20, 0, 30, 0}};
+  ui::UiScreen screen{1280, 720, {20, 0, 30, 0}, {}};
   ui::ScrollOffsets scroll;
   scroll[panel] = 1000;  // clamped to content - height
   std::vector<ui::UiNode> nodes = ui::layout_ui(w, screen, scroll);
@@ -567,6 +569,97 @@ TEST_CASE("UI text wraps at spaces, keeps newlines, and breaks long words") {
   std::string joined;
   for (const std::string& s : cut) joined += s;
   CHECK(joined == "abcdefghij");
+}
+
+TEST_CASE("pause menu: views, buttons, settings widgets, local leaderboard, window centering") {
+  render::Atlas atlas;
+  render::TextureStore textures(nullptr, atlas, false);
+  render::FontStore fonts(atlas, render::FontId::Bold);
+  REQUIRE(fonts.init().ok());
+  auto images = ui::create_ui_images(textures);
+  REQUIRE(images.ok());
+  ui::UiTheme theme = ui::ui_theme(script::Theme{});
+  render::DrawList out;
+  // A landscape game in a portrait window: the window (container) is taller than the game rect.
+  ui::UiScreen screen{1280, 720, {}, {0, -500, 1280, 1720}};
+  ui::OverlayContext ctx{out, textures, fonts, theme, images.value(), screen, 0.5f};  // 2 ref px per point
+  ui::ShellData data;
+  data.usage.move = true;
+  data.usage.buttons = {"jump"};
+  data.boards = {"fastest", "laps"};
+  data.scores = {{"fastest", 61.5, true}, {"fastest", 59.25, true}};
+  ui::PauseShell shell;
+  shell.open();
+
+  ui::ShellLayout l = shell.layout(ctx, data);
+  CHECK(l.panel.w == doctest::Approx(800));  // min(400 points, window - 32 points)
+  CHECK(l.panel.y + l.panel.h / 2 == doctest::Approx(-500 + 1720 / 2.0));  // centered in the window
+  std::vector<std::string> labels;
+  for (const ui::ShellItem& it : l.items) labels.push_back(it.text);
+  CHECK(labels == std::vector<std::string>{"Paused", "Resume", "Restart", "Leaderboard", "Settings", "Controls", "Quit"});
+  auto tap = [&](const std::string& text) {
+    for (const ui::ShellItem& it : shell.layout(ctx, data).items) {
+      if (it.text == text) return shell.pointer(ui::PauseShell::Phase::Down, it.rect.x + 4, it.rect.y + it.rect.h / 2, ctx, data);
+    }
+    FAIL("no item " << text);
+    return ui::ShellAction::None;
+  };
+  CHECK(tap("Resume") == ui::ShellAction::Resume);
+  CHECK(tap("Restart") == ui::ShellAction::Restart);
+  CHECK(shell.pointer(ui::PauseShell::Phase::Down, 5, l.panel.y - 20, ctx, data) == ui::ShellAction::Resume);  // dimmed area
+
+  // Settings: a slider follows the finger; toggles flip; S/M/L set the touch size.
+  CHECK(tap("Settings") == ui::ShellAction::None);
+  CHECK(shell.view() == ui::ShellView::Settings);
+  l = shell.layout(ctx, data);
+  const ui::ShellItem* music = nullptr;
+  const ui::ShellItem* mute = nullptr;
+  const ui::ShellItem* touch = nullptr;
+  for (const ui::ShellItem& it : l.items) {
+    if (it.text == "Music") music = &it;
+    if (it.text == "Mute all") mute = &it;
+    if (it.text == "Touch controls") touch = &it;
+  }
+  REQUIRE(music);
+  REQUIRE(mute);
+  REQUIRE(touch);
+  CHECK(shell.pointer(ui::PauseShell::Phase::Down, music->control.x, music->control.y + 2, ctx, data) == ui::ShellAction::SettingsChanged);
+  CHECK(data.settings.music == 0);
+  shell.pointer(ui::PauseShell::Phase::Move, music->control.x + music->control.w, music->control.y, ctx, data);
+  CHECK(data.settings.music == 1);
+  shell.pointer(ui::PauseShell::Phase::Up, music->control.x + music->control.w / 2, music->control.y, ctx, data);
+  CHECK(data.settings.music == doctest::Approx(0.5).epsilon(0.02));
+  shell.pointer(ui::PauseShell::Phase::Down, mute->control.x + 5, mute->control.y + 5, ctx, data);
+  CHECK(data.settings.mute);
+  shell.pointer(ui::PauseShell::Phase::Down, touch->options[2].x + 5, touch->options[2].y + 5, ctx, data);
+  CHECK(data.settings.touch_size == doctest::Approx(1.25));
+  CHECK(shell.back());
+  CHECK_FALSE(shell.back());  // on the main view: the caller closes the menu
+
+  // Controls: rows for what the game reads, plus tap and pause.
+  tap("Controls");
+  labels.clear();
+  for (const ui::ShellItem& it : shell.layout(ctx, data).items) {
+    if (it.accent) labels.push_back(it.text);
+  }
+  CHECK(labels == std::vector<std::string>{"Move", "Jump", "Tap / click", "Pause"});
+  tap("Back");
+
+  // Leaderboard: tabs per board, this device's runs best first.
+  tap("Leaderboard");
+  labels.clear();
+  for (const ui::ShellItem& it : shell.layout(ctx, data).items) labels.push_back(it.text);
+  CHECK(labels == std::vector<std::string>{"Leaderboard", "Fastest", "Laps", "#1", "you", "00:59.25", "#2", "you", "01:01.50", "Back"});
+  tap("Laps");
+  bool empty = false;
+  for (const ui::ShellItem& it : shell.layout(ctx, data).items) empty = empty || it.text == "No runs yet. Be the first!";
+  CHECK(empty);
+
+  shell.draw(ctx, data);
+  CHECK(out.rects.size() > 3);
+  CHECK(ui::board_label("track_3") == "Track 3");
+  CHECK(ui::format_board_value(1234, false) == "1234");
+  CHECK(ui::format_board_value(2.5, false) == "2.50");
 }
 
 // ---------------------------------------------------------------- host

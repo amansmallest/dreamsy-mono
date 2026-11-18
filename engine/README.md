@@ -3,7 +3,7 @@
 The native 2D/2.5D engine: one C++20 core for web (WebAssembly), iOS, Android and headless game
 servers. Design and roadmap: `DREAMSY.MD` §14. New to C++? Start with `docs/CPP-FOR-TS-DEVS.md`.
 
-Status: **E0 (scaffold), E1 (packages), E2 (scripting), E3 (world + physics) done; E4 (renderer) foundation done; E5 input + platform UI (keys, mouse, touch, on-screen controls, gestures, UI entities, dialogs, toasts, pause) done, audio/save/settings pending; E7 2.5D minimal slice done (package `view`, `z`/`height`, blocks, raised tile maps, shadows; DREAMSY.MD §14.5).**
+Status: **E0 (scaffold), E1 (packages), E2 (scripting), E3 (world + physics) done; E4 (renderer) foundation done; E5 input + platform UI (keys, mouse, touch, on-screen controls, gestures, UI entities, dialogs, toasts, pause) done, audio pending; E7 2.5D minimal slice done (package `view`, `z`/`height`, blocks, raised tile maps, shadows; DREAMSY.MD §14.5); E6 parity in progress: games load by URL, visual parity pass (lighting, scissor, fonts, SVG fixes, full pause menu; see [Parity screenshots](#parity-screenshots)).**
 It loads and validates every game in `games/` (same verdicts as the TypeScript validator), reads/writes
 Dreamsy packs (`.dpk`, §3.6), and runs games headless natively: entities, Box2D physics with 2.5D height,
 tweens, sprite animation, particles, camera, tile maps, dialogs. Every 2D game in `games/` produces the same
@@ -56,6 +56,27 @@ cmake --preset web -DDREAMSY_DEMO_PACKAGE_DIR=$PWD/../games/examples/kit-tycoon 
 DREAMSY_WEB_BUILD=build/web-mygame DREAMSY_SHOT_KEYS="d@0,Space@800" NODE_PATH=../engine-web/node_modules \
     node tools/web_screenshot.cjs /tmp/shots 540x960 game
 ```
+
+## Parity screenshots
+
+`tools/parity.mts` shows every game side by side in engine-web (the reference) and the C++ web player, at the
+game's reference size and the same game time, with the same scripted input:
+
+```sh
+cmake --preset web && cmake --build --preset web --target dreamsy-player   # (source ~/emsdk/emsdk_env.sh first)
+../engine-web/node_modules/.bin/tsx tools/parity.mts --out /tmp/dreamsy-parity            # every game (~20 min)
+../engine-web/node_modules/.bin/tsx tools/parity.mts --out /tmp/dreamsy-parity --games city-rush,kit-story
+../engine-web/node_modules/.bin/tsx tools/parity.mts --out /tmp/after --baseline /tmp/before/results.json  # before -> after
+```
+
+Shots per game: `title` (1.5 s), `play` (taps the start button, holds right, jumps; 4.5 s), `pause` (Esc);
+`tools/parity_games.json` adds or replaces shots per game (taps on buttons by text, keys, held keys). Output:
+`shots/<game>-<shot>-{web,cpp,pair}.png` (pair = engine-web | C++ | difference x3), `index.html` and
+`contact.png` (worst first), `results.json`. The score is the mean RGB difference in percent on 4x downscaled
+images, so antialiasing barely counts and layout, color and missing things do. No server runs: Playwright
+answers every request from disk. `--only cpp` re-shoots just the C++ side, `--cpp-build DIR` compares another
+build, `--verbose` prints both consoles. Physics (Box2D vs Rapier) and font hinting make some difference
+unavoidable; review the pairs by eye (DREAMSY.MD §14.8).
 
 ## Phones
 
@@ -157,7 +178,7 @@ The engine's own logging (`base/log.cpp`) writes to stderr, which Android drops;
 | `src/script/` | Luau host (§14.13): `vm` (sandbox, memory cap, CPU budget, tracebacks), `host` (scripts, require, kits, scheduler, scenes, non-entity ops), `host_world` (entity ops, physics events, tweens, anims, particles, camera, dialogs), `host_input` (pointer signals, swipes, tap_screen / tap_world / press, pause); prelude + kits embedded from engine-web at build time |
 | `src/check/` | `dreamsy-tool check`: Luau analyzer over a package's scripts against `format/dreamsy.d.luau` (tools only) |
 | `src/input/` | input (E5), platform-free: `input_state` (what scripts read per tick: axes, pressed/held, pointer grace, swipes; engine-web core/input.ts), `keyboard`, `gamepad` (mapping hook; polling not wired), `usage` (which controls a game reads), `touch_controls` (on-screen joystick / A B C / aim stick: layout, hit testing, visibility from reads) |
-| `src/ui/` | platform UI (E5): `dialog` (ui.dialog / ui.choice state machine + input glue), `toasts`, `layout` (UI entity layout + hit testing, shared by drawing and taps), `overlay` (draws UI entities, toasts, dialogs, controls, pause button/menu into the draw list; `dreamsy_overlay`) |
+| `src/ui/` | platform UI (E5): `dialog` (ui.dialog / ui.choice state machine + input glue), `toasts`, `layout` (UI entity layout + hit testing, shared by drawing and taps), `overlay` (draws UI entities, toasts, dialogs, controls, pause button into the draw list; `dreamsy_overlay`), `shell` (the pause menu: Settings, Controls, Leaderboard, Quit) |
 | `src/play/` | the running game in the player: `scene_draw` (world -> draw list), `platform_ui` (device events -> controls / pause / dialog / UI / world taps; draws the overlay) |
 | `src/render/` | renderer (E4). CPU side, no GPU (`dreamsy_render`): `draw_list.h` (what E3 fills each frame), `sort` (depth order per view mode, shadows), `view` (letterbox, projection, camera, pixel snap), `image` (PNG/JPG stb_image, SVG nanosvg), `atlas` (stb_rect_pack pages), `textures` (package images on first use), `font` (bundled fonts, stb_truetype, layout), `geometry` (batched quads), `style` (manifest render settings). GPU side (`dreamsy_render_gpu`): `renderer` (sokol_gfx, hand-written Metal + GLSL ES 3.0 shaders) |
 | `src/dmath/` | deterministic math: musl libm linked into every executable (see its README) |
@@ -167,7 +188,7 @@ The engine's own logging (`base/log.cpp`) writes to stderr, which Android drops;
 | `src/dev/` | E0 smoke checks (Luau, Box2D), kept for `dreamsy-tool smoke` |
 | `apps/tool/` | `dreamsy-tool`, the headless CLI |
 | `apps/player/` | `dreamsy-player`, the windowed engine; `demo_scene` draws a test scene from a package's assets until E3/E6 |
-| `tools/` | `web_screenshot.cjs` (screenshots of the web player), `web_touch_screenshot.cjs` (phone touch input) |
+| `tools/` | `web_screenshot.cjs` (screenshots of the web player), `web_touch_screenshot.cjs` (phone touch input), `make_play_page.py` (packs games for the web player), `parity.mts` (engine-web vs C++ screenshots) |
 | `tests/` | doctest unit tests, one binary: `dreamsy-tests` |
 | `tests/conformance/` | `conformance.py`: C++ vs `format/src/validate.ts` on every game plus ~80 generated broken packages; `run_compare.py`: C++ vs engine-web: `tests/scripts/*` (identical logs, errors, audio, save, time), physics scenarios with scripted input (identical script output + measured position/velocity drift), `--all` over every game |
 | `tests/scripts/` | script-only test games (basics, modules, data/save, errors/budget, scenes/room/store/audio, math) |
@@ -185,10 +206,18 @@ Third-party code lives in `../third_party/` (vendored, unmodified; each folder h
   (premultiplied colors; additive = alpha 0).
 - Pixel-art styles (`pixel`) draw the world into a reference-size target and scale it up with nearest
   filtering; the UI is drawn on top at full resolution. Other styles draw directly (linear filtering).
-- Not supported yet: WebP images (clear error, drawn as a solid rect; no package uses WebP), SVG `<text>`
-  (nanosvg; two kit icons use it), characters outside Latin-1 (fonts are subset; fallback is later),
-  MSDF text (outlines are 8 offset copies), per-tile elevation inside one tile map (E7; today one raised
-  TileMap2D per height level), lighting, particles, render targets and post effects.
+- Clip rects (scissor) per batch: scroll lists and clipped panels cut text, rects and images exactly.
+- Lighting2D: after the world pass, one quad multiplies the frame by the light level (ambient darkness,
+  up to 64 radial Light2Ds with falloff and flicker, vignette); `emissive` items draw after it. The UI is
+  never darkened.
+- The UI pass covers the whole framebuffer (letterbox bars included) for the platform's controls.
+- SVG: nanosvg gaps are patched before parsing (unitless bounding-box gradients, `<use>`, rect fills with
+  `<pattern>`), and `<text>` is drawn with the bundled fonts (no transforms on text).
+- Fonts: characters a bundled font lacks come from a DejaVu symbol subset (arrows, shapes, ★ ♥ ▶ ...);
+  the pixel theme font is DejaVu Sans Mono Bold (engine-web's effective font, see DREAMSY.MD §14.10).
+- Not supported yet: WebP images (clear error, drawn as a solid rect; no package uses WebP), emoji and
+  scripts beyond the subsets, MSDF text (outlines are 8 offset copies), per-tile elevation inside one tile map (E7; today one raised TileMap2D per height level), render
+  targets and post effects.
 - 2.5D (E7): in topdown/oblique/iso a Sprite2D with `height` is a block (top face + shaded front face; two
   side faces in iso), a TileMap2D with `height` draws one block per tile. Blocks sort by footprint center;
   whatever stands on a block sorts right after it (`render/sort.h`). Drop shadows lie on the ground under

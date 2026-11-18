@@ -4,7 +4,8 @@
 //   1. sort the draw list by view mode (sort.h)
 //   2. build batched quads (geometry.h); images and glyphs are packed into the atlas on first use
 //   3. upload atlas pages that changed, and all vertices (one buffer write)
-//   4. smooth mode:     draw the world, then the UI, straight into the letterboxed game rect
+//   4. smooth mode:     draw the world (then the Lighting2D multiply quad and emissive items), then
+//                       the UI, straight into the letterboxed game rect
 //      pixel-art mode:  draw the world into a reference-size texture (1 texel = 1 reference px),
 //                       scale it into the game rect with nearest filtering, then draw the UI on
 //                       top at full resolution (crisp text)
@@ -64,13 +65,25 @@ class Renderer {
   void sync_pages(const Atlas& atlas);
   void ensure_vertex_capacity(size_t vertex_count);
   void ensure_target();
-  void draw_batches(const std::vector<Batch>& batches, sg_sampler sampler);
+  // Where reference px land in the current pass's pixels (for scissors): x/y offset, the pass's
+  // full size w/h, and px per reference px.
+  struct PassArea {
+    float x = 0, y = 0, w = 1, h = 1, s = 1;
+  };
+  void draw_batches(const std::vector<Batch>& batches, sg_sampler sampler, const PassArea& area);
+  // The Lighting2D multiply quad (draw_list.h Lighting); `target`: into the pixel-art target.
+  void push_lighting_quad(const DrawList& list);
+  void draw_lighting(const DrawList& list, bool target);
 
   RenderStyle style_;
   bool ready_ = false;
   sg_shader shader_{};
   sg_pipeline pipeline_screen_{};  // into the swapchain
   sg_pipeline pipeline_target_{};  // into the pixel-art target (RGBA8, no depth)
+  sg_shader light_shader_{};       // Lighting2D
+  sg_pipeline light_pipeline_screen_{};
+  sg_pipeline light_pipeline_target_{};
+  uint32_t light_first_quad_ = 0;  // the lighting quad, at the end of the frame's vertices
   sg_buffer vertices_{};
   size_t vertex_capacity_ = 0;
   sg_buffer indices_{};

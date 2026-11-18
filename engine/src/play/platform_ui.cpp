@@ -1,5 +1,6 @@
 #include "play/platform_ui.h"
 
+#include <algorithm>
 #include <cmath>
 
 #include "base/log.h"
@@ -22,8 +23,46 @@ PlatformUi::PlatformUi(script::Host& host, render::TextureStore& textures, const
       theme_(ui::ui_theme(script::resolve_theme(host.package().manifest))),
       keyboard_(up_jumps),
       controls_(usage, host.package().manifest.portrait()),
-      touch_enabled_(touch_controls) {
+      touch_enabled_(touch_controls),
+      usage_(usage) {
   set_screen(1, {});
+  // Leaderboard boards the scripts name (engine-web Game.scanBoards): leaderboard.start/finish/submit("board".
+  for (const std::string& path : host.package().files.paths("scripts/")) {
+    const auto text = host.package().files.text(path);
+    if (!text) continue;
+    const std::string_view src = *text;
+    for (size_t at = src.find("leaderboard"); at != std::string_view::npos; at = src.find("leaderboard", at + 1)) {
+      size_t i = at + 11;
+      auto skip = [&] { while (i < src.size() && (src[i] == ' ' || src[i] == '\t')) i++; };
+      skip();
+      if (i >= src.size() || src[i] != '.') continue;
+      i++;
+      skip();
+      bool call = false;
+      for (const char* fn : {"start", "finish", "submit"}) {
+        const std::string_view name(fn);
+        if (src.substr(i, name.size()) == name) {
+          i += name.size();
+          call = true;
+          break;
+        }
+      }
+      if (!call) continue;
+      if (boards_.empty()) boards_.push_back("");  // used, maybe without a literal board name
+      skip();
+      if (i >= src.size() || src[i] != '(') continue;
+      i++;
+      skip();
+      if (i >= src.size() || src[i] != '"') continue;
+      const size_t end = src.find('"', i + 1);
+      if (end == std::string_view::npos) continue;
+      const std::string board(src.substr(i + 1, end - i - 1));
+      if (std::find(boards_.begin(), boards_.end(), board) == boards_.end()) boards_.push_back(board);
+    }
+  }
+  // "" only marked "uses leaderboards"; a named board replaces it.
+  if (boards_.size() > 1) boards_.erase(boards_.begin());
+  if (boards_.size() == 1 && boards_[0].empty()) boards_[0] = "fastest";
 }
 
 Status PlatformUi::init() {
@@ -33,36 +72,84 @@ Status PlatformUi::init() {
   return {};
 }
 
-ui::UiScreen PlatformUi::screen() const { return {host_.ref_width(), host_.ref_height(), safe_}; }
+ui::UiScreen PlatformUi::screen() const { return {host_.ref_width(), host_.ref_height(), safe_, window_}; }
 
-void PlatformUi::set_screen(float points_per_ref, ui::SafeArea safe) {
+void PlatformUi::set_screen(float points_per_ref, ui::SafeArea safe, ui::Rect window) {
   points_per_ref_ = points_per_ref > 0 ? points_per_ref : 1;
   safe_ = safe;
+  window_ = window;
+  // The controls hang from the window's corners (engine-web: the container), so their insets from
+  // the game rect are negative where letterbox bars are. Device safe areas: TODO(E9).
+  const ui::Rect win = screen().window();
   input::ControlsScreen cs;
   cs.ref_w = static_cast<int>(host_.ref_width());
   cs.ref_h = static_cast<int>(host_.ref_height());
   cs.points_per_ref = points_per_ref_;
-  cs.safe = {static_cast<float>(safe.top), static_cast<float>(safe.right), static_cast<float>(safe.bottom),
-             static_cast<float>(safe.left)};
+  cs.safe = {static_cast<float>(win.y), static_cast<float>(host_.ref_width() - (win.x + win.w)),
+             static_cast<float>(host_.ref_height() - (win.y + win.h)), static_cast<float>(win.x)};
   controls_.set_screen(cs);
+}
+
+void PlatformUi::set_settings(const ui::ShellSettings& s) {
+  host_.settings.music = s.music;
+  host_.settings.sfx = s.sfx;
+  host_.settings.mute = s.mute;
+  host_.settings.vibration = s.vibration;
+  touch_size_ = s.touch_size;
+  controls_.set_scale(s.touch_size);
 }
 
 void PlatformUi::relayout() { nodes_ = ui::layout_ui(host_.world(), screen(), scroll_); }
 
-void PlatformUi::toggle_pause() {
-  if (host_.paused()) {
-    host_.resume();
-  } else {
-    host_.pause();
+void PlatformUi::open_pause() {
+  if (host_.paused()) return;
+  host_.pause();
+  shell_.open();
+}
+
+void PlatformUi::close_pause() {
+  shell_fingers_.clear();
+  host_.resume();
+}
+
+ui::ShellData PlatformUi::shell_data() const {
+  ui::ShellData d;
+  d.settings = {host_.settings.music, host_.settings.sfx, host_.settings.mute, host_.settings.vibration, touch_size_};
+  d.usage = usage_;
+  d.boards = boards_;
+  for (const script::Host::LocalScore& s : host_.local_scores()) {
+    d.scores.push_back({s.board, s.value, s.ascending});
+    if (std::find(d.boards.begin(), d.boards.end(), s.board) == d.boards.end()) d.boards.push_back(s.board);
+  }
+  return d;
+}
+
+void PlatformUi::apply(ui::ShellAction action, const ui::ShellData& data) {
+  switch (action) {
+    case ui::ShellAction::None: break;
+    case ui::ShellAction::Resume: close_pause(); break;
+    case ui::ShellAction::Restart:
+      close_pause();
+      host_.request_restart();
+      break;
+    case ui::ShellAction::Quit:
+      if (on_quit) on_quit();
+      break;
+    case ui::ShellAction::SettingsChanged:
+      set_settings(data.settings);
+      if (on_settings) on_settings(data.settings);
+      break;
   }
 }
 
 // ---------------------------------------------------------------- events
 
 void PlatformUi::key(input::Key key, bool down) {
-  // Esc / P open and close the pause menu (engine-web shell onKey).
+  // Esc / P open the pause menu; in the menu they go back a view, then close it (engine-web shell onKey).
   if (key == input::Key::Escape || key == input::Key::P) {
-    if (down) toggle_pause();
+    if (!down) return;
+    if (!host_.paused()) open_pause();
+    else if (!shell_.back()) close_pause();
     return;
   }
   if (down) {
@@ -80,7 +167,10 @@ void PlatformUi::blur() {
 }
 
 void PlatformUi::gamepad(const input::GamepadState& pad) {
-  if (pad.start && !gamepad_start_) toggle_pause();
+  if (pad.start && !gamepad_start_) {
+    if (!host_.paused()) open_pause();
+    else close_pause();
+  }
   gamepad_start_ = pad.start;
   gamepad_.update(pad, host_.input());
 }
@@ -101,18 +191,15 @@ void PlatformUi::pointer(PointerPhase phase, int64_t id, input::Vec2 p) {
   if (phase == PointerPhase::Down) {
     // 1. The pause menu (while paused it takes every touch), then the pause button.
     if (host_.paused()) {
-      const ui::PauseMenuLayout menu = ui::layout_pause_menu(screen(), points_per_ref_, theme_);
-      if (auto action = ui::hit_pause_menu(menu, p.x, p.y)) {
-        host_.resume();
-        if (*action == ui::PauseAction::Restart) host_.request_restart();
-      } else if (!menu.panel.contains(p.x, p.y)) {
-        host_.resume();  // a tap outside the panel closes the menu
-      }
-      swallowed_.insert(id);
+      render::DrawList scratch;
+      ui::OverlayContext ctx{scratch, textures_, fonts_, theme_, images_, screen(), points_per_ref_};
+      ui::ShellData data = shell_data();
+      shell_fingers_.insert(id);
+      apply(shell_.pointer(ui::PauseShell::Phase::Down, p.x, p.y, ctx, data), data);
       return;
     }
     if (ui::pause_button_rect(screen(), points_per_ref_).contains(p.x, p.y)) {
-      host_.pause();
+      open_pause();
       swallowed_.insert(id);
       return;
     }
@@ -153,6 +240,15 @@ void PlatformUi::pointer(PointerPhase phase, int64_t id, input::Vec2 p) {
     return;
   }
 
+  if (shell_fingers_.count(id)) {
+    render::DrawList scratch;
+    ui::OverlayContext ctx{scratch, textures_, fonts_, theme_, images_, screen(), points_per_ref_};
+    ui::ShellData data = shell_data();
+    const auto phase_of = phase == PointerPhase::Move ? ui::PauseShell::Phase::Move : ui::PauseShell::Phase::Up;
+    if (phase != PointerPhase::Move) shell_fingers_.erase(id);
+    apply(shell_.pointer(phase_of, p.x, p.y, ctx, data), data);
+    return;
+  }
   if (swallowed_.count(id)) {
     if (phase == PointerPhase::Move) {
       controls_.touch_move(id, p, in);
@@ -192,15 +288,15 @@ void PlatformUi::update(float dt) {
   relayout();
 }
 
-void PlatformUi::draw(render::DrawList& out, double time) {
+void PlatformUi::draw(render::DrawList& out) {
   relayout();
   ui::OverlayContext ctx{out, textures_, fonts_, theme_, images_, screen(), points_per_ref_};
   ui::draw_ui_entities(ctx, host_.world(), nodes_);
   ui::draw_toasts(ctx, host_.toasts().toasts());
-  ui::draw_dialog(ctx, host_.dialogs().dialogs, time);
+  ui::draw_dialog(ctx, host_.dialogs().dialogs);
   if (touch_enabled_) ui::draw_touch_controls(ctx, controls_.view());
   if (host_.paused()) {
-    ui::draw_pause_menu(ctx);
+    shell_.draw(ctx, shell_data());
   } else {
     ui::draw_pause_button(ctx);
   }

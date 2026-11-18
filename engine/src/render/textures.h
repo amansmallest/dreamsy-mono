@@ -35,6 +35,7 @@ class TextureStore {
   // Built-in images, always available.
   static constexpr ImageId kWhite{1};   // solid white (rects, untextured sprites)
   static constexpr ImageId kShadow{2};  // soft round blob (drop shadows)
+  static constexpr ImageId kDisc{3};    // hard-edged disc (Particles2D shape = "circle")
 
   // "asset:<id>" or "<id>" -> an image id. Invalid when the asset doesn't exist or isn't an image.
   ImageId find_asset(std::string_view ref);

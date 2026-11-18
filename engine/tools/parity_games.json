@@ -1,0 +1,271 @@
+{
+ "examples/block-tower": {
+  "skip": "3D (neither engine runs it)"
+ },
+ "dragons-ladders": {
+  "shots": [
+   {
+    "name": "title",
+    "seconds": 1.5
+   },
+   {
+    "name": "play",
+    "seconds": 4.5,
+    "taps": [
+     {
+      "t": 1.6,
+      "button": "^start"
+     },
+     {
+      "t": 2.6,
+      "at": [
+       360,
+       640
+      ]
+     }
+    ]
+   },
+   {
+    "name": "realm",
+    "seconds": 4.5,
+    "taps": [
+     {
+      "t": 1.2,
+      "button": "shadow realm"
+     },
+     {
+      "t": 1.6,
+      "button": "shadow well"
+     }
+    ]
+   },
+   {
+    "name": "pause",
+    "seconds": 1.4,
+    "keys": [
+     {
+      "t": 1.0,
+      "key": "Escape"
+     }
+    ]
+   },
+   {
+    "name": "settings",
+    "seconds": 1.6,
+    "keys": [
+     {
+      "t": 1.0,
+      "key": "Escape"
+     }
+    ],
+    "taps": [
+     {
+      "t": 1.2,
+      "button": "^settings$"
+     }
+    ]
+   }
+  ]
+ },
+ "petalbrook-farm": {
+  "shots": [
+   {
+    "name": "title",
+    "seconds": 1.5
+   },
+   {
+    "name": "play",
+    "seconds": 4.5,
+    "taps": [
+     {
+      "t": 1.6,
+      "button": "start|play|new game|new run|race|begin|^go\\b|descend|adventure"
+     },
+     {
+      "t": 2.6
+     }
+    ],
+    "hold": [
+     "ArrowRight"
+    ],
+    "jumpEvery": 1
+   },
+   {
+    "name": "pause",
+    "seconds": 1.4,
+    "keys": [
+     {
+      "t": 1.0,
+      "key": "Escape"
+     }
+    ]
+   },
+   {
+    "name": "settings",
+    "seconds": 1.6,
+    "keys": [
+     {
+      "t": 1.0,
+      "key": "Escape"
+     }
+    ],
+    "taps": [
+     {
+      "t": 1.2,
+      "button": "^settings$"
+     }
+    ]
+   },
+   {
+    "name": "controls",
+    "seconds": 1.6,
+    "keys": [
+     {
+      "t": 1.0,
+      "key": "Escape"
+     }
+    ],
+    "taps": [
+     {
+      "t": 1.2,
+      "button": "^controls$"
+     }
+    ]
+   }
+  ]
+ },
+ "kit-story": {
+  "shots": [
+   {
+    "name": "title",
+    "seconds": 1.5
+   },
+   {
+    "name": "play",
+    "seconds": 4.5,
+    "taps": [
+     {
+      "t": 1.6,
+      "button": "start|play|new game|new run|race|begin|^go\\b|descend|adventure"
+     },
+     {
+      "t": 2.6
+     }
+    ],
+    "hold": [
+     "ArrowRight"
+    ],
+    "jumpEvery": 1
+   },
+   {
+    "name": "pause",
+    "seconds": 1.4,
+    "keys": [
+     {
+      "t": 1.0,
+      "key": "Escape"
+     }
+    ]
+   },
+   {
+    "name": "settings",
+    "seconds": 1.6,
+    "keys": [
+     {
+      "t": 1.0,
+      "key": "Escape"
+     }
+    ],
+    "taps": [
+     {
+      "t": 1.2,
+      "button": "^settings$"
+     }
+    ]
+   },
+   {
+    "name": "controls",
+    "seconds": 1.6,
+    "keys": [
+     {
+      "t": 1.0,
+      "key": "Escape"
+     }
+    ],
+    "taps": [
+     {
+      "t": 1.2,
+      "button": "^controls$"
+     }
+    ]
+   }
+  ]
+ },
+ "kit-shooter": {
+  "shots": [
+   {
+    "name": "title",
+    "seconds": 1.5
+   },
+   {
+    "name": "play",
+    "seconds": 4.5,
+    "taps": [
+     {
+      "t": 1.6,
+      "button": "start|play|new game|new run|race|begin|^go\\b|descend|adventure"
+     },
+     {
+      "t": 2.6
+     }
+    ],
+    "hold": [
+     "ArrowRight"
+    ],
+    "jumpEvery": 1
+   },
+   {
+    "name": "pause",
+    "seconds": 1.4,
+    "keys": [
+     {
+      "t": 1.0,
+      "key": "Escape"
+     }
+    ]
+   },
+   {
+    "name": "settings",
+    "seconds": 1.6,
+    "keys": [
+     {
+      "t": 1.0,
+      "key": "Escape"
+     }
+    ],
+    "taps": [
+     {
+      "t": 1.2,
+      "button": "^settings$"
+     }
+    ]
+   },
+   {
+    "name": "controls",
+    "seconds": 1.6,
+    "keys": [
+     {
+      "t": 1.0,
+      "key": "Escape"
+     }
+    ],
+    "taps": [
+     {
+      "t": 1.2,
+      "button": "^controls$"
+     }
+    ]
+   }
+  ]
+ }
+}

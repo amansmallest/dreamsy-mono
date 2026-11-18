@@ -233,12 +233,13 @@ target_include_directories(dreamsy_media_libs SYSTEM PUBLIC ${THIRD_PARTY}/stb $
 target_compile_options(dreamsy_media_libs PRIVATE -w)
 
 # The bundled theme fonts (third_party/fonts), embedded as byte arrays. Order matters:
-# pixel, rounded, bold, serif (render/font.cpp bundled_font).
+# pixel, rounded, bold, serif, then the symbol fallback (render/font.cpp bundled_font).
 set(DREAMSY_FONT_FILES
-  ${THIRD_PARTY}/fonts/press-start-2p/PressStart2P-Regular.ttf
+  ${THIRD_PARTY}/fonts/dejavu/DejaVuSansMono-Bold-Latin1.ttf
   ${THIRD_PARTY}/fonts/nunito/Nunito-ExtraBold-Latin1.ttf
   ${THIRD_PARTY}/fonts/inter/Inter-Bold-Latin1.ttf
-  ${THIRD_PARTY}/fonts/source-serif-4/SourceSerif4-Bold-Latin1.ttf)
+  ${THIRD_PARTY}/fonts/source-serif-4/SourceSerif4-Bold-Latin1.ttf
+  ${THIRD_PARTY}/fonts/dejavu/DejaVuSans-Bold-Symbols.ttf)
 set(DREAMSY_FONTS_CPP ${CMAKE_BINARY_DIR}/generated/fonts.cpp)
 string(JOIN "|" DREAMSY_FONT_FILES_ARG ${DREAMSY_FONT_FILES})  # "|": a ";" list would split the argument
 add_custom_command(
@@ -263,7 +264,7 @@ dreamsy_target_defaults(dreamsy_render)
 target_link_libraries(dreamsy_render PUBLIC dreamsy_pkg PRIVATE dreamsy_media_libs)
 
 # Platform UI drawing (E5): UI entities, toasts, dialogs, touch controls, pause button -> draw list.
-add_library(dreamsy_overlay STATIC src/ui/overlay.cpp)
+add_library(dreamsy_overlay STATIC src/ui/overlay.cpp src/ui/shell.cpp)
 dreamsy_target_defaults(dreamsy_overlay)
 target_link_libraries(dreamsy_overlay PUBLIC dreamsy_ui dreamsy_render dreamsy_script)
 

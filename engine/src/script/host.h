@@ -145,6 +145,15 @@ class Host {
   // "Restart": fires game.restartRequested, or (no listeners) reloads the entry scene.
   void request_restart();
 
+  // This session's finished runs (seconds, lower is better) and submitted values, oldest first:
+  // the pause menu's local Leaderboard view.
+  struct LocalScore {
+    std::string board;
+    double value = 0;
+    bool ascending = false;
+  };
+  const std::vector<LocalScore>& local_scores() const { return local_scores_; }
+
   ui::DialogSystem& dialogs() { return dialogs_; }
   const ui::ToastQueue& toasts() const { return toasts_; }
 
@@ -303,6 +312,7 @@ class Host {
   };
   std::vector<LbRun> lb_runs_;  // Map insertion order
   int64_t lb_seq_ = 0;
+  std::vector<LocalScore> local_scores_;
 
   // offline room: the avatar a script replicated (room.replicate)
   world::EntityId replicated_;

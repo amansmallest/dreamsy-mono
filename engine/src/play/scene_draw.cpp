@@ -5,6 +5,7 @@
 
 #include "physics/physics2d.h"
 #include "render/sort.h"
+#include "render/style.h"
 #include "world/value.h"
 
 namespace dreamsy::play {
@@ -49,7 +50,11 @@ float lerp(double a, double b, double t) { return static_cast<float>(a + (b - a)
 class Builder {
  public:
   Builder(script::Host& host, render::TextureStore& textures, render::DrawList& out)
-      : world_(host.world()), physics_(host.physics()), textures_(textures), out_(out) {}
+      : world_(host.world()),
+        physics_(host.physics()),
+        textures_(textures),
+        pixel_(render::style_from_manifest(host.package().manifest).pixel_snap),
+        out_(out) {}
 
   // z_acc: accumulated z_index; height_acc: the parent's height above the ground (2.5D `z`).
   void visit(EntityId id, int z_acc, double height_acc) {
@@ -94,6 +99,9 @@ class Builder {
     return s;
   }
 
+  // `emissive` (Sprite2D, Text2D, Particles2D): drawn above the Lighting2D darkness.
+  bool emissive(const Entity& e) const { return world::prop_index(*e.type, "emissive") >= 0 && world_.flag(e, "emissive"); }
+
   render::BlendMode blend(const Entity& e) const {
     return world::prop_index(*e.type, "blend") >= 0 && world_.str(e, "blend") == "add" ? render::BlendMode::Add
                                                                                        : render::BlendMode::Alpha;
@@ -123,6 +131,7 @@ class Builder {
     s.blend = blend(e);
     s.z = static_cast<float>(gz);
     s.height = static_cast<float>(e.height);
+    s.emissive = emissive(e);
     s.sort = sort(z);
     s.ground_z = static_cast<float>(ground_under(s.position.x, s.position.y, gz));
     s.shadow = gz > s.ground_z + 0.5;
@@ -179,6 +188,7 @@ class Builder {
     world::Point off = world_.vec(e, "shadow_offset");
     t.shadow_offset = {static_cast<float>(off.x), static_cast<float>(off.y)};
     t.z = static_cast<float>(gz);
+    t.emissive = emissive(e);
     t.sort = sort(z);
     out_.add(std::move(t));
   }
@@ -251,18 +261,32 @@ class Builder {
     double s0 = world_.num(e, "start_size"), s1 = world_.num(e, "end_size");
     std::string tex = world_.str(e, "texture");
     render::ImageId image = !tex.empty() ? textures_.find_asset(tex)
-                            : world_.str(e, "shape") == "circle" ? render::TextureStore::kShadow
+                            : world_.str(e, "shape") == "circle" ? render::TextureStore::kDisc
                                                                  : render::ImageId{};
     render::BlendMode mode = blend(e);
+    const bool glow = emissive(e);
+    // engine-web ParticlesView blends the start and end colors in linear light, and in pixel-art
+    // styles snaps particles to whole pixels.
+    auto to_linear = [](double x) { return x <= 0.04045 ? x / 12.92 : std::pow((x + 0.055) / 1.055, 2.4); };
+    auto to_srgb = [](double x) { return x <= 0.0031308 ? x * 12.92 : 1.055 * std::pow(x, 1 / 2.4) - 0.055; };
+    auto mix = [&](float a, float b, double t) {
+      return static_cast<float>(to_srgb(std::clamp(to_linear(a) + (to_linear(b) - to_linear(a)) * t, 0.0, 1.0)));
+    };
     for (int i = 0; i < em.count(); ++i) {
       double t = em.life(i) > 0 ? std::clamp(static_cast<double>(em.age(i)) / em.life(i), 0.0, 1.0) : 1.0;
       render::SpriteCmd s;  // particles live in world space (engine-web ParticlesView)
       s.image = image;
       s.position = {em.x(i), em.y(i)};
       float size = lerp(s0, s1, t);
+      if (pixel_) {
+        s.position = {std::round(s.position.x), std::round(s.position.y)};
+        size = std::max(1.0f, std::round(size));
+      }
       s.size = {size, size};
-      s.tint = {lerp(c0.r, c1.r, t), lerp(c0.g, c1.g, t), lerp(c0.b, c1.b, t), lerp(c0.a, c1.a, t)};
+      s.tint = {mix(c0.r, c1.r, t), mix(c0.g, c1.g, t), mix(c0.b, c1.b, t), lerp(c0.a, c1.a, t)};
+      if (s.tint.a <= 0.003f) continue;
       s.blend = mode;
+      s.emissive = glow;
       s.sort = sort(z);
       out_.add(std::move(s));
     }
@@ -271,8 +295,70 @@ class Builder {
   world::World& world_;
   physics::Physics2D* physics_;  // ground heights for shadows (may be null)
   render::TextureStore& textures_;
+  bool pixel_ = false;  // pixel-art style (manifest)
   render::DrawList& out_;
 };
+
+// Visible with every ancestor visible (engine-web Game.effectiveVisible).
+bool effective_visible(const world::World& w, EntityId id) {
+  for (const Entity* e = w.get(id); e; e = w.get(e->parent)) {
+    if (!w.visible(*e)) return false;
+  }
+  return true;
+}
+
+// engine-web core/lighting.ts flickerFactor: a deterministic flicker multiplier in [1 - amount, 1].
+double flicker_factor(double amount, double speed, double t, double seed) {
+  if (amount <= 0) return 1;
+  const double a = t * speed + seed * 1.37;
+  const double n = (std::sin(a * 2.1) + std::sin(a * 3.7 + 1.3) * 0.6 + std::sin(a * 7.3 + 4.1) * 0.3) / 1.9;  // -1..1
+  return 1 - amount * (0.5 + 0.5 * n);
+}
+
+// The scene's first visible Lighting2D and its lit Light2Ds, nearest to the view center first
+// (engine-web lightingState + collectLights).
+render::Lighting collect_lighting(script::Host& host, double cx, double cy) {
+  render::Lighting out;
+  world::World& w = host.world();
+  const std::vector<EntityId> all = w.walk();
+  for (EntityId id : all) {
+    const Entity* e = w.get(id);
+    if (!e || e->type->name != "Lighting2D" || !effective_visible(w, id)) continue;
+    const render::Color ambient = color_of(w.get_prop(*e, "ambient"), {0, 0, 0, 1});
+    const float darkness = static_cast<float>(w.num(*e, "darkness"));
+    out.enabled = true;
+    out.base = {1 - darkness + darkness * ambient.r, 1 - darkness + darkness * ambient.g, 1 - darkness + darkness * ambient.b, 1};
+    out.vignette = static_cast<float>(w.num(*e, "vignette"));
+    break;
+  }
+  if (!out.enabled) return out;
+  struct Candidate {
+    render::Light light;
+    double distance;  // to the view center, minus the radius
+  };
+  std::vector<Candidate> lights;
+  for (EntityId id : all) {
+    const Entity* e = w.get(id);
+    if (!e || e->type->name != "Light2D" || !w.flag(*e, "enabled") || !effective_visible(w, id)) continue;
+    const world::Mat2D m = w.global(id);
+    const double scale = std::hypot(m.a, m.b);
+    const double energy = w.num(*e, "energy") *
+                          flicker_factor(w.num(*e, "flicker"), w.num(*e, "flicker_speed"), host.time(), e->handle);
+    if (energy <= 0) continue;
+    const world::Point p = world::apply(m, 0, 0);
+    const render::Color c = color_of(w.get_prop(*e, "color"));
+    Candidate cand;
+    cand.light.position = {static_cast<float>(p.x), static_cast<float>(p.y)};
+    cand.light.radius = static_cast<float>(w.num(*e, "radius") * scale);
+    cand.light.falloff = static_cast<float>(w.num(*e, "falloff"));
+    cand.light.color = {static_cast<float>(c.r * energy), static_cast<float>(c.g * energy), static_cast<float>(c.b * energy), 1};
+    cand.distance = std::hypot(p.x - cx, p.y - cy) - cand.light.radius;
+    lights.push_back(cand);
+  }
+  std::stable_sort(lights.begin(), lights.end(), [](const Candidate& a, const Candidate& b) { return a.distance < b.distance; });
+  for (size_t i = 0; i < lights.size() && i < static_cast<size_t>(render::kMaxLights); i++) out.lights.push_back(lights[i].light);
+  return out;
+}
 
 }  // namespace
 
@@ -288,6 +374,7 @@ void draw_world(script::Host& host, render::TextureStore& textures, render::Draw
                               : m.style.preset == "pixel"                   ? "#1a1c2c"
                                                                             : "#20232a");
   Builder(host, textures, out).visit(w.root(), 0, 0);
+  out.lighting = collect_lighting(host, cam.x, cam.y);
 }
 
 }  // namespace dreamsy::play

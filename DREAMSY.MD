@@ -927,6 +927,18 @@ reference-size target with nearest upscaling; shaders are hand-written MSL + GLS
 materials need sokol-shdc; bundled fonts are Press Start 2P, Nunito, Inter, Source Serif 4 (OFL; Latin-1
 subsets); WebP is deferred (clear error) because no package uses it and libwebp costs ~100 KB.
 
+**E5 input + platform UI decisions (2026-11-17):** script-visible input follows engine-web exactly
+(`engine/src/input/input_state.h`: pressed for the one tick after an edge, live held, pointer visible one tick
+after release, swipes ≥ 40 px within 0.6 s with px/s velocity, everything hidden while a blocking dialog is
+open, `recentlyRead` = 45 ticks). The platform UI is drawn by the engine into the draw list, not as HTML:
+UI entities, toasts, dialogs, on-screen controls and the pause button/menu share one layout module
+(`engine/src/ui/layout.h`) for drawing and hit testing. On-screen controls keep engine-web's sizes in CSS px
+(points), converted to reference px per window, but sit inside the letterboxed game rect (engine-web places
+them in the container). The renderer has no scissor yet, so scroll lists clip rects/images exactly and drop
+text lines outside the clip. Characters outside the Latin-1 font subsets (▶, ▼) are replaced by » and a
+drawn marker. Headless `tap_screen` keeps engine-web's `uiHit` rules (global z_index, no safe area); device
+taps use the drawn stacking order.
+
 ### 14.11 Open questions
 
 - **OPEN:** WebGPU from the start or after WebGL2 parity (default: after).

@@ -3,7 +3,7 @@
 The native 2D/2.5D engine: one C++20 core for web (WebAssembly), iOS, Android and headless game
 servers. Design and roadmap: `DREAMSY.MD` §14. New to C++? Start with `docs/CPP-FOR-TS-DEVS.md`.
 
-Status: **E0 (scaffold), E1 (packages), E2 (scripting), E3 (world + physics) done; E4 (renderer) foundation done.**
+Status: **E0 (scaffold), E1 (packages), E2 (scripting), E3 (world + physics) done; E4 (renderer) foundation done; E5 input + platform UI (keys, mouse, touch, on-screen controls, gestures, UI entities, dialogs, toasts, pause) done, audio/save/settings pending.**
 It loads and validates every game in `games/` (same verdicts as the TypeScript validator), reads/writes
 Dreamsy packs (`.dpk`, §3.6), and runs games headless natively: entities, Box2D physics with 2.5D height,
 tweens, sprite animation, particles, camera, tile maps, dialogs. Every 2D game in `games/` produces the same
@@ -29,8 +29,9 @@ ctest --preset debug                                   # run the tests
     --input "10-200:move_x=1;40:jump" --dump "10:player,#coin" --hash   # scripted input, entity dumps, state hashes
 ./build/release/dreamsy-tool run tests/scenes/z_jump --view topdown \
     --height player=16,crate=16,ledge=48 --zjump 50:player=300 --dump 10:player   # 2.5D height (engine-internal)
-./build/debug/dreamsy-player                           # window (Metal): renderer test scene from feature-demo
-./build/debug/dreamsy-player --view iso                # side | topdown | oblique | iso; keys 1-4 / Tab; --smooth; --frames N
+./build/debug/dreamsy-player                           # window (Metal): runs feature-demo (keys, mouse, Esc/P pause)
+./build/debug/dreamsy-player ../games/examples/kit-tycoon --touch   # --touch: on-screen controls with the mouse
+./build/debug/dreamsy-player --view iso                # side | topdown | oblique | iso; keys 1-4 / Tab; --smooth; --frames N; --demo
 ```
 
 Other presets: `release`, `headless` (no window; for Linux CI), `web`, and `ios-sim`, `ios-device`,
@@ -45,6 +46,10 @@ ctest --preset web                                     # tests run under Node
 # build/web/dreamsy-player.html: serve the folder with any static server to view it
 # (dreamsy-player.html#iso picks the view mode, #iso-smooth forces smooth mode)
 NODE_PATH=../engine-web/node_modules node tools/web_screenshot.cjs /tmp/dreamsy-e4 540x960
+NODE_PATH=../engine-web/node_modules node tools/web_touch_screenshot.cjs /tmp/dreamsy-e5
+#   as a phone: real touch events tap through the dialog, push the joystick, hold A
+# Another game in the web player (kit games need their kit packs embedded):
+cmake --preset web -DDREAMSY_DEMO_PACKAGE_DIR=$PWD/../games/examples/kit-tycoon -DDREAMSY_WEB_EMBED_KITS=ON
 #   headless Chromium screenshots of every view mode (Playwright page.route, no server)
 ```
 
@@ -145,8 +150,11 @@ The engine's own logging (`base/log.cpp`) writes to stderr, which Android drops;
 | `src/pkg/` | packages: `Files` (packs, dirs), `pack.cpp` (.dpk), `catalog` (embedded `format/catalog.json` + kit list), `manifest` (TOML), `formats` (tilesets, levels, anims, sfx, music, SVG), `validate` (`load_package()`), `zip_import` (tools only) |
 | `src/world/` | the entity world (E3): `world` (entities with catalog props and 2.5D `z`/`height`, scene tree, generational ids + never-reused script handles, prop coercion, transforms, view mode), `tilemap`, `tween`, `particles` |
 | `src/physics/` | Box2D v3 (32 px = 1 m, Rapier's average friction/restitution) + engine-handled z: gravity, landing, z-range collision filtering (see `physics2d.h`) |
-| `src/script/` | Luau host (§14.13): `vm` (sandbox, memory cap, CPU budget, tracebacks), `host` (scripts, require, kits, scheduler, scenes, non-entity ops), `host_world` (entity ops, physics events, tweens, anims, particles, camera, dialogs), `input`, `dialog`; prelude + kits embedded from engine-web at build time |
+| `src/script/` | Luau host (§14.13): `vm` (sandbox, memory cap, CPU budget, tracebacks), `host` (scripts, require, kits, scheduler, scenes, non-entity ops), `host_world` (entity ops, physics events, tweens, anims, particles, camera, dialogs), `host_input` (pointer signals, swipes, tap_screen / tap_world / press, pause); prelude + kits embedded from engine-web at build time |
 | `src/check/` | `dreamsy-tool check`: Luau analyzer over a package's scripts against `format/dreamsy.d.luau` (tools only) |
+| `src/input/` | input (E5), platform-free: `input_state` (what scripts read per tick: axes, pressed/held, pointer grace, swipes; engine-web core/input.ts), `keyboard`, `gamepad` (mapping hook; polling not wired), `usage` (which controls a game reads), `touch_controls` (on-screen joystick / A B C / aim stick: layout, hit testing, visibility from reads) |
+| `src/ui/` | platform UI (E5): `dialog` (ui.dialog / ui.choice state machine + input glue), `toasts`, `layout` (UI entity layout + hit testing, shared by drawing and taps), `overlay` (draws UI entities, toasts, dialogs, controls, pause button/menu into the draw list; `dreamsy_overlay`) |
+| `src/play/` | the running game in the player: `scene_draw` (world -> draw list), `platform_ui` (device events -> controls / pause / dialog / UI / world taps; draws the overlay) |
 | `src/render/` | renderer (E4). CPU side, no GPU (`dreamsy_render`): `draw_list.h` (what E3 fills each frame), `sort` (depth order per view mode, shadows), `view` (letterbox, projection, camera, pixel snap), `image` (PNG/JPG stb_image, SVG nanosvg), `atlas` (stb_rect_pack pages), `textures` (package images on first use), `font` (bundled fonts, stb_truetype, layout), `geometry` (batched quads), `style` (manifest render settings). GPU side (`dreamsy_render_gpu`): `renderer` (sokol_gfx, hand-written Metal + GLSL ES 3.0 shaders) |
 | `src/dmath/` | deterministic math: musl libm linked into every executable (see its README) |
 | `src/platform/` | sokol implementation unit; web link settings |
@@ -155,7 +163,7 @@ The engine's own logging (`base/log.cpp`) writes to stderr, which Android drops;
 | `src/dev/` | E0 smoke checks (Luau, Box2D), kept for `dreamsy-tool smoke` |
 | `apps/tool/` | `dreamsy-tool`, the headless CLI |
 | `apps/player/` | `dreamsy-player`, the windowed engine; `demo_scene` draws a test scene from a package's assets until E3/E6 |
-| `tools/` | `web_screenshot.cjs` (screenshots of the web player) |
+| `tools/` | `web_screenshot.cjs` (screenshots of the web player), `web_touch_screenshot.cjs` (phone touch input) |
 | `tests/` | doctest unit tests, one binary: `dreamsy-tests` |
 | `tests/conformance/` | `conformance.py`: C++ vs `format/src/validate.ts` on every game plus ~80 generated broken packages; `run_compare.py`: C++ vs engine-web: `tests/scripts/*` (identical logs, errors, audio, save, time), physics scenarios with scripted input (identical script output + measured position/velocity drift), `--all` over every game |
 | `tests/scripts/` | script-only test games (basics, modules, data/save, errors/budget, scenes/room/store/audio, math) |

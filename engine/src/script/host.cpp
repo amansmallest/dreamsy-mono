@@ -365,34 +365,18 @@ void Host::step() {
   if (physics_ && sdt > 0) step_physics(sdt);
   step_sprites_and_particles(sdt);
   update_camera(false);
+  toasts_.expire(time_);
   process_scene_change();
 }
 
 void Host::step_dialogs() {
-  const bool was_blocking = dialogs_.current && dialogs_.current->blocking;
-  if (dialogs_.current) {
-    const double ny = input_.raw_axis("move_y");
-    const int dir = ny < -0.5 ? -1 : ny > 0.5 ? 1 : 0;
-    const int nav = dir != nav_prev_ ? dir : 0;
-    nav_prev_ = dir;
-    DialogInput in;
-    in.confirm = input_.raw_pressed("jump") || input_.raw_pressed("action");
-    in.nav = nav;
-    in.tap = dialog_tap_;
-    dialog_tap_.reset();
-    if (auto done = dialogs_.step(dt_, in)) {
-      call_ref(refs_.done_fire, nullptr, 2, [&](lua_State* S) {
-        lua_pushnumber(S, static_cast<double>(done->id));
-        if (done->choice >= 0) lua_pushnumber(S, done->choice + 1);
-        else lua_pushnil(S);
-      });
-    }
-  } else {
-    dialog_tap_.reset();
-    nav_prev_ = 0;
+  if (auto done = dialogs_.step(input_, dt_)) {
+    call_ref(refs_.done_fire, nullptr, 2, [&](lua_State* S) {
+      lua_pushnumber(S, static_cast<double>(done->id));
+      if (done->choice >= 0) lua_pushnumber(S, done->choice + 1);
+      else lua_pushnil(S);
+    });
   }
-  // the tick a blocking dialog closes still swallows its confirm press
-  input_.blocked = was_blocking || (dialogs_.current && dialogs_.current->blocking);
 }
 
 void Host::process_scene_change() {
@@ -530,7 +514,7 @@ int Host::dispatch(lua_State* L) {
       }
       return 0;
     }
-    case OP_AXIS:  // devices arrive with the platform layer (E5); tools feed input_ meanwhile
+    case OP_AXIS:  // fed by the platform layer (src/input) or by tools (dreamsy-tool run --input)
       lua_pushnumber(L, input_.axis(str_arg(L, 2)));
       return 1;
     case OP_PRESSED:
@@ -540,14 +524,14 @@ int Host::dispatch(lua_State* L) {
       lua_pushboolean(L, input_.held(str_arg(L, 2)));
       return 1;
     case OP_POINTER:
-      if (!input_.pointer) {
+      if (!input_.pointer()) {
         lua_pushnumber(L, TAG_PLAIN);
         lua_pushnil(L);
         return 2;
       }
       lua_pushnumber(L, TAG_VEC2);
-      lua_pushnumber(L, input_.pointer->first);
-      lua_pushnumber(L, input_.pointer->second);
+      lua_pushnumber(L, input_.pointer()->x);
+      lua_pushnumber(L, input_.pointer()->y);
       return 3;
     case OP_REQUIRE:
       require_module(L, str_arg(L, 2), str_arg(L, 3));
@@ -793,8 +777,11 @@ int Host::dispatch(lua_State* L) {
       }
       raise(L, "game: unknown call " + what);
     }
-    case OP_TOAST:  // drawn by the platform layer (E5); headless toasts have no effect
+    case OP_TOAST: {  // drawn by ui/overlay.h; headless toasts are kept (and expire) but not shown
+      const double secs = lua_isnoneornil(L, 3) ? ui::kDefaultToastSeconds : lua_tonumber(L, 3);
+      toasts_.push(next_id_++, str_arg(L, 2), time_, secs);
       return 0;
+    }
     case OP_SOUND:  // positional asset sounds play in the audio layer (E5)
       return 0;
     case OP_NET:

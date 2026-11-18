@@ -26,11 +26,12 @@
 #include "base/rng.h"
 #include "physics/physics2d.h"
 #include "pkg/package.h"
-#include "script/dialog.h"
-#include "script/input.h"
+#include "input/input_state.h"
 #include "script/json_value.h"
 #include "script/kits.h"
 #include "script/vm.h"
+#include "ui/dialog.h"
+#include "ui/toasts.h"
 #include "world/tween.h"
 #include "world/world.h"
 
@@ -102,7 +103,7 @@ class Host {
   world::World& world() { return world_; }
   const world::World& world() const { return world_; }
   physics::Physics2D* physics() { return physics_.get(); }
-  Input& input() { return input_; }
+  input::InputState& input() { return input_; }
   size_t tween_count() const { return tweens_.size(); }
   struct CameraView {
     double x = 0, y = 0, zoom = 1;  // view center (smoothing, limits and shake applied)
@@ -112,6 +113,39 @@ class Host {
   uint64_t state_hash();
 
   Settings settings;
+
+  // ---- pointer, taps and platform UI (host_input.cpp). Positions are reference (UI) px.
+  //
+  // The platform layer (play/platform_ui.h) calls these as events arrive, between ticks. They fire
+  // input.pointerDown / pointerUp / swipe right away, like engine-web's Game.pointerDown/Up.
+  void pointer_down(double x, double y, std::optional<double> time = std::nullopt);
+  void pointer_move(double x, double y);
+  void pointer_up(double x, double y, std::optional<double> time = std::nullopt);
+  // Headless tap (engine-web Game.tapScreen, playtests): pointer down + up, then the open dialog,
+  // else the topmost UI element (UIButton.pressed + tapped), else the world. Returns "dialog",
+  // the entity id that was hit, or "".
+  std::string tap_screen(double x, double y);
+  // World-space tap: `tapped` (+ tileTapped, tappedAt) on the topmost visible listening entity.
+  world::EntityId tap_world(double wx, double wy);
+  // `tapped` on one entity (the UI overlay); false if nothing listens.
+  bool tap_entity(world::EntityId e);
+  // UIButton press: fires `pressed` if the button is visible.
+  void press(world::EntityId e);
+  // Reference screen -> world (ground plane, side/topdown camera; engine-web refToWorld).
+  world::Point ref_to_world(double x, double y);
+  double ref_width() const;
+  double ref_height() const;
+
+  // Platform pause menu (engine-web Game.pause / resume / requestRestart). While paused the
+  // player stops calling step(): no ticks, timers or physics.
+  void pause();
+  void resume();
+  bool paused() const { return paused_; }
+  // "Restart": fires game.restartRequested, or (no listeners) reloads the entry scene.
+  void request_restart();
+
+  ui::DialogSystem& dialogs() { return dialogs_; }
+  const ui::ToastQueue& toasts() const { return toasts_; }
 
  private:
   struct ScriptInst {
@@ -217,10 +251,10 @@ class Host {
   std::unique_ptr<Vm> vm_;
   Rng rng_;
   Rng cam_rng_;
-  Input input_;
-  Dialogs dialogs_;
-  std::optional<int> dialog_tap_;
-  int nav_prev_ = 0;
+  input::InputState input_;
+  ui::DialogSystem dialogs_;
+  ui::ToastQueue toasts_;
+  bool paused_ = false;
   Refs refs_;
   std::vector<std::string> enabled_kits_;
 

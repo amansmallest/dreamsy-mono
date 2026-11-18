@@ -4,13 +4,16 @@
 // animation, camera) and draws the world every frame (play::draw_world -> render::Renderer).
 // --demo shows the E4 renderer test scene (demo_scene.h) instead.
 //
-//   dreamsy-player [package-dir] [--view side|topdown|oblique|iso] [--smooth] [--frames N] [--demo]
+//   dreamsy-player [package-dir] [--view side|topdown|oblique|iso] [--smooth] [--frames N] [--demo] [--touch]
 //
-// Input until E5 lands: arrows/WASD move (move_x/move_y), space/up = jump, Z/J = action, X/K = action2.
-// In game mode, keys 1-4 preview the world in another view mode (2.5D projection).
+// Input (src/input, play/platform_ui.h): arrows/WASD move, Space/Z jump (Up/W too in games that never
+// read move_y), E/J/Enter/X action, Q/K/C action2; mouse and multi-touch drive input.pointer*, taps
+// on UI and world, dialogs and (on touch devices, or with --touch / #touch) the on-screen controls.
+// Esc/P pause. In game mode, keys 1-4 preview the world in another view mode (2.5D projection).
 //
 // --smooth forces smooth mode (linear filtering) on a pixel-art package. On the web the package
-// is embedded at /pkg and the URL hash sets the options (dreamsy-player.html#iso, #iso-smooth). Keys: 1-4 pick the view mode, Tab cycles, Esc quits.
+// is embedded at /pkg and the URL hash sets the options as dash-separated words
+// (dreamsy-player.html#iso, #iso-smooth, #demo-iso, #touch). Keys: 1-4 pick the view mode, Tab cycles.
 #include <algorithm>
 #include <cstdlib>
 #include <cstring>
@@ -22,6 +25,8 @@
 #include "base/version.h"
 #include "demo_scene.h"
 #include "pkg/catalog.h"
+#include "input/usage.h"
+#include "play/platform_ui.h"
 #include "play/scene_draw.h"
 #include "script/host.h"
 #include "pkg/validate.h"
@@ -36,6 +41,9 @@
 #include "sokol_log.h"
 #include "sokol_time.h"
 
+#if defined(__APPLE__)
+#include <TargetConditionals.h>
+#endif
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #endif
@@ -53,7 +61,8 @@ using namespace dreamsy;
 
 // The kits a game enables (and their dependencies), each from <dir>/<kit>.dpk. Kit code isn't in the
 // player binary (script/kits.h); only what a game uses is loaded.
-Result<script::KitLookup> load_kits(const pkg::Manifest& m) {
+// `kit_sources` receives every kit script, for the input-usage scan (input/usage.h).
+Result<script::KitLookup> load_kits(const pkg::Manifest& m, std::string& kit_sources) {
   std::vector<std::shared_ptr<const pkg::Files>> packs;
   for (const std::string& kit : pkg::Catalog::get().expand_kits(m.kits.value_or(std::vector<std::string>{}))) {
     const std::string path = std::string(DREAMSY_KIT_PACKS_DIR) + "/" + kit + ".dpk";
@@ -65,6 +74,9 @@ Result<script::KitLookup> load_kits(const pkg::Manifest& m) {
     std::fclose(f);
     auto files = pkg::Files::from_pack(bytes);
     if (!files) return Error{"kit \"" + kit + "\": " + files.error()};
+    for (const std::string& file : files.value().paths("kits/")) {
+      if (auto text = files.value().text(file)) kit_sources.append(*text);
+    }
     packs.push_back(std::make_shared<const pkg::Files>(std::move(files).value()));
   }
   return script::kits_from_packs(std::move(packs));
@@ -76,6 +88,7 @@ struct Options {
   int frames = 0;  // quit after this many frames (0 = run until closed)
   bool smooth = false;  // force smooth mode (linear filtering, no pixel snap) to check it on any package
   bool demo = false;    // renderer test scene instead of running the game
+  bool touch = false;   // force the on-screen controls (they show by default on touch devices only)
 };
 
 std::optional<render::ViewMode> parse_view(const char* s) {
@@ -91,6 +104,7 @@ struct App {
   Options options;
   std::shared_ptr<const pkg::Package> package;
   std::unique_ptr<script::Host> host;  // the running game (null in --demo)
+  std::unique_ptr<play::PlatformUi> ui;  // input routing, UI entities, dialogs, controls (with host)
   double accumulator = 0;              // unsimulated time, seconds
   uint64_t last_ticks = 0;
   render::RenderStyle style;
@@ -137,7 +151,8 @@ bool load(App& app) {
     return true;
   }
   script::HostOptions host_options;
-  auto kits = load_kits(app.package->manifest);
+  std::string kit_sources;
+  auto kits = load_kits(app.package->manifest, kit_sources);
   if (!kits) {
     log_error(kits.error());
     return false;
@@ -152,6 +167,25 @@ bool load(App& app) {
     return false;
   }
   app.host = std::move(host).value();
+
+  // Which controls the game reads (engine-web detectInputUsage), and whether Up/W also jump.
+  std::string game_scripts;
+  for (const std::string& path : app.package->files.paths("scripts/")) {
+    if (auto text = app.package->files.text(path)) game_scripts.append(*text);
+  }
+  const input::InputUsage usage = input::detect_input_usage(game_scripts + kit_sources);
+  bool touch = app.options.touch;
+#ifdef __EMSCRIPTEN__
+  touch = touch || emscripten_run_script_int("('ontouchstart' in window || navigator.maxTouchPoints > 0) ? 1 : 0") != 0;
+#elif defined(__ANDROID__) || (defined(__APPLE__) && TARGET_OS_IPHONE)
+  touch = true;
+#endif
+  app.ui = std::make_unique<play::PlatformUi>(*app.host, *app.textures, *app.fonts, usage,
+                                              !input::scripts_mention_move_y(game_scripts), touch);
+  if (Status s = app.ui->init(); !s) {
+    log_error(s.error());
+    return false;
+  }
   return true;
 }
 
@@ -169,17 +203,18 @@ void init() {
            (sg_query_backend() == SG_BACKEND_GLES3 ? "webgl2/gles3" : "metal") + ")");
 
 #ifdef __EMSCRIPTEN__
-  // dreamsy-player.html#iso picks the view mode; #iso-smooth also forces smooth mode.
-  std::string hash = emscripten_run_script_string("window.location.hash.slice(1)");
-  if (const size_t dash = hash.find('-'); dash != std::string::npos) {
-    app.options.smooth = hash.substr(dash + 1) == "smooth";
-    hash.resize(dash);
+  // dreamsy-player.html#<words>: a view mode, "smooth", "demo", "touch", separated by dashes.
+  const std::string hash = emscripten_run_script_string("window.location.hash.slice(1)");
+  for (size_t start = 0; start <= hash.size();) {
+    size_t end = hash.find('-', start);
+    if (end == std::string::npos) end = hash.size();
+    const std::string word = hash.substr(start, end - start);
+    if (word == "smooth") app.options.smooth = true;
+    else if (word == "demo") app.options.demo = true;
+    else if (word == "touch") app.options.touch = true;
+    else if (auto v = parse_view(word.c_str())) app.options.view = *v;
+    start = end + 1;
   }
-  if (hash.rfind("demo", 0) == 0) {
-    app.options.demo = true;
-    hash = hash.size() > 5 ? hash.substr(5) : "";
-  }
-  if (auto v = parse_view(hash.c_str())) app.options.view = *v;
 #endif
   app.view = app.options.view;
 
@@ -209,14 +244,26 @@ void frame() {
     return;
   }
   if (app.host) {
-    // Fixed 60 Hz simulation, at most 5 ticks per frame (engine-web Game.advance).
+    // Layout points per reference px: the game rect's scale over the display's pixel density
+    // (on the web, CSS px per game px). Safe-area insets: TODO(E9), read from the platform.
+    const render::Fit fit = render::fit_rect(app.style.ref_w, app.style.ref_h, static_cast<float>(sapp_width()),
+                                             static_cast<float>(sapp_height()));
+    app.ui->set_screen(fit.s / std::max(0.5f, sapp_dpi_scale()), {});
+    // Fixed 60 Hz simulation, at most 5 ticks per frame (engine-web Game.advance). Paused: no ticks.
     constexpr double kDt = 1.0 / 60.0;
-    app.accumulator = std::min(app.accumulator + stm_sec(stm_laptime(&app.last_ticks)), kDt * 5);
+    const double elapsed = stm_sec(stm_laptime(&app.last_ticks));
+    if (app.host->paused()) {
+      app.accumulator = 0;
+    } else {
+      app.accumulator = std::min(app.accumulator + elapsed, kDt * 5);
+    }
     while (app.accumulator >= kDt - 1e-9) {
       app.accumulator -= kDt;
       app.host->step();
     }
+    app.ui->update(static_cast<float>(elapsed));
     play::draw_world(*app.host, *app.textures, app.draw_list);
+    app.ui->draw(app.draw_list, stm_sec(stm_since(app.start_ticks)));
   } else {
     const double t = stm_sec(stm_since(app.start_ticks));
     app.scene->build(app.draw_list, app.view, t, app.renderer.stats());
@@ -244,19 +291,69 @@ void cleanup() {
   g_app.reset();
 }
 
-// Keyboard -> the game's actions (a stand-in until E5's input system: touch, gamepad, gestures).
-void game_key(App& app, sapp_keycode key, bool down) {
-  if (!app.host) return;
-  script::Input& in = app.host->input();
-  auto axis = [&](const char* name, double v) { in.set_axis(name, down ? v : 0); };
-  switch (key) {
-    case SAPP_KEYCODE_LEFT: case SAPP_KEYCODE_A: axis("move_x", -1); break;
-    case SAPP_KEYCODE_RIGHT: case SAPP_KEYCODE_D: axis("move_x", 1); break;
-    case SAPP_KEYCODE_DOWN: case SAPP_KEYCODE_S: axis("move_y", 1); break;
-    case SAPP_KEYCODE_W: axis("move_y", -1); break;
-    case SAPP_KEYCODE_UP: case SAPP_KEYCODE_SPACE: in.set_button("jump", down); break;
-    case SAPP_KEYCODE_Z: case SAPP_KEYCODE_J: in.set_button("action", down); break;
-    case SAPP_KEYCODE_X: case SAPP_KEYCODE_K: in.set_button("action2", down); break;
+// sokol key codes -> the keys the engine maps (input/keyboard.h).
+input::Key key_of(sapp_keycode k) {
+  switch (k) {
+    case SAPP_KEYCODE_LEFT: return input::Key::Left;
+    case SAPP_KEYCODE_RIGHT: return input::Key::Right;
+    case SAPP_KEYCODE_UP: return input::Key::Up;
+    case SAPP_KEYCODE_DOWN: return input::Key::Down;
+    case SAPP_KEYCODE_A: return input::Key::A;
+    case SAPP_KEYCODE_C: return input::Key::C;
+    case SAPP_KEYCODE_D: return input::Key::D;
+    case SAPP_KEYCODE_E: return input::Key::E;
+    case SAPP_KEYCODE_J: return input::Key::J;
+    case SAPP_KEYCODE_K: return input::Key::K;
+    case SAPP_KEYCODE_Q: return input::Key::Q;
+    case SAPP_KEYCODE_S: return input::Key::S;
+    case SAPP_KEYCODE_W: return input::Key::W;
+    case SAPP_KEYCODE_X: return input::Key::X;
+    case SAPP_KEYCODE_Z: return input::Key::Z;
+    case SAPP_KEYCODE_SPACE: return input::Key::Space;
+    case SAPP_KEYCODE_ENTER: case SAPP_KEYCODE_KP_ENTER: return input::Key::Enter;
+    case SAPP_KEYCODE_ESCAPE: return input::Key::Escape;
+    case SAPP_KEYCODE_P: return input::Key::P;
+    default: return input::Key::Other;
+  }
+}
+
+// Window events -> the platform UI (keys, mouse, touches, focus), positions in reference px.
+void game_event(App& app, const sapp_event* e) {
+  if (!app.ui) return;
+  play::PlatformUi& ui = *app.ui;
+  auto ref = [&](float x, float y) {
+    const render::Vec2 p = render::framebuffer_to_ref(app.renderer.fit(), {x, y});
+    return input::Vec2{p.x, p.y};
+  };
+  switch (e->type) {
+    case SAPP_EVENTTYPE_KEY_DOWN:
+      if (!e->key_repeat) ui.key(key_of(e->key_code), true);
+      break;
+    case SAPP_EVENTTYPE_KEY_UP: ui.key(key_of(e->key_code), false); break;
+    case SAPP_EVENTTYPE_UNFOCUSED: ui.blur(); break;
+    case SAPP_EVENTTYPE_MOUSE_DOWN:
+      if (e->mouse_button == SAPP_MOUSEBUTTON_LEFT) ui.pointer(play::PointerPhase::Down, play::kMousePointerId, ref(e->mouse_x, e->mouse_y));
+      break;
+    case SAPP_EVENTTYPE_MOUSE_MOVE: ui.pointer(play::PointerPhase::Move, play::kMousePointerId, ref(e->mouse_x, e->mouse_y)); break;
+    case SAPP_EVENTTYPE_MOUSE_UP:
+      if (e->mouse_button == SAPP_MOUSEBUTTON_LEFT) ui.pointer(play::PointerPhase::Up, play::kMousePointerId, ref(e->mouse_x, e->mouse_y));
+      break;
+    case SAPP_EVENTTYPE_MOUSE_SCROLL: ui.wheel(ref(e->mouse_x, e->mouse_y), -e->scroll_y * 40); break;
+    case SAPP_EVENTTYPE_TOUCHES_BEGAN:
+    case SAPP_EVENTTYPE_TOUCHES_MOVED:
+    case SAPP_EVENTTYPE_TOUCHES_ENDED:
+    case SAPP_EVENTTYPE_TOUCHES_CANCELLED: {
+      const play::PointerPhase phase = e->type == SAPP_EVENTTYPE_TOUCHES_BEGAN   ? play::PointerPhase::Down
+                                       : e->type == SAPP_EVENTTYPE_TOUCHES_MOVED ? play::PointerPhase::Move
+                                       : e->type == SAPP_EVENTTYPE_TOUCHES_ENDED ? play::PointerPhase::Up
+                                                                                 : play::PointerPhase::Cancel;
+      for (int i = 0; i < e->num_touches; i++) {
+        const sapp_touchpoint& t = e->touches[i];
+        if (!t.changed) continue;
+        ui.pointer(phase, static_cast<int64_t>(t.identifier), ref(t.pos_x, t.pos_y));
+      }
+      break;
+    }
     default: break;
   }
 }
@@ -268,11 +365,12 @@ void set_view(App& app, render::ViewMode v) {
 
 void event(const sapp_event* e) {
   App& app = *g_app;
-  if (e->type == SAPP_EVENTTYPE_KEY_DOWN && !e->key_repeat) game_key(app, e->key_code, true);
-  if (e->type == SAPP_EVENTTYPE_KEY_UP) game_key(app, e->key_code, false);
+  game_event(app, e);
   if (e->type != SAPP_EVENTTYPE_KEY_DOWN) return;
   switch (e->key_code) {
-    case SAPP_KEYCODE_ESCAPE: sapp_request_quit(); break;
+    case SAPP_KEYCODE_ESCAPE:
+      if (!app.host) sapp_request_quit();  // the demo quits; games pause (platform UI)
+      break;
     case SAPP_KEYCODE_1: set_view(app, render::ViewMode::Side); break;
     case SAPP_KEYCODE_2: set_view(app, render::ViewMode::TopDown); break;
     case SAPP_KEYCODE_3: set_view(app, render::ViewMode::Oblique); break;
@@ -295,6 +393,8 @@ sapp_desc sokol_main(int argc, char** argv) {
       } else {
         log_warn(std::string("unknown view mode: ") + argv[i]);
       }
+    } else if (arg == "--touch") {
+      o.touch = true;
     } else if (arg == "--demo") {
       o.demo = true;
     } else if (arg == "--smooth") {

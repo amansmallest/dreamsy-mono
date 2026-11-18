@@ -1155,7 +1155,7 @@ int Host::dialog_op(lua_State* L) {
   const std::string what = str_arg(L, 2);
   if (what == "open") {
     // kind, lines table, options table|nil, speed, position, block
-    DialogState st;
+    ui::DialogState st;
     st.choice = str_arg(L, 3) == "choice";
     const int n = lua_istable(L, 4) ? lua_objlen(L, 4) : 0;
     for (int i = 1; i <= std::min(n, 200); ++i) {
@@ -1169,7 +1169,7 @@ int Host::dialog_op(lua_State* L) {
         lua_pop(L, 1);
         return s;
       };
-      DialogLine line;
+      ui::DialogLine line;
       line.text = utf16_prefix(field("text").value_or(""), 2000);
       line.speaker = field("speaker");
       line.portrait = field("portrait");
@@ -1193,16 +1193,16 @@ int Host::dialog_op(lua_State* L) {
     st.id = next_id_++;
     st.shown = st.speed > 0 ? 0 : static_cast<double>(st.lines[0].length);
     const int64_t id = st.id;
-    dialogs_.open(std::move(st));
+    dialogs_.dialogs.open(std::move(st));
     lua_pushnumber(L, static_cast<double>(id));
     return 1;
   }
   if (what == "close") {
-    dialogs_.close(static_cast<int64_t>(lua_tonumber(L, 3)));
+    dialogs_.dialogs.close(static_cast<int64_t>(lua_tonumber(L, 3)));
     return 0;
   }
   if (what == "isOpen") {
-    lua_pushboolean(L, dialogs_.current.has_value());
+    lua_pushboolean(L, dialogs_.open());
     return 1;
   }
   raise(L, "ui.dialog: unknown call " + what);

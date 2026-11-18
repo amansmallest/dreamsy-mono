@@ -1,9 +1,9 @@
-#include "script/dialog.h"
+#include "ui/dialog.h"
 
 #include <algorithm>
 #include <cmath>
 
-namespace dreamsy::script {
+namespace dreamsy::ui {
 
 void Dialogs::open(DialogState d) {
   if (current) queue.push_back(std::move(d));
@@ -35,6 +35,10 @@ DialogDone Dialogs::finish(int choice) {
   return done;
 }
 
+bool Dialogs::line_done() const {
+  return !current || current->shown >= static_cast<double>(current->lines[current->index].length);
+}
+
 std::optional<DialogDone> Dialogs::step(double dt, const DialogInput& in) {
   if (!current) return std::nullopt;
   DialogState& c = *current;
@@ -64,4 +68,25 @@ std::optional<DialogDone> Dialogs::step(double dt, const DialogInput& in) {
   return finish(-1);
 }
 
-}  // namespace dreamsy::script
+std::optional<DialogDone> DialogSystem::step(input::InputState& input, double dt) {
+  const bool was_blocking = dialogs.current && dialogs.current->blocking;
+  std::optional<DialogDone> done;
+  if (dialogs.current) {
+    const double ny = input.raw_axis("move_y");
+    const int dir = ny < -0.5 ? -1 : ny > 0.5 ? 1 : 0;
+    DialogInput in;
+    in.nav = dir != nav_prev_ ? dir : 0;  // an edge: only when the direction changes
+    nav_prev_ = dir;
+    in.confirm = input.raw_pressed("jump") || input.raw_pressed("action");
+    in.tap = tap_;
+    tap_.reset();
+    done = dialogs.step(dt, in);
+  } else {
+    tap_.reset();
+    nav_prev_ = 0;
+  }
+  input.blocked = was_blocking || (dialogs.current && dialogs.current->blocking);
+  return done;
+}
+
+}  // namespace dreamsy::ui

@@ -5,7 +5,7 @@
 .dev-logs
 .git
 apps
-third_party
+engine/build
 *credentials*.csv
 **/*.pem
 **/*.key

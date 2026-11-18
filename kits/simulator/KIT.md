@@ -110,7 +110,7 @@ Sim.format.num(1234567) -> "1.23M"   Sim.format.time(125) -> "2m 05s"   Sim.form
 (taps + auto-swing, sells early when that affords the next target, buys the cheapest next zone/tool/backpack, puts 30% of sales
 toward eggs + equips best, rebirths when the next target is > 6 min away) → `{ zones = {{id, t}}, gear, rebirths = {{t, gain}},
 firstRebirth, eggs, events, gaps = {max, median, at}, stalls = {{from, to, minutes}}, ok, final }` (seconds). Run it in a test
-(see `engine-web/test/kits/simulator.test.ts`). Pebble Pals: creek 8.8 min, canyon 20 min, first rebirth 29 min, peak 53 min,
+(see `engine/tests/kits/simulator_test.cpp`). Pebble Pals: creek 8.8 min, canyon 20 min, first rebirth 29 min, peak 53 min,
 star hammer 71 min, longest gap between progress events 4m57s.
 
 ## How to build a 1–2 hour game

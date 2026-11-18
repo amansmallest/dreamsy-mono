@@ -16,7 +16,7 @@ kits/<kit>/
   schemas/*.json       JSON Schemas for the kit's content files in game packages (data/<area>/*.json); kits read them at
                        runtime with data.list / data.read — never generate scripts/shared/*content*.luau copies
   example/             a small complete game package using the kit (also a golden test)
-engine-web/test/kits/<kit>.test.ts   headless core tests (Node, no renderer)
+engine/tests/kits/<kit>_test.cpp    headless core tests (C++ doctest, run_luau / simulate helpers in kit_test.h)
 games/examples/kit-<kit>/            optional showcase package
 ```
 

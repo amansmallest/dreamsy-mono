@@ -453,7 +453,7 @@ TEST_CASE("tycoon example: boots headless and plays by taps without script error
 }
 
 // The greedy-player pacing simulation (kits/tycoon/harness.ts balance()). Slow under the debug
-// sanitizers, so it carries the "slow" suite too (see tests/kits/README.md).
+// sanitizers, so it is in the "slow" suite (its own ctest entry; see engine/README.md, Tests).
 TEST_CASE("tycoon example: balance sim: first prestige in 15-45 min, all content within 2 h, no long stalls" *
           doctest::test_suite("slow")) {
   LuauOptions o = tycoon();

@@ -1,4 +1,5 @@
 // Files, Dreamsy packs, SHA-256 and the zip importer.
+#include <algorithm>
 #include <cstring>
 #include <memory>
 #include <string>
@@ -171,6 +172,7 @@ Files::Bytes make_zip(const std::vector<std::pair<std::string, std::string>>& en
   size_t size = 0;
   REQUIRE(mz_zip_writer_finalize_heap_archive(&zip, &buf, &size));
   Files::Bytes out(static_cast<uint8_t*>(buf), static_cast<uint8_t*>(buf) + size);
+  mz_free(buf);  // finalize_heap_archive hands the buffer to us
   mz_zip_writer_end(&zip);
   return out;
 }

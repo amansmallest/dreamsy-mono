@@ -1,6 +1,7 @@
 // The renderer's CPU side (E4): depth sorting per view mode, letterbox and camera math, image
 // decoding, atlas packing, text layout, batching. Everything here runs without a GPU.
 #include <algorithm>
+#include <cmath>
 #include <filesystem>
 #include <string>
 #include <vector>

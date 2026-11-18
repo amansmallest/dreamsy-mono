@@ -460,7 +460,7 @@ void frame() {
     }
     app.ui->update(static_cast<float>(elapsed));
     play::draw_world(*app.host, *app.textures, app.draw_list);
-    app.ui->draw(app.draw_list, app.options.manual ? app.host->time() : stm_sec(stm_since(app.start_ticks)));
+    app.ui->draw(app.draw_list);
   } else {
     const double t = stm_sec(stm_since(app.start_ticks));
     app.scene->build(app.draw_list, app.view, t, app.renderer.stats());

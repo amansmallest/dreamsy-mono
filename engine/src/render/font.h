@@ -1,8 +1,11 @@
 // Fonts and text layout (stb_truetype).
 //
-// The engine bundles the four engine-web theme fonts (third_party/fonts): pixel (Press Start 2P),
-// rounded (Nunito), bold (Inter), serif (Source Serif 4). Text sizes are CSS-style: `size` is the
-// em size in pixels, line height is 1.2 x size, as in engine-web's Text2D.
+// The engine bundles the four engine-web theme fonts (third_party/fonts): pixel (DejaVu Sans Mono
+// Bold: engine-web's pixel stack ends in the system monospace, which is what every device shows),
+// rounded (Nunito), bold (Inter), serif (Source Serif 4), plus a symbol font (DejaVu Sans Bold
+// subset: arrows, shapes, ★ ♥ ▶ ...) that every font falls back to for characters it lacks.
+// Text sizes are CSS-style: `size` is the em size in pixels, line height is 1.2 x size, as in
+// engine-web's Text2D.
 //
 // layout_text() is pure (no GPU, no atlas): it positions glyphs for a string, so tests and tools
 // can measure text exactly as the renderer will draw it. FontStore rasterizes the glyphs the
@@ -25,6 +28,10 @@ namespace dreamsy::render {
 
 // The bundled font file for a theme font (Default counts as Bold here).
 std::span<const uint8_t> bundled_font(FontId id);
+
+class Font;
+// The symbol fallback font (loaded once, shared; nullptr if it fails to load).
+const Font* symbol_font();
 
 // "pixel" | "rounded" | "bold" | "serif" (manifest [ui] font, Text2D font) -> FontId; Default otherwise.
 FontId font_from_name(std::string_view name);
@@ -66,6 +73,7 @@ class Font {
 
 struct PlacedGlyph {
   int glyph = 0;
+  bool fallback = false;  // `glyph` is in symbol_font(), not the laid-out font
   float x = 0;  // pen position on the baseline, relative to the text block's top-left
   float y = 0;
 };
@@ -79,7 +87,8 @@ struct TextLayout {
 };
 
 // Lays out UTF-8 text at em size `size`. Lines split at '\n'; each line is placed inside the
-// block by `align`; the font's ascent..descent box is centered in each line.
+// block by `align`; the font's ascent..descent box is centered in each line. Characters the font
+// lacks come from symbol_font() when it has them.
 TextLayout layout_text(const Font& font, std::string_view utf8, float size, TextAlign align);
 
 // Where the block's top-left goes for a text anchored at `position` (engine-web text2DOrigin):
@@ -109,7 +118,8 @@ class FontStore {
     float w = 0, h = 0;    // bitmap size, in raster pixels
   };
   // The glyph rasterized at `px` em pixels (1..256), packed into the atlas on first use.
-  std::optional<Glyph> glyph(FontId id, int glyph_index, int px);
+  // `fallback`: the index is in symbol_font() (PlacedGlyph::fallback).
+  std::optional<Glyph> glyph(FontId id, int glyph_index, int px, bool fallback = false);
 
   size_t cached_glyphs() const { return glyphs_.size(); }
 

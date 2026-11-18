@@ -192,12 +192,12 @@ void PlatformUi::update(float dt) {
   relayout();
 }
 
-void PlatformUi::draw(render::DrawList& out, double time) {
+void PlatformUi::draw(render::DrawList& out) {
   relayout();
   ui::OverlayContext ctx{out, textures_, fonts_, theme_, images_, screen(), points_per_ref_};
   ui::draw_ui_entities(ctx, host_.world(), nodes_);
   ui::draw_toasts(ctx, host_.toasts().toasts());
-  ui::draw_dialog(ctx, host_.dialogs().dialogs, time);
+  ui::draw_dialog(ctx, host_.dialogs().dialogs);
   if (touch_enabled_) ui::draw_touch_controls(ctx, controls_.view());
   if (host_.paused()) {
     ui::draw_pause_menu(ctx);

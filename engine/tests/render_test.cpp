@@ -333,6 +333,54 @@ TEST_CASE("image: bounding-box gradients span the shape (nanosvg unitless fix)")
   CHECK(red(63) > 240);
 }
 
+TEST_CASE("image: <use> copies the referenced shape (nanosvg has no <use>)") {
+  CHECK(expand_svg_uses(R"x(<defs><rect id="r" width="2" height="2"/></defs><use href="#r" x="4" fill="#f00"/>)x") ==
+        R"x(<defs><rect id="r" width="2" height="2"/></defs><g fill="#f00" transform=" translate(4 0)"><rect width="2" height="2"/></g>)x");
+  // A red square defined once, drawn at two places.
+  auto svg = Svg::parse(R"svg(<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 8"><defs>
+    <rect id="sq" width="4" height="4"/></defs>
+    <use href="#sq" x="1" y="2" fill="#ff0000"/><use xlink:href="#sq" x="10" y="2" fill="#0000ff"></use></svg>)svg");
+  REQUIRE(svg.ok());
+  auto img = svg.value().rasterize(16, 8);
+  REQUIRE(img.ok());
+  auto px = [&](int x, int y) { return img.value().pixels.data() + (static_cast<size_t>(y) * 16 + x) * 4; };
+  CHECK(px(2, 3)[0] == 255);
+  CHECK(px(2, 3)[3] == 255);
+  CHECK(px(11, 3)[2] == 255);
+  CHECK(px(7, 3)[3] == 0);  // between the two copies
+  CHECK(px(2, 0)[3] == 0);  // above the first copy (y = 2)
+}
+
+TEST_CASE("image: rects filled with a pattern draw its tiles (nanosvg has no <pattern>)") {
+  auto svg = Svg::parse(R"svg(<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><defs>
+    <pattern id="h" width="8" height="8" patternUnits="userSpaceOnUse"><rect x="2" y="2" width="2" height="2" fill="#00ff00"/></pattern>
+    </defs><rect width="16" height="16" fill="url(#h)" opacity="0.5"/></svg>)svg");
+  REQUIRE(svg.ok());
+  auto img = svg.value().rasterize(16, 16);
+  REQUIRE(img.ok());
+  auto px = [&](int x, int y) { return img.value().pixels.data() + (static_cast<size_t>(y) * 16 + x) * 4; };
+  for (auto [x, y] : {std::pair{2, 2}, {10, 2}, {2, 10}, {11, 11}}) {
+    CHECK(px(x, y)[1] == 255);
+    CHECK(px(x, y)[3] == doctest::Approx(128).epsilon(0.02));  // the rect's opacity applies to the tiles
+  }
+  CHECK(px(6, 6)[3] == 0);
+}
+
+TEST_CASE("image: SVG <text> is drawn with the bundled fonts") {
+  // viewBox 48 wide, drawn at width 96: text coordinates scale with the viewBox like shapes.
+  auto svg = Svg::parse(R"svg(<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="96" height="96">
+    <text x="24" y="40" font-family="Arial" font-weight="bold" font-size="40" text-anchor="middle" fill="#ff0000">I&amp;</text></svg>)svg");
+  REQUIRE(svg.ok());
+  REQUIRE(svg.value().texts().size() == 1);
+  CHECK(svg.value().texts()[0].text == "I&");
+  CHECK(svg.value().texts()[0].anchor == 0);
+  auto img = svg.value().rasterize(96, 96);
+  REQUIRE(img.ok());
+  int red = 0;
+  for (size_t i = 0; i < img.value().pixels.size(); i += 4) red += img.value().pixels[i + 3] > 128 && img.value().pixels[i] > 200;
+  CHECK(red > 300);  // two bold glyphs, 80 px tall
+}
+
 TEST_CASE("image: every SVG in games/ parses and draws something") {
   int count = 0, with_text = 0;
   std::string failures;
@@ -470,7 +518,7 @@ TEST_CASE("text: bundled fonts load") {
     REQUIRE_MESSAGE(f.ok(), f.error());
     CHECK(f.value().glyph_index('A') != 0);
     CHECK(f.value().ascent(16) > 0);
-    CHECK(f.value().descent(16) <= 0);  // Press Start 2P's descent is 0
+    CHECK(f.value().descent(16) <= 0);
   }
   CHECK(font_from_name("pixel") == FontId::Pixel);
   CHECK(font_from_name("serif") == FontId::Serif);
@@ -480,28 +528,48 @@ TEST_CASE("text: bundled fonts load") {
 TEST_CASE("text: layout metrics (monospace pixel font)") {
   auto font = Font::load(bundled_font(FontId::Pixel));
   REQUIRE(font.ok());
-  // Press Start 2P: every glyph advances exactly one em.
+  // DejaVu Sans Mono Bold (Menlo's metrics): every glyph advances 1233/2048 em.
+  const float em = 1233.0f / 2048.0f;
   TextLayout l = layout_text(font.value(), "Hello", 8, TextAlign::Left);
-  CHECK(l.width == doctest::Approx(40));
+  CHECK(l.width == doctest::Approx(5 * 8 * em));
   CHECK(l.line_height == doctest::Approx(10));  // ceil(8 * 1.2)
   CHECK(l.height == doctest::Approx(10));
   REQUIRE(l.glyphs.size() == 5);
-  CHECK(l.glyphs[1].x == doctest::Approx(8));
+  CHECK(l.glyphs[1].x == doctest::Approx(8 * em));
 
   // Two lines, centered: the short line is shifted by half the difference.
   l = layout_text(font.value(), "abcd\nab", 16, TextAlign::Center);
-  CHECK(l.width == doctest::Approx(64));
+  CHECK(l.width == doctest::Approx(4 * 16 * em));
   CHECK(l.height == doctest::Approx(2 * 20));
   REQUIRE(l.glyphs.size() == 6);
-  CHECK(l.glyphs[4].x == doctest::Approx(16));
+  CHECK(l.glyphs[4].x == doctest::Approx(16 * em));
   CHECK(l.glyphs[4].y == doctest::Approx(l.glyphs[0].y + 20));
   l = layout_text(font.value(), "abcd\nab", 16, TextAlign::Right);
-  CHECK(l.glyphs[4].x == doctest::Approx(32));
+  CHECK(l.glyphs[4].x == doctest::Approx(32 * em));
 
   // Baselines sit inside their line.
   l = layout_text(font.value(), "X", 20, TextAlign::Left);
   CHECK(l.glyphs[0].y > 0);
   CHECK(l.glyphs[0].y < l.line_height);
+}
+
+TEST_CASE("text: characters a font lacks come from the symbol font") {
+  auto font = Font::load(bundled_font(FontId::Bold));
+  REQUIRE(font.ok());
+  REQUIRE(symbol_font() != nullptr);
+  TextLayout l = layout_text(font.value(), "A\u25B6\u2605", 20, TextAlign::Left);  // A▶★
+  REQUIRE(l.glyphs.size() == 3);
+  CHECK_FALSE(l.glyphs[0].fallback);
+  CHECK(l.glyphs[1].fallback);
+  CHECK(l.glyphs[1].glyph != 0);
+  CHECK(l.glyphs[2].fallback);
+  CHECK(l.glyphs[2].x > l.glyphs[1].x);
+  Atlas atlas;
+  FontStore fonts(atlas, FontId::Bold);
+  REQUIRE(fonts.init().ok());
+  auto g = fonts.glyph(FontId::Bold, l.glyphs[1].glyph, 20, true);
+  REQUIRE(g);
+  CHECK_FALSE(g->blank);
 }
 
 TEST_CASE("text: kerning and proportional widths") {

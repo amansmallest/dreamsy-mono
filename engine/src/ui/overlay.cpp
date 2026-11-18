@@ -559,7 +559,7 @@ std::optional<int> hit_dialog(const DialogLayout& layout, double x, double y) {
   return std::nullopt;
 }
 
-void draw_dialog(OverlayContext& ctx, const Dialogs& dialogs, double time) {
+void draw_dialog(OverlayContext& ctx, const Dialogs& dialogs) {
   if (!dialogs.current) return;
   const DialogState& d = *dialogs.current;
   const UiTheme& t = ctx.theme;
@@ -602,23 +602,15 @@ void draw_dialog(OverlayContext& ctx, const Dialogs& dialogs, double time) {
         panel_surface(pen, ctx, r, sel ? t.primary : with_alpha(t.text, 0.12f), true);
       }
       const Color c = sel ? on_color(t.primary, hex(0xffffff)) : t.text;
-      // "▶ " in engine-web; the bundled fonts are Latin-1, so a guillemet marks the selection.
-      const std::string label = (sel ? "\xC2\xBB " : "") + d.options[i];
+      const std::string label = (sel ? "\u25B6 " : "") + d.options[i];  // "▶ " marks the selection
       pen.text(label, t.font, ofs, c, TextAlign::Left, f(r.x + (ctx.screen.ref_h > ctx.screen.ref_w ? 20 : 18)),
                f(r.y + r.h / 2));
     }
   } else if (line_done) {
-    // The "next" marker (engine-web: ▼ at right 22, bottom 12): a small bobbing diamond.
-    const double s = std::round(g.fs * 0.5);
-    const double bob = std::sin(time * 6) * 3;
-    render::SpriteCmd mark;
-    mark.space = render::Space::Screen;
-    mark.position = {f(g.box.x + g.box.w - 22 - s / 2), f(g.box.y + g.box.h - 12 - s + bob)};
-    mark.size = {f(s), f(s)};
-    mark.rotation = 0.785398f;
-    mark.tint = t.accent;
-    mark.sort.layer = 2;
-    ctx.out.add(mark);
+    // The "next" marker: ▼ at right 22, bottom 12, 0.8 x the text size (engine-web: no animation).
+    const float size = f(std::round(g.fs * 0.8));
+    pen.text("\u25BC", t.font, size, t.accent, TextAlign::Right, f(g.box.x + g.box.w - 22),
+             f(g.box.y + g.box.h - 12 - size * 0.6f));
   }
 }
 

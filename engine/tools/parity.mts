@@ -8,6 +8,7 @@
 //   --games a,b        only these games (folder name, or group/name like mine/coin-dash)
 //   --baseline FILE    an earlier run's results.json: the table shows before -> after
 //   --only cpp|web     re-shoot one engine (the other's PNGs from an earlier run in --out are reused)
+//   --verbose          print every console line of both pages (the C++ log included)
 //
 // Game dirs default to games/examples, games/showcase and games/mine (when present). Needs the web
 // player (cmake --build --preset web --target dreamsy-player) and pnpm-installed engine-web; the
@@ -69,6 +70,7 @@ const outDir = resolve(flag("--out") ?? "/tmp/dreamsy-parity");
 const only = flag("--only") as "cpp" | "web" | undefined;
 const gamesFilter = flag("--games")?.split(",");
 const baselineFile = flag("--baseline");
+const verbose = args.includes("--verbose");
 const dirsArg = args.filter((a) => !a.startsWith("--"));
 
 const config: Record<string, GameConfig> = existsSync(join(ENGINE, "tools/parity_games.json"))
@@ -114,6 +116,7 @@ async function shoot(browser: Browser, engine: Engine, zip: Uint8Array, ref: [nu
   page.on("console", (m) => {
     // The C++ log goes to stderr (console.error) with a [level] prefix; only errors count.
     const text = m.text();
+    if (verbose) console.log(`  [${engine}] ${text.slice(0, 300)}`);
     if (m.type() === "error" && !/^\[(info|warn)\]/.test(text)) errors.push(text.slice(0, 300));
   });
   page.on("pageerror", (e) => errors.push(String(e).slice(0, 300)));

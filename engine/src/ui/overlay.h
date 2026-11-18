@@ -79,7 +79,7 @@ struct DialogLayout {
   std::vector<Rect> options;  // choice options (empty until the prompt is fully typed)
 };
 DialogLayout layout_dialog(const OverlayContext& ctx, const Dialogs& dialogs);
-void draw_dialog(OverlayContext& ctx, const Dialogs& dialogs, double time);
+void draw_dialog(OverlayContext& ctx, const Dialogs& dialogs);
 // A tap on the dialog: an option index, -1 for the box (or anywhere, while blocking), nullopt
 // when the tap misses a non-blocking dialog.
 std::optional<int> hit_dialog(const DialogLayout& layout, double x, double y);

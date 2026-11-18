@@ -8,7 +8,7 @@
 #include "stb_truetype.h"
 
 // The bundled font files, embedded at build time (cmake/embed_files.cmake), in this order:
-// Pixel, Rounded, Bold, Serif.
+// Pixel, Rounded, Bold, Serif, Symbols.
 namespace dreamsy::render::embedded {
 size_t file_count();
 std::span<const uint8_t> file_data(size_t index);
@@ -25,6 +25,20 @@ std::span<const uint8_t> bundled_font(FontId id) {
     case FontId::Default: return embedded::file_data(2);
   }
   return {};
+}
+
+const Font* symbol_font() {
+  // A function-local static is created once, on first use (thread-safe in C++). The bytes are
+  // static data, so the Font may keep pointing at them.
+  static const std::optional<Font> font = []() -> std::optional<Font> {
+    auto f = Font::load(embedded::file_data(4));
+    if (!f) {
+      log_warn("render: symbol font: " + f.error());
+      return std::nullopt;
+    }
+    return std::move(f).value();
+  }();
+  return font ? &*font : nullptr;
 }
 
 FontId font_from_name(std::string_view name) {
@@ -153,8 +167,19 @@ TextLayout layout_text(const Font& font, std::string_view utf8, float size, Text
     }
     if (cp == '\r') continue;
     const int g = font.glyph_index(cp);
+    if (g == 0 && cp > 0xFF) {
+      // Not in this font: the symbol font's glyph (no kerning across fonts).
+      const Font* sym = symbol_font();
+      const int sg = sym ? sym->glyph_index(cp) : 0;
+      if (sg != 0) {
+        out.glyphs.push_back({sg, true, pen, 0});
+        pen += sym->advance(sg, size);
+        prev = -1;
+        continue;
+      }
+    }
     if (prev >= 0) pen += font.kerning(prev, g, size);
-    out.glyphs.push_back({g, pen, 0});
+    out.glyphs.push_back({g, false, pen, 0});
     pen += font.advance(g, size);
     prev = g;
   }
@@ -204,13 +229,16 @@ const Font& FontStore::font(FontId id) const {
   return fonts_[static_cast<size_t>(resolve(id)) - 1];
 }
 
-std::optional<FontStore::Glyph> FontStore::glyph(FontId id, int glyph_index, int px) {
+std::optional<FontStore::Glyph> FontStore::glyph(FontId id, int glyph_index, int px, bool fallback) {
   px = std::clamp(px, 1, 256);
   const FontId fid = resolve(id);
-  const Key key{static_cast<uint8_t>(fid), glyph_index, px};
+  const Font* face = fallback ? symbol_font() : &font(fid);
+  if (!face) return std::nullopt;
+  constexpr uint8_t kSymbolsKey = 255;  // the fallback glyphs share one cache key per index/size
+  const Key key{fallback ? kSymbolsKey : static_cast<uint8_t>(fid), glyph_index, px};
   if (auto it = glyphs_.find(key); it != glyphs_.end()) return it->second;
 
-  Font::Bitmap bmp = font(fid).rasterize(glyph_index, px);
+  Font::Bitmap bmp = face->rasterize(glyph_index, px);
   Glyph g;
   if (!bmp.alpha.empty()) {
     // White glyph, coverage in alpha, premultiplied: (a, a, a, a).

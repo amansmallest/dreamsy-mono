@@ -176,7 +176,7 @@ struct Builder {
     // size/px text px.
     const float bitmap_to_ref = t.size / static_cast<float>(px) * k;
     for (const PlacedGlyph& pg : layout.glyphs) {
-      const auto g = fonts.glyph(t.font, pg.glyph, px);
+      const auto g = fonts.glyph(t.font, pg.glyph, px, pg.fallback);
       if (!g || g->blank) continue;
       // Pen position in reference px, snapped to real pixels so glyphs stay crisp.
       const float pen_x = snap_to_grid(origin.x + (pg.x + offset.x) * k, raster_scale);

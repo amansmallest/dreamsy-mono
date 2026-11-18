@@ -65,7 +65,7 @@ class PlatformUi {
 
   // ---- per frame
   void update(float dt);
-  void draw(render::DrawList& out, double time);
+  void draw(render::DrawList& out);
 
   bool paused() const { return host_.paused(); }
 

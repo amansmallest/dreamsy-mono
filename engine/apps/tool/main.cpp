@@ -293,7 +293,7 @@ Result<std::vector<InputItem>> parse_input_plan(std::string_view plan) {
   return out;
 }
 
-void apply_input(script::Input& input, const std::vector<InputItem>& plan, int64_t tick) {
+void apply_input(input::InputState& input, const std::vector<InputItem>& plan, int64_t tick) {
   for (const InputItem& it : plan) {
     if (it.tap) {
       if (tick == it.from) input.tap(it.name);

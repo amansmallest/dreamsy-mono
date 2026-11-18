@@ -162,8 +162,25 @@ add_library(dreamsy_physics STATIC src/physics/physics2d.cpp)
 dreamsy_target_defaults(dreamsy_physics)
 target_link_libraries(dreamsy_physics PUBLIC dreamsy_world box2d::box2d)
 
+# Input (E5): what scripts see of the player's input (InputState), keyboard / gamepad / touch
+# mapping, gestures, the on-screen controls model. Platform-free (servers and tools link it too).
+add_library(dreamsy_input STATIC
+  src/input/gamepad.cpp
+  src/input/input_state.cpp
+  src/input/keyboard.cpp
+  src/input/touch_controls.cpp
+  src/input/usage.cpp)
+dreamsy_target_defaults(dreamsy_input)
+target_link_libraries(dreamsy_input PUBLIC dreamsy_base)
+
+# Platform UI state (E5): ui.dialog / ui.choice state machine, toasts. Deterministic, no drawing.
+add_library(dreamsy_ui STATIC
+  src/ui/dialog.cpp
+  src/ui/toasts.cpp)
+dreamsy_target_defaults(dreamsy_ui)
+target_link_libraries(dreamsy_ui PUBLIC dreamsy_input)
+
 add_library(dreamsy_script STATIC
-  src/script/dialog.cpp
   src/script/host.cpp
   src/script/host_world.cpp
   src/script/json_value.cpp
@@ -171,7 +188,7 @@ add_library(dreamsy_script STATIC
   src/script/theme.cpp
   src/script/vm.cpp)
 dreamsy_target_defaults(dreamsy_script)
-target_link_libraries(dreamsy_script PUBLIC dreamsy_pkg dreamsy_physics Luau.Compiler Luau.VM PRIVATE dreamsy_script_data)
+target_link_libraries(dreamsy_script PUBLIC dreamsy_pkg dreamsy_physics dreamsy_ui Luau.Compiler Luau.VM PRIVATE dreamsy_script_data)
 
 # Type checking (tools only): Luau's analyzer + the API definitions (format/dreamsy.d.luau with
 # Entity props generated from format/catalog.json).

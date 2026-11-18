@@ -26,10 +26,11 @@
 #include "base/rng.h"
 #include "physics/physics2d.h"
 #include "pkg/package.h"
-#include "script/dialog.h"
-#include "script/input.h"
+#include "input/input_state.h"
 #include "script/json_value.h"
 #include "script/vm.h"
+#include "ui/dialog.h"
+#include "ui/toasts.h"
 #include "world/tween.h"
 #include "world/world.h"
 
@@ -99,7 +100,7 @@ class Host {
   world::World& world() { return world_; }
   const world::World& world() const { return world_; }
   physics::Physics2D* physics() { return physics_.get(); }
-  Input& input() { return input_; }
+  input::InputState& input() { return input_; }
   size_t tween_count() const { return tweens_.size(); }
   struct CameraView {
     double x = 0, y = 0, zoom = 1;  // view center (smoothing, limits and shake applied)
@@ -214,10 +215,9 @@ class Host {
   std::unique_ptr<Vm> vm_;
   Rng rng_;
   Rng cam_rng_;
-  Input input_;
-  Dialogs dialogs_;
-  std::optional<int> dialog_tap_;
-  int nav_prev_ = 0;
+  input::InputState input_;
+  ui::DialogSystem dialogs_;
+  ui::ToastQueue toasts_;
   Refs refs_;
   std::vector<std::string> enabled_kits_;
 

@@ -27,11 +27,13 @@ before(async () => {
     compatibilityDate: "2025-10-01",
     r2Buckets: ["GAMES"],
     d1Databases: ["DB"],
-    bindings: { ALLOWED_ORIGINS: "http://127.0.0.1:3100", MAX_PACK_BYTES: "8000000" },
+    bindings: { ALLOWED_ORIGINS: "http://127.0.0.1:3100", MAX_PACK_BYTES: "8000000", MAX_STORAGE_GB: "500", MAX_MONTHLY_WRITES: "3000000" },
   });
   const db = await mf.getD1Database("DB");
-  const sql = readFileSync(new URL("../migrations/0001_init.sql", here), "utf8");
-  for (const stmt of sql.split(";").map((s) => s.trim()).filter(Boolean)) await db.prepare(stmt).run();
+  for (const f of ["0001_init.sql", "0002_budget.sql"]) {
+    const sql = readFileSync(new URL(`../migrations/${f}`, here), "utf8");
+    for (const stmt of sql.split(";").map((s) => s.trim()).filter(Boolean)) await db.prepare(stmt).run();
+  }
 });
 
 after(() => mf?.dispose());
@@ -113,4 +115,16 @@ test("cors for the editor origin", async () => {
   assert.equal(res.headers.get("access-control-allow-origin"), "http://127.0.0.1:3100");
   const other = await mf.dispatchFetch("http://cloud.test/v1/games", { method: "OPTIONS", headers: { origin: "https://evil.example" } });
   assert.equal(other.headers.get("access-control-allow-origin"), null);
+});
+
+test("budget guard refuses uploads past the storage cap", async () => {
+  const db = await mf.getD1Database("DB");
+  const created = await call("/v1/games", { key: ALICE, method: "POST", ...jsonBody({ name: "Budget" }) });
+  await db.prepare("INSERT INTO usage (key, value) VALUES ('bytes', ?1) ON CONFLICT(key) DO UPDATE SET value = ?1").bind(500e9).run();
+  const tweaked = Buffer.concat([pack, Buffer.from("x")]);
+  const res = await call(`/v1/games/${created.body.id}/versions`, { key: ALICE, method: "POST", body: tweaked });
+  assert.equal(res.status, 507);
+  const dup = await call(`/v1/games/${created.body.id}/versions`, { key: ALICE, method: "POST", body: pack });
+  assert.equal(dup.status, 201);
+  await db.prepare("UPDATE usage SET value = 0 WHERE key = 'bytes'").run();
 });

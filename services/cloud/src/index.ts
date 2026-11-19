@@ -3,6 +3,8 @@ export interface Env {
   DB: D1Database;
   ALLOWED_ORIGINS: string;
   MAX_PACK_BYTES: string;
+  MAX_STORAGE_GB: string;
+  MAX_MONTHLY_WRITES: string;
 }
 
 class HttpError extends Error {
@@ -56,6 +58,23 @@ async function limit(env: Env, bucket: string, max: number, windowMs: number) {
     .bind(bucket, t + windowMs, t)
     .first<{ count: number }>();
   if ((row?.count ?? 0) > max) throw new HttpError(429, "Too many requests, slow down a little");
+}
+
+const month = () => new Date().toISOString().slice(0, 7);
+
+async function budget(env: Env, bytes: number) {
+  const maxBytes = (Number(env.MAX_STORAGE_GB) || 500) * 1e9;
+  const maxWrites = Number(env.MAX_MONTHLY_WRITES) || 3_000_000;
+  const rows = await env.DB.prepare("SELECT key, value FROM usage WHERE key IN ('bytes', ?1)").bind(`writes:${month()}`).all<{ key: string; value: number }>();
+  const get = (k: string) => rows.results.find((r) => r.key === k)?.value ?? 0;
+  if (get("bytes") + bytes > maxBytes || get(`writes:${month()}`) + 1 > maxWrites) {
+    throw new HttpError(507, "Dreamsy cloud is full for now; your game is still saved on your computer");
+  }
+}
+
+async function spend(env: Env, bytes: number) {
+  const up = "INSERT INTO usage (key, value) VALUES (?1, ?2) ON CONFLICT(key) DO UPDATE SET value = value + ?2";
+  await env.DB.batch([env.DB.prepare(up).bind(`writes:${month()}`, 1), ...(bytes ? [env.DB.prepare(up).bind("bytes", bytes)] : [])]);
 }
 
 interface GameRow {
@@ -263,7 +282,11 @@ async function route(req: Request, env: Env): Promise<Response> {
       const body = await readPack(env, req);
       const hash = await sha256(body);
       const key = `packs/${hash}.dpk`;
-      if (!(await env.GAMES.head(key))) await env.GAMES.put(key, body, { httpMetadata: { contentType: "application/octet-stream" } });
+      if (!(await env.GAMES.head(key))) {
+        await budget(env, body.byteLength);
+        await env.GAMES.put(key, body, { httpMetadata: { contentType: "application/octet-stream" } });
+        await spend(env, body.byteLength);
+      }
       const label = text(decodeURIComponent(req.headers.get("x-dreamsy-label") ?? ""), 200);
       const version = await addVersion(env, game, hash, body.byteLength, label);
       return json({ version, hash, size: body.byteLength }, 201);
@@ -282,7 +305,9 @@ async function route(req: Request, env: Env): Promise<Response> {
       if (!/^image\/(jpeg|png|webp)$/.test(type)) throw new HttpError(400, "Thumbnail must be JPEG, PNG or WebP");
       const body = await req.arrayBuffer();
       if (body.byteLength > MAX_THUMB) throw new HttpError(413, "Thumbnail is too large");
+      await budget(env, body.byteLength);
       await env.GAMES.put(`thumbs/${game.id}/${v}`, body, { httpMetadata: { contentType: type } });
+      await spend(env, body.byteLength);
       await env.DB.prepare("UPDATE versions SET thumb = 1 WHERE game = ?1 AND version = ?2").bind(game.id, v).run();
       return json({ ok: true });
     }

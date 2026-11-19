@@ -1,0 +1,4 @@
+CREATE TABLE usage (
+  key TEXT PRIMARY KEY,
+  value INTEGER NOT NULL
+);

@@ -28,3 +28,11 @@ pnpm -C services/cloud deploy
 ```
 
 Set `ALLOWED_ORIGINS` in `wrangler.toml` to the site's origins before deploying.
+
+## Cost guard
+
+Cloudflare has no hard spending cap for R2, so the Worker enforces one. Uploads stop once stored data passes
+`MAX_STORAGE_GB` (500 GB ≈ $7.35/month) or writes pass `MAX_MONTHLY_WRITES` (3M ≈ $9/month after the free tier); users
+get a 507 and keep their local copy. Usage is tracked in the D1 `usage` table. Keep the account on the free Workers plan:
+Worker requests and D1 never bill there (they fail past the daily limits), which also caps R2 reads. Worst case stays
+under ~$20/month. Raise the limits in `wrangler.toml` if you ever want more.

@@ -11,7 +11,7 @@ import { pushAfterCommit } from "../push.js";
 
 const { groups, groupMembers, groupGames, users, games } = schema;
 
-/** DREAMSY.MD §13.3 limits. */
+/** docs/platform.md §13.3 limits. */
 export const GROUP_MAX_MEMBERS = 50;
 /** No 0/O/1/I/L: codes get read aloud and typed on phones. */
 const CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";

@@ -1,9 +1,10 @@
 packages:
   - services/api
-  - services/live
   - services/gameserver
+  - services/cloud
   - harness
   - format
-  - engine-web
   - apps/mobile
   - apps/web
+  - apps/site
+  - packages/mcp

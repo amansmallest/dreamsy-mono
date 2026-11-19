@@ -47,7 +47,7 @@ export const games = pgTable("games", {
   /** "draft" | "published" */
   status: text("status").notNull().default("draft"),
   /**
-   * "public" | "private" (DREAMSY.MD §11.8). Public games auto-publish every new version;
+   * "public" | "private" (docs/platform.md §11.8). Public games auto-publish every new version;
    * private games are never published. Separate from `hidden` (moderation).
    */
   visibility: text("visibility").notNull().default("public"),
@@ -56,7 +56,7 @@ export const games = pgTable("games", {
   publishedVersion: integer("published_version"),
   /** First publish; never cleared (feeds order "new" by it, trending decays from it). */
   publishedAt: timestamp("published_at", { withTimezone: true }),
-  /** Denormalized counters (DREAMSY.MD §11.2); bumped in the same tx as the like/play/remix row. */
+  /** Denormalized counters (docs/platform.md §11.2); bumped in the same tx as the like/play/remix row. */
   plays: integer("plays").notNull().default(0),
   likes: integer("likes").notNull().default(0),
   remixes: integer("remixes").notNull().default(0),
@@ -89,7 +89,7 @@ export const gameVersions = pgTable("game_versions", {
   generationId: text("generation_id"),
   /** JPEG from the harness playtest (`thumbnails/<sha256>.jpg`), if the worker sent one. */
   thumbnailKey: text("thumbnail_key"),
-  /** Manifest `[players]` (DREAMSY.MD §3.1); max > 1 = multiplayer (§4.5). Set on commit; 1/1 when absent. */
+  /** Manifest `[players]` (docs/format.md §3.1); max > 1 = multiplayer (§4.5). Set on commit; 1/1 when absent. */
   playersMin: integer("players_min").notNull().default(1),
   playersMax: integer("players_max").notNull().default(1),
   createdBy: text("created_by").notNull(),
@@ -175,7 +175,7 @@ export const generationEvents = pgTable("generation_events", {
   createdAt: createdAt(),
 }, (t) => [index("generation_events_gen_idx").on(t.generationId, t.id)]);
 
-// ---------- Coins economy (DREAMSY.MD §11.6; the "Stars" ledger, shown to users as coins) ----------
+// ---------- Coins economy (docs/platform.md §11.6; the "Stars" ledger, shown to users as coins) ----------
 
 /** Ledger account that receives the platform's cut of plays and store sales. Seeded by migration 0011. */
 export const PLATFORM_USER_ID = "u_platform";
@@ -226,7 +226,7 @@ export const purchases = pgTable("purchases", {
 ]);
 
 /**
- * Pay-per-play pass (DREAMSY.MD §11.6): starting someone else's game creates one per (user, game);
+ * Pay-per-play pass (docs/platform.md §11.6): starting someone else's game creates one per (user, game);
  * starts while it's valid are free. `price` 0 = a free start (owner / shared draft).
  */
 export const playPasses = pgTable("play_passes", {
@@ -239,7 +239,7 @@ export const playPasses = pgTable("play_passes", {
   createdAt: createdAt(),
 }, (t) => [index("play_passes_user_game_idx").on(t.userId, t.gameId, t.expiresAt)]);
 
-// ---------- Platform v1: social (DREAMSY.MD §11) ----------
+// ---------- Platform v1: social (docs/platform.md §11) ----------
 
 export const likes = pgTable("likes", {
   userId: text("user_id").notNull().references(() => users.id),
@@ -295,7 +295,7 @@ export const emailCodes = pgTable("email_codes", {
   lastSentAt: timestamp("last_sent_at", { withTimezone: true }).notNull(),
 });
 
-// ---------- Leaderboards, ghosts, groups (DREAMSY.MD §13) ----------
+// ---------- Leaderboards, ghosts, groups (docs/platform.md §13) ----------
 
 /** Every submitted run. `ghostKey` is set only while this run is the user's best on the board. */
 export const runs = pgTable("runs", {
@@ -359,7 +359,7 @@ export const groupGames = pgTable("group_games", {
   index("group_games_game_idx").on(t.gameId),
 ]);
 
-// ---------- Notifications + push (DREAMSY.MD §11.6) ----------
+// ---------- Notifications + push (docs/platform.md §11.6) ----------
 
 /** In-app inbox. `kind`: play_earning | remix_earning | royalty | sale | build_done | group_join | friend_request | friend_accept | game_invite. */
 export const notifications = pgTable("notifications", {
@@ -382,7 +382,7 @@ export const pushTokens = pgTable("push_tokens", {
   createdAt: createdAt(),
 }, (t) => [index("push_tokens_user_idx").on(t.userId)]);
 
-// ---------- Friends (DREAMSY.MD §13.4) ----------
+// ---------- Friends (docs/platform.md §13.4) ----------
 
 /**
  * One row per pair of users, ids sorted (`userA < userB`), so a pair is unique whoever asked first.

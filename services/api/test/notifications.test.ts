@@ -12,7 +12,7 @@ import { PLATFORM_USER_ID } from "../src/db/schema.js";
 import { flushPushes } from "../src/push.js";
 import { MemoryStorage } from "../src/storage.js";
 
-/** DREAMSY.MD §11.6: create/remix prices, refunds, notifications, Expo push. */
+/** docs/platform.md §11.6: create/remix prices, refunds, notifications, Expo push. */
 
 const config: Config = {
   jwtSecret: "test-secret-test-secret-test-secret-123",

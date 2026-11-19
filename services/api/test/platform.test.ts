@@ -13,7 +13,7 @@ import { fail, type Config, type IdentityVerifier } from "../src/context.js";
 import { schema, type DB } from "../src/db/client.js";
 import { MemoryStorage } from "../src/storage.js";
 
-/** DREAMSY.MD §11 Platform v1 + worker checkpoints. */
+/** docs/platform.md §11 Platform v1 + worker checkpoints. */
 
 const config: Config = {
   jwtSecret: "test-secret-test-secret-test-secret-123",

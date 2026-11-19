@@ -102,7 +102,7 @@ export async function request<T>(path: string, opts: RequestOptions = {}): Promi
 // ---------- shapes (mirror services/api views; timestamps are ISO strings) ----------
 
 export type GameStatus = 'draft' | 'published';
-/** DREAMSY.MD §11.8: public = newest version auto-live; private = never published. */
+/** docs/platform.md §11.8: public = newest version auto-live; private = never published. */
 export type Visibility = 'public' | 'private';
 
 export type Game = {
@@ -138,7 +138,7 @@ export type Game = {
 /** What non-owners see: no latestVersion. */
 export type PublicGame = Omit<Game, 'latestVersion'>;
 
-// ---------- platform v1 (DREAMSY.MD §11) ----------
+// ---------- platform v1 (docs/platform.md §11) ----------
 
 export type Orientation = 'portrait' | 'landscape';
 /** Feed/public views carry the source name; owner views may only have {gameId, version}. */
@@ -399,7 +399,7 @@ export type LivePlayer = {
 /** GET /v1/live: who's online, who's in a game, and 6 trending games. */
 export type Live = { online: number; playing: LivePlayer[]; featured: FeedGame[] };
 
-// ---------- leaderboards, ghosts, groups (DREAMSY.MD §13) ----------
+// ---------- leaderboards, ghosts, groups (docs/platform.md §13) ----------
 
 export type BoardOrder = 'asc' | 'desc';
 /** A board with runs (GET /v1/games/:id/leaderboards). */

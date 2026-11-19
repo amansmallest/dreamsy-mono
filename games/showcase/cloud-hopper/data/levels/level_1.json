@@ -1,0 +1,35 @@
+{
+  "name": "Stepping Stones",
+  "intro": ["Hi, I'm Pip! Reach the golden flag. Don't fall into the clouds!", "Move with the joystick. Tap A to jump."],
+  "start_hint": "Push the joystick up to walk!",
+  "start_wait": "move",
+  "idle_hint": "Keep heading up toward the golden flag!",
+  "hints": [
+    { "row": 15, "text": "Tap A to jump up the step!", "wait": "jump" },
+    { "row": 12, "text": "Jump the gap! Your shadow shows where you land." },
+    { "row": 9, "text": "Gem up high! Jump to grab it." },
+    { "row": 6, "text": "Jump the gap, then hop up to the flag!" }
+  ],
+  "rows": [
+    ". . . . . . .",
+    ". . 5 5F 5 . .",
+    ". . 5 5 5 . .",
+    ". . 4 4 4 . .",
+    ". . . . . . .",
+    ". . 3 3C 3 . .",
+    ". . 3 3 3 . .",
+    ". . . . . . .",
+    ". . . 4j . . .",
+    ". . . 4 . . .",
+    ". . . . . . .",
+    ". . 3 3 . 5g .",
+    ". . 3 3 . 4 .",
+    ". . 3 3C 3 3 .",
+    ". . 2 2 . . .",
+    ". . 1 1 . . .",
+    ". . 1 1g . . .",
+    ". 1 1 1P 1 . .",
+    ". 1 1 1 1 . .",
+    ". . . . . . ."
+  ]
+}

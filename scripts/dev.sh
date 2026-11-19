@@ -3,7 +3,8 @@
 #   ./scripts/dev.sh            (Ctrl+C stops everything)
 #   ./scripts/dev.sh --reseed   (publish the showcase games again)
 #   ./scripts/dev.sh --tunnel   (phone on any network: Metro over a Cloudflare quick tunnel)
-#   ./scripts/dev.sh --local    (app uses this laptop's API + engine instead of prod api/play.dreamsy.dev)
+#   ./scripts/dev.sh --prod     (app uses a hosted api/play.dreamsy.dev instead of this laptop; prod is down, STATUS.md)
+# Needs Emscripten 4.0.11 (EMSDK in the environment, or ~/emsdk): the engine is the C++ web player, built here.
 set -euo pipefail
 set -m   # job control: each background server gets its own process group, so cleanup kills the whole tree
 cd "$(dirname "$0")/.."
@@ -13,8 +14,8 @@ ROOT=$(pwd)
 export NODE_OPTIONS="${NODE_OPTIONS:-} --network-family-autoselection-attempt-timeout=2000"
 LOGS="$ROOT/.dev-logs"; mkdir -p "$LOGS"
 IP=$(ipconfig getifaddr en0 2>/dev/null || echo localhost)
-TUNNEL=0; RESEED=0; LOCAL=0
-for a in "$@"; do case "$a" in --tunnel) TUNNEL=1;; --reseed) RESEED=1;; --local) LOCAL=1;; esac; done
+TUNNEL=0; RESEED=0; LOCAL=1
+for a in "$@"; do case "$a" in --tunnel) TUNNEL=1;; --reseed) RESEED=1;; --local) LOCAL=1;; --prod) LOCAL=0;; esac; done
 PROD_API=https://api.dreamsy.dev; PROD_ENGINE=https://play.dreamsy.dev/
 PIDS=()
 cleanup() {
@@ -52,6 +53,10 @@ fi
 (cd apps/mobile && npx expo whoami >/dev/null 2>&1) || { echo "Not signed in to Expo. Create a token at https://expo.dev/settings/access-tokens and add EXPO_TOKEN=... to the repo-root .env (or run: cd apps/mobile && npx expo login). Sign in to Expo Go on the phone with the same account."; exit 1; }
 docker info >/dev/null 2>&1 || { echo "Docker isn't running. Start Docker Desktop, then rerun."; exit 1; }
 [ -f services/api/.env ] || { echo "Missing services/api/.env (copy services/api/.env.example)."; exit 1; }
+if [ -z "${EMSDK:-}" ]; then
+  [ -f "$HOME/emsdk/emsdk_env.sh" ] || { echo "Emscripten not found: install emsdk 4.0.11 in ~/emsdk (engine/README.md) or set EMSDK."; exit 1; }
+  set +u; source "$HOME/emsdk/emsdk_env.sh" >/dev/null 2>&1; set -u
+fi
 if [ "$LOCAL" = 1 ]; then
   printf 'EXPO_PUBLIC_API_URL=http://%s:8787\nEXPO_PUBLIC_ENGINE_URL=http://%s:2005/\n' "$IP" "$IP" > apps/mobile/.env.local
   echo "  app → this laptop ($IP)"
@@ -65,6 +70,10 @@ pkill -f "harness.*src/main.ts worker" 2>/dev/null && echo "  stopped leftover h
 step "Postgres"
 docker compose -f services/api/docker-compose.yml up -d
 for _ in $(seq 1 30); do docker compose -f services/api/docker-compose.yml exec -T postgres pg_isready -U dreamsy >/dev/null 2>&1 && break; sleep 1; done
+
+step "Engine: C++ web player (engine/build/web; the first build takes a few minutes)"
+(cd engine && { [ -f build/web/build.ninja ] || cmake --preset web >/dev/null; } && cmake --build --preset web --target dreamsy-player)
+cp engine/build/web/dreamsy-player.html engine/build/web/index.html   # http://host:2005/ serves the player
 
 step "Migrations"
 pnpm -s -C services/api db:migrate
@@ -89,7 +98,10 @@ step "Web dashboard (http://localhost:3000)"
 bg web pnpm -s -C apps/web exec vite --port 3000 --strictPort
 
 step "Engine (http://$IP:2005)"
-bg engine pnpm -s -C engine-web dev
+# Static server for engine/build/web (wasm needs its MIME type for streaming compilation).
+bg engine python3 -c 'import functools, http.server as h, sys
+h.SimpleHTTPRequestHandler.extensions_map.update({".wasm": "application/wasm", ".js": "text/javascript", ".dpk": "application/octet-stream"})
+h.test(HandlerClass=functools.partial(h.SimpleHTTPRequestHandler, directory=sys.argv[1]), port=2005, bind="0.0.0.0")' engine/build/web
 wait_http http://localhost:2005/
 
 # Public https URL from a Cloudflare quick tunnel's log (no account needed).

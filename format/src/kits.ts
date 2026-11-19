@@ -1,5 +1,5 @@
 /**
- * Kits (DREAMSY.MD §12.1): tested Luau libraries shipped with the engine in engine-web/kits/<kit>/.
+ * Kits (docs/kits.md §12.1): tested Luau libraries shipped with the engine in kits/<kit>/.
  * A game opts in with `kits = ["rpg"]` in dreamsy.toml and requires them as `require("@kit/rpg")`
  * or `require("@kit/rpg/battle")`. This list is the contract between format, engine and harness.
  */
@@ -22,9 +22,9 @@ export const KIT_REQUIRE_RE = /^@kit\/([a-z][a-z0-9-]{0,31})(?:\/([a-z0-9_\-/]+)
 export const isKit = (id: string): id is KitId => (KITS as readonly string[]).includes(id);
 
 /**
- * Kit dependencies (kit → kits it requires), declared by each kit in engine-web/kits/<kit>/kit.json.
+ * Kit dependencies (kit → kits it requires), declared by each kit in kits/<kit>/kit.json.
  * The engine registers the shipped map at load (core/kits.ts); tools can register it too
- * (`registerKitDependencies(kitDependencies())` from @dreamsy/engine/core). Used by the validator.
+ * (`registerKitDependencies(...)` with the `requires` lists from each kit.json under kits/, as format/src/cli.ts does). Used by the validator.
  */
 let KIT_DEPS: Record<string, readonly string[]> = {};
 export function registerKitDependencies(deps: Record<string, readonly string[]>) { KIT_DEPS = { ...deps }; }

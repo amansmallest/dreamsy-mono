@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import { GameCard } from '../components/GameCard';
 import { Icon, PixelSky } from '../components/Icon';
 import { IDEAS, NewGameModal } from '../components/NewGame';
-import { LiveNow } from '../components/LiveNow';
 import { LivePlayersCard } from '../components/LivePlayers';
 import { Button, Empty, ErrorNote, Segmented } from '../components/ui';
 import { api, isActive } from '../lib/api';
@@ -76,7 +75,6 @@ export function Home() {
             {shown.map((g) => <GameCard key={g.id} game={g} />)}
           </div>
         )}
-      <LiveNow />
       <NewGameModal open={creating != null} initialPrompt={creating ?? ''} onClose={() => setCreating(null)} />
     </div>
   );

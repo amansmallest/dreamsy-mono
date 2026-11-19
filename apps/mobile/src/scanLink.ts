@@ -1,7 +1,7 @@
 // What a Dreamsy QR code can hold, and the game id inside it:
 //   dreamsy://game/<id>            dashboard "Play on phone" (VITE_APP_DEEPLINK/game/<id>)
 //   https://<host>/game/<id>       same, with an https deep-link base
-//   https://<host>/g/<id>          public share page (DREAMSY.MD §11.5)
+//   https://<host>/g/<id>          public share page (docs/platform.md §11.5)
 //   http://<engine>/?public=<id>   dev share link from the app (src/social.ts shareUrl)
 //   g_…                            a bare game id
 
@@ -27,7 +27,7 @@ export function gameIdFromScan(raw: string): string | null {
   return id || null;
 }
 
-/** Group invite: https://<host>/join/<code> or dreamsy://join/<code> -> the code (DREAMSY.MD §13). */
+/** Group invite: https://<host>/join/<code> or dreamsy://join/<code> -> the code (docs/platform.md §13). */
 export function inviteCodeFromScan(raw: string): string | null {
   let url: URL;
   try {

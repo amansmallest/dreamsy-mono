@@ -1,0 +1,391 @@
+{
+  "format": "0",
+  "root": "level_root",
+  "entities": {
+    "level_root": {
+      "type": "Node2D",
+      "scripts": [
+        "scripts/client/level.luau"
+      ],
+      "children": [
+        "world",
+        "cam_target",
+        "camera",
+        "hud_bar",
+        "hint_panel",
+        "banner",
+        "gameover_panel"
+      ]
+    },
+    "world": {
+      "type": "Node2D",
+      "children": [
+        "blocks_layer",
+        "hero"
+      ]
+    },
+    "hero": {
+      "type": "Body2D",
+      "name": "Pip",
+      "props": {
+        "position": [
+          224,
+          960
+        ],
+        "body": "dynamic",
+        "shape": "rect",
+        "size": [
+          20,
+          14
+        ],
+        "lock_rotation": true,
+        "gravity_scale": 0,
+        "friction": 0,
+        "height": 28,
+        "layer": "hero",
+        "mask": "block"
+      },
+      "scripts": [
+        "scripts/client/hero.luau"
+      ],
+      "tags": [
+        "player"
+      ],
+      "children": [
+        "hero_sprite"
+      ]
+    },
+    "hero_sprite": {
+      "type": "Sprite2D",
+      "props": {
+        "anims": "data/anims/hero.json",
+        "anim": "idle",
+        "size": [
+          40,
+          50
+        ],
+        "anchor": "bottom",
+        "auto_flip": true
+      }
+    },
+    "cam_target": {
+      "type": "Node2D",
+      "props": {
+        "position": [
+          224,
+          900
+        ]
+      }
+    },
+    "camera": {
+      "type": "Camera2D",
+      "props": {
+        "zoom": 1.5,
+        "follow": "cam_target",
+        "smoothing": 0.8,
+        "position": [
+          224,
+          900
+        ]
+      }
+    },
+    "hud_bar": {
+      "type": "UIPanel",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          16,
+          16
+        ],
+        "size": [
+          560,
+          84
+        ],
+        "background": "#1d3a6bcc",
+        "radius": 28,
+        "input_transparent": true
+      },
+      "children": [
+        "hud_heart_1",
+        "hud_heart_2",
+        "hud_heart_3",
+        "hud_gem_icon",
+        "hud_gems",
+        "hud_level"
+      ]
+    },
+    "hud_heart_1": {
+      "type": "UIPanel",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          16,
+          14
+        ],
+        "size": [
+          56,
+          56
+        ],
+        "background": "#00000000",
+        "image": "asset:heart_full",
+        "input_transparent": true
+      }
+    },
+    "hud_heart_2": {
+      "type": "UIPanel",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          78,
+          14
+        ],
+        "size": [
+          56,
+          56
+        ],
+        "background": "#00000000",
+        "image": "asset:heart_full",
+        "input_transparent": true
+      }
+    },
+    "hud_heart_3": {
+      "type": "UIPanel",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          140,
+          14
+        ],
+        "size": [
+          56,
+          56
+        ],
+        "background": "#00000000",
+        "image": "asset:heart_full",
+        "input_transparent": true
+      }
+    },
+    "hud_gem_icon": {
+      "type": "UIPanel",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          222,
+          14
+        ],
+        "size": [
+          48,
+          56
+        ],
+        "background": "#00000000",
+        "image": "asset:gem",
+        "input_transparent": true
+      }
+    },
+    "hud_gems": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          278,
+          14
+        ],
+        "size": [
+          120,
+          56
+        ],
+        "text": "0/0",
+        "font_size": 38,
+        "font": "bold",
+        "color": "#ffffff",
+        "outline": "#2b2140",
+        "outline_size": 3
+      }
+    },
+    "hud_level": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          400,
+          14
+        ],
+        "size": [
+          150,
+          56
+        ],
+        "text": "Level 1",
+        "font_size": 32,
+        "align": "center",
+        "color": "#ffd84a",
+        "outline": "#2b2140",
+        "outline_size": 3
+      }
+    },
+    "hint_panel": {
+      "type": "UIPanel",
+      "props": {
+        "anchor": "top",
+        "offset": [
+          0,
+          116
+        ],
+        "size": [
+          660,
+          84
+        ],
+        "background": "#1d3a6be6",
+        "radius": 24,
+        "visible": false,
+        "input_transparent": true
+      },
+      "children": [
+        "hint_text"
+      ]
+    },
+    "hint_text": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          0,
+          0
+        ],
+        "size": [
+          660,
+          84
+        ],
+        "text": "",
+        "font_size": 30,
+        "align": "center",
+        "valign": "center",
+        "color": "#ffffff"
+      }
+    },
+    "banner": {
+      "type": "UIText",
+      "props": {
+        "anchor": "center",
+        "offset": [
+          0,
+          -260
+        ],
+        "size": [
+          700,
+          120
+        ],
+        "text": "Level clear!",
+        "font_size": 76,
+        "font": "bold",
+        "align": "center",
+        "color": "#ffd84a",
+        "outline": "#2b2140",
+        "outline_size": 8,
+        "visible": false
+      }
+    },
+    "gameover_panel": {
+      "type": "UIPanel",
+      "props": {
+        "anchor": "center",
+        "offset": [
+          0,
+          -60
+        ],
+        "size": [
+          560,
+          420
+        ],
+        "background": "#1d3a6bf2",
+        "radius": 32,
+        "visible": false,
+        "z_index": 10
+      },
+      "children": [
+        "go_title",
+        "go_sub",
+        "go_retry",
+        "go_menu"
+      ]
+    },
+    "go_title": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          0,
+          36
+        ],
+        "size": [
+          560,
+          70
+        ],
+        "text": "Out of hearts!",
+        "font_size": 50,
+        "font": "bold",
+        "align": "center",
+        "color": "#ff7a92",
+        "outline": "#2b2140",
+        "outline_size": 4
+      }
+    },
+    "go_sub": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          0,
+          116
+        ],
+        "size": [
+          560,
+          60
+        ],
+        "text": "Want to try this level again?",
+        "font_size": 30,
+        "align": "center",
+        "color": "#ffffff"
+      }
+    },
+    "go_retry": {
+      "type": "UIButton",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          80,
+          200
+        ],
+        "size": [
+          400,
+          100
+        ],
+        "text": "Retry",
+        "font_size": 44,
+        "font": "bold",
+        "background": "#ff8a3d",
+        "color": "#ffffff"
+      }
+    },
+    "go_menu": {
+      "type": "UIButton",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          130,
+          318
+        ],
+        "size": [
+          300,
+          72
+        ],
+        "text": "Title",
+        "font_size": 32,
+        "background": "#3a5fa0",
+        "color": "#ffffff"
+      }
+    },
+    "blocks_layer": {
+      "type": "Node2D"
+    }
+  }
+}

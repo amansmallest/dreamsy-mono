@@ -1,0 +1,180 @@
+{
+  "format": "0",
+  "root": "title_root",
+  "entities": {
+    "title_root": {
+      "type": "Node2D",
+      "scripts": [
+        "scripts/client/title.luau"
+      ],
+      "children": [
+        "title_world",
+        "title_camera",
+        "title_logo",
+        "btn_continue",
+        "btn_start",
+        "btn_how",
+        "title_tag_pill"
+      ]
+    },
+    "title_world": {
+      "type": "Node2D"
+    },
+    "title_camera": {
+      "type": "Camera2D",
+      "props": {
+        "zoom": 2,
+        "position": [
+          0,
+          0
+        ]
+      }
+    },
+    "title_logo": {
+      "type": "UIPanel",
+      "props": {
+        "anchor": "top",
+        "offset": [
+          0,
+          60
+        ],
+        "size": [
+          640,
+          320
+        ],
+        "background": "#00000000",
+        "image": "asset:logo_badge",
+        "input_transparent": true
+      },
+      "children": [
+        "title_name"
+      ]
+    },
+    "title_name": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          0,
+          100
+        ],
+        "size": [
+          640,
+          150
+        ],
+        "text": "Cloud Hopper",
+        "font_size": 92,
+        "font": "bold",
+        "align": "center",
+        "valign": "center",
+        "color": "#ff8a3d",
+        "outline": "#2b2140",
+        "outline_size": 10,
+        "shadow": "#2b214088",
+        "shadow_offset": [
+          0,
+          6
+        ]
+      }
+    },
+    "btn_continue": {
+      "type": "UIButton",
+      "props": {
+        "anchor": "center",
+        "offset": [
+          0,
+          268
+        ],
+        "size": [
+          460,
+          104
+        ],
+        "text": "Continue",
+        "font_size": 40,
+        "font": "bold",
+        "background": "#ff8a3d",
+        "color": "#ffffff",
+        "visible": false,
+        "z_index": 30
+      }
+    },
+    "btn_start": {
+      "type": "UIButton",
+      "props": {
+        "anchor": "center",
+        "offset": [
+          0,
+          300
+        ],
+        "size": [
+          460,
+          104
+        ],
+        "text": "Play",
+        "font_size": 44,
+        "font": "bold",
+        "background": "#ff8a3d",
+        "color": "#ffffff",
+        "z_index": 30
+      }
+    },
+    "btn_how": {
+      "type": "UIButton",
+      "props": {
+        "anchor": "center",
+        "offset": [
+          0,
+          510
+        ],
+        "size": [
+          460,
+          84
+        ],
+        "text": "How to play",
+        "font_size": 32,
+        "background": "#3a5fa0",
+        "color": "#ffffff",
+        "z_index": 30
+      }
+    },
+    "title_tag_pill": {
+      "type": "UIPanel",
+      "props": {
+        "anchor": "center",
+        "offset": [
+          0,
+          160
+        ],
+        "size": [
+          620,
+          64
+        ],
+        "background": "#1d3a6be6",
+        "radius": 32,
+        "input_transparent": true
+      },
+      "children": [
+        "title_tag"
+      ]
+    },
+    "title_tag": {
+      "type": "UIText",
+      "props": {
+        "anchor": "top_left",
+        "offset": [
+          0,
+          0
+        ],
+        "size": [
+          620,
+          64
+        ],
+        "text": "Hop the sky blocks to the golden flag!",
+        "font_size": 30,
+        "align": "center",
+        "valign": "center",
+        "color": "#ffffff"
+      }
+    }
+  }
+}

@@ -1,0 +1,16 @@
+format = "0"
+name = "scenes_room"
+dimension = "2d"
+entry_scene = "scenes/main.scene.json"
+
+[[store]]
+id = "vip"
+kind = "pass"
+name = "VIP"
+price = 100
+
+[[store]]
+id = "gems"
+kind = "consumable"
+name = "Gems"
+price = 10

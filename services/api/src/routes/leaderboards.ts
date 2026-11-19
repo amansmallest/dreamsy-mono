@@ -8,7 +8,7 @@ import { canAccessGame, getGame, type Q } from "../services.js";
 
 const { runs, leaderboardBests: bests, groupMembers, users } = schema;
 
-/** DREAMSY.MD §13.1 limits. */
+/** docs/platform.md §13.1 limits. */
 export const BOARD_RE = /^[a-z0-9_]{1,40}$/;
 export const GHOST_MAX_BYTES = 256 * 1024;
 const ASC_MIN = 1;
@@ -81,7 +81,7 @@ export async function isMember(q: Q, groupId: string, userId: string) {
   return !!row;
 }
 
-/** DREAMSY.MD §13.3: run submit, leaderboards, ghosts. */
+/** docs/platform.md §13.3: run submit, leaderboards, ghosts. */
 export function leaderboardRoutes({ db, storage, config }: Deps) {
   const r = router();
   // /v1/games/* is already behind requireUser (gameRoutes). Ghosts are readable anonymously for listed games.

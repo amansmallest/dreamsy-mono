@@ -22,7 +22,7 @@ const Consume = z.object({ purchaseId: z.string() });
 type StoreItem = Manifest["store"][number];
 
 /**
- * Coins economy (the "Stars" ledger, shown as coins; DREAMSY.MD §11.6). No real money yet: every
+ * Coins economy (the "Stars" ledger, shown as coins; docs/platform.md §11.6). No real money yet: every
  * wallet starts with a free grant; players spend coins on items games declare in dreamsy.toml
  * `[[store]]`; the creator is credited `creatorShare`, the platform account the rest.
  * All balance changes go through the append-only ledger inside one transaction.

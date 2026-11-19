@@ -1,0 +1,33 @@
+name: Bug report
+description: Something is broken in the engine, editor, builder, cloud or MCP server
+labels: [bug]
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where
+      options: [Engine, Editor / site, Builder (harness), MCP (dreamsy-mcp), Cloud, Kits, Docs, Other]
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead. Screenshots help.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: How to reproduce
+      description: Steps, a prompt, or a small game package (.dpk) that shows the problem.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Commit, dreamsy-mcp version, or "main"
+  - type: input
+    id: platform
+    attributes:
+      label: Platform
+      description: OS, browser or MCP client

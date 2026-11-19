@@ -47,20 +47,20 @@ Game views now also carry `publishedAt`, `orientation` (from the shown version's
 `stats {plays, likes, remixes}`, `remixOf {gameId, name, version} | null`, `viewer {liked}`. Owner
 view: thumbnail/orientation of the latest version, plus `hidden` and `visibility`. Others: the published version.
 
-**Visibility** (DREAMSY.MD §11.8) — `games.visibility = "public" | "private"`, default `"public"`.
+**Visibility** (docs/platform.md §11.8) — `games.visibility = "public" | "private"`, default `"public"`.
 Public games auto-publish: every committed version (worker checkpoint/complete, revert, the copied v1
 of a remix) becomes `publishedVersion` (status `published`, `publishedAt` set once, trending
 recomputed) inside `commitVersion`. Private games are never published. `hidden` (moderation) is
 separate. Migration 0015 maps existing games: `published` → public, everything else → private (old
 drafts are not auto-published).
 
-**Platform v1** (DREAMSY.MD §11)
+**Platform v1** (docs/platform.md §11)
 | | |
 |---|---|
 | `GET /v1/feed?tab=trending\|new\|top\|following&cursor&limit&multiplayer=1` | `{games: FeedGame[], next}` |
 | `GET /v1/search?q&cursor&limit&multiplayer=1` | same shape; ILIKE on name, description, creator handle; trending order |
 | `POST /v1/games/:id/plays` `{version}` | `{counted, stats}`; 1 per user/game/UTC hour (legacy: no charge) |
-| `POST /v1/games/:id/play` `{version?}` | pay-per-play start (DREAMSY.MD §11.6): `{charged, price, balance, pass: {id, expiresAt}, creatorEarned}`; 402 `{error: "insufficient_coins", balance, price}`; also counts the play |
+| `POST /v1/games/:id/play` `{version?}` | pay-per-play start (docs/platform.md §11.6): `{charged, price, balance, pass: {id, expiresAt}, creatorEarned}`; 402 `{error: "insufficient_coins", balance, price}`; also counts the play |
 | `GET /v1/games/:id/play` | quote, no side effects: `{free, reason: "owner"\|"draft"\|"pass"\|null, price, balance, pass\|null}` |
 | `GET /v1/me/quota` · `GET /v1/me/wallet` | also carry `createPrice` (top level and inside `quota` / `wallet`) and `remixPrice`; game views carry `playPrice` + `remixPrice` |
 | `GET /v1/me/notifications?cursor&limit` | newest first: `{items: [{id, kind, title, body, data, read, createdAt}], unread, next}`; kinds `play_earning`, `remix_earning`, `royalty`, `sale`, `build_done`, `group_join`, `friend_request`, `friend_accept`, `game_invite` |
@@ -102,14 +102,14 @@ Choices where §11 was open:
 - `viewer.ownedPasses` and marketplace `iconUrl` are omitted (store icons are package assets with no URL yet).
 - Reports: owners can't report their own game; hidden games are only un-hidden manually (DB).
 
-Notifications + push (DREAMSY.MD §11.6): every notification row is inserted in the same transaction
+Notifications + push (docs/platform.md §11.6): every notification row is inserted in the same transaction
 as the event that caused it, then pushed after commit through Expo
 (`https://exp.host/--/api/v2/push/send`, batches of ≤100, 10 s timeout, errors swallowed, never
 blocks the request). Message: `{to, title, body, data: {...data, kind, notificationId}, sound:
 "default", badge: unread}`. Tokens Expo reports as `DeviceNotRegistered` are deleted. Tests inject
 `Deps.pusher`. Env: `CREATE_PRICE` (100000), `REMIX_PRICE` (25000).
 
-Friends, invites, presence (DREAMSY.MD §13.4, `routes/friends.ts`, `presence.ts`): `Presence = {status:
+Friends, invites, presence (docs/platform.md §13.4, `routes/friends.ts`, `presence.ts`): `Presence = {status:
 "offline"|"online"|"in_room"|"in_match", gameId?, gameName?, roomCode?, mode?, players?, max?, spectatable?}`, read
 from the room server (`GET $GAMESERVER_INTERNAL_URL/internal/presence?users=…`, header `x-internal-token:
 $WORKER_TOKEN`, 1.5 s timeout; failure → everyone `offline`). Env `GAMESERVER_INTERNAL_URL` (default

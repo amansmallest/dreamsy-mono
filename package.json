@@ -10,5 +10,6 @@
     "onlyBuiltDependencies": [
       "esbuild"
     ]
-  }
+  },
+  "license": "PolyForm-Noncommercial-1.0.0"
 }

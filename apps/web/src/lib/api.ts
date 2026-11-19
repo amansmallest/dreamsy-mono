@@ -73,7 +73,7 @@ export type Game = {
   name: string;
   description: string;
   status: 'draft' | 'published';
-  /** Owner views (DREAMSY.MD §11.8). Public = newest version auto-live. Absent on older APIs. */
+  /** Owner views (docs/platform.md §11.8). Public = newest version auto-live. Absent on older APIs. */
   visibility?: Visibility;
   latestVersion: number;
   publishedVersion: number | null;
@@ -132,7 +132,7 @@ export type LedgerEntry = { delta: number; balanceAfter: number; kind: string; g
 export type Upload = { id: string; contentType: string; sizeBytes: number; createdAt: string };
 export type ActivityItem = { generation: Generation; game: { id: string; name: string; thumbnailUrl: string | null } };
 
-// ---------- leaderboards + groups (DREAMSY.MD §13) ----------
+// ---------- leaderboards + groups (docs/platform.md §13) ----------
 
 export type UserBrief = { id: string; handle: string; avatar: Record<string, number> | null };
 export type BoardOrder = 'asc' | 'desc';
@@ -166,7 +166,7 @@ export type LivePlayer = {
 export type Live = { online: number; playing: LivePlayer[]; featured: (Game & { creator?: UserBrief })[] };
 
 // ---------- explore (public feed / search / remix) ----------
-/** DREAMSY.MD §11.2 FeedGame: the public view of a published game (no owner-only fields). */
+/** docs/platform.md §11.2 FeedGame: the public view of a published game (no owner-only fields). */
 export type FeedGame = Pick<Game, 'id' | 'name' | 'description' | 'orientation' | 'thumbnailUrl' | 'players' | 'multiplayer' | 'stats' | 'playPrice' | 'remixPrice' | 'publishedAt'> & {
   creator?: UserBrief;
   remixOf?: { gameId: string; name: string; version: number } | null;

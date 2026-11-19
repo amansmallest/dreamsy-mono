@@ -1,0 +1,15 @@
+return {
+	TILE = 64,
+	UNIT = 24,
+	SPEED = 185,
+	JUMP = 420,
+	SPRING = 680,
+	CRUMBLE_TIME = 0.6,
+	HERO_H = 28,
+	HEARTS = 3,
+	LEVELS = 3,
+	NARROW = 40,
+	GEM_LOW = 6,
+	GEM_HIGH = 54,
+	DEBUG = false,
+}

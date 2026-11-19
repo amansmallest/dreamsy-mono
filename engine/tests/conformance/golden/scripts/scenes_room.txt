@@ -1,0 +1,29 @@
+[info] scene	scenes/main.scene.json	nil
+[info] false	loadScene: no scene "two" (did you mean "scenes/two.scene.json"?)
+[info] false	loadScene: no scene "scenes/nope.scene.json"; scenes: scenes/main.scene.json, scenes/two.scene.json
+[info] room	false	true	nil	1	Player	nil
+[info] 1	5
+[info] 2	VIP
+[info] owns before delivery	false
+[info] false	store: no item "nope" (items: vip, gems)
+[info] false	sfx.play: no sound "missing" (add data/sfx/missing.json)
+[info] 0.7	false
+[info] sceneLoaded	scenes/main.scene.json	nil
+[info] onServer	Player	1	x
+[info] onClient	all
+[info] state	round	1
+[info] score	red	3
+[info] score	red	5
+[info] purchased	vip	mem_1	true	0
+[info] purchased	gems	mem_2	false	1
+[info] [scene] loaded scenes/two.scene.json
+[info] sceneLoaded	scenes/two.scene.json	2
+[info] [scene] loaded scenes/two.scene.json
+[info] sceneLoaded	scenes/two.scene.json	3
+[info] ended	nil	red	false	finish
+audio sfx coin 1 1  0
+audio sfx coin 1 0.1  0
+audio music theme   0 0
+audio music_stop    0 0
+save {}
+time 1.9999999999999978

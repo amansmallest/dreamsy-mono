@@ -1,0 +1,3 @@
+audio music bakery   0 0
+save {"bakery":{"stats":{"purchases":0,"taps":0,"playTime":9.983333333333409,"prestiges":0},"upgrades":{},"owned":{"sugar_moon":0,"bread_oven":0,"muffin_tin":0,"candy_lab":0,"pastry_bot":0,"cake_studio":0,"donut_fryer":0,"pie_stand":0},"boosts":{},"runTime":9.983333333333409,"running":{},"earned":{"whisks":0,"coins":0},"ach":{},"savedAt":1767225610,"cur":{"whisks":0,"coins":5},"rng":7,"t":9.983333333333409,"unlocked":["muffin_tin"],"v":1,"nextEventAt":90,"prestige":{"whisk":{"claimed":0,"count":0}},"managers":{},"progress":{"sugar_moon":0,"bread_oven":0,"muffin_tin":0,"candy_lab":0,"pastry_bot":0,"cake_studio":0,"donut_fryer":0,"pie_stand":0},"allTime":{"whisks":0,"coins":0}}}
+time 10.000000000000076

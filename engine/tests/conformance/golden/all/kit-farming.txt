@@ -1,0 +1,33 @@
+dump 20 player 244 464 240 0
+dump 40 player 304 464 0 0
+dump 60 player 304 464 0 0
+dump 80 player 304 464 0 0
+dump 100 player 304 464 0 0
+dump 120 player 304 464 0 0
+dump 140 player 304 464 0 0
+dump 160 player 304 464 0 0
+dump 180 player 304 464 0 0
+dump 200 player 304 464 0 0
+dump 220 player 304 464 0 0
+dump 240 player 304 464 0 0
+dump 260 player 304 464 0 0
+dump 280 player 304 464 0 0
+dump 300 player 304 464 0 0
+dump 320 player 304 544 0 240
+dump 340 player 304 624 0 240
+dump 360 player 304 704 0 240
+dump 380 player 304 624 0 -240
+dump 400 player 304 544 0 -240
+dump 420 player 304 464 0 -240
+dump 440 player 304 384 0 -240
+dump 460 player 304 304 0 -240
+dump 480 player 384 304 240 0
+dump 500 player 464 304 240 0
+dump 520 player 544 304 240 0
+dump 540 player 624 304 240 0
+dump 560 player 657.205810546875 304 0 0
+dump 580 player 657.0006103515625 304 0 0
+dump 600 player 657.0004272460938 304 0 0
+audio music meadow   0 0
+save {}
+time 10.000000000000076

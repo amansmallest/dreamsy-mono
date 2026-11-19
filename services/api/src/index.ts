@@ -54,7 +54,7 @@ const app = createApp(
     mailer: process.env.RESEND_API_KEY
       ? resendMailer(process.env.RESEND_API_KEY, process.env.EMAIL_FROM ?? "Dreamsy <noreply@thoughts.engineering>")
       : undefined,
-    // Friend presence from the room server's internal endpoint (DREAMSY.MD §13.4).
+    // Friend presence from the room server's internal endpoint (docs/platform.md §13.4).
     presence: httpPresence(process.env.GAMESERVER_INTERNAL_URL || DEFAULT_GAMESERVER_INTERNAL_URL, config.workerToken),
     // Live rooms ("Live now") from the same room server (GET /v1/live).
     live: httpLive(process.env.GAMESERVER_INTERNAL_URL || DEFAULT_GAMESERVER_INTERNAL_URL, config.workerToken),

@@ -4,15 +4,16 @@ import { stat } from "node:fs/promises";
 import { CATALOG } from "./catalog.js";
 import { applyOps, OpError, parseOps } from "./ops.js";
 import { Package } from "./package.js";
+import { PackError } from "./pack.js";
 import { STYLES } from "./styles.js";
 import { validatePackage } from "./validate.js";
 import { registerKitDependencies } from "./kits.js";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-// Shipped kit dependencies (engine-web/kits/<kit>/kit.json) when run inside the monorepo.
+// Shipped kit dependencies (kits/<kit>/kit.json) when run inside the monorepo.
 try {
-  const kitsDir = fileURLToPath(new URL("../../engine-web/kits/", import.meta.url));
+  const kitsDir = fileURLToPath(new URL("../../kits/", import.meta.url));
   if (existsSync(kitsDir)) {
     const deps: Record<string, string[]> = {};
     for (const k of readdirSync(kitsDir)) {
@@ -24,14 +25,16 @@ try {
 } catch { /* not in the monorepo */ }
 
 const USAGE = `dreamsy-format <command>
-  validate <dir|zip>                 static validation; exit 1 on errors
-  pack <dir> <out.zip>               validate + deterministic zip
-  unpack <zip> <dir>                 extract
-  apply <dir|zip> <ops.json> <out>   apply an op batch, validate, write dir or .zip
+  validate <dir|zip|dpk>             static validation; exit 1 on errors
+  pack <dir|zip|dpk> <out>           validate + write a Dreamsy pack (.dpk) or a deterministic zip
+  unpack <zip|dpk> <dir>             extract
+  apply <dir|zip|dpk> <ops.json> <out>  apply an op batch, validate, write dir, .dpk or .zip
   catalog                            print entity types + styles as JSON (for engine/harness)`;
 
 async function load(path: string): Promise<Package> {
-  return (await stat(path)).isDirectory() ? Package.fromDir(path) : Package.fromZip(new Uint8Array(await readFile(path)));
+  if ((await stat(path)).isDirectory()) return Package.fromDir(path);
+  const bytes = new Uint8Array(await readFile(path));
+  return path.endsWith(".dpk") ? Package.fromPack(bytes) : Package.fromZip(bytes);
 }
 
 function report(pkg: Package): boolean {
@@ -45,18 +48,22 @@ function report(pkg: Package): boolean {
 }
 
 async function write(pkg: Package, out: string) {
-  if (out.endsWith(".zip")) await writeFile(out, pkg.toZip());
+  if (out.endsWith(".dpk")) await writeFile(out, pkg.toPack());
+  else if (out.endsWith(".zip")) await writeFile(out, pkg.toZip());
   else await pkg.toDir(out);
 }
 
 const [cmd, ...args] = process.argv.slice(2);
+try {
 switch (cmd) {
   case "validate":
     process.exit(report(await load(args[0]!)) ? 0 : 1);
   case "pack": {
     const pkg = await load(args[0]!);
     if (!report(pkg)) process.exit(1);
-    await writeFile(args[1]!, pkg.toZip());
+    const out = args[1]!;
+    await writeFile(out, out.endsWith(".dpk") ? pkg.toPack() : pkg.toZip());
+    if (out.endsWith(".dpk")) console.error(`content hash ${pkg.contentHash()}`);
     break;
   }
   case "unpack":
@@ -80,4 +87,8 @@ switch (cmd) {
   default:
     console.error(USAGE);
     process.exit(cmd ? 1 : 0);
+}
+} catch (e) {
+  if (e instanceof PackError) { console.error(`✗ ${e.message}`); process.exit(1); }
+  throw e;
 }

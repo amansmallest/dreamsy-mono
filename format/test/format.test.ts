@@ -13,6 +13,8 @@ import {
   parseAnims,
   referenceSize,
   orientationOf,
+  viewOf,
+  getType,
   KITS,
   registerKitDependencies,
   expandKits,
@@ -444,5 +446,51 @@ describe("data text files", () => {
     const p = minimal().with("data/rooms/start.txt", "#..#\n").with("data/chunks/forest/a.txt", "....\n");
     expect(validatePackage(p).issues.filter((i) => i.file?.startsWith("data/"))).toEqual([]);
     expect(() => parseOps([{ op: "write_file", path: "data/rooms/b.txt", content: "#" }, { op: "edit_file", path: "data/chunks/forest/a.txt", old: "..", new: "##" }])).not.toThrow();
+  });
+});
+
+describe("2.5D (E7): view, z, height", () => {
+  const msgs = (pkg: Package) => validatePackage(pkg).issues.filter((i) => i.severity === "error").map((i) => `${i.code}: ${i.message}`).join("\n");
+  const scene = (entities: Record<string, unknown>, extra: Record<string, unknown> = {}) =>
+    JSON.stringify({ format: "0", root: "world", ...extra, entities: { world: { type: "Node2D", children: Object.keys(entities) }, ...entities } });
+
+  it("manifest view is optional, one of side/topdown/oblique/iso, 2D only; scenes may override it", () => {
+    for (const v of ["side", "topdown", "oblique", "iso"]) expect(msgs(minimal().with("dreamsy.toml", MANIFEST + `view = "${v}"\n`))).toBe("");
+    expect(msgs(minimal().with("dreamsy.toml", MANIFEST + `view = "isometric"\n`))).toMatch(/manifest.invalid: view/);
+    const threeD = MANIFEST.replace('dimension = "2d"', 'dimension = "3d"') + `view = "iso"\nstyle = { preset = "blocky" }\n`;
+    expect(msgs(minimal().with("dreamsy.toml", threeD))).toMatch(/manifest.view_dimension/);
+    const p = minimal().with("dreamsy.toml", MANIFEST + `view = "oblique"\n`);
+    expect(msgs(p.with("scenes/main.scene.json", scene({}, { view: "iso" })))).toBe("");
+    expect(msgs(p.with("scenes/main.scene.json", scene({}, { view: "3d" })))).toMatch(/scene.invalid: view/);
+    expect(viewOf({})).toBe("side");
+    expect(viewOf({ view: "oblique" })).toBe("oblique");
+    expect(viewOf({ view: "oblique" }, { view: "iso" })).toBe("iso");
+  });
+
+  it("z / height on spatial 2D types; z_velocity / z_gravity_scale on Body2D only", () => {
+    for (const t of ["Node2D", "Sprite2D", "Body2D", "Area2D", "Text2D", "TileMap2D"]) {
+      expect(getType(t)!.props.z?.default).toBe(0);
+      expect(getType(t)!.props.height?.default).toBe(0);
+    }
+    expect(getType("Body2D")!.props.z_gravity_scale?.default).toBe(1);
+    expect(getType("Body2D")!.props.z_velocity?.default).toBe(0);
+    expect(getType("Camera2D")!.props.z).toBeUndefined();
+    // appended last, so the indices of older props never move (C++ state hashes use them)
+    const keys = Object.keys(getType("Body2D")!.props);
+    expect(keys.slice(-4)).toEqual(["z", "height", "z_velocity", "z_gravity_scale"]);
+    const ok = minimal().with("dreamsy.toml", MANIFEST + `view = "oblique"\n`).with("scenes/main.scene.json", scene({
+      hero: { type: "Body2D", props: { body: "dynamic", height: 32, z: 10, z_velocity: 300, z_gravity_scale: 0.5 } },
+      block: { type: "Body2D", props: { height: 48 } },
+      block_art: { type: "Sprite2D", props: { height: 48, color: "#8866aa" } },
+      label: { type: "Text2D", props: { text: "hi", z: 60 } },
+    }));
+    expect(msgs(ok)).toBe("");
+    const bad = msgs(ok.with("scenes/main.scene.json", scene({
+      hero: { type: "Body2D", props: { height: -4, z: "up" } },
+      art: { type: "Sprite2D", props: { z_velocity: 10 } },
+    })));
+    expect(bad).toMatch(/"hero".height: must be ≥ 0/);
+    expect(bad).toMatch(/"hero".z: /);
+    expect(bad).toMatch(/prop.unknown: "art" \(Sprite2D\) has no prop "z_velocity"/);
   });
 });

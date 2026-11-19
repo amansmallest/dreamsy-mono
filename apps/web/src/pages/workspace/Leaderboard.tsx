@@ -6,7 +6,7 @@ import { useUser } from '../../lib/auth';
 import { boardValue, timeAgo } from '../../lib/format';
 import { useResource } from '../../lib/store';
 
-/** Workspace tab: the game's leaderboards (DREAMSY.MD §13), public or scoped to one of my groups. */
+/** Workspace tab: the game's leaderboards (docs/platform.md §13), public or scoped to one of my groups. */
 export function LeaderboardPanel({ gameId }: { gameId: string }) {
   const me = useUser();
   const boards = useResource(`boards:${gameId}`, () => api.boards(gameId));

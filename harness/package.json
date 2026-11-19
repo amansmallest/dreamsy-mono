@@ -3,16 +3,18 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "worker": "tsx src/main.ts worker",
-    "local": "tsx src/main.ts local",
+    "worker": "tsx src/cli/main.ts worker",
+    "local": "tsx src/cli/main.ts local",
+    "mcp": "tsx src/mcp/server.ts",
+    "editor-build": "tsx src/cli/editor.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.8.0",
-    "@dreamsy/engine": "workspace:^",
     "@dreamsy/format": "workspace:^",
     "@google/genai": "^3.3.0",
+    "@modelcontextprotocol/sdk": "^1.32.2",
     "ajv": "^8",
     "playwright": "^1.65.1",
     "zod": "^4.6.7"

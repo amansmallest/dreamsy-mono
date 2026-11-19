@@ -3,9 +3,9 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { MAX_PACKAGE_BYTES, Package, registerKitDependencies, validatePackage, type Issue, type Manifest } from "@dreamsy/format";
 
-// Kit dependency map (engine-web/kits/<kit>/kit.json), so validation accepts kit-to-kit requires.
+// Kit dependency map (kits/<kit>/kit.json), so validation accepts kit-to-kit requires.
 {
-  const dir = fileURLToPath(new URL("../../../engine-web/kits/", import.meta.url));
+  const dir = fileURLToPath(new URL("../../../kits/", import.meta.url));
   const map: Record<string, string[]> = {};
   if (existsSync(dir)) {
     for (const kit of readdirSync(dir)) {

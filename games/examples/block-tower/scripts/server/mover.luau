@@ -1,5 +1,5 @@
 --!strict
--- NOTE: scripting API is provisional (DREAMSY.MD §4.1).
+-- NOTE: scripting API is provisional (docs/runtime.md §4.1).
 local step = script.entity
 local origin = step.position
 local t = 0

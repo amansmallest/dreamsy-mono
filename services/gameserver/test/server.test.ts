@@ -1,9 +1,9 @@
-// Real sockets on an ephemeral port: auth, limits, quick match, and two engine Games playing a duel through the server.
+// Real sockets on an ephemeral port: auth, limits, quick match, and a duel played through the server at the protocol level
+// (what an engine client sends and receives; the C++ engine's room client lands in E8, docs/engine.md §14.10).
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { SignJWT } from "jose";
-import { Package } from "@dreamsy/format";
-import { Game } from "@dreamsy/engine/core";
-import { LIMITS, RoomClient, RoomError, type ServerMsg } from "@dreamsy/engine/net";
+import { LIMITS, type ServerMsg } from "../src/protocol.js";
+import { RoomClient, RoomError } from "./client.js";
 import { startGameServer, type GameServer } from "../src/server.js";
 
 const SECRET = "test-secret-test-secret-test-secret-42";
@@ -97,35 +97,9 @@ describe("rooms over sockets", () => {
   });
 });
 
-// ---------------------------------------------------------------- two engine Games through the server
-const files = {
-  "dreamsy.toml": `format = "0"\nname = "Duel"\ndimension = "2d"\nentry_scene = "scenes/main.scene.json"\n[players]\nmin = 2\nmax = 2\n[server]\nmode = "rooms"\n[style]\npreset = "pixel"\npalette = ["#101020", "#3355ff", "#ffcc00", "#f0f0f0"]\n`,
-  "scenes/main.scene.json": JSON.stringify({
-    format: "0", root: "world",
-    entities: {
-      world: { type: "Node2D", children: ["hero"] },
-      hero: { type: "Node2D", tags: ["player"], props: { position: [100, 100] }, children: ["s"], scripts: ["scripts/client/hero.luau"] },
-      s: { type: "Sprite2D", props: { size: [16, 16] } },
-    },
-  }),
-  "scripts/shared/net.luau": `return { tag = remoteEvent("tag") }`,
-  "scripts/client/hero.luau": `
-    local net = require("../shared/net")
-    local me = script.entity
-    room.replicate(me)
-    local t = 0
-    onTick(function(dt)
-      t += dt
-      if players["local"].team == "blue" then me.position = vec2(100 + t * 60, 100) end
-    end)
-    net.tag:onServer(function(from, n) print("tagged by", from.team, n) room.finish(from) end)
-    room.ended:connect(function(r) print("winner", r.winner.team, r.reason) end)
-    after(0.6, function() if players["local"].team == "blue" then net.tag:fireServer(1) end end)
-  `,
-};
-
-describe("two Games, one duel, real sockets", () => {
-  it("quick match pairs red vs blue; avatars replicate, fireServer reaches the host, the finish reaches both", async () => {
+// ---------------------------------------------------------------- a duel through the server (protocol level)
+describe("one duel, real sockets", () => {
+  it("quick match pairs red vs blue; avatar samples relay with a server ts, fireServer reaches the host, the finish reaches both", async () => {
     const [a, b] = await Promise.all([RoomClient.connect(url, await token("u_red"), "Red"), RoomClient.connect(url, await token("u_blue"), "Blue")]);
     const isStart = (m: ServerMsg): m is Extract<ServerMsg, { t: "start" }> => m.t === "start";
     const [sa, sb] = [a.waitFor(isStart), b.waitFor(isStart)];
@@ -134,29 +108,32 @@ describe("two Games, one duel, real sockets", () => {
     b.quick("local:duel");
     const [ra, rb] = await Promise.all([sa, sb]);
     expect(ra.room.code).toBe(rb.room.code);
+    expect(ra.room.mode).toBe("duel");
     expect(ra.room.players.map((p) => p.team)).toEqual(["red", "blue"]);
-    const endedA = a.waitFor((m): m is Extract<ServerMsg, { t: "ended" }> => m.t === "ended", 10_000);
+    expect(ra.room.host).toBe(a.self);
+    expect(ra.room.seed).toBe(rb.room.seed);
+    const [la, lb] = [a.link(), b.link()];
 
-    const ga = await Game.load(Package.fromFiles(files), { net: a.link() });
-    const gb = await Game.load(Package.fromFiles(files), { net: b.link() });
-    for (let i = 0; i < 70; i++) { await sleep(15); ga.step(); gb.step(); }
-    expect(ga.errors).toEqual([]);
-    expect(gb.errors).toEqual([]);
-    // red's view of blue: a puppet moving right, behind blue's real position
-    const puppet = ga.net.puppet(b.self)!;
-    expect(puppet).toBeTruthy();
-    const px = puppet.get<number[]>("position")[0]!;
-    const bx = gb.world.byId.get("hero")!.get<number[]>("position")[0]!;
-    expect(px).toBeGreaterThan(110);
-    expect(px).toBeLessThanOrEqual(bx + 1);
-    expect(gb.net.puppet(a.self)).toBeTruthy();
-    // fireServer from blue ran on red (host), which finished the match for blue
-    const la = ga.logs.map((l) => l.text), lbl = gb.logs.map((l) => l.text);
-    expect(la).toContain("tagged by\tblue\t1");
-    expect(lbl.some((l) => l.startsWith("tagged by"))).toBe(false);
-    expect(la).toContain("winner\tblue\tfinish");
-    expect(lbl).toContain("winner\tblue\tfinish");
-    expect((await endedA).r).toMatchObject({ winner: b.self, team: "blue" });
+    // blue's avatar samples reach red (not blue itself), stamped with match time
+    for (let i = 0; i < 3; i++) {
+      b.send({ t: "st", s: ["scenes/main.scene.json", 100 + i * 10, 100, 0, 0, "run", 1, "hero"] });
+      await sleep(20);
+    }
+    // blue tags: fireServer goes to the host (red) only
+    b.send({ t: "ev", n: "tag", to: "host", a: [1] });
+    await sleep(80);
+    const fromB = la.poll();
+    const samples = fromB.filter((m): m is Extract<ServerMsg, { t: "st" }> => m.t === "st");
+    expect(samples.map((m) => [m.id, m.s[1]])).toEqual([[b.self, 100], [b.self, 110], [b.self, 120]]);
+    expect(samples[2]!.ts).toBeGreaterThanOrEqual(samples[0]!.ts);
+    expect(fromB).toContainEqual({ t: "ev", from: b.self, n: "tag", to: "host", a: [1] });
+    expect(lb.poll().filter((m) => m.t === "st" || m.t === "ev")).toEqual([]);
+
+    // the host finishes the match for blue: both get the result
+    const ended = (c: RoomClient) => c.waitFor((m): m is Extract<ServerMsg, { t: "ended" }> => m.t === "ended");
+    const [ea, eb] = [ended(a), ended(b)];
+    a.send({ t: "end", w: b.self });
+    for (const e of await Promise.all([ea, eb])) expect(e.r).toMatchObject({ winner: b.self, team: "blue", draw: false, reason: "finish" });
     a.close(); b.close();
   });
 });

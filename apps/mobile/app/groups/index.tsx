@@ -7,7 +7,7 @@ import { joinError, normalizeCode, shareInvite, useMyGroups } from '@/groups';
 import { errorMessage, ink, radius } from '@/theme';
 import { Badge, Button, Card, Field, Loading, PixelSparkle, Txt } from '@/ui';
 
-/** Family & friends: my groups, start one, join one by code (DREAMSY.MD §13). */
+/** Family & friends: my groups, start one, join one by code (docs/platform.md §13). */
 export default function GroupsScreen() {
   const { groups, error, refresh } = useMyGroups();
   const [refreshing, setRefreshing] = useState(false);

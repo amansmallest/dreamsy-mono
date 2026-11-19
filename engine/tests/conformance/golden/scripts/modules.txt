@@ -1,0 +1,12 @@
+[info] state module loaded once
+[info] server bump	1
+[info] client bump	2	42	true
+[info] false	require("./a"): circular require of scripts/shared/a.luau
+[info] false	require("../shared/nope"): module scripts/shared/nope.luau not found
+[info] false	require("../../escape") escapes scripts/
+[info] false	require("@kit/rpg"): kit "rpg" is not enabled (add kits = ["rpg"] to dreamsy.toml)
+[info] false	require("@nope"): kits are required as "@kit/<kit>" or "@kit/<kit>/<module>"
+[info] core kit	table
+[info] bare name	cfg
+save {}
+time 1.9999999999999978

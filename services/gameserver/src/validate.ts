@@ -1,5 +1,5 @@
 // Client message validation: shape + bounds. Anything else is "bad_message".
-import { LIMITS, type AvatarState, type ClientMsg } from "@dreamsy/engine/net";
+import { LIMITS, type AvatarState, type ClientMsg } from "./protocol.js";
 
 const isStr = (v: unknown, max: number, min = 0): v is string => typeof v === "string" && v.length >= min && v.length <= max;
 const isNum = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);

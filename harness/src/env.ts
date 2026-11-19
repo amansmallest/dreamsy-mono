@@ -1,18 +1,14 @@
 import { existsSync } from "node:fs";
 import { setDefaultAutoSelectFamilyAttemptTimeout } from "node:net";
 
-// Node tries IPv6 and IPv4 in parallel with a 250ms per-attempt window. On networks with broken IPv6
-// and a slow IPv4 handshake (VPNs, venue Wi-Fi) every attempt times out → "Connection error".
-// A longer window costs nothing on good networks.
 setDefaultAutoSelectFamilyAttemptTimeout(2000);
-import { fileURLToPath } from "node:url";
+import { repoPath } from "./paths.js";
 
-/** Loads the repo-root .env (then harness/.env) without overriding real env vars. */
 export function loadEnv() {
-  for (const rel of ["../../.env", "../.env", "../../services/api/.env"]) {
-    const path = fileURLToPath(new URL(rel, import.meta.url));
+  for (const rel of [".env", "harness/.env", "services/api/.env"]) {
+    const path = repoPath(rel);
     if (existsSync(path)) {
-      try { process.loadEnvFile(path); } catch { /* malformed .env: ignore, fall back to process env */ }
+      try { process.loadEnvFile(path); } catch {}
     }
   }
 }

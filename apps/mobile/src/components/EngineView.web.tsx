@@ -4,10 +4,10 @@ import { useAuth } from '../auth';
 import { walletChanged } from '../wallet';
 import { ENGINE_BG, engineUrl, type EngineViewProps } from './engineShared';
 
-// Web (PWA) player: the same engine page and URL as the native WebView, in an <iframe>. The engine
-// posts its messages (ready / error / quit / purchase / runEnd) to window.parent as plain objects
-// when it runs in an iframe (engine-web/dev/bridge.ts); only messages from this iframe's window and
-// the engine's origin are handled.
+// Web (PWA) player: the same engine page and URL as the native WebView, in an <iframe>. The C++ web
+// player posts its messages (ready / error / quit / runEnd) to window.parent as plain objects when it
+// runs in an iframe (engine/apps/player/embed.js); only messages from this iframe's window and the
+// engine's origin are handled.
 
 export { engineUrl, type EngineViewProps, type Insets, type RoomOpts, type RunEnd } from './engineShared';
 

@@ -1,6 +1,6 @@
 // Room state machine (no sockets): create / join by code / quick-match 1v1 / ready / start / relay / end.
 // The server is authoritative for room membership, teams, host, shared state, scores and match results;
-// game simulation runs on the players' devices (DREAMSY.MD §4.5, multiplayer v1 = relayed state sync).
+// game simulation runs on the players' devices (docs/runtime.md §4.5, multiplayer v1 = relayed state sync).
 // Spectators watch a room (not players, not counted in max, ≤ 16): they receive everything players receive and can't
 // send gameplay messages. Presence (per userId: online / in a room / in a match) feeds GET /internal/presence;
 // live() feeds GET /internal/live.
@@ -8,7 +8,7 @@ import { randomInt } from "node:crypto";
 import {
   CODE_ALPHABET, LIMITS, matchResult, normalizeCode,
   type ClientMsg, type ErrorCode, type MatchResult, type Presence, type RoomInfo, type RoomPlayer, type ServerMsg, type Team,
-} from "@dreamsy/engine/net";
+} from "./protocol.js";
 
 export interface Peer {
   /** Player id (per connection). */

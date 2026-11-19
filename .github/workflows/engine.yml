@@ -1,0 +1,92 @@
+# C++ engine v2 (docs/engine.md §14): build + test on every target we support so far.
+name: engine
+
+on:
+  push:
+    paths: ["engine/**", "third_party/**", "format/**", "kits/**", "games/**", ".github/workflows/engine.yml"]
+  pull_request:
+    paths: ["engine/**", "third_party/**", "format/**", "kits/**", "games/**", ".github/workflows/engine.yml"]
+
+jobs:
+  macos:
+    name: macOS arm64 (debug + ASan/UBSan, release)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - run: brew install ninja
+      - name: debug + sanitizers
+        working-directory: engine
+        run: cmake --preset debug && cmake --build --preset debug && ctest --preset debug
+      - name: release
+        working-directory: engine
+        run: cmake --preset release && cmake --build --preset release && ctest --preset release
+      - run: engine/build/release/dreamsy-tool smoke
+
+  linux:
+    name: Linux x86-64 (headless, ASan/UBSan)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y ninja-build
+      - name: debug + sanitizers (no player)
+        working-directory: engine
+        run: cmake --preset headless && cmake --build --preset headless && ctest --preset headless
+      - run: engine/build/headless/dreamsy-tool smoke
+
+  web:
+    name: Web (Emscripten)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y ninja-build
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 4.0.11
+      - name: build + test under Node
+        working-directory: engine
+        run: cmake --preset web && cmake --build --preset web && ctest --preset web
+      - name: size report (gzip)
+        working-directory: engine/build/web
+        run: for f in dreamsy-player.wasm dreamsy-player.js dreamsy-tool.wasm; do echo "$f $(gzip -9c $f | wc -c) bytes"; done
+
+  conformance:
+    name: Conformance with the TS side (validator + script host)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y ninja-build
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --filter @dreamsy/format...
+      - name: build the tool
+        working-directory: engine
+        run: cmake --preset headless && cmake --build --preset headless --target dreamsy-tool
+      - run: python3 engine/tests/conformance/conformance.py --tool engine/build/headless/dreamsy-tool
+      - run: python3 engine/tests/conformance/run_compare.py --tool engine/build/headless/dreamsy-tool
+
+  fuzz:
+    name: libFuzzer (5 min per target)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y ninja-build clang
+      - name: build fuzzers (clang, ASan/UBSan + libFuzzer)
+        working-directory: engine
+        run: |
+          CC=clang CXX=clang++ cmake --preset headless -B build/fuzz -DDREAMSY_FUZZ=ON
+          cmake --build build/fuzz
+          python3 fuzz/make_corpus.py build/fuzz/corpus build/fuzz/dreamsy-tool
+      - name: fuzz
+        working-directory: engine/build/fuzz
+        run: |
+          ./fuzz-pack -max_total_time=300 -max_len=2000000 corpus/pack
+          ./fuzz-package -max_total_time=300 -max_len=2000000 corpus/package
+          ./fuzz-zip_import -max_total_time=300 corpus/zip
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: fuzz-crashes
+          path: engine/build/fuzz/crash-*

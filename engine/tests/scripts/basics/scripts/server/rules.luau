@@ -1,0 +1,1 @@
+print("server first (scripts/server runs before scripts/client)")

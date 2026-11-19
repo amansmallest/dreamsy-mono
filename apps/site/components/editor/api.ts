@@ -8,13 +8,14 @@ async function call<T>(url: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  games: () => call<{ games: GameSummary[] }>("/api/games"),
+  games: () => call<{ games: GameSummary[]; bannersPending?: boolean }>("/api/games"),
   create: (name: string) => call<{ id: string }>("/api/games", { method: "POST", body: JSON.stringify({ name }) }),
   game: (id: string) => call<{ game: GameDetail; running: boolean }>(`/api/games/${id}`),
   rename: (id: string, name: string) => call(`/api/games/${id}`, { method: "PATCH", body: JSON.stringify({ name }) }),
   build: (id: string, prompt: string, images: { mediaType: string; base64: string }[]) =>
     call<{ build: BuildRecord }>(`/api/games/${id}/build`, { method: "POST", body: JSON.stringify({ prompt, images }) }),
   cancel: (id: string) => call(`/api/games/${id}/build`, { method: "DELETE" }),
+  saveFile: (id: string, path: string, content: string) => call(`/api/games/${id}/file`, { method: "PUT", body: JSON.stringify({ path, content }) }),
   restore: (id: string, v: number) => call(`/api/games/${id}/versions/${v}`, { method: "POST" }),
   keys: () => call<KeyStatus>("/api/keys"),
   saveKey: (provider: Provider, key: string) => call<KeyStatus>("/api/keys", { method: "POST", body: JSON.stringify({ provider, key }) }),

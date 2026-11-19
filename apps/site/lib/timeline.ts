@@ -110,6 +110,11 @@ export function timeline(events: BuildEvent[]) {
         working = what === "thinking" ? "Thinking…" : what === "writing" ? "Writing…" : what ? `${what[0]!.toUpperCase()}${what.slice(1)}…` : null;
         break;
       }
+      case "music": {
+        const ids = Array.isArray(d.ids) ? (d.ids as string[]) : [];
+        steps.push({ key, kind: "music", label: `Composed ${plural(ids.length, "track")}: ${ids.map(human).join(", ")}` });
+        break;
+      }
       case "cloud.saved":
         steps.push({ key, kind: "cloud", label: `Saved to the cloud as version ${num(d.version)}` });
         break;

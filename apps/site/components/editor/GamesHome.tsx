@@ -15,10 +15,24 @@ export function GamesHome() {
   const [name, setName] = useState("");
   const [creating, setCreating] = useState(false);
   const [keysOpen, setKeysOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const q = query.trim().toLowerCase();
+  const shown = (games ?? []).filter((g) => !q || g.name.toLowerCase().includes(q) || g.id.includes(q));
 
   useEffect(() => {
-    api.games().then((r) => setGames(r.games)).catch((e) => setError((e as Error).message));
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let tries = 0;
+    const load = () =>
+      api
+        .games()
+        .then((r) => {
+          setGames(r.games);
+          if (r.bannersPending && tries++ < 60) timer = setTimeout(load, 3000);
+        })
+        .catch((e) => setError((e as Error).message));
+    void load();
     api.keys().then(setKeys).catch(() => {});
+    return () => clearTimeout(timer);
   }, []);
 
   const create = async (e: React.FormEvent) => {
@@ -60,17 +74,38 @@ export function GamesHome() {
       </form>
       {error && <p className="form-error">{error}</p>}
 
+      {games && games.length > 0 && (
+        <div className="games-tools">
+          <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={`Search ${games.length} games`} aria-label="Search games" />
+          {q && <span className="muted">{shown.length} found</span>}
+        </div>
+      )}
+
       {games === null ? (
         <p className="muted">Loading…</p>
       ) : games.length === 0 ? (
         <p className="muted">No games yet. Name one above to get started.</p>
+      ) : shown.length === 0 ? (
+        <p className="muted">No games match “{query}”.</p>
       ) : (
         <ul className="games-list">
-          {games.map((g) => (
+          {shown.map((g) => (
             <li key={g.id}>
               <Link href={`/editor/${g.id}`} className="game-tile">
                 <div className="tile-shot">
-                  {g.hasThumb ? <img src={`/api/games/${g.id}/thumb?t=${g.updated}`} alt="" /> : <span>{g.empty ? "not built yet" : g.name.slice(0, 1)}</span>}
+                  {g.hasThumb ? (
+                    <div className="tile-cover">
+                      <img className="tile-blur" src={`/api/games/${g.id}/thumb?t=${g.updated}`} alt="" aria-hidden />
+                      <img className="tile-shot-img" src={`/api/games/${g.id}/thumb?t=${g.updated}`} alt={`${g.name} screenshot`} />
+                    </div>
+                  ) : g.banner ? (
+                    <div className="tile-banner">
+                      <img src={`/api/games/${g.id}/file?path=${encodeURIComponent(g.banner)}`} alt="" />
+                      <span>{g.name}</span>
+                    </div>
+                  ) : (
+                    <span className="tile-empty">{g.empty ? "not built yet" : g.name}</span>
+                  )}
                 </div>
                 <div className="tile-body">
                   <strong>{g.name}</strong>

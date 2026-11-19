@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { BuildRecord, GameDetail, GameFile, GameSummary, VersionInfo } from "../editor-types";
 import { dataDir, gameDir, GAMES_DIR, HttpError, inside, isGameId } from "./paths";
+import { requestBanner } from "./banners";
 import { tool } from "./tool";
 
 const nameOf = (toml: string) => /^name\s*=\s*"([^"]*)"/m.exec(toml)?.[1];
@@ -57,14 +58,20 @@ export async function listGames(): Promise<GameSummary[]> {
       const s = await stat(gameDir(id));
       if (!s.isDirectory()) return null;
       const builds = await history(id);
+      const empty = (await visible(gameDir(id))).length === 0;
+      if (!empty) requestBanner(id);
+      const assets = await readdir(join(gameDir(id), "assets")).catch(() => [] as string[]);
+      const svgs = assets.filter((f) => f.endsWith(".svg"));
+      const pick = svgs.find((f) => /logo|title|banner|cover/.test(f)) ?? svgs.find((f) => /hero|player|idle/.test(f)) ?? svgs[0];
       return {
         id,
         name: await displayName(id),
         updated: await updatedAt(id),
         builds: builds.length,
         hasThumb: existsSync(join(dataDir(id), "thumb.jpg")),
-        empty: (await visible(gameDir(id))).length === 0,
-      } satisfies GameSummary;
+        empty,
+        ...(pick ? { banner: `assets/${pick}` } : {}),
+      } as GameSummary;
     }),
   );
   return games.filter((g): g is GameSummary => !!g).sort((a, b) => b.updated - a.updated);
@@ -163,4 +170,31 @@ export async function pack(id: string, version?: number) {
   } finally {
     await rm(tmp, { recursive: true, force: true });
   }
+}
+
+const EDITABLE = [/^assets\/[a-z0-9_-]+\.svg$/, /^data\/music\/[a-z][a-z0-9_]*\.json$/, /^data\/sfx\/[a-z][a-z0-9_]*\.json$/];
+const UNSAFE_SVG = /<script|<foreignObject|\son[a-z]+\s*=|javascript:|(?:href|src)\s*=\s*["']\s*(?:https?:|data:text)/i;
+
+export async function writeGameFile(id: string, path: string, content: string) {
+  if (!EDITABLE.some((re) => re.test(path))) throw new HttpError(400, "Only sprites (assets/*.svg), music and sound effects can be edited here");
+  if (content.length > 400_000) throw new HttpError(413, "File is too large");
+  if (path.endsWith(".svg")) {
+    if (!/^\s*(<\?xml[^>]*>\s*)?<svg[\s>]/i.test(content) || !/<\/svg>\s*$/i.test(content)) throw new HttpError(400, "Not an SVG document");
+    if (UNSAFE_SVG.test(content)) throw new HttpError(400, "SVG can't contain scripts, event handlers or external links");
+  } else {
+    try {
+      JSON.parse(content);
+    } catch (e) {
+      throw new HttpError(400, `Invalid JSON: ${(e as Error).message}`);
+    }
+  }
+  const abs = inside(gameDir(id), path);
+  await mkdir(join(abs, ".."), { recursive: true });
+  await writeFile(abs, content);
+  try {
+    await tool("validate", gameDir(id));
+  } catch (e) {
+    throw new HttpError(422, `Saved, but the game no longer validates: ${(e as { stdout?: string; stderr?: string }).stdout?.trim().split("\n").slice(-3).join(" ") ?? (e as Error).message}`);
+  }
+  await snapshot(id, `Edited ${path}`);
 }

@@ -2118,3 +2118,356 @@ select:focus {
   .ws-chat { min-height: 70svh; }
   .player.portrait { max-width: 340px; }
 }
+
+/* studio panels */
+
+.ws-side .tabs {
+  flex-wrap: wrap;
+}
+
+.ws-side .tabs button {
+  padding: 4px 10px;
+  font-size: 14px;
+}
+
+.sprites {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sprite-focus {
+  border: 2px solid var(--ink);
+  background: var(--paper);
+}
+
+.sprite-stage {
+  display: grid;
+  place-items: center;
+  height: 200px;
+  padding: 12px;
+  border-bottom: 2px solid var(--ink);
+  background: repeating-conic-gradient(var(--mist) 0 25%, var(--paper) 0 50%) 0 0 / 16px 16px;
+}
+
+.sprite-stage img {
+  max-width: 100%;
+  max-height: 100%;
+  min-width: 64px;
+  image-rendering: pixelated;
+  object-fit: contain;
+}
+
+.sprite-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px 4px;
+  font-size: 13px;
+}
+
+.sprite-meta strong {
+  font-family: var(--font-pixel);
+  font-size: 16px;
+  color: var(--ink-deep);
+}
+
+.sprite-actions {
+  display: flex;
+  gap: 6px;
+  padding: 6px 10px 10px;
+}
+
+.sprite-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sprite-grid button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  padding: 6px 4px;
+  border: 2px solid var(--grid);
+  background: var(--paper);
+  cursor: pointer;
+}
+
+.sprite-grid button:hover,
+.sprite-grid button.on {
+  border-color: var(--ink);
+  background: var(--mist);
+}
+
+.sprite-grid img {
+  width: 100%;
+  height: 52px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.sprite-grid span {
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+
+.dialog-wide {
+  width: min(980px, calc(100vw - 32px));
+}
+
+.svg-editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.svg-editor textarea {
+  height: 420px;
+  resize: vertical;
+  padding: 10px;
+  border: 2px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+  font: 12px/1.5 ui-monospace, Menlo, monospace;
+}
+
+.svg-preview {
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--ink);
+  background: repeating-conic-gradient(var(--mist) 0 25%, var(--paper) 0 50%) 0 0 / 16px 16px;
+}
+
+.svg-preview img {
+  width: 80%;
+  height: 80%;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.dialog-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.dialog-foot .muted {
+  margin-right: auto;
+  font-size: 13px;
+}
+
+.music {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tracks {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tracks li {
+  padding: 10px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+}
+
+.tracks li.on {
+  background: var(--mist);
+}
+
+.track-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.play {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border: 2px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.play:disabled {
+  opacity: 0.4;
+}
+
+.track-name {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.track-name strong {
+  font-family: var(--font-pixel);
+  font-size: 15px;
+  color: var(--ink-deep);
+}
+
+.track-name span {
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.roll {
+  display: block;
+  width: 100%;
+  height: 56px;
+  margin: 8px 0 4px;
+  border: 2px solid var(--grid);
+  image-rendering: pixelated;
+}
+
+.link.small {
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.sfx-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.sfx-list button {
+  padding: 2px 8px;
+  border: 2px solid var(--grid);
+  background: var(--paper);
+  color: var(--ink);
+  font: 12px var(--font-body), sans-serif;
+  cursor: pointer;
+}
+
+.sfx-list button:hover {
+  border-color: var(--ink);
+}
+
+.games-tools {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.games-tools input {
+  flex: 0 1 380px;
+}
+
+.games-list {
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+
+.tile-shot {
+  aspect-ratio: 16 / 9;
+}
+
+.tile-banner {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  background:
+    repeating-conic-gradient(rgba(255, 255, 255, 0.35) 0 25%, transparent 0 50%) 0 0 / 12px 12px,
+    linear-gradient(160deg, var(--ice), var(--sky));
+}
+
+.tile-banner img {
+  width: 46%;
+  height: 62%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  filter: drop-shadow(3px 3px 0 rgba(15, 92, 204, 0.35));
+}
+
+.tile-banner span {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  padding: 1px 8px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  font-family: var(--font-pixel);
+  font-size: 13px;
+  color: var(--ink-deep);
+}
+
+.tile-empty {
+  padding: 0 12px;
+  text-align: center;
+}
+
+.ws-side {
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+.ws-side > * {
+  min-width: 0;
+}
+
+.sprite-stage {
+  overflow: hidden;
+}
+
+.sprite-stage img {
+  max-height: 176px;
+}
+
+.tile-cover {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--ink-deep);
+}
+
+.tile-blur {
+  position: absolute;
+  left: -15%;
+  top: -15%;
+  width: 130% !important;
+  height: 130% !important;
+  max-width: none;
+  object-fit: cover;
+  filter: blur(14px) saturate(1.3) brightness(0.85);
+}
+
+.tile-shot-img {
+  position: relative;
+  display: block;
+  height: 100% !important;
+  width: auto !important;
+  max-width: 100%;
+  margin: 0 auto;
+  object-fit: contain;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5), 6px 6px 0 rgba(15, 92, 204, 0.45);
+  transition: transform 0.25s steps(3);
+}
+
+.game-tile:hover .tile-shot-img {
+  transform: scale(1.04);
+}

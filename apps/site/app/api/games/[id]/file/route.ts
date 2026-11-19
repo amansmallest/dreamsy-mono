@@ -1,5 +1,6 @@
 import { extname } from "node:path";
-import { readGameFile } from "@/lib/server/games";
+import { activeRun } from "@/lib/server/builds";
+import { readGameFile, writeGameFile } from "@/lib/server/games";
 import { fail, HttpError } from "@/lib/server/paths";
 
 export const runtime = "nodejs";
@@ -27,6 +28,19 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     return new Response(new Uint8Array(bytes), {
       headers: { "content-type": type, "cache-control": "no-store", "content-security-policy": "default-src 'none'; style-src 'unsafe-inline'", "x-content-type-options": "nosniff" },
     });
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params;
+    if (activeRun(id)) throw new HttpError(409, "Wait for the current build to finish");
+    const { path, content } = (await req.json()) as { path?: string; content?: string };
+    if (!path || typeof content !== "string") throw new HttpError(400, "Missing path or content");
+    await writeGameFile(id, path, content);
+    return Response.json({ ok: true });
   } catch (e) {
     return fail(e);
   }

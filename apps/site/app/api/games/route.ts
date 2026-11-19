@@ -1,3 +1,4 @@
+import { bannersPending } from "@/lib/server/banners";
 import { createGame, listGames } from "@/lib/server/games";
 import { fail } from "@/lib/server/paths";
 
@@ -6,7 +7,8 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    return Response.json({ games: await listGames() });
+    const games = await listGames();
+    return Response.json({ games, bannersPending: bannersPending() });
   } catch (e) {
     return fail(e);
   }

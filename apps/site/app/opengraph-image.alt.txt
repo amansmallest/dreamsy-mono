@@ -1,1 +1,1 @@
-Dreamsy: describe a game, then play it. Open-source engine for 2D and 2.5D games.
+Dreamsy: describe a game, then play it. A tiny engine and AI builder for 2D and 2.5D games, with real game screenshots.

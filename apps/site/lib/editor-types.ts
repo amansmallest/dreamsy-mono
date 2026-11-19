@@ -38,6 +38,7 @@ export interface GameSummary {
   builds: number;
   hasThumb: boolean;
   empty: boolean;
+  banner?: string;
 }
 
 export interface GameDetail {

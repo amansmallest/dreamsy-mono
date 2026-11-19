@@ -81,8 +81,15 @@ cmake --preset release && cmake --build --preset release`}</Code>
             <Code>{`claude mcp add dreamsy -- npx -y dreamsy-mcp`}</Code>
             <p>
               Games are saved in the folder the server starts in; add <code>-e DREAMSY_GAMES_DIR=$HOME/dreamsy-games</code> to keep
-              them in one place. Prebuilt for macOS (Apple Silicon) and Linux x64.
+              them in one place. Needs Node 20+; prebuilt for macOS (Apple Silicon and Intel) and Linux (x64 and arm64), and
+              Windows through WSL.
             </p>
+            <p>Other clients take the same command in their MCP config:</p>
+            <Code>{`// Claude Desktop, Cursor, Windsurf, Gemini CLI
+{ "mcpServers": { "dreamsy": { "command": "npx", "args": ["-y", "dreamsy-mcp"] } } }
+
+// VS Code (.vscode/mcp.json)
+{ "servers": { "dreamsy": { "type": "stdio", "command": "npx", "args": ["-y", "dreamsy-mcp"] } } }`}</Code>
             <Window title="try.txt" tone="ice">
               <p>Then just ask: <strong>“build a cozy frog platformer with dreamsy”</strong>.</p>
             </Window>

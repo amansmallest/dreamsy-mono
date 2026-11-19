@@ -7,6 +7,8 @@ import { timeline } from "@/lib/timeline";
 import { Logo } from "../Logo";
 import { ago, api, fileToImage, hasBuildKey } from "./api";
 import { KeysDialog } from "./KeysDialog";
+import { Music } from "./Music";
+import { Sprites } from "./Sprites";
 
 const CHIPS = ["Make it harder", "Add a boss fight", "More juice and particles", "Add a new level", "Polish the art", "Fix the controls"];
 const STARTERS = [
@@ -27,7 +29,13 @@ export function Workspace({ id }: { id: string }) {
   const [running, setRunning] = useState(false);
   const [stamp, setStamp] = useState(() => Date.now());
   const [viewing, setViewing] = useState<number | null>(null);
-  const [tab, setTab] = useState<"files" | "versions">("files");
+  const [tab, setTab] = useState<"sprites" | "music" | "files" | "versions">("sprites");
+  const [draft, setDraft] = useState("");
+  const [focusTick, setFocusTick] = useState(0);
+  const ask = (text: string) => {
+    setDraft(text);
+    setFocusTick((n) => n + 1);
+  };
   const chat = useRef<HTMLDivElement>(null);
 
   const refresh = useCallback(async () => {
@@ -135,6 +143,9 @@ export function Workspace({ id }: { id: string }) {
             )}
           </div>
           <Composer
+            text={draft}
+            setText={setDraft}
+            focusTick={focusTick}
             built={built}
             running={running}
             canBuild={hasBuildKey(keys)}
@@ -146,12 +157,17 @@ export function Workspace({ id }: { id: string }) {
 
         <aside className="ws-side">
           <div className="tabs" role="tablist">
-            <button role="tab" aria-selected={tab === "files"} className={tab === "files" ? "on" : ""} onClick={() => setTab("files")}>Files</button>
-            <button role="tab" aria-selected={tab === "versions"} className={tab === "versions" ? "on" : ""} onClick={() => setTab("versions")}>
-              Versions{game?.versions.length ? ` · ${game.versions.length}` : ""}
-            </button>
+            {(["sprites", "music", "files", "versions"] as const).map((t) => (
+              <button key={t} role="tab" aria-selected={tab === t} className={tab === t ? "on" : ""} onClick={() => setTab(t)}>
+                {t === "versions" ? `Versions${game?.versions.length ? ` · ${game.versions.length}` : ""}` : t[0]!.toUpperCase() + t.slice(1)}
+              </button>
+            ))}
           </div>
-          {tab === "files" ? (
+          {tab === "sprites" ? (
+            <Sprites id={id} game={game} stamp={stamp} running={running} onAsk={ask} onSaved={() => { setStamp(Date.now()); void refresh(); }} />
+          ) : tab === "music" ? (
+            <Music id={id} game={game} stamp={stamp} running={running} onAsk={ask} />
+          ) : tab === "files" ? (
             <Files id={id} game={game} stamp={stamp} />
           ) : (
             <Versions
@@ -295,8 +311,7 @@ function BuildEntry({ build, events, live, onView }: { build: BuildRecord; event
   );
 }
 
-function Composer({ built, running, canBuild, onNeedKey, onCancel, onSend }: { built: boolean; running: boolean; canBuild: boolean; onNeedKey: () => void; onCancel: () => void; onSend: (prompt: string, files: File[]) => Promise<void> }) {
-  const [text, setText] = useState("");
+function Composer({ text, setText, focusTick, built, running, canBuild, onNeedKey, onCancel, onSend }: { text: string; setText: (t: string | ((p: string) => string)) => void; focusTick: number; built: boolean; running: boolean; canBuild: boolean; onNeedKey: () => void; onCancel: () => void; onSend: (prompt: string, files: File[]) => Promise<void> }) {
   const [files, setFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -304,6 +319,13 @@ function Composer({ built, running, canBuild, onNeedKey, onCancel, onSend }: { b
   const picker = useRef<HTMLInputElement>(null);
   const previews = useMemo(() => files.map((f) => URL.createObjectURL(f)), [files]);
   useEffect(() => () => previews.forEach((u) => URL.revokeObjectURL(u)), [previews]);
+
+  useEffect(() => {
+    if (!focusTick || !ta.current) return;
+    const el = ta.current;
+    el.focus();
+    el.setSelectionRange(el.value.length, el.value.length);
+  }, [focusTick]);
 
   useEffect(() => {
     const el = ta.current;

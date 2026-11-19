@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { contentValidator } from "../src/schemas.js";
+import { contentValidator } from "../src/context/schemas.js";
 
 describe("kit content schemas", () => {
   it("accepts kit example content and rejects broken content with a precise message", () => {
@@ -10,7 +10,7 @@ describe("kit content schemas", () => {
     const errs = v.check("data/creatures/bad.json", { ...good, types: "sun" });
     expect(errs?.length).toBeGreaterThan(0);
     expect(errs!.join(" ")).toMatch(/types/);
-    expect(v.check("data/unknown_kind/x.json", {})).toBeNull(); // no schema → not checked
+    expect(v.check("data/unknown_kind/x.json", {})).toBeNull();
   });
 
   it("routes by folder name when schemas don't carry a title path", () => {

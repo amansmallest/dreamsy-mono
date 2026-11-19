@@ -3,12 +3,6 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { dataDir, GLOBAL, scope, type Memory } from "./memory.js";
 
-/**
- * Reusable sprite library. Every SVG sprite that ships in a build (draw_sprite or content builders)
- * is stored once, content-addressed: SVG text + metadata in `.data/sprites/`, and an index entry
- * (kind "sprite") in Memory so `find_sprites` can search it. Sprites carry the art-director score of
- * the build they shipped in; low scorers are not offered for reuse.
- */
 export interface SpriteMeta {
   libId: string;
   assetId: string;
@@ -21,9 +15,7 @@ export interface SpriteMeta {
   width: number | null;
   height: number | null;
   gameId: string | null;
-  /** Art-director score (1–10) of the build it shipped in; null if unreviewed. */
   score: number | null;
-  /** Library sprite this one was adapted from. */
   from?: string | null;
 }
 
@@ -31,7 +23,6 @@ export interface SpriteHit { meta: SpriteMeta; svg: string; samePack: boolean }
 
 export const spriteLibId = (svg: string) => `spr_${createHash("sha256").update(svg).digest("hex").slice(0, 16)}`;
 
-/** "fox_run_1" → "fox run 1" */
 export const humanizeId = (id: string) => id.replace(/_/g, " ").trim();
 
 export function svgBox(svg: string): { viewBox: string | null; width: number | null; height: number | null } {
@@ -41,22 +32,18 @@ export function svgBox(svg: string): { viewBox: string | null; width: number | n
 }
 
 const MAX_RETURN_SVG = 4000;
-/** Don't offer sprites from builds the art director scored below this. */
 const MIN_SCORE = 6;
 
 export class SpriteLibrary {
-  /** Hits handed to the builder this process (lets draw_sprite's `from` resolve without a disk read). */
   private seen = new Map<string, { meta: SpriteMeta; svg: string }>();
 
   constructor(readonly memory: Memory, readonly dir: string = join(dataDir(), "sprites")) {}
 
-  /** Store (or re-score) a shipped sprite. Returns its library id. */
   async store(svg: string, meta: Omit<SpriteMeta, "libId" | "viewBox" | "width" | "height">): Promise<string> {
     const libId = spriteLibId(svg);
     const prev = this.get(libId)?.meta;
     const full: SpriteMeta = {
       ...svgBox(svg), ...meta, libId,
-      // A sprite seen again keeps its best score and first description.
       score: Math.max(meta.score ?? 0, prev?.score ?? 0) || null,
       description: prev?.description ?? meta.description,
     };
@@ -85,7 +72,6 @@ export class SpriteLibrary {
     } catch { return null; }
   }
 
-  /** Best matching, well-scored sprites (same pack boosted in ranking; flagged when different). */
   async find(query: string, opts: { pack?: string | null; style?: string; limit?: number } = {}): Promise<SpriteHit[]> {
     const limit = Math.min(8, Math.max(1, opts.limit ?? 5));
     const hits = await this.memory.recall(query, { kinds: ["sprite"], pack: opts.pack ?? undefined, minScore: MIN_SCORE, limit: limit * 3 });
@@ -102,7 +88,6 @@ export class SpriteLibrary {
   }
 }
 
-/** Tool result text for find_sprites. */
 export function formatSpriteHits(hits: SpriteHit[], pack: string | null | undefined): string {
   if (!hits.length) return "No matching sprites in the library yet — draw it from scratch.";
   return [

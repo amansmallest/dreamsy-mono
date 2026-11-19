@@ -1,16 +1,9 @@
 import { existsSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import { Package, validatePackage } from "@dreamsy/format";
+import { repoPath } from "../paths.js";
 
-/**
- * Kit templates: every genre kit ships a small, working, tested example game
- * (games/examples/kit-<kit>). New games start FROM it by default — Opus reskins and rebuilds
- * content on proven systems instead of starting from an empty package, so the first playable
- * version lands in minutes. "from scratch" in the prompt opts out (router sets fromScratch).
- */
-const EXAMPLES = fileURLToPath(new URL("../../games/examples/", import.meta.url));
+const EXAMPLES = repoPath("games", "examples") + "/";
 
-/** Genre kits only — foundation kits have no game-shaped template. */
 const FOUNDATION = new Set(["core", "progression", "juice", "combat", "ai", "procgen"]);
 
 const cache = new Map<string, Package | null>();
@@ -24,7 +17,7 @@ export async function kitTemplate(kits: readonly string[]): Promise<{ kit: strin
       if (existsSync(`${dir}/dreamsy.toml`)) {
         try {
           const p = await Package.fromDir(dir);
-          pkg = validatePackage(p).ok ? p : null; // never start from a broken template
+          pkg = validatePackage(p).ok ? p : null;
         } catch { pkg = null; }
       }
       cache.set(kit, pkg);

@@ -3,8 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "worker": "tsx src/main.ts worker",
-    "local": "tsx src/main.ts local",
+    "worker": "tsx src/cli/main.ts worker",
+    "local": "tsx src/cli/main.ts local",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },

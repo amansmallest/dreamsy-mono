@@ -1,42 +1,20 @@
 import { z } from "zod";
-import { MODELS, type ModelId, type StructuredLLM, type Usage } from "./models.js";
-import { packMenu, tastePacks } from "./taste.js";
-import { kitMenu, kits } from "./kits.js";
+import { MODELS, type StructuredLLM, type Usage } from "../llm/models.js";
+import { packMenu, tastePacks } from "../context/taste.js";
+import { kitMenu, kits } from "../context/kits.js";
 
 export const Route = z.object({
   kind: z.enum(["new_game", "feature", "tweak", "asset", "reject"]),
-  /** Style preset for new games when the user didn't specify one. */
   style: z.enum(["pixel", "blocky", "clean", "toon", "custom"]).nullable(),
   dimension: z.enum(["2d", "3d"]).nullable(),
-  /** Phone layout for new games: portrait unless the game clearly needs a wide view (racing across, side-scrolling vistas, strategy maps). */
   orientation: z.enum(["portrait", "landscape"]).nullable(),
-  /** New games start from the kit's template game unless the player explicitly asks for "from scratch". */
   fromScratch: z.boolean().nullable(),
-  /** Genre kits to build on (new_game only), e.g. ["rpg"]; [] when none fits. */
   kits: z.array(z.string()).nullable(),
-  /** House style pack id (new_game only) or null. */
   pack: z.string().nullable(),
-  /** Short reason, shown in progress UI. */
   reason: z.string(),
   safe: z.boolean(),
 });
 export type Route = z.infer<typeof Route>;
-
-export interface Plan {
-  model: ModelId;
-  effort: "low" | "medium" | "high";
-  maxTurns: number;
-  maxUsd: number;
-  /** Model to escalate to if this one fails the final gate. */
-  escalate: { model: ModelId; effort: "low" | "medium" | "high"; maxTurns: number; maxUsd: number } | null;
-}
-
-export const PLANS: Record<Exclude<Route["kind"], "reject">, Plan> = {
-  new_game: { model: MODELS.opus, effort: "high", maxTurns: 60, maxUsd: 20, escalate: null },
-  feature: { model: MODELS.opus, effort: "medium", maxTurns: 40, maxUsd: 20, escalate: { model: MODELS.opus, effort: "high", maxTurns: 30, maxUsd: 20 } },
-  tweak: { model: MODELS.sonnet, effort: "low", maxTurns: 8, maxUsd: 0.3, escalate: { model: MODELS.opus, effort: "medium", maxTurns: 15, maxUsd: 1.5 } },
-  asset: { model: MODELS.sonnet, effort: "medium", maxTurns: 20, maxUsd: 1.5, escalate: { model: MODELS.opus, effort: "medium", maxTurns: 25, maxUsd: 3 } },
-};
 
 const SYSTEM = () => `You route requests for Dreamsy, an app where players describe games and an AI builds them.
 Classify the player's request against the current game state.
@@ -77,11 +55,10 @@ export async function routeRequest(
   ];
   const { value, usage, model } = await llm.json({ model: MODELS.haiku, system: SYSTEM(), content, schema: Route, effort: "low" });
   const route = { ...value };
-  // An empty game can only become a new game (the router still decides safety + style).
   if (args.gameIsEmpty && route.kind !== "reject") route.kind = "new_game";
   if (route.kind === "new_game") {
     route.style ??= "clean";
-    route.dimension = "2d"; // 2D only until the 3D renderer ships (docs/runtime.md §4.3)
+    route.dimension = "2d";
     route.orientation ??= "portrait";
     route.kits = (route.kits ?? []).filter((k) => kits().has(k));
     const pack = route.pack ? tastePacks().get(route.pack) : undefined;

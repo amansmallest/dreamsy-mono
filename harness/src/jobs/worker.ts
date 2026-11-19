@@ -1,13 +1,12 @@
 import { hostname } from "node:os";
 import { Package } from "@dreamsy/format";
-import { generate, type RoundStats } from "./generate.js";
-import type { Memory } from "./memory.js";
-import type { SpriteLibrary } from "./sprites.js";
-import type { ImageGen } from "./images.js";
-import type { AgentLLM, StructuredLLM } from "./models.js";
-import type { Playtester } from "./playtest.js";
+import { generate, type RoundStats } from "../pipeline/generate.js";
+import type { Memory } from "../memory/memory.js";
+import type { SpriteLibrary } from "../memory/sprites.js";
+import type { ImageGen } from "../llm/images.js";
+import type { AgentLLM, StructuredLLM } from "../llm/models.js";
+import type { Playtester } from "../engine/playtest.js";
 
-/** Thin client for the API worker protocol (services/api/README.md). */
 export class ApiClient {
   constructor(
     private readonly baseUrl: string,
@@ -25,14 +24,12 @@ export class ApiClient {
   }
 
   async claim(): Promise<Claim | null> {
-    // Each worker builds with one model family; it only claims that provider's jobs (DREAMSY_PROVIDER).
     const res = await this.req("POST", "/v1/worker/claim", { workerId: this.workerId, provider: process.env.DREAMSY_PROVIDER === "openai" ? "openai" : "anthropic" });
     if (res.status === 204) return null;
     if (!res.ok) throw new Error(`claim failed: ${res.status} ${await res.text()}`);
     return (await res.json()) as Claim;
   }
 
-  /** Returns false when the API says stop (409: canceled or reassigned). */
   async event(genId: string, type: string, data: unknown = {}): Promise<boolean> {
     const res = await this.req("POST", `/v1/worker/generations/${genId}/events`, { workerId: this.workerId, type, data });
     if (res.status === 409) return false;
@@ -57,7 +54,6 @@ export class ApiClient {
     return res.json();
   }
 
-  /** Commit a playable version mid-job (multi-round builds). Returns null if the API doesn't support it. */
   async checkpoint(genId: string, zip: Uint8Array, summary: string, thumbnail?: Uint8Array): Promise<{ version: number } | null> {
     const f = new FormData();
     f.set("workerId", this.workerId);
@@ -91,10 +87,8 @@ export interface WorkerDeps {
   jsonLLM: StructuredLLM;
   images: ImageGen;
   playtest: Playtester;
-  /** Retrieval memory + sprite library (continual-improvement layer). Optional. */
   memory?: Memory;
   sprites?: SpriteLibrary;
-  /** Max build rounds per job for big builds (new games / "continue"). Default 1. */
   maxRounds?: number;
   log?: (msg: string) => void;
 }
@@ -103,7 +97,6 @@ const CONTINUE_PROMPT = "continue: build the next unchecked milestones in notes.
 const unchecked = (notes: string | undefined) => (notes?.match(/\[ \]/g) ?? []).length;
 const checked = (notes: string | undefined) => (notes?.match(/\[x\]/gi) ?? []).length;
 
-/** `metrics` event payload (one per job, sent just before complete/fail) — feeds GET /v1/me/insights. */
 export interface JobMetrics {
   costUsd: number;
   rounds: number;
@@ -120,7 +113,6 @@ export interface JobMetrics {
   kit: string | null;
   pack: string | null;
   kind: string | null;
-  /** Memory items recalled into this job's prompts (proof of what it learned from). */
   memoryIds: string[];
 }
 
@@ -148,14 +140,12 @@ export function jobMetrics(rounds: { stats: RoundStats; costUsd: number }[], sta
   };
 }
 
-/** Process one claimed job end to end. Never throws for job-level failures. */
 export async function processJob(deps: WorkerDeps, job: Claim): Promise<"succeeded" | "failed" | "stopped"> {
   const { api } = deps;
   const log = deps.log ?? (() => {});
   const genId = job.generation.id;
   const abort = new AbortController();
 
-  // Every event renews the lease; a 409 means canceled/reassigned → abort the agent.
   const emit = async (type: string, data: Record<string, unknown> = {}) => {
     if (abort.signal.aborted) return;
     try {
@@ -164,7 +154,6 @@ export async function processJob(deps: WorkerDeps, job: Claim): Promise<"succeed
       log(`event ${type} failed: ${(e as Error).message}`);
     }
   };
-  // Heartbeat while a single long model turn is running.
   const heartbeat = setInterval(() => void emit("heartbeat"), Math.max(5, job.leaseSeconds / 3) * 1000);
   const startedAt = Date.now();
   const done: { stats: RoundStats; costUsd: number }[] = [];
@@ -211,7 +200,6 @@ export async function processJob(deps: WorkerDeps, job: Claim): Promise<"succeed
           log(`${genId}: failed — ${result.message}`);
           return "failed";
         }
-        // Earlier rounds are already saved as versions; end the job on the last good one.
         await api.complete(genId, pkg.toZip(), `${lastSummary} (stopped after round ${round - 1}: ${result.message})`, lastThumb);
         log(`${genId}: stopped after round ${round - 1} — ${result.message}`);
         return "succeeded";
@@ -252,7 +240,6 @@ export async function processJob(deps: WorkerDeps, job: Claim): Promise<"succeed
   }
 }
 
-/** Poll forever: claim → process. `concurrency` jobs in flight. */
 export async function runWorker(deps: WorkerDeps, opts: { concurrency: number; idleMs: number; signal: AbortSignal }) {
   const log = deps.log ?? console.log;
   const loop = async (slot: number) => {

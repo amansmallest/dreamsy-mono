@@ -1,4 +1,4 @@
-import "./kits.js"; // registers kit dependencies for validation
+import "../context/kits.js";
 import {
   applyOps,
   checkSvg,
@@ -10,9 +10,8 @@ import {
   type Op,
   type StylePreset,
 } from "@dreamsy/format";
-import type { ImageGen, ImageRequest } from "./images.js";
+import type { ImageGen, ImageRequest } from "../llm/images.js";
 
-/** 1×1 transparent PNG used while a generated image is in flight (keeps asset refs valid). */
 const PLACEHOLDER_PNG = new Uint8Array(Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", "base64",
 ));
@@ -29,13 +28,8 @@ interface PendingImage {
   reported: boolean;
 }
 
-/** Ids that already exist in the scene are rejected by ops; we track counts for progress UI. */
 export interface OpStats { added: number; removed: number; changed: number; files: Set<string> }
 
-/**
- * The agent's working copy. Only valid op batches advance `pkg`; images land asynchronously
- * (placeholder first, real bytes when generation finishes).
- */
 export class Workspace {
   readonly stats: OpStats = { added: 0, removed: 0, changed: 0, files: new Set() };
   readonly opLog: { reason: string; ops: Op[] }[] = [];
@@ -59,8 +53,6 @@ export class Workspace {
     return validatePackage(this.pkg).manifest?.style.pack;
   }
 
-  // ---------- tools ----------
-
   readFiles(paths: string[]): string {
     return paths.map((p) => {
       const t = this.pkg.text(p);
@@ -83,7 +75,6 @@ export class Workspace {
     return JSON.stringify(out, null, 2);
   }
 
-  /** Returns a result string for the model and whether the batch was applied. */
   applyOps(raw: unknown, reason: string): { text: string; applied: boolean; issues: Issue[] } {
     let ops: Op[];
     try {
@@ -118,7 +109,6 @@ export class Workspace {
     return { text: lines.join("\n"), applied: true, issues: r.issues };
   }
 
-  /** Starts generation in the background; the asset exists immediately as a placeholder. */
   generateImage(args: { id: string; prompt: string; aspect: ImageRequest["aspect"] }): string {
     if (!this.imageGen.available) return "Image generation is unavailable right now. Use solid-color sprites/primitives instead.";
     if (!/^[a-z][a-z0-9_]{0,63}$/.test(args.id)) return `Invalid asset id "${args.id}": use lowercase_snake.`;
@@ -148,7 +138,6 @@ export class Workspace {
     return `Generating "${args.id}" in the background. Reference it now as "asset:${args.id}" (kind image).`;
   }
 
-  /** Model-drawn SVG sprite: validated and stored synchronously. Calling again replaces it. */
   drawSprite(args: { id: string; svg: string }, model: string): string {
     if (!/^[a-z][a-z0-9_]{0,63}$/.test(args.id)) return `Invalid sprite id "${args.id}": use lowercase_snake.`;
     const problem = checkSvg(args.svg);
@@ -158,7 +147,6 @@ export class Workspace {
     return `Saved sprite "${args.id}" (assets/${args.id}.svg). Reference it as "asset:${args.id}".`;
   }
 
-  /** Notes about images that finished/failed since the last call, appended to tool results. */
   imageNotes(): string {
     const notes: string[] = [];
     for (const p of this.images.values()) {

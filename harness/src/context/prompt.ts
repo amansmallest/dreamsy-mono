@@ -30,7 +30,6 @@ function propSig(name: string, p: PropDef): string {
   return p.default === undefined ? `${name}: ${ty}` : `${name}: ${ty} = ${JSON.stringify(p.default)}`;
 }
 
-/** Compact catalog for the prompt: one block per type. */
 export function renderCatalog(): string {
   return Object.entries(CATALOG as Record<string, EntityTypeDef>).map(([name, def]) =>
     `### ${name} (${def.dimension}${def.container ? ", can have children" : ""})\n${def.doc}\n` +
@@ -145,7 +144,6 @@ const ROLE = `You are the game builder inside Dreamsy, an app where anyone descr
 - {"op":"remove_asset","id":"coin"}
 Write a script file before (or in the same batch as) attaching it to an entity.`;
 
-/** Stable system blocks: identical for every job → cached. */
 export function systemBlocks(style: StylePreset, manifest: Manifest | undefined, pack?: TastePack, kitDocs: { id: string; doc: string }[] = []): Anthropic.Beta.BetaTextBlockParam[] {
   const s = STYLES[style];
   const styleText = [
@@ -162,7 +160,6 @@ export function systemBlocks(style: StylePreset, manifest: Manifest | undefined,
     { type: "text", text: ROLE },
     { type: "text", text: `# Luau scripting API\n\n${LUAU_API}` },
     { type: "text", text: `# Entity catalog\n\n${renderCatalog()}`, cache_control: { type: "ephemeral" } },
-    // per-style block: cached per preset
     { type: "text", text: styleText, cache_control: { type: "ephemeral" } },
     ...(kitDocs.length ? [{
       type: "text" as const,
@@ -172,7 +169,6 @@ export function systemBlocks(style: StylePreset, manifest: Manifest | undefined,
   ];
 }
 
-/** Tree outline of a scene: ids, types, names, tags, scripts — no props. */
 export function outlineScene(file: string, scene: Scene): string {
   const lines: string[] = [`${file}`];
   const walk = (id: string, depth: number) => {

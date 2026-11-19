@@ -1,21 +1,13 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { checkSvg, type Package, validatePackage } from "@dreamsy/format";
 import { z } from "zod";
-import { CostMeter, MODELS, type AgentLLM } from "./models.js";
+import { CostMeter, MODELS, type AgentLLM } from "../llm/models.js";
 import type { Emit } from "./workspace.js";
-import { contentValidator } from "./schemas.js";
-
-/**
- * Parallel content builders (docs/kits.md §12.2 step 2). The director hands over a list of specs
- * (creatures, enemies, items, levels, NPCs…); N Sonnet workers each build a slice, writing only
- * files named after their own ids. Results are checked and merged into the director's package.
- */
+import { contentValidator } from "../context/schemas.js";
 
 export interface ContentItem { id: string; spec: string }
 export interface ContentJob {
-  /** e.g. "creatures", "enemies", "items", "levels", "npcs" — used for the data folder hint. */
   kind: string;
-  /** Shared instructions: file format (from KIT.md), naming, art rules, balance targets. */
   guide: string;
   items: ContentItem[];
 }
@@ -171,7 +163,6 @@ async function runWorker(args: {
   return { files: written, errors };
 }
 
-/** Fan out, merge, validate. Returns the merged package and a report for the director. */
 export async function buildContent(args: {
   llm: AgentLLM;
   emit: Emit;
@@ -181,7 +172,6 @@ export async function buildContent(args: {
   job: ContentJob;
   styleText: string;
   palette: string[];
-  /** Kits the game uses: their JSON Schemas check the builders' data files. */
   kitIds?: string[];
   perWorker?: number;
   maxParallel?: number;
@@ -207,7 +197,6 @@ export async function buildContent(args: {
     }
   }));
 
-  // Merge: workers own disjoint ids, so files can't collide; later slices win on any overlap.
   let pkg = args.pkg;
   const lines: string[] = [];
   results.forEach((r, i) => {
@@ -223,7 +212,6 @@ export async function buildContent(args: {
   });
   if (rejected.length) lines.push(`✗ invalid ids (must be lowercase_snake): ${rejected.join(", ")}`);
 
-  // Schema-check every data file the builders wrote against the game's kits.
   if (args.kitIds?.length) {
     const sv = contentValidator(args.kitIds);
     const bad: string[] = [];

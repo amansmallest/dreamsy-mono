@@ -4,7 +4,6 @@ export interface ImageRequest {
   prompt: string;
   style: StylePreset;
   palette?: string[];
-  /** Style/reference images (player uploads, style references). */
   references: { mediaType: string; base64: string }[];
   aspect: "1:1" | "16:9" | "9:16" | "4:3" | "3:4";
 }
@@ -39,8 +38,7 @@ export const disabledImages: ImageGen = {
   },
 };
 
-/** Gemini image model. Model id is configurable: GEMINI_IMAGE_MODEL. */
-export async function geminiImages(apiKey: string, model = process.env.GEMINI_IMAGE_MODEL ?? "gemini-3.1-flash-lite-image" /* Nano Banana 2 Lite */): Promise<ImageGen> {
+export async function geminiImages(apiKey: string, model = process.env.GEMINI_IMAGE_MODEL ?? "gemini-3.1-flash-lite-image" ): Promise<ImageGen> {
   const { GoogleGenAI } = await import("@google/genai");
   const ai = new GoogleGenAI({ apiKey });
   const gen: ImageGen & { available: boolean } = {
@@ -69,8 +67,6 @@ export async function geminiImages(apiKey: string, model = process.env.GEMINI_IM
       throw new Error("image model returned no image");
     },
   };
-  // A quota/billing error (free tier = 0 image quota) won't fix itself mid-session: stop offering
-  // generate_image so builds don't burn turns on it. It comes back on the next worker start.
   const inner = gen.generate;
   gen.generate = async (req, signal) => {
     try {

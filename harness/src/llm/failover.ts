@@ -3,13 +3,6 @@ import type { BetaMessageStreamParams } from "@anthropic-ai/sdk/resources/beta/m
 import type { AgentLLM, StructuredLLM } from "./models.js";
 import { OpenAIError } from "./openai.js";
 
-/**
- * Model-account failover so builds never stop because one account ran out of credits:
- * Claude (Anthropic) first → OpenAI key → backup OpenAI key (order set in main.ts).
- * Only out-of-credit / billing / auth failures move to the next account; ordinary errors and rate limits
- * (e.g. the fast-mode fallback in agent.ts) pass through unchanged. After a switch the process sticks to the
- * new account and retries the primary after 15 minutes (credits may have been topped up).
- */
 export type Provider = { name: string; kind: "anthropic" | "openai"; agent: AgentLLM; json: StructuredLLM };
 
 const RETRY_PRIMARY_MS = 15 * 60_000;
@@ -25,7 +18,6 @@ export function isOutOfCredit(e: unknown): boolean {
   return false;
 }
 
-/** Thinking blocks are provider-specific (OpenAI reasoning is carried as `oai:` signatures); drop the other side's. */
 function forProvider(params: BetaMessageStreamParams, kind: Provider["kind"]): BetaMessageStreamParams {
   const keep = (b: { type: string; signature?: string }) =>
     b.type !== "thinking" || (kind === "openai" ? !!b.signature?.startsWith("oai:") : !b.signature?.startsWith("oai:"));

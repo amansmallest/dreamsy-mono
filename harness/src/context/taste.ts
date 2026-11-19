@@ -1,12 +1,8 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { extname, join } from "node:path";
-import { fileURLToPath } from "node:url";
 import type { StylePreset } from "@dreamsy/format";
+import { repoPath } from "../paths.js";
 
-/**
- * House style packs: curated art direction written from real reference art (taste/packs/*.md)
- * + the reference images themselves (taste/refs/<pack>/). This is how Opus gets taste.
- */
 export interface TastePack {
   id: string;
   name: string;
@@ -18,7 +14,7 @@ export interface TastePack {
   refs: { mediaType: string; base64: string }[];
 }
 
-const ROOT = fileURLToPath(new URL("../../taste/", import.meta.url));
+const ROOT = repoPath("taste") + "/";
 
 function parse(id: string, text: string): TastePack | null {
   const m = text.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
@@ -61,7 +57,6 @@ export function tastePacks(): Map<string, TastePack> {
   return cache;
 }
 
-/** One line per pack, for the router. */
 export function packMenu(): string {
   return [...tastePacks().values()].map((p) => `- ${p.id}: ${p.name} (${p.preset}, ${p.view}) — ${p.direction.split("\n")[0]}`).join("\n");
 }

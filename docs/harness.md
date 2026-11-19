@@ -14,13 +14,13 @@ section to its file.
 - Loop: plan → emit ops → validate (schema, typecheck, headless boot test, scripted smoke play)
   → fix → commit version → push to client for hot reload.
 - **Playtests run on the C++ engine (2026-11-18):** the builder's `playtest` tool and the final gate (8 s smoke
-  run, zero script errors) use `dreamsy-tool playtest <pkg> --timeline <json>` (headless, `harness/src/playtest.ts`):
+  run, zero script errors) use `dreamsy-tool playtest <pkg> --timeline <json>` (headless, `harness/src/engine/playtest.ts`):
   timeline steps `{t, hold?, release?, press?, tap?: [x,y], swipe?: {from,to,seconds?}}` in game time, taps through
   `Host::tap_screen`; the JSON report has script errors (script/line/count), last logs, toasts, entity count,
   sfx counts + music, the avatar's position per second, dialog lines shown (auto-advanced) and the one open at
   the end, final save data, the scenes visited, and the controls the game read. Options: `--seconds --scene
   --params --save --clock --auto-dialog --budget --seed` (start mid-game). Screenshots come from the C++ web
-  player in headless Chromium (`harness/src/browser.ts`: Playwright `page.route`, no server, `?manual=1` +
+  player in headless Chromium (`harness/src/engine/browser.ts`: Playwright `page.route`, no server, `?manual=1` +
   `window.__dreamsy.step`, `?scene=&params=&save=`), at game times, so 2.5D games are seen as players see them.
   Kit balance simulators (`kits/<kit>/harness.ts`) run Luau through `dreamsy-tool eval`.
 - **OPEN:** harness language. Leaning TypeScript (Claude Agent SDK; shares types with web app).

@@ -1,15 +1,13 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import type { Package } from "@dreamsy/format";
-import { MODELS, type StructuredLLM, type Usage } from "./models.js";
-import { SMOKE_TIMELINE, type Playtester } from "./playtest.js";
-import type { TastePack } from "./taste.js";
+import { MODELS, type StructuredLLM, type Usage } from "../llm/models.js";
+import { SMOKE_TIMELINE, type Playtester } from "../engine/playtest.js";
+import type { TastePack } from "../context/taste.js";
 
 export const Critique = z.object({
-  /** 1–10 against the references / a polished indie game of this genre. */
   score: z.number().int().min(1).max(10),
   verdict: z.enum(["ship", "polish"]),
-  /** Concrete, actionable visual/feel fixes, most important first. */
   fixes: z.array(z.string()).max(8),
 });
 export type Critique = z.infer<typeof Critique>;
@@ -21,7 +19,6 @@ Also judge CLARITY for a first-time player on a phone: from these screens, would
 Return at most 8 concrete fixes the builder can execute with sprites/entities/scripts (e.g. "zoom camera to 3x — sprites read tiny", "foreground: add a strip of dark-teal crops overlapping the bottom 40px", "HUD panel covers the player's lane on the left; move it top-right and shrink to 60%").
 verdict "ship" only if score >= 8 and nothing important is wrong.`;
 
-/** Screenshots the game, compares against the pack references, returns fixes. */
 export async function artDirectorReview(deps: { llm: StructuredLLM; playtest: Playtester }, args: {
   pkg: Package;
   pack?: TastePack;

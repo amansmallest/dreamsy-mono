@@ -1,49 +1,29 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
-
-/**
- * Retrieval memory for the harness ("retrieval, not training"): build lessons, remix records,
- * game outcomes and the sprite-library index are written after each round and recalled into the
- * next build's first message. Nothing here changes model weights.
- *
- * Scopes (container tags): `dreamsy:global`, `kit:<id>`, `pack:<id>`, `game:<id>`, `user:<id>`,
- * plus descriptive tags (`genre:<g>`, `orientation:<o>`, `topic:<t>`, `style:<s>`).
- * Privacy: an item carrying `user:<id>` is only ever recalled for that user. Global items (lessons,
- * outcomes, sprites) never contain a user's prompt text.
- */
+import { repoPath } from "../paths.js";
 
 export type MemoryKind = "lesson" | "remix" | "outcome" | "sprite";
 
 export interface MemoryItem {
-  /** Stable id: [A-Za-z0-9_.-], ≤ 100 chars. */
   id: string;
   kind: MemoryKind;
-  /** Searchable text. */
   text: string;
   scopes: string[];
-  /** Quality signal 0–10 (art score of the build it came from), null when unknown. */
   score?: number | null;
-  /** Evidence count: how many builds back this item (consolidated lessons sum their sources). */
   weight?: number;
-  /** Structured payload (remix record details, metrics, sprite metadata). */
   data?: Record<string, unknown>;
   createdAt?: string;
 }
 
 export interface RecallOpts {
-  /** Caller's user: unlocks that user's own `user:<id>` items. Absent → global items only. */
   userId?: string;
   kinds?: MemoryKind[];
-  /** Items must carry ALL of these scopes. */
   scopes?: string[];
-  /** Soft preferences (boost, don't filter). */
   kits?: string[];
   pack?: string;
   genre?: string;
   orientation?: string;
   gameId?: string;
-  /** Drop items whose score is known and below this. */
   minScore?: number;
   limit?: number;
 }
@@ -54,7 +34,6 @@ export interface Memory {
   readonly backend: "local" | "supermemory";
   remember(item: MemoryItem): Promise<void>;
   recall(query: string, opts?: RecallOpts): Promise<MemoryHit[]>;
-  /** Supersede / delete items (consolidation, cleanup). */
   forget(ids: string[]): Promise<void>;
 }
 
@@ -74,7 +53,6 @@ export function memId(prefix: string, ...parts: string[]): string {
   return raw.slice(0, 100);
 }
 
-/** Item visible to this caller? (user-scoped items only to their owner) */
 export function visible(item: MemoryItem, userId?: string): boolean {
   for (const s of item.scopes) {
     if (s.startsWith("user:") && s !== `user:${userId ?? "\u0000"}`) return false;
@@ -82,14 +60,11 @@ export function visible(item: MemoryItem, userId?: string): boolean {
   return true;
 }
 
-// ---------- ranking (shared by both backends) ----------
-
 const STOP = new Set("a an and are as at be but by for from has have in into is it its of on or that the this to was were will with not no yes do does did make made game games".split(" "));
 export function tokens(text: string): string[] {
   return (text.toLowerCase().match(/[a-z0-9]+/g) ?? []).filter((t) => t.length > 1 && !STOP.has(t));
 }
 
-/** BM25 over the candidate set (k1 1.2, b 0.75). */
 function bm25(query: string[], docs: string[][]): number[] {
   if (!query.length || !docs.length) return docs.map(() => 0);
   const N = docs.length;
@@ -112,7 +87,6 @@ function bm25(query: string[], docs: string[][]): number[] {
   });
 }
 
-/** Structured boosts: kit/pack/genre/orientation/game overlap, quality and evidence. */
 function boost(item: MemoryItem, o: RecallOpts): number {
   const has = (s: string) => item.scopes.includes(s);
   let b = 0;
@@ -121,7 +95,7 @@ function boost(item: MemoryItem, o: RecallOpts): number {
   if (o.genre && has(scope.genre(o.genre))) b += 1;
   if (o.orientation && has(scope.orientation(o.orientation))) b += 0.5;
   if (o.gameId && has(scope.game(o.gameId))) b += 1.5;
-  b += ((item.score ?? 5) - 5) / 5; // −1 … +1
+  b += ((item.score ?? 5) - 5) / 5;
   b += Math.log2(1 + Math.max(1, item.weight ?? 1)) - 1;
   return b;
 }
@@ -134,21 +108,16 @@ function eligible(item: MemoryItem, o: RecallOpts): boolean {
   return true;
 }
 
-/** Rank candidates; `semantic` (0–1 per item) is mixed in when a vector backend supplied it. */
 export function rank(query: string, items: MemoryItem[], o: RecallOpts, semantic?: number[]): MemoryHit[] {
   const docs = items.map((i) => tokens(`${i.text} ${i.scopes.join(" ")}`));
   const lex = bm25(tokens(query), docs);
-  // Relevance dominates; structured overlap breaks ties and lifts on-topic items.
   const hits = items.map((item, i) => ({ item, score: 2 * lex[i]! + boost(item, o) + (semantic ? semantic[i]! * 6 : 0) }));
   hits.sort((a, b) => b.score - a.score || (b.item.createdAt ?? "").localeCompare(a.item.createdAt ?? "") || a.item.id.localeCompare(b.item.id));
   return hits.slice(0, o.limit ?? 10).map((h) => ({ ...h, score: Math.round(h.score * 1000) / 1000 }));
 }
 
-// ---------- local backend ----------
-
 type LogLine = { op: "put"; item: MemoryItem } | { op: "forget"; ids: string[]; at: string };
 
-/** JSON-lines log under `.data/memory/`. Deterministic, embedding-free; used in tests and as fallback. */
 export class LocalMemory implements Memory {
   readonly backend = "local" as const;
   private items = new Map<string, MemoryItem>();
@@ -166,7 +135,7 @@ export class LocalMemory implements Memory {
         const l = JSON.parse(line) as LogLine;
         if (l.op === "put") this.items.set(l.item.id, l.item);
         else if (l.op === "forget") for (const id of l.ids) this.items.delete(id);
-      } catch { /* skip a torn line */ }
+      } catch {}
     }
   }
 
@@ -178,7 +147,6 @@ export class LocalMemory implements Memory {
   async remember(item: MemoryItem) {
     this.load();
     if (!ID_OK.test(item.id)) throw new Error(`invalid memory id ${item.id}`);
-    // createdAt gets a monotonic suffix so same-millisecond writes still order deterministically.
     const full = { weight: 1, ...item, createdAt: item.createdAt ?? `${new Date().toISOString()}#${String(this.seq++).padStart(6, "0")}` };
     this.items.set(item.id, full);
     this.append({ op: "put", item: full });
@@ -195,22 +163,11 @@ export class LocalMemory implements Memory {
     if (gone.length) this.append({ op: "forget", ids: gone, at: new Date().toISOString() });
   }
 
-  /** All items (tests, debugging). */
   all(): MemoryItem[] {
     this.load();
     return [...this.items.values()];
   }
 }
-
-// ---------- Supermemory backend ----------
-// API (https://supermemory.ai/docs, v3 endpoints, bearer auth):
-//   POST   /v3/documents   {content, containerTag, customId, metadata}  → {id, status}  (ingestion is async)
-//   POST   /v3/search      {q, containerTag, filters:{AND|OR:[{key,value,filterType?}]}, limit, includeFullDocs}
-//                          → {results:[{documentId, score, metadata, content, chunks:[{content,score}]}]}
-//   DELETE /v3/documents/:idOrCustomId → 204
-// Container tags: add allows [A-Za-z0-9_.-], search allows [A-Za-z0-9_:-] → we use only [A-Za-z0-9_-].
-// Each document lives in ONE container: `dreamsy_global` or `dreamsy_user_<id>` (privacy boundary);
-// all logical scopes (kit:/pack:/game:/…) are in metadata.scopes and filtered with array_contains.
 
 const containerFor = (item: MemoryItem) => {
   const user = item.scopes.find((s) => s.startsWith("user:"));
@@ -279,7 +236,7 @@ export class SupermemoryMemory implements Memory {
     const seen = new Set<string>();
     for (const r of results.flat()) {
       const item = fromMetadata(r);
-      if (!item || seen.has(item.id) || !eligible(item, opts)) continue; // privacy re-checked client-side
+      if (!item || seen.has(item.id) || !eligible(item, opts)) continue;
       seen.add(item.id);
       items.push(item);
       sem.push(r.score ?? 0);
@@ -296,7 +253,7 @@ function fromMetadata(r: SmResult): MemoryItem | null {
   const m = r.metadata ?? {};
   if (typeof m.memId !== "string" || typeof m.kind !== "string") return null;
   let data: Record<string, unknown> | undefined;
-  if (typeof m.data === "string") { try { data = JSON.parse(m.data); } catch { /* ignore */ } }
+  if (typeof m.data === "string") { try { data = JSON.parse(m.data); } catch {} }
   return {
     id: m.memId,
     kind: m.kind as MemoryKind,
@@ -309,14 +266,10 @@ function fromMetadata(r: SmResult): MemoryItem | null {
   };
 }
 
-// ---------- factory ----------
-
-/** Repo-root `.data/` (gitignored), or DREAMSY_DATA_DIR. */
 export function dataDir(): string {
-  return process.env.DREAMSY_DATA_DIR ?? fileURLToPath(new URL("../../.data/", import.meta.url));
+  return process.env.DREAMSY_DATA_DIR ?? repoPath(".data") + "/";
 }
 
-/** Supermemory when SUPERMEMORY_API_KEY is set, else the local JSON-lines store. */
 export function createMemory(opts: { dir?: string; env?: NodeJS.ProcessEnv; fetchFn?: typeof fetch } = {}): Memory {
   const env = opts.env ?? process.env;
   const key = env.SUPERMEMORY_API_KEY;

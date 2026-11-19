@@ -2,16 +2,17 @@ import Anthropic from "@anthropic-ai/sdk";
 import { readFile, stat, writeFile } from "node:fs/promises";
 import { extname } from "node:path";
 import { Package } from "@dreamsy/format";
-import { anthropicKey, geminiKey, loadEnv } from "./env.js";
-import { generate } from "./generate.js";
-import { disabledImages, geminiImages } from "./images.js";
-import { anthropicLLM, type AgentLLM } from "./models.js";
-import { openaiJson, openaiLLM } from "./openai.js";
-import { failoverLLM, type Provider } from "./failover.js";
-import { ApiClient, runWorker } from "./worker.js";
-import { enginePlaytester } from "./playtest.js";
-import { createMemory } from "./memory.js";
-import { SpriteLibrary } from "./sprites.js";
+import { anthropicKey, geminiKey, loadEnv } from "../env.js";
+import { generate } from "../pipeline/generate.js";
+import { disabledImages, geminiImages } from "../llm/images.js";
+import { anthropicLLM } from "../llm/anthropic.js";
+import type { AgentLLM } from "../llm/models.js";
+import { openaiJson, openaiLLM } from "../llm/openai.js";
+import { failoverLLM, type Provider } from "../llm/failover.js";
+import { ApiClient, runWorker } from "../jobs/worker.js";
+import { enginePlaytester } from "../engine/playtest.js";
+import { createMemory } from "../memory/memory.js";
+import { SpriteLibrary } from "../memory/sprites.js";
 
 loadEnv();
 
@@ -36,14 +37,11 @@ async function setup() {
   const key = anthropicKey();
   if (!key) throw new Error("ANTHROPIC_API_KEY (or ANTHROPIC_KEY) is not set; put it in the repo-root .env");
   const claude = anthropicLLM(new Anthropic({ apiKey: key }));
-  // Account failover (so builds never stop on credits): Claude → OPENAI_API_KEY → OPENAI_API_KEY_BACKUP.
   const anth: Provider = { name: "anthropic", kind: "anthropic", agent: claude, json: claude };
   const oai = [process.env.OPENAI_API_KEY, process.env.OPENAI_API_KEY_BACKUP]
     .filter((k): k is string => !!k)
     .map((k, i): Provider => ({ name: i === 0 ? "openai" : "openai-backup", kind: "openai", agent: openaiLLM(k), json: openaiJson(k) }));
-  // Router / critic / lessons (structured JSON) and the default builder: Claude first.
   const llm = failoverLLM([anth, ...oai]);
-  // DREAMSY_PROVIDER=openai: GPT builds first (then the backup key, then Claude).
   let builder: AgentLLM = llm;
   if (process.env.DREAMSY_PROVIDER === "openai") {
     if (!oai.length) throw new Error("DREAMSY_PROVIDER=openai needs OPENAI_API_KEY");
@@ -52,7 +50,6 @@ async function setup() {
   const gk = geminiKey();
   const images = gk ? await geminiImages(gk) : disabledImages;
   const playtest = await enginePlaytester({ browser: process.env.PLAYTEST_BROWSER !== "0" });
-  // Retrieval memory: Supermemory when SUPERMEMORY_API_KEY is set, else .data/memory (DREAMSY_MEMORY=0 disables).
   const memory = process.env.DREAMSY_MEMORY === "0" ? undefined : createMemory();
   const sprites = memory ? new SpriteLibrary(memory) : undefined;
   if (memory) console.error(`memory: ${memory.backend}`);

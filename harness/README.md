@@ -25,23 +25,20 @@ cd ../engine && cmake --preset release && cmake --build --preset release --targe
 source ~/emsdk/emsdk_env.sh && cmake --preset web && cmake --build --preset web --target dreamsy-player   # screenshots
 ```
 
-`src/playtest.ts` runs `dreamsy-tool playtest` (found via `DREAMSY_TOOL`, else `engine/build/{release,headless,debug}`);
-`src/browser.ts` drives `engine/build/web/dreamsy-player.html` (or `DREAMSY_WEB_BUILD`) in headless Chromium with
+`src/engine/playtest.ts` runs `dreamsy-tool playtest` (found via `DREAMSY_TOOL`, else `engine/build/{release,headless,debug}`);
+`src/engine/browser.ts` drives `engine/build/web/dreamsy-player.html` (or `DREAMSY_WEB_BUILD`) in headless Chromium with
 Playwright, stepping game time manually. `PLAYTEST_BROWSER=0` turns screenshots off.
 
-Layout: `route.ts` (Haiku classifier + model plans) · `agent.ts` (tool loop) · `workspace.ts`
-(working package, ops, async images) · `prompt.ts` (cached system prompt: role, Luau API, catalog, style) ·
-`generate.ts` (route → agent → escalate → summary) · `worker.ts` (API protocol, heartbeats, cancel) ·
-`images.ts` (Gemini) · `playtest.ts` / `browser.ts` (C++ engine playtests).
+Code layout and the build flow: [DESIGN.md](DESIGN.md).
 
 ## Continual improvement (retrieval, not training)
-- `src/memory.ts` — `Memory {remember, recall, forget}`: Supermemory when `SUPERMEMORY_API_KEY` is set, else a
+- `src/memory/memory.ts` — `Memory {remember, recall, forget}`: Supermemory when `SUPERMEMORY_API_KEY` is set, else a
   JSON-lines store in `.data/memory/` (BM25 + kit/pack/genre overlap; deterministic). `DREAMSY_MEMORY=0` disables.
   Scopes: `dreamsy:global`, `kit:`, `pack:`, `game:`, `user:` — `user:` items are only recalled for that user.
-- `src/lessons.ts` — after each round: Haiku-written build lessons (global, never prompt text), an outcome, and for
+- `src/memory/lessons.ts` — after each round: Haiku-written build lessons (global, never prompt text), an outcome, and for
   edits a user-scoped remix record (parent version, instruction, ops/files, result). Recalled into the first
   message as "# What worked before" (+ `memory` event). Tags with > 12 lessons are merged by Haiku and the
   originals superseded.
-- `src/sprites.ts` — shipped SVG sprites go to `.data/sprites/` + a Memory index with the build's art score;
+- `src/memory/sprites.ts` — shipped SVG sprites go to `.data/sprites/` + a Memory index with the build's art score;
   the builder's `find_sprites` tool returns well-scored ones to adapt (`draw_sprite {from}` counts the reuse).
 - The worker sends one `metrics` event per job → `GET /v1/me/insights` / `GET /v1/insights/engine` (services/api).

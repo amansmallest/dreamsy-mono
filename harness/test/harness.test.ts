@@ -10,14 +10,13 @@ import { createApp } from "@dreamsy/api/app";
 import { schema, type DB } from "@dreamsy/api/db";
 import { MemoryStorage } from "@dreamsy/api/storage";
 import type { Config, IdentityVerifier } from "@dreamsy/api/context";
-import type { ImageGen } from "../src/images.js";
-import type { AgentLLM, StructuredLLM } from "../src/models.js";
-import type { Route } from "../src/route.js";
-import { ApiClient, processJob } from "../src/worker.js";
-import { simulate } from "../src/playtest.js";
-import type { Playtester } from "../src/playtest.js";
+import type { ImageGen } from "../src/llm/images.js";
+import type { AgentLLM, StructuredLLM } from "../src/llm/models.js";
+import type { Route } from "../src/pipeline/route.js";
+import { ApiClient, processJob } from "../src/jobs/worker.js";
+import { simulate } from "../src/engine/playtest.js";
+import type { Playtester } from "../src/engine/playtest.js";
 
-/** Real engine simulation (Node, fast) + fake browser that returns a tiny JPEG. */
 const browserCalls: number[][] = [];
 const playtest: Playtester = {
   simulate,
@@ -26,8 +25,6 @@ const playtest: Playtester = {
     return { consoleErrors: [], scriptErrors: 0, shots: shots.map((t) => ({ t, jpeg: new Uint8Array([0xff, 0xd8, 0xff, 0xd9]) })) };
   },
 };
-
-// ---------- in-process API ----------
 
 const config: Config = { jwtSecret: "x".repeat(40), workerToken: "wt", dailyGenerationQuota: 100, leaseSeconds: 60, maxAttempts: 3, ssePollMs: 10, starterStars: 500, creatorShare: 0.5, playPrice: 10000, playPassMinutes: 30, createPrice: 0, remixPrice: 0 };
 const identity: IdentityVerifier = { async verify() { throw new Error("unused"); } };
@@ -69,8 +66,6 @@ async function eventTypes(genId: string) {
   return rows.filter((r) => r.generationId === genId).map((r) => r.type).filter((t) => t !== "heartbeat");
 }
 
-// ---------- fakes ----------
-
 const usage = { input_tokens: 1000, output_tokens: 200, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 };
 let toolSeq = 0;
 const tool = (name: string, input: unknown) => ({ type: "tool_use" as const, id: `tu_${toolSeq++}`, name, input });
@@ -79,7 +74,6 @@ function reply(model: string, content: unknown[], stop: string = "tool_use"): An
   return { id: "m", type: "message", role: "assistant", model, content, stop_reason: stop, stop_sequence: null, usage } as unknown as Anthropic.Beta.BetaMessage;
 }
 
-/** Scripted agent: each step sees the request and returns a reply. Records models used. */
 function scripted(steps: ((p: any) => Anthropic.Beta.BetaMessage | Promise<Anthropic.Beta.BetaMessage>)[]): AgentLLM & { models: string[]; lastToolResults: () => string } {
   let i = 0;
   let last: any;
@@ -132,15 +126,12 @@ const NEW_GAME_OPS = [
   { op: "add_entity", parent: "world", id: "player", type: "Body2D", props: { body: "dynamic" }, scripts: ["scripts/client/player.luau"] },
 ];
 
-// ---------- tests ----------
-
 describe("worker end to end", () => {
   it("new game: route → build (fix a validation error) → image → finish → version committed", async () => {
     const { token, gameId, genId, job } = await newJob("a pixel game where a frog collects coins");
     const llm = scripted([
       () => reply("claude-opus-5-5", [
         text("Plan: frog platformer with coins."),
-        // second op batch has a bad prop → validator error reported back
         tool("apply_ops", { reason: "scaffold", ops: [...NEW_GAME_OPS, { op: "add_entity", parent: "world", id: "coin_1", type: "Area2D", props: { radius: 4 } }] }),
         tool("generate_image", { id: "coin", prompt: "a gold coin", aspect: "1:1" }),
       ]),
@@ -170,7 +161,7 @@ describe("worker end to end", () => {
     const zip = await app.request(`/v1/games/${gameId}/versions/1/package`, { headers: { authorization: `Bearer ${token}` } });
     const pkg = Package.fromZip(new Uint8Array(await zip.arrayBuffer()));
     expect(validatePackage(pkg).ok).toBe(true);
-    expect(Array.from(pkg.bytes("assets/coin.png")!)).toEqual([137, 80, 78, 71, 1, 2, 3]); // real image replaced placeholder
+    expect(Array.from(pkg.bytes("assets/coin.png")!)).toEqual([137, 80, 78, 71, 1, 2, 3]);
     expect(JSON.parse(pkg.text("assets/coin.meta.json")!).source.model).toBe("fake-image");
 
     const types = await eventTypes(genId);
@@ -226,7 +217,6 @@ describe("worker end to end", () => {
     ]);
     expect(await processJob({ api, agentLLM: llm, jsonLLM: router({}), images: fakeImages, playtest }, job)).toBe("succeeded");
 
-    // an edit on the committed game starts with a screenshot of it
     browserCalls.length = 0;
     await call("POST", `/v1/games/${gameId}/generations`, token, { prompt: "make it red" });
     const job2 = (await api.claim())!;
@@ -267,7 +257,7 @@ describe("worker end to end", () => {
     expect(outcome).toBe("succeeded");
     expect(llm.models).toHaveLength(2);
     const versions = (await call("GET", `/v1/games/${gameId}/versions`, token)).data.versions;
-    expect(versions.map((v: any) => v.version)).toEqual([2, 1]); // round 1 = checkpoint v1, round 2 = complete v2
+    expect(versions.map((v: any) => v.version)).toEqual([2, 1]);
     const types = await eventTypes(genId);
     expect(types.filter((t) => t === "eta")).toHaveLength(2);
     expect(types).toContain("checkpoint");
@@ -309,11 +299,10 @@ describe("worker end to end", () => {
     const pkg = Package.fromZip(new Uint8Array(await zip.arrayBuffer()));
     expect(JSON.parse(pkg.text("data/creatures/emberkit.json")!).hp).toBe(40);
     expect(pkg.has("assets/emberkit_front.svg")).toBe(true);
-    expect(pkg.has("data/creatures/sneaky.json")).toBe(false); // not one of the worker's ids
+    expect(pkg.has("data/creatures/sneaky.json")).toBe(false);
   });
 
   it("sprite-scoped edit changes only the chosen asset", async () => {
-    // base game with a shield sprite
     const first = await newJob("make a game");
     const blue = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 8"><rect width="8" height="8" fill="#00f"/></svg>';
     const red = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 8"><rect width="8" height="8" fill="#f00"/></svg>';
@@ -325,8 +314,7 @@ describe("worker end to end", () => {
     const llm = scripted([(p) => {
       const text = JSON.stringify(p.messages[0].content);
       expect(text).toContain("SCOPED SPRITE EDIT");
-      expect(text).toContain("fill=\\\"#00f\\\""); // current SVG is shown to the model
-      // the model also (wrongly) touches another file — it must be dropped
+      expect(text).toContain("fill=\\\"#00f\\\"");
       return reply("claude-sonnet-5-5", [
         tool("draw_sprite", { id: "shield", svg: red }),
         tool("apply_ops", { reason: "oops", ops: [{ op: "set_props", id: "player", props: { gravity_scale: 3 } }] }),
@@ -334,17 +322,16 @@ describe("worker end to end", () => {
       ]);
     }]);
     expect(await processJob({ api, agentLLM: llm, jsonLLM: router({ kind: "tweak", style: null, dimension: null }), images: fakeImages, playtest }, job)).toBe("succeeded");
-    expect(llm.models).toEqual(["claude-sonnet-5-5"]); // routed as a cheap asset edit
+    expect(llm.models).toEqual(["claude-sonnet-5-5"]);
     const zip = await app.request(`/v1/games/${first.gameId}/versions/2/package`, { headers: { authorization: `Bearer ${first.token}` } });
     const pkg = Package.fromZip(new Uint8Array(await zip.arrayBuffer()));
     expect(pkg.text("assets/shield.svg")).toBe(red);
     const scene = JSON.parse(pkg.text("scenes/main.scene.json")!);
-    expect(scene.entities.player.props.gravity_scale).toBeUndefined(); // unrelated change dropped
+    expect(scene.entities.player.props.gravity_scale).toBeUndefined();
     void gen;
   });
 
   it("new games start from the chosen kit's template by default; 'from scratch' opts out", async () => {
-    // default: rpg kit → the rpg template game is the base
     const { token, gameId, genId, job } = await newJob("a cozy creature-catching rpg about moths");
     const llm = scripted([(p) => {
       const first = JSON.stringify(p.messages[0].content);
@@ -361,10 +348,9 @@ describe("worker end to end", () => {
     const pkg = Package.fromZip(new Uint8Array(await zip.arrayBuffer()));
     expect(validatePackage(pkg).manifest?.name).toBe("Moth Keepers");
     expect(validatePackage(pkg).manifest?.kits).toEqual(["rpg"]);
-    expect(pkg.paths("data/creatures/").length).toBeGreaterThan(0); // template content came along
+    expect(pkg.paths("data/creatures/").length).toBeGreaterThan(0);
     expect(await eventTypes(genId)).toContain("template");
 
-    // opt out: from scratch → empty base, normal new-game instructions
     const second = await newJob("a creature rpg from scratch");
     const llm2 = scripted([(p) => {
       const first = JSON.stringify(p.messages[0].content);
@@ -402,7 +388,6 @@ describe("worker end to end", () => {
   });
 
   it("tweak on Sonnet escalates to Opus after no progress", async () => {
-    // first commit a base version
     const first = await newJob("make a game");
     await processJob({
       api,
@@ -417,7 +402,6 @@ describe("worker end to end", () => {
     expect(job.base?.version).toBe(1);
     const llm = scripted([
       (p) => {
-        // selection is expanded for the model
         expect(JSON.stringify(p.messages[0].content)).toContain('\\"player\\": {');
         return reply("claude-sonnet-5-5", [text("hmm")], "end_turn");
       },

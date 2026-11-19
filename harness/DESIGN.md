@@ -1,92 +1,69 @@
-# Harness design (v0)
+# Harness design
 
-Turns a prompt + reference images into a validated game package version.
-Stateless TypeScript workers pull jobs from `services/api` (worker protocol in `services/api/README.md`).
+Turns a prompt (plus reference images, an existing game and tapped entities) into a validated game package.
+Spec: docs/harness.md §5.
+
+## Flow
 
 ```
-            ┌──────────── worker process ─────────────────────────────────────────┐
-API ─claim─►│ 1 route (Haiku) → 2 build context → 3 agent loop (Opus|Sonnet)      │
-            │                                      │ tools: read / apply_ops /     │
-            │                                      │ validate / gen_image / playtest│
-            │ 4 final gate (validate + boot*) → 5 summary (Haiku) → complete      │
-            └──────────── events (heartbeat + progress) ─► API ─SSE─► app ───────┘
-                                                            * once engine harness build exists
+cli/main.ts ─┬─ worker: jobs/worker.ts claims API jobs, runs rounds, uploads versions + progress events
+             └─ local:  one build on this machine, no API
+
+pipeline/generate.ts   one round
+  1. route      pipeline/route.ts: Haiku classifies the request (new_game · feature · tweak · asset · reject)
+                and picks kits, style, style pack, orientation, safety
+  2. template   context/templates.ts: a new game starts as its kit's example game
+  3. agent      agent/loop.ts with a plan from pipeline/plans.ts (model, effort, turn cap, $ cap);
+                one retry on a stronger model when the build fails on quality
+  4. after      Haiku summary line · thumbnail · shipped sprites → library · lessons → memory
 ```
 
-## 1. Route — Claude Haiku 5.5, ~1s
+New games run several rounds: each one builds the next unchecked milestones in the game's `notes.md`.
 
-One structured-output call classifies the request and pre-checks it:
+## The agent
 
-| field | values |
+`agent/brief.ts` writes the first message: the game outline, the request, reference images, style-pack art, a
+screenshot of the current game (edits), and lessons recalled from memory. The system prompt
+(`context/prompt.ts`) holds the format rules, the entity catalog, the Luau API, the style and the kit docs; it is
+identical on every turn so it stays cached.
+
+`agent/loop.ts` runs the turns: streaming, effort per plan, fast mode on Opus, retries on malformed tool
+input, a cost cap, a nudge when the model stops without `finish`. Each tool call goes to its file in
+`agent/tools/`, which defines the tool once (zod input → the JSON Schema the model sees, label, handler):
+
+| Tool | File | Does |
+|---|---|---|
+| `read_files`, `get_entities` | files.ts | look at the game |
+| `apply_ops` | apply-ops.ts | edit the game; the batch applies only if the package stays valid |
+| `draw_sprite`, `find_sprites` | sprites.ts | SVG art; reuse sprites from past well-reviewed builds |
+| `generate_image` | images.ts | Gemini images in the background (placeholder until done) |
+| `build_content` | content.ts | parallel Sonnet builders for bulk items, checked against kit schemas |
+| `playtest` | playtest.ts | headless run + screenshots on the C++ engine |
+| `finish` | finish.ts | final gate (`agent/final-gate.ts`: valid package, 8 s smoke run with no script errors), then one art-director review (`agent/critique.ts`) |
+
+The working copy is `agent/workspace.ts`; nothing leaves the worker until a round passes the final gate.
+
+## Modules
+
+| Folder | What |
 |---|---|
-| `kind` | `new_game` · `feature` (new mechanic/level/system) · `tweak` (props, text, colors, numbers, small script edit) · `asset` (regenerate art only) · `reject` |
-| `style` | preset guess for new games when the user didn't pick one |
-| `safety` | ok / reason — prompt moderation pre-check (real moderation pipeline later, DREAMSY.MD §7) |
+| `cli/` | entry point: `worker` and `local` |
+| `jobs/` | the API worker protocol: claim, heartbeat, events, upload, cancel |
+| `pipeline/` | one round (`generate.ts`), the router, the model plans |
+| `agent/` | brief, loop, tools, workspace, final gate, art critique, content builders |
+| `context/` | what the model is told: system prompt, kits, taste packs, kit templates, content schemas |
+| `engine/` | playtests on the C++ engine: `dreamsy-tool playtest` (headless) and the web player in Chromium |
+| `llm/` | model clients (Anthropic, OpenAI, account failover), Gemini images, prices and cost meter |
+| `memory/` | retrieval memory (Supermemory or `.data/memory`), build lessons, the sprite library |
+| `env.ts`, `paths.ts` | `.env` loading, repo paths |
 
-Routing table:
+## Progress events
 
-| kind | model | effort | turn cap | typical time |
-|---|---|---|---|---|
-| new_game | Opus 5.5 | high | 40 | 2–5 min |
-| feature | Opus 5.5 | medium | 25 | 1–2 min |
-| tweak | Sonnet 5.5 | low | 8 | 10–30 s |
-| asset | Sonnet 5.5 | low | 6 | 15–40 s (image-bound) |
+`route` · `template` · `plan` · `working` · `ops` · `sprite` · `sprites.found` · `asset.started/done/failed` ·
+`content` · `playtest` · `validate` · `review` / `review.done` · `memory` / `memory.saved` · `cost` · `escalate` ·
+`note`; the worker adds `heartbeat`, `eta`, `cost.final` and one `metrics` per job. The app and studio render them as a timeline.
 
-If a cheap run fails its final gate twice, escalate once to the next tier before failing the job.
+## Next
 
-## 2. Context (prompt-cache friendly, stable → volatile)
-
-1. **System (cached, frozen per format version):** role; package format rules; ops reference;
-   full entity catalog (`format/catalog.json`); Luau scripting API reference; "how to build good small games"
-   playbook (core loop first, juice later, always a camera + win/lose condition + HUD).
-2. **Style block (cached per preset):** `STYLES[preset].build` + palette + notes.
-3. **Game context:** manifest, scene outline (ids/types/names tree, not full props), script file list.
-   Full files are read on demand via tools — keeps context small on big games.
-4. **User turn:** prompt, reference images (image blocks), tapped `selection` ids (expanded in full).
-
-## 3. Agent loop
-
-Manual loop over the Messages API (streaming, adaptive thinking, `eager_input_streaming` on tools,
-`task_budget` for new games), not the SDK tool runner — we need per-turn control for
-lease heartbeats, cancellation (any 409 from the API → abort), cost accounting and progress events.
-
-Tools (all `strict`):
-
-| tool | does |
-|---|---|
-| `read_files {paths}` | file contents (scenes, scripts, data, asset metas) |
-| `get_entities {ids}` | full JSON for specific entities + their children ids |
-| `apply_ops {ops, reason}` | `parseOps` → `applyOps` → `validatePackage`; returns op error (with index) or the new issue list. Working package only advances on success. |
-| `generate_image {id, prompt, size, transparent}` | Gemini image with the style's `assetPrompt` + palette + style reference images; stores via `put_asset`. Runs async — several in flight while Claude keeps building. |
-| `generate_mesh {id, prompt}` | later: Gemini views → image-to-3D → glb. Disabled for `blocky`/`clean` (primitives first). |
-| `playtest {seconds, inputs?}` | later: boots the package in the headless engine (harness build), returns runtime errors + a screenshot as an image block, so Claude *sees* the game. |
-| `finish {summary}` | ends the loop; triggers the final gate. |
-
-Working state lives in the worker (`Package` in memory); nothing is uploaded until the gate passes.
-
-## 4. Final gate
-
-`validatePackage` must be error-free → (later) Luau compile of every script → (later) headless boot
-for N seconds with no runtime errors. Failures go back into the loop as a tool result, up to the
-turn cap. Then: deterministic zip → `POST /complete`.
-
-## 5. Summary — Haiku 5.5
-
-One line for the version history ("Added 3 cat towers and a gold counter") from the op log.
-
-## Progress events (→ app over SSE)
-
-`route` · `plan` (Claude's short plan) · `ops` (counts: +entities, ~props, scripts touched) ·
-`asset.started` / `asset.done` (thumbnail url later) · `validate` (error count) · `playtest` (screenshot) ·
-`cost` (tokens, $). Every event also renews the job lease.
-
-## Cost & limits
-
-- Per-generation token + $ accounting in events; hard $ cap per job by kind.
-- Prompt caching on system + style blocks (shared across all jobs of a preset).
-- Rough targets to measure against: new game ≈ $0.50–2, tweak ≈ $0.02–0.10 (+ images).
-
-## Not in v0
-
-Moderation pipeline beyond the Haiku pre-check · mesh generation · audio · playtest/boot
-(needs engine harness build) · multi-agent parallel building (assets already run in parallel).
+Keys per job instead of per process (bring your own key), one typed config object instead of env reads, `.dpk`
+output, and a `dreamsy create` command for local builds.

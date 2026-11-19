@@ -2,18 +2,11 @@ import type Anthropic from "@anthropic-ai/sdk";
 import type { BetaMessageStreamParams } from "@anthropic-ai/sdk/resources/beta/messages/messages";
 import { MODELS, registerPrice, type AgentLLM, type StructuredLLM } from "./models.js";
 
-/**
- * OpenAI as the BUILDER (agent loop + content workers) behind the same AgentLLM seam as Claude.
- * Translates Anthropic-shaped turns ⇄ the OpenAI Responses API (reasoning + function tools).
- * Router, critic and lessons stay on Claude (StructuredLLM). "Fast mode" = service_tier "priority".
- *   OPENAI_API_KEY, OPENAI_BUILDER_MODEL (gpt-6.1-sol), OPENAI_WORKER_MODEL (gpt-6.1-terra), OPENAI_FAST (1)
- */
 type B = Anthropic.Beta.BetaContentBlockParam;
 type Item = Record<string, unknown>;
 
 export const OPENAI_BUILDER = process.env.OPENAI_BUILDER_MODEL ?? "gpt-6.1-sol";
 export const OPENAI_WORKER = process.env.OPENAI_WORKER_MODEL ?? "gpt-6.1-terra";
-// Approximate $/MTok for budgeting only (override with OPENAI_PRICE_IN/OUT/CACHED).
 const price = { in: Number(process.env.OPENAI_PRICE_IN ?? 5), out: Number(process.env.OPENAI_PRICE_OUT ?? 30), cacheRead: Number(process.env.OPENAI_PRICE_CACHED ?? 0.5) };
 registerPrice(OPENAI_BUILDER, price);
 registerPrice(OPENAI_WORKER, { in: price.in / 2, out: price.out / 2, cacheRead: price.cacheRead / 2 });
@@ -38,7 +31,6 @@ function toInput(messages: BetaMessageStreamParams["messages"]): Item[] {
       if (texts.length) out.push({ role: "assistant", content: [{ type: "output_text", text: texts.join("\n") }] });
       continue;
     }
-    // user: tool results first (each call needs its output), then text + images (incl. tool screenshots)
     const parts: Item[] = [];
     for (const b of blocks) {
       if (b.type === "tool_result") {
@@ -54,12 +46,10 @@ function toInput(messages: BetaMessageStreamParams["messages"]): Item[] {
   return out;
 }
 
-/** Typed OpenAI API failure (status + error code) so the key failover can tell "out of credits" apart. */
 export class OpenAIError extends Error {
   constructor(readonly status: number, readonly code: string | null, message: string) { super(message); this.name = "OpenAIError"; }
 }
 
-/** Structured JSON calls (router, critic, lessons) on OpenAI — used only when the Claude account can't serve them. */
 export function openaiJson(apiKey: string): StructuredLLM {
   return {
     async json({ model, system, content, schema, effort }) {

@@ -2,9 +2,8 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { Package } from "@dreamsy/format";
-import { REPO_ROOT, simulate, SMOKE_TIMELINE, type TimelineStep } from "../src/playtest.js";
+import { REPO_ROOT, simulate, SMOKE_TIMELINE, type TimelineStep } from "../src/engine/playtest.js";
 
-// Headless playtests run on the C++ engine (dreamsy-tool playtest).
 const game = (dir: string) => Package.fromDir(join(REPO_ROOT, "games", dir));
 const START: TimelineStep[] = [{ t: 0.3, tap: [360, 900] }, ...SMOKE_TIMELINE];
 
@@ -15,7 +14,7 @@ describe("simulate (dreamsy-tool playtest)", () => {
     expect(r.errors).toEqual([]);
     expect(r.scenes?.map((s) => s.scene)).toEqual(["scenes/main.scene.json", "scenes/level.scene.json"]);
     expect(r.avatarTrace).toHaveLength(8);
-    expect(r.avatarTrace[1]!.x).toBeGreaterThan(r.avatarTrace[0]!.x); // holding right
+    expect(r.avatarTrace[1]!.x).toBeGreaterThan(r.avatarTrace[0]!.x);
     expect(r.dialogLog?.[0]).toMatch(/^Pip: /);
     expect(r.audio.music).toEqual(["sky_tune"]);
     expect(r.audio.sfx.jump).toBeGreaterThan(0);
@@ -39,11 +38,10 @@ describe("simulate (dreamsy-tool playtest)", () => {
   });
 });
 
-// The web player in headless Chromium: needs the web build and Playwright's Chromium (opt in).
 const webBuilt = existsSync(join(REPO_ROOT, "engine/build/web/dreamsy-player.html"));
 describe.skipIf(!webBuilt || process.env.PLAYTEST_BROWSER_TEST !== "1")("playtestBrowser (C++ web player)", () => {
   it("screenshots cloud-hopper at game times", async () => {
-    const { playtestBrowser, closeBrowser } = await import("../src/browser.js");
+    const { playtestBrowser, closeBrowser } = await import("../src/engine/browser.js");
     try {
       const r = await playtestBrowser(await game("showcase/cloud-hopper"), START, [1, 3]);
       expect(r.loadError).toBeUndefined();

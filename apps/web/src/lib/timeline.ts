@@ -1,4 +1,4 @@
-// Turns the raw SSE event list into a readable build timeline (docs/harness.md §5, harness/src/agent.ts events).
+// Turns the raw SSE event list into a readable build timeline (docs/harness.md §5, harness/DESIGN.md "Progress events").
 import { metricSummary, type BuildMetrics, type GenerationEvent } from './api';
 
 export type Step =

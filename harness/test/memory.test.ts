@@ -12,18 +12,16 @@ import { createApp } from "@dreamsy/api/app";
 import { schema, type DB } from "@dreamsy/api/db";
 import { MemoryStorage } from "@dreamsy/api/storage";
 import type { Config, IdentityVerifier } from "@dreamsy/api/context";
-import { simulate } from "../src/playtest.js";
-import type { ImageGen } from "../src/images.js";
-import type { AgentLLM, StructuredLLM } from "../src/models.js";
-import type { Route } from "../src/route.js";
-import type { Playtester } from "../src/playtest.js";
-import { ApiClient, processJob } from "../src/worker.js";
-import { createMemory, GLOBAL, LocalMemory, scope, SupermemoryMemory, type MemoryItem } from "../src/memory.js";
-import { consolidateLessons, newTrace, writeBuildMemory, type BuildCtx } from "../src/lessons.js";
-import { SpriteLibrary, spriteLibId } from "../src/sprites.js";
+import { simulate } from "../src/engine/playtest.js";
+import type { ImageGen } from "../src/llm/images.js";
+import type { AgentLLM, StructuredLLM } from "../src/llm/models.js";
+import type { Route } from "../src/pipeline/route.js";
+import type { Playtester } from "../src/engine/playtest.js";
+import { ApiClient, processJob } from "../src/jobs/worker.js";
+import { createMemory, GLOBAL, LocalMemory, scope, SupermemoryMemory, type MemoryItem } from "../src/memory/memory.js";
+import { consolidateLessons, newTrace, writeBuildMemory, type BuildCtx } from "../src/memory/lessons.js";
+import { SpriteLibrary, spriteLibId } from "../src/memory/sprites.js";
 import { loadEnv } from "../src/env.js";
-
-// ---------- shared fakes (same style as harness.test.ts) ----------
 
 const playtest: Playtester = {
   simulate,
@@ -88,7 +86,6 @@ function scripted(steps: ((p: any) => Anthropic.Beta.BetaMessage)[]): AgentLLM &
   };
 }
 
-/** Router + art director + summary + lesson writer + consolidator. */
 function jsonLLM(route: Partial<Route>, opts: { review?: { score: number; verdict: "ship" | "polish"; fixes: string[] }; lessons?: { topic: string; text: string }[]; seen?: string[] } = {}): StructuredLLM {
   return {
     async json({ system, model, content }) {
@@ -120,8 +117,6 @@ const NEW_GAME_OPS = [
 const lesson = (id: string, text: string, scopes: string[], extra: Partial<MemoryItem> = {}): MemoryItem => ({ id, kind: "lesson", text, scopes: [GLOBAL, ...scopes], ...extra });
 const svg = (fill: string, size = 16) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges"><rect x="4" y="4" width="8" height="8" fill="${fill}"/></svg>`;
 
-// ---------- memory: local backend ----------
-
 describe("local memory", () => {
   it("ranks by keyword + kit/pack overlap, deterministically, and persists across instances", async () => {
     await memory.remember(lesson("l_rpg", "Zoom the camera to 3x so pixel sprites read on phones", [scope.kit("rpg")]));
@@ -130,16 +125,14 @@ describe("local memory", () => {
     await memory.remember(lesson("l_hud", "Anchor the HUD top-left, away from the pause button", []));
 
     const a = await memory.recall("camera zoom", { kits: ["platformer"], pack: "cozy-forest" });
-    expect(a[0]!.item.id).toBe("l_plat"); // same text as l_rpg, but kit + pack overlap wins
+    expect(a[0]!.item.id).toBe("l_plat");
     expect(a[1]!.item.id).toBe("l_rpg");
     const b = await memory.recall("jump buffering controller", { kits: ["platformer"] });
     expect(b[0]!.item.id).toBe("l_coyote");
-    expect(await memory.recall("camera zoom", { kits: ["platformer"], pack: "cozy-forest" })).toEqual(a); // deterministic
+    expect(await memory.recall("camera zoom", { kits: ["platformer"], pack: "cozy-forest" })).toEqual(a);
 
-    // required scopes filter
     expect((await memory.recall("", { scopes: [scope.kit("rpg")] })).map((h) => h.item.id)).toEqual(["l_rpg"]);
 
-    // persisted log replays; forget is persisted too
     await memory.forget(["l_hud"]);
     const again = new LocalMemory(memory.file);
     expect(again.all().map((i) => i.id).sort()).toEqual(["l_coyote", "l_plat", "l_rpg"]);
@@ -158,8 +151,6 @@ describe("local memory", () => {
     expect(createMemory({ dir, env: { SUPERMEMORY_API_KEY: "k" } }).backend).toBe("supermemory");
   });
 });
-
-// ---------- memory: Supermemory client shape (fake fetch) ----------
 
 describe("supermemory client", () => {
   it("adds with one privacy container + metadata scopes, searches per container with filters, re-checks privacy, deletes", async () => {
@@ -185,15 +176,13 @@ describe("supermemory client", () => {
     const searches = reqs.filter((r) => r.url.endsWith("/v3/search"));
     expect(searches.map((s) => s.body.containerTag)).toEqual(["dreamsy_global", "dreamsy_user_u_1"]);
     expect(searches[0]!.body.filters).toEqual({ AND: [{ OR: [{ key: "kind", value: "lesson" }] }, { key: "scopes", value: "kit:rpg", filterType: "array_contains" }] });
-    expect(hits.map((h) => h.item.id)).toEqual(["l1"]); // eve's remix never surfaces, even if the server returned it
+    expect(hits.map((h) => h.item.id)).toEqual(["l1"]);
     expect(hits[0]!.item).toMatchObject({ text: "lesson text", weight: 2, score: 8 });
 
     await sm.forget(["remix_1"]);
     expect(reqs.at(-1)).toMatchObject({ method: "DELETE", url: "https://sm.test/v3/documents/remix_1" });
   });
 });
-
-// ---------- recall → prompt, lessons, remix records, consolidation ----------
 
 describe("memory in the build loop", () => {
   it("recalls lessons into the first message, emits `memory`, and reports metrics with the ids used", async () => {
@@ -207,7 +196,7 @@ describe("memory in the build loop", () => {
       expect(text).toContain("# What worked before (retrieved from");
       expect(text).toContain("[design ×3] Give the player coyote time");
       expect(text.indexOf("coyote")).toBeLessThan(text.indexOf("tycoon tip") === -1 ? Infinity : text.indexOf("tycoon tip"));
-      expect(text).not.toContain("Battle menus"); // other kits rank below / out
+      expect(text).not.toContain("Battle menus");
       return reply("claude-opus-5-5", [tool("apply_ops", { reason: "x", ops: NEW_GAME_OPS }), tool("finish", { summary: "ok" })]);
     }]);
     expect(await processJob({ api, agentLLM: llm, jsonLLM: jsonLLM({ kits: ["platformer"] }), images: fakeImages, playtest, memory }, job)).toBe("succeeded");
@@ -242,7 +231,7 @@ describe("memory in the build loop", () => {
     expect(await processJob({ api, agentLLM: llm, jsonLLM: llmJson, images: fakeImages, playtest, memory }, first.job)).toBe("succeeded");
 
     expect(seen[0]).toContain("zoom the camera to 3x");
-    expect(seen[0]).not.toContain("Hopsalot"); // the lesson writer never sees the prompt
+    expect(seen[0]).not.toContain("Hopsalot");
     const lessons = memory.all().filter((i) => i.kind === "lesson");
     expect(lessons).toHaveLength(1);
     expect(lessons[0]!.scopes).toEqual(expect.arrayContaining([GLOBAL, "kit:platformer", "genre:platformer", "orientation:portrait", "topic:art"]));
@@ -252,7 +241,6 @@ describe("memory in the build loop", () => {
     for (const i of memory.all().filter((x) => !x.scopes.some((s) => s.startsWith("user:")))) expect(i.text).not.toContain("Hopsalot");
     expect((await events(first.genId)).find((e) => e.type === "memory.saved")).toBeTruthy();
 
-    // An edit → a remix record scoped to that user + game, recalled into their next edit only.
     const me = (await call("GET", "/v1/me", first.token)).data.user.id as string;
     const edit = await newJob("make Sir Hopsalot jump higher", first.token, first.gameId);
     expect(edit.job.generation.userId).toBe(me);
@@ -270,7 +258,6 @@ describe("memory in the build loop", () => {
       return reply("claude-sonnet-5-5", [tool("apply_ops", { reason: "j", ops: [{ op: "set_props", id: "player", props: { gravity_scale: 0.4 } }] }), tool("finish", { summary: "ok" })]);
     }]);
     expect(await processJob({ api, agentLLM: llm3, jsonLLM: jsonLLM({ kind: "tweak", style: null, dimension: null }), images: fakeImages, playtest, memory }, again.job)).toBe("succeeded");
-    // another user never sees it
     expect((await memory.recall("make Sir Hopsalot jump higher", { userId: "u_other", kinds: ["remix"] }))).toHaveLength(0);
   });
 
@@ -286,17 +273,16 @@ describe("memory in the build loop", () => {
         ] } as never, usage, model };
       },
     };
-    expect(await consolidateLessons({ memory, llm: merger }, "kit:rpg", 12)).toBe(0); // under threshold: no-op
+    expect(await consolidateLessons({ memory, llm: merger }, "kit:rpg", 12)).toBe(0);
     const removed = await consolidateLessons({ memory, llm: merger }, "kit:rpg", 8);
-    expect(removed).toBe(6); // 6→1 and 2→1
+    expect(removed).toBe(6);
     const left = memory.all().filter((i) => i.kind === "lesson");
-    expect(left).toHaveLength(4); // 2 merged + err_2, err_3 untouched
+    expect(left).toHaveLength(4);
     const zoom = left.find((i) => i.text.startsWith("Pixel games"))!;
     expect(zoom.weight).toBe(6);
     expect(zoom.score).toBe(6.5);
     expect(zoom.scopes).toEqual(expect.arrayContaining([GLOBAL, "kit:rpg", "topic:art"]));
     expect(left.map((i) => i.id)).toEqual(expect.arrayContaining(["err_2", "err_3"]));
-    // merged lessons rank first (evidence boost)
     expect((await memory.recall("zoom camera", { kits: ["rpg"] }))[0]!.item.id).toBe(zoom.id);
   });
 
@@ -321,8 +307,6 @@ describe("memory in the build loop", () => {
   });
 });
 
-// ---------- sprite library ----------
-
 describe("sprite library", () => {
   it("stores shipped sprites with score + finds same-pack, well-scored ones first", async () => {
     const lib = new SpriteLibrary(memory, join(dir, "sprites"));
@@ -334,11 +318,10 @@ describe("sprite library", () => {
     expect(lib.get(coinA)!.meta).toMatchObject({ viewBox: "0 0 16 16", width: 16, pack: "cozy-forest", score: 8 });
 
     const hits = await lib.find("gold coin", { pack: "cozy-forest", limit: 3 });
-    expect(hits.map((h) => h.meta.assetId)).toEqual(["coin", "coin_b", "heart"]); // low scorer excluded; same pack first
+    expect(hits.map((h) => h.meta.assetId)).toEqual(["coin", "coin_b", "heart"]);
     expect(hits[0]!.samePack).toBe(true);
     expect(hits[1]!.samePack).toBe(false);
 
-    // re-storing the same SVG keeps the best score
     await lib.store(svg("#ffd700"), { assetId: "coin", description: "x", pack: "cozy-forest", style: "pixel", palette: [], kits: [], gameId: "g9", score: 5 });
     expect(lib.get(coinA)!.meta).toMatchObject({ score: 8, description: "gold coin pickup" });
   });
@@ -362,7 +345,7 @@ describe("sprite library", () => {
         expect(r).toContain("DIFFERENT PACK (neon-night)");
         return reply("claude-opus-5-5", [
           tool("draw_sprite", { id: "coin", svg: svg("#e8b04a"), description: "gold coin, cozy palette", from: same }),
-          tool("draw_sprite", { id: "gem", svg: svg("#00ffff"), from: other }), // verbatim copy across packs
+          tool("draw_sprite", { id: "gem", svg: svg("#00ffff"), from: other }),
           tool("draw_sprite", { id: "tree", svg: svg("#2f6b3a"), description: "pine tree" }),
         ]);
       },
@@ -383,8 +366,6 @@ describe("sprite library", () => {
     expect(Package).toBeDefined();
   });
 });
-
-// ---------- live Supermemory smoke (only with SUPERMEMORY_API_KEY in the repo-root .env) ----------
 
 loadEnv();
 const liveKey = process.env.SUPERMEMORY_API_KEY;

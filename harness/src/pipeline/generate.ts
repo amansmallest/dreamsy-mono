@@ -1,30 +1,28 @@
 import { type Package, validatePackage } from "@dreamsy/format";
-import type { Memory } from "./memory.js";
-import type { SpriteLibrary } from "./sprites.js";
-import { humanizeId } from "./sprites.js";
-import { newTrace, primaryKit, writeBuildMemory, type BuildCtx, type RunTrace } from "./lessons.js";
-import { runAgent, type AgentResult } from "./agent.js";
-import type { ImageGen } from "./images.js";
-import { CostMeter, MODELS, type AgentLLM, type StructuredLLM } from "./models.js";
-import { describeGame } from "./prompt.js";
-import { PLANS, routeRequest, type Plan } from "./route.js";
+import type { Memory } from "../memory/memory.js";
+import type { SpriteLibrary } from "../memory/sprites.js";
+import { humanizeId } from "../memory/sprites.js";
+import { newTrace, primaryKit, writeBuildMemory, type BuildCtx, type RunTrace } from "../memory/lessons.js";
+import { runAgent, type AgentResult } from "../agent/loop.js";
+import type { ImageGen } from "../llm/images.js";
+import { CostMeter, MODELS, type AgentLLM, type StructuredLLM } from "../llm/models.js";
+import { describeGame } from "../context/prompt.js";
+import { routeRequest } from "./route.js";
+import { PLANS, type Plan } from "./plans.js";
 import { z } from "zod";
-import type { Emit } from "./workspace.js";
-import type { Playtester } from "./playtest.js";
-import { kitTemplate } from "./templates.js";
+import type { Emit } from "../agent/workspace.js";
+import type { Playtester } from "../engine/playtest.js";
+import { kitTemplate } from "../context/templates.js";
 
 export interface GenerateInput {
   base: Package;
   prompt: string;
   images: { mediaType: string; base64: string }[];
   selection: string[];
-  /** Sprite click-to-edit: only these assets may change. */
   assetIds?: string[];
-  /** Who/where (from the job claim): scopes memory recall and remix records. */
   origin?: { userId?: string; gameId?: string; baseVersion?: number; remixOf?: { gameId: string; version: number } | null };
 }
 
-/** Per-round facts for metrics/graphs (worker aggregates rounds into the `metrics` event). */
 export interface RoundStats {
   kind: string;
   kit: string | null;
@@ -60,7 +58,6 @@ function roundStats(ctx: BuildCtx, t: RunTrace, ok: boolean, spritesDrawn: numbe
   };
 }
 
-/** SVG assets that are new or changed vs the base package. */
 function changedSvgs(base: Package, pkg: Package): string[] {
   const same = (a?: Uint8Array, b?: Uint8Array) => !!a && !!b && a.byteLength === b.byteLength && a.every((x, i) => x === b[i]);
   return pkg.paths("assets/").filter((p) => p.endsWith(".svg") && !same(base.bytes(p), pkg.bytes(p)));
@@ -77,7 +74,6 @@ function fileDiff(base: Package, pkg: Package) {
   };
 }
 
-/** route → agent (→ one escalation) → summary. Pure: no API calls, used by worker and local CLI. */
 export async function generate(deps: {
   agentLLM: AgentLLM;
   jsonLLM: StructuredLLM;
@@ -85,9 +81,7 @@ export async function generate(deps: {
   emit: Emit;
   signal: AbortSignal;
   playtest: Playtester;
-  /** Retrieval memory (lessons, remix records, outcomes). Optional: absent = no memory. */
   memory?: Memory;
-  /** Shared sprite library (find_sprites + storing shipped sprites). */
   sprites?: SpriteLibrary;
 }, input: GenerateInput): Promise<GenerateResult> {
   const cost = new CostMeter();
@@ -102,7 +96,6 @@ export async function generate(deps: {
   cost.add(model, usage);
   await deps.emit("route", { kind: route.kind, style: route.style, dimension: route.dimension, reason: route.reason });
 
-  // Sprite-scoped edits are always cheap asset edits, whatever the wording.
   if (input.assetIds?.length && route.kind !== "reject" && route.safe) route.kind = "asset";
 
   const manifest = validatePackage(input.base).manifest;
@@ -124,7 +117,6 @@ export async function generate(deps: {
     return { ok: false, message: `Can't build that: ${route.reason}`, retryable: false, cost: cost.snapshot(), stats: roundStats(ctx, trace, false, 0, 0) };
   }
 
-  // Default: new games start from the chosen genre kit's template game (fast first playable).
   let template: string | null = null;
   if (route.kind === "new_game" && !route.fromScratch && input.base.paths().length === 0) {
     const t = await kitTemplate(route.kits ?? []);
@@ -144,11 +136,9 @@ export async function generate(deps: {
     if (i > 0) await deps.emit("escalate", { model: plan.model, because: last && !last.ok ? last.message : "" });
     last = await runAgent({ llm: deps.agentLLM, images: deps.images, emit: deps.emit, signal: deps.signal, playtest: deps.playtest, critic: deps.jsonLLM, plan, cost, input: { ...input, route, template }, memory: deps.memory, ctx, sprites: deps.sprites, trace });
     if (last.ok) break;
-    // Only quality failures escalate; refusals/budget/cancel don't.
     if (last.reason !== "turns" && last.reason !== "no_progress") break;
   }
 
-  // Remember this round (lessons, outcome, remix record). Best-effort; never fails the job.
   const remember = async (ok: boolean, pkg: Package, failReason?: string) => {
     if (!deps.memory || deps.signal.aborted) return 0;
     try {
@@ -173,7 +163,6 @@ export async function generate(deps: {
     return { ok: false, message, retryable: reason === "error", cost: cost.snapshot(), stats: roundStats(ctx, trace, false, Math.max(0, trace.sprites.size - trace.spritesReused), lessonsWritten) };
   }
 
-  // Scoped sprite edits: keep ONLY changes to the chosen assets' files; drop anything else.
   if (input.assetIds?.length) {
     const owned = (path: string) => input.assetIds!.some((id) => new RegExp(`^assets/${id}\\.[a-z0-9.]+$`).test(path));
     let scoped = input.base;
@@ -197,17 +186,14 @@ export async function generate(deps: {
     cost.add(s.model, s.usage);
     summary = s.value.line;
   } catch {
-    // keep the builder's own summary
   }
-  // Thumbnail for feeds: a quiet frame ~2.5s in (title screens make good covers).
   let thumbnail: Uint8Array | undefined;
   if (deps.playtest.browser) {
     try {
       thumbnail = (await deps.playtest.browser(last.pkg, [], [2.5])).shots[0]?.jpeg;
-    } catch { /* thumbnails are best-effort */ }
+    } catch {}
   }
 
-  // Shipped sprites → library, carrying this build's art score.
   const svgs = changedSvgs(input.base, last.pkg);
   if (deps.sprites && !deps.signal.aborted) {
     const style = validatePackage(last.pkg).manifest?.style;
@@ -226,7 +212,7 @@ export async function generate(deps: {
           score: trace.reviews.at(-1)?.score ?? null,
           from: info?.from ?? null,
         });
-      } catch { /* library is best-effort */ }
+      } catch {}
     }
   }
   const reusedShipped = svgs.filter((p) => trace.sprites.get(p.slice(7, -4))?.from).length;

@@ -1,11 +1,10 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { registerKitDependencies } from "@dreamsy/format";
+import { repoPath } from "../paths.js";
 
-const ROOT = fileURLToPath(new URL("../../kits/", import.meta.url));
+const ROOT = repoPath("kits") + "/";
 
-/** Kit → kits it requires, from kits/<kit>/kit.json `requires` (docs/kits.md §12.1). */
 export function kitDependencies(root = ROOT): Record<string, string[]> {
   const out: Record<string, string[]> = {};
   if (!existsSync(root)) return out;
@@ -22,24 +21,17 @@ export function kitDependencies(root = ROOT): Record<string, string[]> {
   return out;
 }
 
-// Kits can require other kits (kits/<kit>/kit.json); validation must know the map, otherwise a game
-// listing only "rpg" that also requires @kit/core would be flagged.
 registerKitDependencies(kitDependencies());
 
-/** Genre kits shipped with the engine (docs/kits.md §12.1): kits/<kit>/KIT.md + schemas. */
 export interface Kit {
   id: string;
-  /** API reference pasted into the builder's prompt. */
   doc: string;
-  /** First paragraph of KIT.md, for the router. */
   summary: string;
-  /** JSON Schemas for content files, keyed by file name (e.g. "creature.json"). */
   schemas: Record<string, unknown>;
 }
 
 let cache: Map<string, Kit> | null = null;
 
-/** Re-read on every call in dev would be wasteful; kits only change between deploys. */
 export function kits(): Map<string, Kit> {
   if (cache) return cache;
   cache = new Map();
@@ -54,7 +46,7 @@ export function kits(): Map<string, Kit> {
     const sdir = join(ROOT, id, "schemas");
     if (existsSync(sdir)) {
       for (const f of readdirSync(sdir).filter((f) => f.endsWith(".json"))) {
-        try { schemas[f] = JSON.parse(readFileSync(join(sdir, f), "utf8")); } catch { /* skip broken schema */ }
+        try { schemas[f] = JSON.parse(readFileSync(join(sdir, f), "utf8")); } catch {}
       }
     }
     cache.set(id, { id, doc, summary, schemas });
@@ -67,7 +59,6 @@ export function kitMenu(): string {
   return list.length ? list.map((k) => `- ${k.id}: ${k.summary.slice(0, 200)}`).join("\n") : "(no kits installed)";
 }
 
-/** Clear the cache (tests, hot reload). */
 export function resetKits() {
   cache = null;
 }

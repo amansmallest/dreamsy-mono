@@ -1,10 +1,3 @@
-/**
- * Browser playtests: the C++ web player (engine/build/web/dreamsy-player.html) in headless Chromium.
- * No server: Playwright answers every request from disk (page.route), like engine/tools/parity.mts.
- * The player runs in manual mode (?manual=1): this driver steps fixed 60 Hz ticks with
- * window.__dreamsy.step(n) up to each input event and screenshot, so times are GAME time and runs
- * are reproducible however slow the machine is. Real 2.5D: the player draws z, blocks and shadows.
- */
 import { existsSync, readFileSync } from "node:fs";
 import { extname, join, resolve } from "node:path";
 import { chromium, type Browser, type Page } from "playwright";
@@ -15,7 +8,6 @@ const HOST = "http://dreamsy.test";
 const KEY: Record<Control, string> = { left: "ArrowLeft", right: "ArrowRight", up: "ArrowUp", down: "ArrowDown", jump: "Space", action: "KeyE", action2: "KeyQ" };
 const MIME: Record<string, string> = { ".html": "text/html", ".js": "text/javascript", ".wasm": "application/wasm", ".dpk": "application/octet-stream", ".data": "application/octet-stream" };
 
-/** The web player build: $DREAMSY_WEB_BUILD, else engine/build/web (needs dreamsy-player.html and kits/). */
 export function webBuild(): string {
   const dir = resolve(process.env.DREAMSY_WEB_BUILD ?? join(REPO_ROOT, "engine/build/web"));
   if (!existsSync(join(dir, "dreamsy-player.html")) || !existsSync(join(dir, "kits"))) {
@@ -27,7 +19,6 @@ export function webBuild(): string {
 let sharedBrowser: Promise<Browser> | null = null;
 let idleTimer: ReturnType<typeof setTimeout> | null = null;
 let inUse = 0;
-/** Idle time before the shared browser closes itself (so scripts exit without calling closeBrowser). */
 export const BROWSER_IDLE_MS = 3000;
 function browser(): Promise<Browser> {
   if (idleTimer) { clearTimeout(idleTimer); idleTimer = null; }
@@ -55,7 +46,6 @@ async function routeFiles(page: Page, build: string, pack: Uint8Array) {
 
 export interface BrowserOptions extends StartAt { seed?: number; clock?: number; width?: number; height?: number }
 
-/** Real renderer in headless Chromium; JPEG screenshots at the requested game times. */
 export async function playtestBrowser(pkg: Package, timeline: TimelineStep[], shotTimes: number[], opts: BrowserOptions = {}): Promise<BrowserPlaytest> {
   const build = webBuild();
   const m = parseManifest(pkg.text("dreamsy.toml") ?? "").manifest;
@@ -70,8 +60,6 @@ export async function playtestBrowser(pkg: Package, timeline: TimelineStep[], sh
   try { page = await (await browser()).newPage({ viewport: { width, height }, deviceScaleFactor: 1 }); } catch (e) { release(); throw e; }
   const consoleErrors: string[] = [];
   page.on("console", (msg) => {
-    // The engine log goes to stderr (console.error) as "[level] text"; game logs are "[game] ..." and
-    // game script errors are reported by the headless run, so only engine errors count here.
     const text = msg.text();
     if (msg.type() === "error" && !/^\[(info|warn|debug)\]/.test(text) && !/\[game\]/.test(text)) consoleErrors.push(text.slice(0, 300));
   });
@@ -93,7 +81,7 @@ export async function playtestBrowser(pkg: Package, timeline: TimelineStep[], sh
         const target = Math.round(seconds * 60);
         while (ticks < target) {
           const ran = await page.evaluate((n) => (window as any).__dreamsy.step(n) as number, Math.min(30, target - ticks));
-          if (ran === 0) break; // paused
+          if (ran === 0) break;
           ticks += ran;
         }
       };
@@ -118,12 +106,11 @@ export async function playtestBrowser(pkg: Package, timeline: TimelineStep[], sh
       }
       for (const t of shotTimes) {
         events.push({ t, run: async () => {
-          // The page keeps drawing in real time; wait two frames so the last step is on screen.
           await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
           shots.push({ t, jpeg: new Uint8Array(await page.screenshot({ type: "jpeg", quality: 70 })) });
         } });
       }
-      events.sort((a, b) => a.t - b.t); // stable: same-time events keep timeline order
+      events.sort((a, b) => a.t - b.t);
       for (const e of events) {
         await stepTo(e.t);
         await e.run();

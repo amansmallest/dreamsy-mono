@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { failoverLLM, isOutOfCredit, type Provider } from "../src/failover.js";
-import { OpenAIError } from "../src/openai.js";
+import { failoverLLM, isOutOfCredit, type Provider } from "../src/llm/failover.js";
+import { OpenAIError } from "../src/llm/openai.js";
 
 const prov = (name: string, kind: Provider["kind"], fail?: Error): Provider & { calls: number } => {
   const p = {

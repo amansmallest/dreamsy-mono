@@ -1,28 +1,19 @@
 import { z } from "zod";
-import type { CostMeter } from "./models.js";
-import { MODELS, type StructuredLLM } from "./models.js";
+import type { CostMeter } from "../llm/models.js";
+import { MODELS, type StructuredLLM } from "../llm/models.js";
 import { GLOBAL, memId, scope, type Memory, type MemoryHit, type MemoryItem } from "./memory.js";
 
-/**
- * What the harness writes to and reads from Memory around each build round (retrieval, not
- * training): build lessons (global, no prompt text), remix records (user-scoped), outcomes (global).
- */
-
-/** Facts collected while the agent runs; one per generate() call (shared across an escalation). */
 export interface RunTrace {
   turns: number;
   reviews: { score: number; verdict: "ship" | "polish"; fixes: string[] }[];
   gateFailures: string[][];
-  /** First finish's final gate: passed? null when finish was never called. */
   finalGatePassedFirstTry: boolean | null;
   playtestRuns: number;
-  /** Distinct runtime script errors seen in playtests / final gates. */
   runtimeErrors: Set<string>;
   budgetHit: boolean;
   turnsHit: boolean;
   ops: Record<string, number>;
   reasons: string[];
-  /** Sprites drawn this run (asset id → description / library id it was adapted from). */
   sprites: Map<string, { description?: string; from?: string }>;
   spritesReused: number;
   memory: { ids: string[]; hits: number; lessonsUsed: number; remixUsed: number; fromBuilds: number };
@@ -36,7 +27,6 @@ export function newTrace(): RunTrace {
   };
 }
 
-/** Who/what a build is about; drives scoping and boosts. */
 export interface BuildCtx {
   userId?: string;
   gameId?: string;
@@ -48,7 +38,6 @@ export interface BuildCtx {
   genre: string | null;
 }
 
-/** Foundation kits aren't genres. */
 const FOUNDATION = new Set(["core", "progression", "juice", "combat", "ai", "procgen"]);
 export const primaryKit = (kits: string[]) => kits.find((k) => !FOUNDATION.has(k)) ?? kits[0] ?? null;
 
@@ -59,9 +48,7 @@ const buildScopes = (c: BuildCtx) => [
   ...(c.orientation ? [scope.orientation(c.orientation)] : []),
 ];
 
-// ---------- recall ----------
-
-const RECALL_CHARS = 6000; // ≈ 1.5k tokens
+const RECALL_CHARS = 6000;
 
 export async function recallForBuild(memory: Memory, ctx: BuildCtx, prompt: string, opts: { spriteLibrary: boolean }) {
   const boosts = { kits: ctx.kits, pack: ctx.pack ?? undefined, genre: ctx.genre ?? undefined, orientation: ctx.orientation ?? undefined, gameId: ctx.gameId };
@@ -95,8 +82,6 @@ export async function recallForBuild(memory: Memory, ctx: BuildCtx, prompt: stri
 
 const topicOf = (i: MemoryItem) => i.scopes.find((s) => s.startsWith("topic:"))?.slice(6) ?? i.kind;
 
-// ---------- write ----------
-
 const Lessons = z.object({
   genre: z.string().max(40),
   lessons: z.array(z.object({
@@ -118,19 +103,13 @@ export interface RoundRecord {
   artScore: number | null;
   costUsd: number;
   prompt: string;
-  /** Version this round edited (edits/remixes). */
   parent?: { gameId: string; version: number; remixOf?: { gameId: string; version: number } | null };
   filesChanged: { added: string[]; changed: string[]; removed: string[] };
-  /** notes.md head, for genre/lessons context (never stored). */
   notes?: string;
   maxTurns: number;
   maxUsd: number;
 }
 
-/**
- * After a round: outcome (global), remix record (user-scoped, for edits), Haiku lessons (global, no
- * prompt text), then consolidation of any tag that grew past the threshold. Never throws.
- */
 export async function writeBuildMemory(deps: { memory: Memory; llm: StructuredLLM; cost?: CostMeter; consolidateAbove?: number }, r: RoundRecord): Promise<{ lessons: number; consolidated: number; written: string[]; errors: string[] }> {
   const { memory } = deps;
   const written: string[] = [];
@@ -142,7 +121,6 @@ export async function writeBuildMemory(deps: { memory: Memory; llm: StructuredLL
     try { await memory.remember(item); written.push(item.id); } catch (e) { errors.push((e as Error).message); }
   };
 
-  // Genre + lessons first (genre tags the other records too).
   let lessons: z.infer<typeof Lessons>["lessons"] = [];
   const notable = t.reviews.some((v) => v.fixes.length) || t.gateFailures.length > 0 || t.runtimeErrors.size > 0 || t.budgetHit || t.turnsHit || !r.ok;
   if (notable) {
@@ -160,7 +138,7 @@ export async function writeBuildMemory(deps: { memory: Memory; llm: StructuredLL
         lessons = parsed.data.lessons;
         r.ctx.genre ??= parsed.data.genre.toLowerCase().replace(/[^a-z0-9-]/g, "") || null;
       }
-    } catch { /* lessons are best-effort */ }
+    } catch {}
   }
 
   const tags = buildScopes(r.ctx);
@@ -176,7 +154,6 @@ export async function writeBuildMemory(deps: { memory: Memory; llm: StructuredLL
     });
   }
 
-  // Outcome: global, no prompt text.
   await put({
     id: memId("outcome", stamp),
     kind: "outcome",
@@ -186,7 +163,6 @@ export async function writeBuildMemory(deps: { memory: Memory; llm: StructuredLL
     data: { ok: r.ok, artScore: r.artScore, costUsd: r.costUsd, turns: t.turns, kind: r.ctx.kind },
   });
 
-  // Remix record: edits/remixes only; holds the instruction → scoped to its user (and game).
   if (r.ctx.kind !== "new_game" && r.ctx.userId && r.parent) {
     const opsTxt = Object.entries(t.ops).map(([k, n]) => `${k}×${n}`).join(", ") || "no ops";
     const files = [...r.filesChanged.added.map((f) => `+${f}`), ...r.filesChanged.changed.map((f) => `~${f}`), ...r.filesChanged.removed.map((f) => `-${f}`)];
@@ -205,7 +181,6 @@ export async function writeBuildMemory(deps: { memory: Memory; llm: StructuredLL
     });
   }
 
-  // Recursive part: tags that grew past the threshold get merged into fewer, stronger lessons.
   let consolidated = 0;
   if (lessons.length) {
     for (const tag of tags.filter((s) => s.startsWith("kit:") || s.startsWith("pack:") || s.startsWith("genre:"))) {
@@ -228,20 +203,16 @@ function traceText(r: RoundRecord): string {
   ].filter(Boolean).join("\n\n");
 }
 
-// ---------- consolidation ----------
-
 const Merged = z.object({
   lessons: z.array(z.object({
     text: z.string().min(10).max(320),
     topic: z.enum(["art", "runtime", "playtest", "budget", "design", "content"]),
-    /** ids of the input lessons this one replaces (≥ 1). */
     supersedes: z.array(z.string()).min(1),
   })).max(20),
 });
 
 const MERGE_SYSTEM = `You maintain the lesson memory of an AI game builder. You get lessons (id, evidence count, text) that share a tag. Merge duplicates and near-duplicates into fewer, stronger, more specific lessons; drop vague or contradicted ones by superseding them with the better lesson. Keep each ≤ 40 words, imperative, generic. Every output lesson lists the input ids it replaces. Lessons you don't mention are kept as-is.`;
 
-/** When `tag` has more than `threshold` lessons, merge them with Haiku and supersede the originals. Returns lessons removed. */
 export async function consolidateLessons(deps: { memory: Memory; llm: StructuredLLM; cost?: CostMeter }, tag: string, threshold = 12): Promise<number> {
   const all = await deps.memory.recall(tag.split(":")[1] ?? tag, { kinds: ["lesson"], scopes: [tag], limit: 200 });
   if (all.length <= threshold) return 0;

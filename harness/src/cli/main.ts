@@ -13,6 +13,7 @@ import { ApiClient, runWorker } from "../jobs/worker.js";
 import { enginePlaytester } from "../engine/playtest.js";
 import { createMemory } from "../memory/memory.js";
 import { SpriteLibrary } from "../memory/sprites.js";
+import { cloudFromEnv, saveToCloud } from "../cloud.js";
 
 loadEnv();
 
@@ -23,7 +24,8 @@ const USAGE = `harness <command>
            SUPERMEMORY_API_KEY (optional): retrieval memory in Supermemory; else .data/memory. DREAMSY_MEMORY=0 disables
   local --prompt "..." --out <dir|zip> [--base <dir|zip>] [--image ref.png]... [--select id,id] [--rounds N]
                                  --rounds: keep building ("continue") until notes.md has no unchecked milestones (max N sessions)
-                                 run one generation locally (no API); prints events + cost`;
+                                 run one generation locally (no API); prints events + cost
+      env: DREAMSY_CLOUD_URL + DREAMSY_SAVE_KEY: also save every round to Dreamsy cloud (DREAMSY_CLOUD_GAME: existing game id)`;
 
 function arg(name: string): string | undefined {
   const i = process.argv.indexOf(`--${name}`);
@@ -97,6 +99,7 @@ if (cmd === "worker") {
   let pkg = base;
   let ok = false;
   let total = 0;
+  let cloudGameId: string | null = process.env.DREAMSY_CLOUD_GAME ?? null;
   for (let round = 1; round <= rounds; round++) {
     const isFirst = round === 1;
     const result = await generate(
@@ -117,6 +120,16 @@ if (cmd === "worker") {
     if (out.endsWith(".zip")) await writeFile(out, pkg.toZip());
     else await pkg.toDir(out);
     console.error(`  wrote ${out}`);
+    const cloud = cloudFromEnv();
+    if (cloud) {
+      try {
+        const saved = await saveToCloud(cloud, { gameId: cloudGameId, name: /^name\s*=\s*"([^"]+)"/m.exec(pkg.text("dreamsy.toml") ?? "")?.[1] ?? "Untitled game", pack: pkg.toPack(), label: isFirst ? prompt : `round ${round}`, thumbnail: result.thumbnail });
+        cloudGameId = saved.gameId;
+        console.error(`  saved to cloud: game ${saved.gameId} v${saved.version}`);
+      } catch (e) {
+        console.error(`  cloud save failed: ${(e as Error).message}`);
+      }
+    }
     const notes = pkg.text("notes.md") ?? "";
     if (!/\[ \]/.test(notes)) { console.error("  all milestones done"); break; }
   }

@@ -142,7 +142,7 @@ export async function simulate(pkg: Package, timeline: TimelineStep[], seconds: 
 
 export async function enginePlaytester(opts: { browser: boolean }): Promise<Playtester> {
   dreamsyTool();
-  const browser = opts.browser ? await import("./browser.js") : null;
+  const browser = opts.browser ? await import("./browser.js").catch(() => null) : null;
   return {
     simulate: (p, tl, secs, start) => simulate(p, tl, secs, { autoDialog: "first", ...start }),
     ...(browser ? { browser: (p: Package, tl: TimelineStep[], shots: number[], start?: StartAt) => browser.playtestBrowser(p, tl, shots, start) } : {}),

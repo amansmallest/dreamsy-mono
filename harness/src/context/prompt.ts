@@ -1,6 +1,6 @@
+import { repoPath } from "../paths.js";
 import { readFileSync } from "node:fs";
 import type { TastePack } from "./taste.js";
-import { createRequire } from "node:module";
 import type Anthropic from "@anthropic-ai/sdk";
 import {
   CATALOG,
@@ -14,8 +14,7 @@ import {
   validatePackage,
 } from "@dreamsy/format";
 
-const require = createRequire(import.meta.url);
-const LUAU_API = readFileSync(require.resolve("@dreamsy/format/LUAU_API.md"), "utf8");
+const LUAU_API = readFileSync(repoPath("format", "LUAU_API.md"), "utf8");
 
 function propSig(name: string, p: PropDef): string {
   const t = p.type;

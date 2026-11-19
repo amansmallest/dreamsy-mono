@@ -23,7 +23,8 @@ PLAYTEST_BROWSER_TEST=1 pnpm test   # also screenshots through the C++ web playe
 Build games from Claude Code, Claude Desktop or any MCP client with your own model; the server needs no key.
 
 ```sh
-claude mcp add -e DREAMSY_GAMES_DIR=$HOME/dreamsy-games dreamsy -- pnpm -s -C /path/to/dreamsy/harness mcp
+claude mcp add dreamsy -- npx -y dreamsy-mcp   # published package, built from packages/mcp
+claude mcp add -e DREAMSY_GAMES_DIR=$HOME/dreamsy-games dreamsy -- pnpm -s -C /path/to/dreamsy/harness mcp   # from a clone
 ```
 Then ask: "build a cozy frog platformer with dreamsy" (or use the `build_game` prompt). Tools and rules:
 docs/harness.md §5.4. It needs `dreamsy-tool` built; screenshots also need the web player (below).

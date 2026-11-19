@@ -53,3 +53,23 @@ client's model is the builder, on the user's own subscription or key; the server
   (`agent/tools/`), so the harness and MCP clients edit games the same way.
 - Games are folders under `DREAMSY_GAMES_DIR` (default: the server's working directory); paths outside it are refused.
 - Not exposed: `build_content` and `generate_image` (they need our model keys), the sprite library and memory.
+
+### 5.5 Site editor: builds on the user's key (2026-11-19)
+
+The website (`apps/site`, Next.js) has an editor at `/editor` that builds games without `services/api`:
+
+- Games are folders in `games/mine` (or `DREAMSY_GAMES_DIR`); editor state (build history, versions as `.dpk`, thumbnail)
+  lives in `<games>/.editor/<id>/`.
+- A build is one `harness/src/cli/editor.ts` child process started by a Next route handler. Input `{ dir, prompt, images }`
+  on stdin; output is JSON lines (`event` per progress event, then one `result`); on success the package replaces the
+  folder's files. The model keys come only from `DREAMSY_EDITOR_{ANTHROPIC,OPENAI,GEMINI}_KEY` in the child's environment.
+- Keys are stored per browser in httpOnly, SameSite=Strict cookies; the server reads them to start a build and never writes
+  them to disk. Every successful build is snapshotted with `dreamsy-tool pack`, and a version can be restored with
+  `dreamsy-tool unpack`. The preview is the C++ web player (`engine/build/web`) served at `/player/` and pointed at
+  `/api/games/<id>/pack` with `?pkg=`.
+
+Cloud save and publishing (`services/cloud`, Cloudflare Worker + R2 + D1, 2026-11-19): games are saved per browser with a
+random save key (no accounts), every version is a content-addressed `.dpk` in R2, and publishing gives a public slug with
+an optional author name and link (public) and email (private). See `services/cloud/README.md`. Builds upload by
+default: `harness/src/cloud.ts` saves each successful build (editor and `local`) when `DREAMSY_CLOUD_URL` and a save key
+are set; a failed upload never fails the build (event `cloud.failed`, the local copy stays).

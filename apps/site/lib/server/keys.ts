@@ -29,13 +29,3 @@ export async function removeKey(provider: Provider) {
   (await cookies()).delete(cookieName(provider));
 }
 
-const SAVE_COOKIE = "dreamsy_save";
-
-export async function cloudSaveKey(): Promise<string> {
-  const jar = await cookies();
-  const existing = jar.get(SAVE_COOKIE)?.value;
-  if (existing && /^[A-Za-z0-9_-]{32,128}$/.test(existing)) return existing;
-  const key = Buffer.from(crypto.getRandomValues(new Uint8Array(32))).toString("base64url");
-  jar.set(SAVE_COOKIE, key, { httpOnly: true, sameSite: "strict", secure: process.env.NODE_ENV === "production", path: "/", maxAge: 60 * 60 * 24 * 365 * 5 });
-  return key;
-}

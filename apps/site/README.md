@@ -18,8 +18,13 @@ Set `SITE_URL` (for example `https://dreamsy.example`) so canonical links, Open 
 `sitemap.xml` use the real domain; it falls back to `http://127.0.0.1:3100`. Regenerate the OG image and app icons
 with `pnpm -C apps/site brand` after changing the logo (`components/Logo.tsx`) or the headline.
 
-## Cloud save
+## Cloud save and the library
 
-Set `DREAMSY_CLOUD_URL` (the deployed `services/cloud` Worker) and every successful editor build is also uploaded to the
-cloud, under a save key the server creates per browser (httpOnly cookie `dreamsy_save`). Without it, games stay only in
-`games/mine`. The harness `local` command does the same with `DREAMSY_CLOUD_URL` + `DREAMSY_SAVE_KEY`.
+Every successful build, sprite or music edit and restore is also saved to the Dreamsy cloud (`services/cloud`, default
+`https://dreamsy-cloud.tofu-develops.workers.dev`; override with `DREAMSY_CLOUD_URL`, turn off with `DREAMSY_CLOUD=0`).
+Games belong to this computer's save key in `~/.dreamsy/config.json`, shared with the MCP server and the harness CLI, so
+games made in any of them show up together. `~/.dreamsy/games.json` maps local game folders to cloud games.
+
+The games page has two tabs: **Your games** (local, with cloud and published badges, plus cloud games not on this
+computer) and **Library** (everything published, with search, the total, Download .dpk and Remix in editor). The
+workspace's **Publish** button asks for a public creator name and link and an optional private email.

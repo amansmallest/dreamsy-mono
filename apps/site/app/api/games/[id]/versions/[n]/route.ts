@@ -1,4 +1,5 @@
 import { activeRun } from "@/lib/server/builds";
+import { syncGame } from "@/lib/server/cloud";
 import { restore, snapshot } from "@/lib/server/games";
 import { fail, HttpError } from "@/lib/server/paths";
 
@@ -13,6 +14,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     if (!Number.isInteger(version) || version < 0) throw new HttpError(400, "Bad version");
     await restore(id, version);
     await snapshot(id, `Restored version ${version}`);
+    await syncGame(id, `Restored version ${version}`).catch(() => null);
     return Response.json({ ok: true });
   } catch (e) {
     return fail(e);

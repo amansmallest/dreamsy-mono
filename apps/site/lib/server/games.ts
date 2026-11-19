@@ -31,10 +31,10 @@ export async function saveHistory(id: string, builds: BuildRecord[]) {
 }
 
 export async function meta(id: string) {
-  return readJson(join(dataDir(id), "meta.json"), {} as { name?: string; created?: number; cloudId?: string });
+  return readJson(join(dataDir(id), "meta.json"), {} as { name?: string; created?: number; from?: { slug: string; name: string; author: string } });
 }
 
-export async function setMeta(id: string, patch: { cloudId?: string }) {
+export async function setMeta(id: string, patch: { from?: { slug: string; name: string; author: string } }) {
   await mkdir(dataDir(id), { recursive: true });
   await writeFile(join(dataDir(id), "meta.json"), JSON.stringify({ ...(await meta(id)), ...patch }));
 }

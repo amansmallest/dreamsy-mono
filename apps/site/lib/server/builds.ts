@@ -2,7 +2,8 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import type { BuildEvent, BuildRecord, Provider, StreamMessage } from "../editor-types";
-import { history, meta, saveHistory, setMeta, snapshot } from "./games";
+import { cloudUrl, linkCloud, linkedCloudId, saveKey } from "./cloud";
+import { history, meta, saveHistory, snapshot } from "./games";
 import { dataDir, gameDir, HARNESS_DIR, HttpError } from "./paths";
 
 interface Run {
@@ -34,7 +35,7 @@ async function persist(id: string, record: BuildRecord) {
   await saveHistory(id, all);
 }
 
-export async function startBuild(id: string, prompt: string, images: { mediaType: string; base64: string }[], keys: Partial<Record<Provider, string>>, saveKey?: string) {
+export async function startBuild(id: string, prompt: string, images: { mediaType: string; base64: string }[], keys: Partial<Record<Provider, string>>) {
   if (runs.has(id)) throw new HttpError(409, "A build is already running for this game");
   if (!keys.anthropic && !keys.openai) throw new HttpError(400, "Add an Anthropic or OpenAI key in settings first");
   const text = prompt.trim();
@@ -44,6 +45,8 @@ export async function startBuild(id: string, prompt: string, images: { mediaType
   if (prior.length === 0) await snapshot(id, "Before Dreamsy").catch(() => null);
   await mkdir(dataDir(id), { recursive: true });
 
+  const cloud = cloudUrl();
+  const key = cloud ? await saveKey() : "";
   const record: BuildRecord = { id: `b${Date.now().toString(36)}`, prompt: text, images: images.length, at: Date.now(), status: "running", events: [] };
   const child = spawn(process.execPath, ["--import", "tsx", "src/cli/editor.ts"], {
     cwd: HARNESS_DIR,
@@ -55,8 +58,8 @@ export async function startBuild(id: string, prompt: string, images: { mediaType
       DREAMSY_EDITOR_ANTHROPIC_KEY: keys.anthropic ?? "",
       DREAMSY_EDITOR_OPENAI_KEY: keys.openai ?? "",
       DREAMSY_EDITOR_GEMINI_KEY: keys.gemini ?? "",
-      DREAMSY_CLOUD_URL: saveKey ? (process.env.DREAMSY_CLOUD_URL ?? "") : "",
-      DREAMSY_SAVE_KEY: saveKey ?? "",
+      DREAMSY_CLOUD_URL: cloud ?? "",
+      DREAMSY_SAVE_KEY: key,
     } as NodeJS.ProcessEnv,
     stdio: ["pipe", "pipe", "pipe"],
   });
@@ -65,7 +68,7 @@ export async function startBuild(id: string, prompt: string, images: { mediaType
   const send = (m: StreamMessage) => run.listeners.forEach((fn) => fn(m));
 
   const m = await meta(id);
-  child.stdin!.end(JSON.stringify({ dir: gameDir(id), prompt: text, images, thumbnail: join(dataDir(id), "thumb.jpg"), cloud: { gameId: m.cloudId ?? null, name: m.name ?? id } }));
+  child.stdin!.end(JSON.stringify({ dir: gameDir(id), prompt: text, images, thumbnail: join(dataDir(id), "thumb.jpg"), cloud: { gameId: await linkedCloudId(id), name: m.name ?? id } }));
 
   let buffer = "";
   let stderr = "";
@@ -111,7 +114,7 @@ export async function startBuild(id: string, prompt: string, images: { mediaType
       record.version = (await snapshot(id, text, record.id).catch(() => null)) ?? undefined;
       if (result.cloud) {
         record.cloud = result.cloud;
-        if ("gameId" in result.cloud) await setMeta(id, { cloudId: result.cloud.gameId });
+        if ("gameId" in result.cloud) await linkCloud(id, result.cloud.gameId);
       }
     } else {
       record.status = "failed";

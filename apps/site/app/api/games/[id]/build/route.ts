@@ -1,5 +1,5 @@
 import { activeRun, cancelBuild, startBuild, subscribe } from "@/lib/server/builds";
-import { cloudSaveKey, readKeys } from "@/lib/server/keys";
+import { readKeys } from "@/lib/server/keys";
 import { fail, gameDir, HttpError } from "@/lib/server/paths";
 import type { StreamMessage } from "@/lib/editor-types";
 
@@ -18,7 +18,7 @@ export async function POST(req: Request, { params }: Ctx) {
     const body = (await req.json()) as { prompt?: string; images?: Image[] };
     const images = (body.images ?? []).slice(0, 6);
     if (images.some((i) => !IMAGE_TYPES.has(i.mediaType) || typeof i.base64 !== "string" || i.base64.length > 8_000_000)) throw new HttpError(400, "Images must be PNG, JPEG or WebP under 6 MB");
-    const record = await startBuild(id, body.prompt ?? "", images, await readKeys(), process.env.DREAMSY_CLOUD_URL ? await cloudSaveKey() : undefined);
+    const record = await startBuild(id, body.prompt ?? "", images, await readKeys());
     return Response.json({ build: record });
   } catch (e) {
     return fail(e);

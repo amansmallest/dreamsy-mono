@@ -1,5 +1,42 @@
 import type { BuildRecord, GameDetail, GameSummary, KeyStatus, Provider } from "@/lib/editor-types";
 
+export interface LibraryGame {
+  slug: string;
+  name: string;
+  author: string;
+  link: string | null;
+  remix: boolean;
+  plays: number;
+  updated: number;
+  hasThumb: boolean;
+}
+
+export interface MineGame {
+  id: string;
+  name: string;
+  updated: number;
+  latest: number | null;
+  published: string | null;
+  hasThumb: boolean;
+  localId: string | null;
+}
+
+export interface Publication {
+  slug: string;
+  version: number;
+  author: string;
+  link: string;
+  email: string;
+  remix: number;
+  plays: number;
+}
+
+export interface CloudStatus {
+  cloudId: string | null;
+  versions: number;
+  publication: Publication | null;
+}
+
 async function call<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, { ...init, headers: { "content-type": "application/json", ...init?.headers } });
   const body = await res.json().catch(() => ({}));
@@ -17,6 +54,15 @@ export const api = {
   cancel: (id: string) => call(`/api/games/${id}/build`, { method: "DELETE" }),
   saveFile: (id: string, path: string, content: string) => call(`/api/games/${id}/file`, { method: "PUT", body: JSON.stringify({ path, content }) }),
   restore: (id: string, v: number) => call(`/api/games/${id}/versions/${v}`, { method: "POST" }),
+  library: (q: string, before?: number | null) => call<{ games: LibraryGame[]; total: number; next: number | null }>(`/api/library?q=${encodeURIComponent(q)}${before ? `&before=${before}` : ""}`),
+  importLibrary: (slug: string) => call<{ id: string }>(`/api/library/${slug}/import`, { method: "POST" }),
+  mine: () => call<{ games: MineGame[] }>("/api/cloud/mine"),
+  importMine: (cloudId: string) => call<{ id: string }>(`/api/cloud/mine/${cloudId}/import`, { method: "POST" }),
+  cloudStatus: (id: string) => call<CloudStatus>(`/api/games/${id}/publish`),
+  publish: (id: string, info: { author: string; link: string; email: string; remix: boolean }) =>
+    call<{ status: CloudStatus }>(`/api/games/${id}/publish`, { method: "POST", body: JSON.stringify(info) }),
+  unpublish: (id: string) => call<CloudStatus>(`/api/games/${id}/publish`, { method: "DELETE" }),
+  sync: (id: string) => call(`/api/games/${id}/sync`, { method: "POST" }),
   keys: () => call<KeyStatus>("/api/keys"),
   saveKey: (provider: Provider, key: string) => call<KeyStatus>("/api/keys", { method: "POST", body: JSON.stringify({ provider, key }) }),
   removeKey: (provider: Provider) => call<KeyStatus>(`/api/keys?provider=${provider}`, { method: "DELETE" }),

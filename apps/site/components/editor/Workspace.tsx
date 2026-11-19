@@ -5,9 +5,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { BuildEvent, BuildRecord, GameDetail, KeyStatus, StreamMessage } from "@/lib/editor-types";
 import { timeline } from "@/lib/timeline";
 import { Logo } from "../Logo";
-import { ago, api, fileToImage, hasBuildKey } from "./api";
+import { ago, api, fileToImage, hasBuildKey, type CloudStatus } from "./api";
 import { KeysDialog } from "./KeysDialog";
 import { Music } from "./Music";
+import { PublishDialog } from "./PublishDialog";
 import { Sprites } from "./Sprites";
 
 const CHIPS = ["Make it harder", "Add a boss fight", "More juice and particles", "Add a new level", "Polish the art", "Fix the controls"];
@@ -25,6 +26,8 @@ export function Workspace({ id }: { id: string }) {
   const [error, setError] = useState<string | null>(null);
   const [keys, setKeys] = useState<KeyStatus | null>(null);
   const [keysOpen, setKeysOpen] = useState(false);
+  const [publishOpen, setPublishOpen] = useState(false);
+  const [cloud, setCloud] = useState<CloudStatus | null>(null);
   const [live, setLive] = useState<{ buildId: string; events: BuildEvent[] } | null>(null);
   const [running, setRunning] = useState(false);
   const [stamp, setStamp] = useState(() => Date.now());
@@ -73,6 +76,10 @@ export function Workspace({ id }: { id: string }) {
   }, [id, refresh]);
 
   useEffect(() => {
+    api.cloudStatus(id).then(setCloud).catch(() => {});
+  }, [id, game?.versions.length]);
+
+  useEffect(() => {
     api.keys().then(setKeys).catch(() => {});
     let es: EventSource | null = null;
     refresh().then((r) => {
@@ -114,6 +121,10 @@ export function Workspace({ id }: { id: string }) {
         <span className="ws-sep" />
         {game ? <GameName id={id} name={game.name} onSaved={refresh} /> : <span className="muted">Loading…</span>}
         <span className="spacer" />
+        {cloud?.cloudId && <span className="cloud-chip" title={`${cloud.versions} versions saved to the Dreamsy cloud`}>☁ saved</span>}
+        <button type="button" className="btn btn-sm" disabled={!built || running} onClick={() => setPublishOpen(true)}>
+          {cloud?.publication ? "Published ✓" : "Publish"}
+        </button>
         <button type="button" className={`btn btn-sm ${hasBuildKey(keys) ? "btn-light" : ""}`} onClick={() => setKeysOpen(true)}>
           {hasBuildKey(keys) ? "API keys" : "Add API key"}
         </button>
@@ -191,6 +202,7 @@ export function Workspace({ id }: { id: string }) {
         </aside>
       </div>
       <KeysDialog open={keysOpen} onClose={() => setKeysOpen(false)} onChange={setKeys} />
+      {game && <PublishDialog id={id} name={game.name} open={publishOpen} onClose={() => setPublishOpen(false)} onChange={setCloud} />}
     </div>
   );
 }

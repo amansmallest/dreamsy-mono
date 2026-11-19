@@ -12,7 +12,30 @@ It runs on your machine. Your assistant's own model does the building, so there 
 claude mcp add dreamsy -- npx -y dreamsy-mcp
 ```
 
-Other clients: run `npx -y dreamsy-mcp` as a stdio server. Then ask something like
+Needs Node 20+. The first run downloads the package and the engine binary for your machine; nothing to build.
+
+**Claude Desktop** (`claude_desktop_config.json`), **Cursor** (`~/.cursor/mcp.json`), **Windsurf**
+(`~/.codeium/windsurf/mcp_config.json`), **Gemini CLI** (`~/.gemini/settings.json`):
+
+```json
+{ "mcpServers": { "dreamsy": { "command": "npx", "args": ["-y", "dreamsy-mcp"] } } }
+```
+
+**VS Code** (`.vscode/mcp.json`):
+
+```json
+{ "servers": { "dreamsy": { "type": "stdio", "command": "npx", "args": ["-y", "dreamsy-mcp"] } } }
+```
+
+**Codex CLI** (`~/.codex/config.toml`):
+
+```toml
+[mcp_servers.dreamsy]
+command = "npx"
+args = ["-y", "dreamsy-mcp"]
+```
+
+Any other MCP client: run `npx -y dreamsy-mcp` as a stdio server. Then ask something like
 “build a cozy frog platformer with dreamsy”.
 
 Games are saved as folders in the directory the server starts in. Set `DREAMSY_GAMES_DIR` to keep them elsewhere:
@@ -36,8 +59,9 @@ claude mcp add -e DREAMSY_GAMES_DIR=$HOME/dreamsy-games dreamsy -- npx -y dreams
 
 ## Platforms
 
-Prebuilt engine binaries: macOS (Apple Silicon, macOS 12+) and Linux x64. Elsewhere, build `dreamsy-tool` from source
-(see the repo's `engine/README.md`) and set `DREAMSY_TOOL` to its path.
+Prebuilt engine binaries: macOS 12+ (Apple Silicon and Intel) and Linux (x64 and arm64, glibc 2.35+, e.g. Ubuntu
+22.04+). On Windows, use WSL. Elsewhere, build `dreamsy-tool` from source (see the repo's `engine/README.md`) and set
+`DREAMSY_TOOL` to its path.
 
 Screenshots during playtests need Playwright with Chromium (`npm i -g playwright && npx playwright install chromium`);
 without it, playtests still run and report errors, scenes, controls and sound.

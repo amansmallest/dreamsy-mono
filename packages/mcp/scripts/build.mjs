@@ -41,13 +41,27 @@ const web = join(repo, "engine/build/web");
 if (existsSync(join(web, "dreamsy-player.wasm"))) {
   mkdirSync(join(data, "engine/build/web"), { recursive: true });
   for (const f of ["dreamsy-player.html", "dreamsy-player.js", "dreamsy-player.wasm"]) cpSync(join(web, f), join(data, "engine/build/web", f));
+  if (existsSync(join(web, "kits"))) cpSync(join(web, "kits"), join(data, "engine/build/web/kits"), { recursive: true, filter: (src) => !src.includes(".DS_Store") });
 }
 
-const mac = join(repo, "engine/build/npm-darwin-arm64/dreamsy-tool");
-if (existsSync(mac)) {
-  cpSync(mac, join(pkg, "npm/darwin-arm64/bin/dreamsy-tool"));
-  chmodSync(join(pkg, "npm/darwin-arm64/bin/dreamsy-tool"), 0o755);
-  execFileSync("strip", ["-x", join(pkg, "npm/darwin-arm64/bin/dreamsy-tool")]);
+const native = join(pkg, "native");
+rmSync(native, { recursive: true, force: true });
+const binaries = {
+  "darwin-arm64": join(repo, "engine/build/npm-darwin-arm64/dreamsy-tool"),
+  "darwin-x64": join(repo, "engine/build/npm-darwin-x64/dreamsy-tool"),
+  "linux-x64": join(pkg, "prebuilt/linux-x64/dreamsy-tool"),
+  "linux-arm64": join(pkg, "prebuilt/linux-arm64/dreamsy-tool"),
+};
+for (const [plat, src] of Object.entries(binaries)) {
+  if (!existsSync(src)) {
+    console.warn(`missing engine binary for ${plat}: ${src}`);
+    continue;
+  }
+  const out = join(native, plat, "dreamsy-tool");
+  mkdirSync(dirname(out), { recursive: true });
+  cpSync(src, out);
+  chmodSync(out, 0o755);
+  if (plat.startsWith("darwin")) execFileSync("strip", ["-x", out]);
 }
 console.log("built dist/server.mjs and data/");
 
@@ -86,9 +100,5 @@ const jsNotices = [...jsPackages].sort(([a], [b]) => a.localeCompare(b)).flatMap
 const header = "Third-party software included in this package and its licenses.\nDreamsy's own code is under the PolyForm Noncommercial License 1.0.0 (see LICENSE).\n\n";
 const engine = engineNotices();
 writeFileSync(join(pkg, "THIRD-PARTY-NOTICES.txt"), header + [...jsNotices, ...engine].join("\n"));
-for (const plat of ["darwin-arm64", "linux-x64"]) {
-  writeFileSync(join(pkg, "npm", plat, "THIRD-PARTY-NOTICES.txt"), header + engine.join("\n"));
-  cpSync(join(repo, "LICENSE"), join(pkg, "npm", plat, "LICENSE"));
-}
 cpSync(join(repo, "LICENSE"), join(pkg, "LICENSE"));
 console.log(`notices: ${jsNotices.length} bundled JS packages, ${engine.length} engine libraries`);

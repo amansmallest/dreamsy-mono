@@ -1,9 +1,8 @@
 node_modules
 dist
 data
+native
+prebuilt
 *.tgz
-npm/*/bin/
 LICENSE
 THIRD-PARTY-NOTICES.txt
-npm/*/LICENSE
-npm/*/THIRD-PARTY-NOTICES.txt

@@ -170,7 +170,8 @@ EntityId Host::tap_world(double x, double y) {
   const Entity* hit = world_.get(best);
   if (!hit) return {};
   if (best_cell && hit->tiles) {
-    const auto [c, r] = *best_cell;
+    const int c = best_cell->first;
+    const int r = best_cell->second;
     const world::TileKind* k = hit->tiles->kind_at(c, r);
     fire(best, "tileTapped", [&](lua_State* L) {
       lua_pushnumber(L, c);

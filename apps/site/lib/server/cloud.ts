@@ -29,6 +29,8 @@ async function writePrivate(path: string, value: unknown) {
 
 /** This computer's save key, shared with the MCP server and the harness CLI (~/.dreamsy/config.json). */
 export async function saveKey(): Promise<string> {
+  const fromEnv = process.env.DREAMSY_SAVE_KEY?.trim();
+  if (fromEnv && /^[A-Za-z0-9_-]{32,128}$/.test(fromEnv)) return fromEnv;
   const path = join(home(), "config.json");
   const cfg = await readJson<{ saveKey?: string }>(path, {});
   if (cfg.saveKey && /^[A-Za-z0-9_-]{32,128}$/.test(cfg.saveKey)) return cfg.saveKey;

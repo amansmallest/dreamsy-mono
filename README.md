@@ -226,6 +226,12 @@ Engine builds, tests and conformance checks: [engine/README.md](engine/README.md
 - `third_party/` is vendored; don't modify it.
 - Each package has its own README with the details.
 
+## ✦ Contributing
+
+Bug reports, kits, example games and fixes are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md), the
+[Code of Conduct](CODE_OF_CONDUCT.md) and [SECURITY.md](SECURITY.md) for reporting vulnerabilities. Changes are listed
+in [CHANGELOG.md](CHANGELOG.md).
+
 ## ✦ License
 
 Dreamsy's own code is under the [PolyForm Noncommercial License 1.0.0](LICENSE): free to use, change and share for

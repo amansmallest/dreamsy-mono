@@ -55,7 +55,11 @@ claude mcp add -e DREAMSY_GAMES_DIR=$HOME/dreamsy-games dreamsy -- npx -y dreams
 | `apply_ops`, `draw_sprite` | edit a game; a batch applies only if the package stays valid |
 | `playtest` | run the game headless (screenshots too when `playwright` is installed) |
 | `check_game` | the release check: valid package and a smoke run with no script errors |
-| `export_game` | write a `.dpk` file you can play and share |
+| `export_game` | write a `.dpk` file you can play and share; also saves it to the Dreamsy cloud |
+| `publish_game` | put the game in the public Dreamsy library with a creator name and link (email optional, private) |
+
+Games save to the Dreamsy cloud under a save key kept in `~/.dreamsy/config.json` (no account; the same key the Dreamsy
+editor uses on this computer). Set `DREAMSY_CLOUD=0` to keep everything local.
 
 ## Platforms
 

@@ -19,7 +19,7 @@ describe("MCP server", () => {
     await client.connect(new StdioClientTransport({
       command: process.execPath,
       args: ["--import", "tsx", join(import.meta.dirname, "../src/mcp/server.ts")],
-      env: { ...process.env, DREAMSY_GAMES_DIR: games, PLAYTEST_BROWSER: "0" } as Record<string, string>,
+      env: { ...process.env, DREAMSY_GAMES_DIR: games, PLAYTEST_BROWSER: "0", DREAMSY_CLOUD: "0" } as Record<string, string>,
       stderr: "ignore",
     }));
   }, 30_000);

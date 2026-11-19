@@ -72,7 +72,10 @@ Cloud save and publishing (`services/cloud`, Cloudflare Worker + R2 + D1, 2026-1
 random save key (no accounts), every version is a content-addressed `.dpk` in R2, and publishing gives a public slug with
 an optional author name and link (public) and email (private). See `services/cloud/README.md`. Builds upload by
 default: `harness/src/cloud.ts` saves each successful build (editor and `local`) when `DREAMSY_CLOUD_URL` and a save key
-are set; a failed upload never fails the build (event `cloud.failed`, the local copy stays).
+are set; a failed upload never fails the build (event `cloud.failed`, the local copy stays). The editor, the MCP server
+(`export_game` saves, `publish_game` publishes) and the CLI share one save key per computer in `~/.dreamsy/config.json`
+and map local folders to cloud games in `~/.dreamsy/games.json`. The Worker also caps each network at 300 MB of new data
+a day and each save key at 2 GB, on top of the global 500 GB / 3M writes budget.
 
 Music (2026-11-19): the builder calls `compose_music` (`harness/src/agent/tools/music.ts`), which asks a smaller model (Haiku)
 for several original chiptune tracks in `data/music/*.json` (docs/format.md, LUAU_API.md "Music"), one per role (title, level,

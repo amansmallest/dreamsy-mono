@@ -11,6 +11,7 @@ import { getEntities, readFiles } from "../agent/tools/files.js";
 import { playtest as playtestTool } from "../agent/tools/playtest.js";
 import { drawSprite } from "../agent/tools/sprites.js";
 import { COMPOSER_GUIDE } from "../agent/tools/music.js";
+import { linkedGame, linkGame, localCloud, publicPackageUrl, publishToCloud, saveToCloud } from "../cloud.js";
 import type { Tool, ToolCtx, ToolOutput } from "../agent/tools/tool.js";
 import { Workspace } from "../agent/workspace.js";
 import { kitMenu, kits } from "../context/kits.js";
@@ -29,7 +30,7 @@ loadEnv();
 
 const ROOT = resolve(process.env.DREAMSY_GAMES_DIR ?? process.cwd());
 const INSTRUCTIONS = `Dreamsy builds 2D and 2.5D games that run in the Dreamsy C++ engine. You are the game designer and programmer; these tools are the engine.
-Workflow: dreamsy_options (kits, styles, packs) → create_game → dreamsy_guide (the full format, entity catalog, Luau API and kit docs: read it before editing) → build with apply_ops and draw_sprite → playtest to see it → check_game until it passes → export_game.
+Workflow: dreamsy_options (kits, styles, packs) → create_game → dreamsy_guide (the full format, entity catalog, Luau API and kit docs: read it before editing) → build with apply_ops and draw_sprite → playtest to see it → check_game until it passes → export_game (also saves it to the Dreamsy cloud) → publish_game if the user wants it in the public library.
 Games are folders under ${ROOT}; every tool takes the game's path relative to it.`;
 
 type Content = { type: "text"; text: string } | { type: "image"; data: string; mimeType: string };
@@ -80,7 +81,7 @@ function toResult(out: ToolOutput): Result {
   return { content: [{ type: "text", text: out.text }, ...(out.images ?? []).map(jpeg)], ...(out.isError ? { isError: true } : {}) };
 }
 
-const server = new McpServer({ name: "dreamsy", version: "0.1.0" }, { instructions: INSTRUCTIONS });
+const server = new McpServer({ name: "dreamsy", version: "0.1.3" }, { instructions: INSTRUCTIONS });
 
 function guarded<A>(fn: (args: A) => Promise<Result>) {
   return async (args: A): Promise<Result> => {
@@ -202,7 +203,55 @@ server.registerTool("export_game", {
   const file = out ? gameDir(out) : `${dir}.dpk`;
   const bytes = pkg.toPack();
   await writeFile(file, bytes);
-  return text(`Wrote ${file} (${(bytes.byteLength / 1024).toFixed(0)} KB, package id ${pkg.contentHash().slice(0, 16)}).\nPlay it: serve the folder holding the .dpk and open the web player with ?pkg=<its url>, or run python3 engine/tools/make_play_page.py <game folder> for a local picker.`);
+  const cloud = await cloudSave(dir, pkg, "export");
+  return text(`Wrote ${file} (${(bytes.byteLength / 1024).toFixed(0)} KB, package id ${pkg.contentHash().slice(0, 16)}).\n${cloud}\nPlay it: serve the folder holding the .dpk and open the web player with ?pkg=<its url>. To share it in the Dreamsy library, call publish_game.`);
+}));
+
+const gameName = (pkg: Package) => /^name\s*=\s*"([^"]+)"/m.exec(pkg.text("dreamsy.toml") ?? "")?.[1] ?? "Untitled game";
+
+async function cover(pkg: Package): Promise<Uint8Array | undefined> {
+  const pt = await engine();
+  if (!pt.browser) return undefined;
+  try {
+    const r = await pt.browser(pkg, [{ t: 0.4, tap: [360, 900] }], [3]);
+    return r.shots[0]?.jpeg;
+  } catch {
+    return undefined;
+  }
+}
+
+async function cloudSave(dir: string, pkg: Package, label: string): Promise<string> {
+  const cfg = localCloud();
+  if (!cfg) return "Cloud save is off (DREAMSY_CLOUD=0).";
+  try {
+    const saved = await saveToCloud(cfg, { gameId: linkedGame(dir), name: gameName(pkg), pack: pkg.toPack(), label, thumbnail: await cover(pkg) });
+    linkGame(dir, saved.gameId);
+    return `Saved to the Dreamsy cloud as version ${saved.version}.`;
+  } catch (e) {
+    return `Cloud save failed (${(e as Error).message}); the local copy is fine.`;
+  }
+}
+
+server.registerTool("publish_game", {
+  title: "Publish to the Dreamsy library",
+  description: "Save the game to the Dreamsy cloud and publish it in the public library so anyone can find, play, download and remix it. Ask the user first, and ask what creator name (and optional link) to show. The email is optional and stays private.",
+  inputSchema: {
+    game: z.string(),
+    author: z.string().max(40).optional().describe("Creator name shown publicly."),
+    link: z.string().max(200).optional().describe("Optional public link (http/https), e.g. the creator's site."),
+    email: z.string().max(200).optional().describe("Optional, private: never shown publicly."),
+    remix: z.boolean().optional().describe("Let others remix it (default true)."),
+  },
+}, guarded(async ({ game, author, link, email, remix }) => {
+  const cfg = localCloud();
+  if (!cfg) return text("Cloud is off (DREAMSY_CLOUD=0); nothing published.", true);
+  const { dir, pkg } = await load(game);
+  const gate = await finalGate(pkg, await engine());
+  if (!gate.ok) return text(`Run check_game and fix these first:\n${gate.errors.join("\n")}`, true);
+  const saved = await saveToCloud(cfg, { gameId: linkedGame(dir), name: gameName(pkg), pack: pkg.toPack(), label: "publish", thumbnail: await cover(pkg) });
+  linkGame(dir, saved.gameId);
+  const pub = await publishToCloud(cfg, saved.gameId, { author, link, email, remix });
+  return text(`Published "${gameName(pkg)}" in the Dreamsy library (id ${pub.slug}, version ${pub.version})${author ? ` by ${author}` : ""}.\nPackage: ${publicPackageUrl(cfg, pub.slug)}\nPublishing again updates it to the latest version.`);
 }));
 
 server.registerPrompt("build_game", {

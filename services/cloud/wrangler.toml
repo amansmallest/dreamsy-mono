@@ -8,6 +8,9 @@ MAX_PACK_BYTES = "8000000"
 # hard budget: uploads stop past these, keeping R2 at most ~$17/month (storage $0.015/GB, writes $4.50/M)
 MAX_STORAGE_GB = "500"
 MAX_MONTHLY_WRITES = "3000000"
+# abuse limits: new data per network per day, and total per save key
+MAX_IP_MB_PER_DAY = "300"
+MAX_OWNER_MB = "2000"
 
 [[r2_buckets]]
 binding = "GAMES"

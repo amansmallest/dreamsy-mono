@@ -5,6 +5,8 @@ export interface Env {
   MAX_PACK_BYTES: string;
   MAX_STORAGE_GB: string;
   MAX_MONTHLY_WRITES: string;
+  MAX_IP_MB_PER_DAY: string;
+  MAX_OWNER_MB: string;
 }
 
 class HttpError extends Error {
@@ -62,19 +64,36 @@ async function limit(env: Env, bucket: string, max: number, windowMs: number) {
 
 const month = () => new Date().toISOString().slice(0, 7);
 
-async function budget(env: Env, bytes: number) {
-  const maxBytes = (Number(env.MAX_STORAGE_GB) || 500) * 1e9;
-  const maxWrites = Number(env.MAX_MONTHLY_WRITES) || 3_000_000;
-  const rows = await env.DB.prepare("SELECT key, value FROM usage WHERE key IN ('bytes', ?1)").bind(`writes:${month()}`).all<{ key: string; value: number }>();
-  const get = (k: string) => rows.results.find((r) => r.key === k)?.value ?? 0;
-  if (get("bytes") + bytes > maxBytes || get(`writes:${month()}`) + 1 > maxWrites) {
-    throw new HttpError(507, "Dreamsy cloud is full for now; your game is still saved on your computer");
-  }
+const day = () => new Date().toISOString().slice(0, 10);
+
+interface Spender {
+  owner: string;
+  ip: string;
 }
 
-async function spend(env: Env, bytes: number) {
+async function budget(env: Env, bytes: number, who: Spender) {
+  const maxBytes = (Number(env.MAX_STORAGE_GB) || 500) * 1e9;
+  const maxWrites = Number(env.MAX_MONTHLY_WRITES) || 3_000_000;
+  const maxIp = (Number(env.MAX_IP_MB_PER_DAY) || 300) * 1e6;
+  const maxOwner = (Number(env.MAX_OWNER_MB) || 2000) * 1e6;
+  const keys = ["bytes", `writes:${month()}`, `ip:${day()}:${who.ip}`, `owner:${who.owner}`];
+  const rows = await env.DB.prepare("SELECT key, value FROM usage WHERE key IN (?1, ?2, ?3, ?4)").bind(...keys).all<{ key: string; value: number }>();
+  const get = (k: string) => rows.results.find((r) => r.key === k)?.value ?? 0;
+  if (get("bytes") + bytes > maxBytes || get(keys[1]!) + 1 > maxWrites) {
+    throw new HttpError(507, "Dreamsy cloud is full for now; your game is still saved on your computer");
+  }
+  if (get(keys[2]!) + bytes > maxIp) throw new HttpError(429, "Daily upload limit reached for this network; try again tomorrow");
+  if (get(keys[3]!) + bytes > maxOwner) throw new HttpError(507, "Your cloud space is full (2 GB); delete old games to make room");
+}
+
+async function spend(env: Env, bytes: number, who: Spender) {
   const up = "INSERT INTO usage (key, value) VALUES (?1, ?2) ON CONFLICT(key) DO UPDATE SET value = value + ?2";
-  await env.DB.batch([env.DB.prepare(up).bind(`writes:${month()}`, 1), ...(bytes ? [env.DB.prepare(up).bind("bytes", bytes)] : [])]);
+  await env.DB.batch([
+    env.DB.prepare(up).bind(`writes:${month()}`, 1),
+    ...(bytes
+      ? [env.DB.prepare(up).bind("bytes", bytes), env.DB.prepare(up).bind(`ip:${day()}:${who.ip}`, bytes), env.DB.prepare(up).bind(`owner:${who.owner}`, bytes)]
+      : []),
+  ]);
 }
 
 interface GameRow {
@@ -167,15 +186,25 @@ async function route(req: Request, env: Env): Promise<Response> {
   if (a === "public" && b === "games") {
     if (!c && method === "GET") {
       const before = Number(url.searchParams.get("before")) || Number.MAX_SAFE_INTEGER;
-      const rows = await env.DB.prepare(
-        `SELECT p.*, g.name, g.remix_of, v.hash, v.thumb FROM publications p
-         JOIN games g ON g.id = p.game AND g.deleted = 0
-         JOIN versions v ON v.game = p.game AND v.version = p.version
-         WHERE p.hidden = 0 AND p.updated < ?1 ORDER BY p.updated DESC LIMIT 30`,
-      )
-        .bind(before)
-        .all<Awaited<ReturnType<typeof publication>>>();
-      return json({ games: rows.results.map(publicView) }, 200, { "cache-control": "public, max-age=30" });
+      const q = text(url.searchParams.get("q"), 80).toLowerCase();
+      const like = `%${q.replace(/[\\%_]/g, (m) => `\\${m}`)}%`;
+      const limit = Math.min(60, Math.max(1, Number(url.searchParams.get("limit")) || 30));
+      const where = `p.hidden = 0 AND (?2 = '' OR lower(g.name) LIKE ?3 ESCAPE '\\' OR lower(p.author) LIKE ?3 ESCAPE '\\')`;
+      const [rows, count] = await Promise.all([
+        env.DB.prepare(
+          `SELECT p.*, g.name, g.remix_of, v.hash, v.thumb FROM publications p
+           JOIN games g ON g.id = p.game AND g.deleted = 0
+           JOIN versions v ON v.game = p.game AND v.version = p.version
+           WHERE ${where} AND p.updated < ?1 ORDER BY p.updated DESC LIMIT ?4`,
+        )
+          .bind(before, q, like, limit)
+          .all<Awaited<ReturnType<typeof publication>>>(),
+        env.DB.prepare(`SELECT count(*) AS n FROM publications p JOIN games g ON g.id = p.game AND g.deleted = 0 WHERE ${where} AND ?1 = ?1`)
+          .bind(0, q, like)
+          .first<{ n: number }>(),
+      ]);
+      const games = rows.results.map(publicView);
+      return json({ games, total: count?.n ?? games.length, next: games.length === limit ? games.at(-1)!.updated : null }, 200, { "cache-control": "public, max-age=15" });
     }
     if (!c) throw new HttpError(405, "Method not allowed");
     const p = await publication(env, c);
@@ -220,6 +249,7 @@ async function route(req: Request, env: Env): Promise<Response> {
 
   if (a !== "games") throw new HttpError(404, "Not found");
   const who = await owner(req);
+  const spender: Spender = { owner: who, ip: (await ipHash(req)).slice(0, 24) };
   if (method !== "GET") {
     await limit(env, `write:${who}`, 600, 60 * 60_000);
     await limit(env, `write-ip:${await ipHash(req)}`, 20_000, 60 * 60_000);
@@ -283,9 +313,9 @@ async function route(req: Request, env: Env): Promise<Response> {
       const hash = await sha256(body);
       const key = `packs/${hash}.dpk`;
       if (!(await env.GAMES.head(key))) {
-        await budget(env, body.byteLength);
+        await budget(env, body.byteLength, spender);
         await env.GAMES.put(key, body, { httpMetadata: { contentType: "application/octet-stream" } });
-        await spend(env, body.byteLength);
+        await spend(env, body.byteLength, spender);
       }
       const label = text(decodeURIComponent(req.headers.get("x-dreamsy-label") ?? ""), 200);
       const version = await addVersion(env, game, hash, body.byteLength, label);
@@ -305,9 +335,9 @@ async function route(req: Request, env: Env): Promise<Response> {
       if (!/^image\/(jpeg|png|webp)$/.test(type)) throw new HttpError(400, "Thumbnail must be JPEG, PNG or WebP");
       const body = await req.arrayBuffer();
       if (body.byteLength > MAX_THUMB) throw new HttpError(413, "Thumbnail is too large");
-      await budget(env, body.byteLength);
+      await budget(env, body.byteLength, spender);
       await env.GAMES.put(`thumbs/${game.id}/${v}`, body, { httpMetadata: { contentType: type } });
-      await spend(env, body.byteLength);
+      await spend(env, body.byteLength, spender);
       await env.DB.prepare("UPDATE versions SET thumb = 1 WHERE game = ?1 AND version = ?2").bind(game.id, v).run();
       return json({ ok: true });
     }

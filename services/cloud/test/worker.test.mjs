@@ -27,7 +27,7 @@ before(async () => {
     compatibilityDate: "2025-10-01",
     r2Buckets: ["GAMES"],
     d1Databases: ["DB"],
-    bindings: { ALLOWED_ORIGINS: "http://127.0.0.1:3100", MAX_PACK_BYTES: "8000000", MAX_STORAGE_GB: "500", MAX_MONTHLY_WRITES: "3000000" },
+    bindings: { ALLOWED_ORIGINS: "http://127.0.0.1:3100", MAX_PACK_BYTES: "8000000", MAX_STORAGE_GB: "500", MAX_MONTHLY_WRITES: "3000000", MAX_IP_MB_PER_DAY: "300", MAX_OWNER_MB: "2000" },
   });
   const db = await mf.getD1Database("DB");
   for (const f of ["0001_init.sql", "0002_budget.sql"]) {
@@ -84,7 +84,13 @@ test("save, version, publish, remix, report, unpublish", async () => {
   assert.equal(JSON.stringify(pubGame.body).includes("a@example.com"), false);
   assert.equal(pubGame.headers.get("access-control-allow-origin"), "*");
   assert.deepEqual(Buffer.from((await call(`/v1/public/games/${slug}/package`)).body), pack);
-  assert.equal((await call("/v1/public/games")).body.games.length, 1);
+  const lib = await call("/v1/public/games");
+  assert.equal(lib.body.games.length, 1);
+  assert.equal(lib.body.total, 1);
+  assert.equal((await call("/v1/public/games?q=cloud")).body.total, 1);
+  assert.equal((await call("/v1/public/games?q=apoorv")).body.total, 1);
+  assert.equal((await call("/v1/public/games?q=zzz")).body.total, 0);
+  assert.equal((await call("/v1/public/games?q=%25")).body.total, 0);
 
   const owned = await call(`/v1/games/${id}`, { key: ALICE });
   assert.equal(owned.body.publication.email, "a@example.com");
@@ -127,4 +133,15 @@ test("budget guard refuses uploads past the storage cap", async () => {
   const dup = await call(`/v1/games/${created.body.id}/versions`, { key: ALICE, method: "POST", body: pack });
   assert.equal(dup.status, 201);
   await db.prepare("UPDATE usage SET value = 0 WHERE key = 'bytes'").run();
+});
+
+test("per-owner storage limit", async () => {
+  const db = await mf.getD1Database("DB");
+  const CAROL = "c".repeat(43);
+  const created = await call("/v1/games", { key: CAROL, method: "POST", ...jsonBody({ name: "Full" }) });
+  const ownerKey = (await db.prepare("SELECT owner FROM games WHERE id = ?1").bind(created.body.id).first()).owner;
+  await db.prepare("INSERT INTO usage (key, value) VALUES (?1, ?2)").bind(`owner:${ownerKey}`, 2000e6).run();
+  const res = await call(`/v1/games/${created.body.id}/versions`, { key: CAROL, method: "POST", body: Buffer.concat([pack, Buffer.from("yy")]) });
+  assert.equal(res.status, 507);
+  assert.match(res.body.error, /2 GB/);
 });

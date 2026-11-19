@@ -73,3 +73,10 @@ random save key (no accounts), every version is a content-addressed `.dpk` in R2
 an optional author name and link (public) and email (private). See `services/cloud/README.md`. Builds upload by
 default: `harness/src/cloud.ts` saves each successful build (editor and `local`) when `DREAMSY_CLOUD_URL` and a save key
 are set; a failed upload never fails the build (event `cloud.failed`, the local copy stays).
+
+Music (2026-11-19): the builder calls `compose_music` (`harness/src/agent/tools/music.ts`), which asks a smaller model (Haiku)
+for several original chiptune tracks in `data/music/*.json` (docs/format.md, LUAU_API.md "Music"), one per role (title, level,
+battle/boss, victory and game-over jingles), validates each with `parseMusic`, and retries once with the errors. Asking to
+change the music reworks the same ids. The MCP guide carries the same composer guidance for clients without a composer. The
+site editor plays songs and sound effects with a Web Audio port of the original synth (`apps/site/lib/audio.ts`); the C++
+engine does not play audio yet.

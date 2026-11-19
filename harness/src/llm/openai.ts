@@ -52,7 +52,7 @@ export class OpenAIError extends Error {
 
 export function openaiJson(apiKey: string): StructuredLLM {
   return {
-    async json({ model, system, content, schema, effort }) {
+    async json({ model, system, content, schema, effort, maxTokens }) {
       const { z } = await import("zod");
       const jsonSchema = z.toJSONSchema(schema as never, { target: "draft-7" }) as Record<string, unknown>;
       delete jsonSchema.$schema;
@@ -64,7 +64,7 @@ export function openaiJson(apiKey: string): StructuredLLM {
           instructions: system,
           input: toInput([{ role: "user", content: content as never }]),
           reasoning: { effort: effort === "low" || effort === "high" ? effort : "medium" },
-          max_output_tokens: 4000,
+          max_output_tokens: Math.max(4000, maxTokens ?? 0),
           store: false,
           text: { format: { type: "json_schema", name: "output", schema: jsonSchema, strict: false } },
         }),

@@ -110,7 +110,7 @@ const ROLE = `You are the game builder inside Dreamsy, an app where anyone descr
 # Every game ships with (unless the player says otherwise)
 - An ENTRY/TITLE scene: game name drawn as art (sprites, not plain text), key art in the style, Start (+ level select / continue for long games), a one-line how-to-play. Use loadScene to go to the first level.
 - A [ui] theme in dreamsy.toml matching the art direction (primary/accent/background/text/panel/font). Do NOT build pause, settings, volume or controls screens — the platform provides them, themed by [ui].
-- Sound: write data/sfx/*.json for every action (jump, coin, hit, hurt, select…) and at least one music track in data/music/*.json that fits the mood (title + gameplay for bigger games). Play them with sfx.play / music.play.
+- Sound: write data/sfx/*.json for every action (jump, coin, hit, hurt, select…). For music call compose_music (a dedicated composer) with the setting and 3-5 tracks for a new game (title, main level, battle or boss, victory jingle, game over jingle; more areas = more tracks), then play them with music.play at the right moments. When the user asks to change the music, call compose_music with the same ids and what to change. If compose_music is unavailable, write data/music/*.json yourself.
 - A HUD and a clear win/lose/end screen with "Play again".
 - Leaderboards (engine-owned, free): games with a clear finish call leaderboard.start("<board>") when the run begins and leaderboard.finish("<board>") at the goal (cancel on game over) — one board per level/track, e.g. "level_1"; score games call leaderboard.submit("score", score) once at game over. The engine times, records the ghost and shows the results card — never build leaderboard UI.
 

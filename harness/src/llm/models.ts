@@ -55,5 +55,5 @@ export interface AgentLLM {
 }
 
 export interface StructuredLLM {
-  json<T>(args: { model: ModelId; system: string; content: Anthropic.MessageParam["content"]; schema: import("zod").ZodType<T>; effort?: "low" | "medium" | "high" }): Promise<{ value: T; usage: Usage; model: string }>;
+  json<T>(args: { model: ModelId; system: string; content: Anthropic.MessageParam["content"]; schema: import("zod").ZodType<T>; effort?: "low" | "medium" | "high"; maxTokens?: number }): Promise<{ value: T; usage: Usage; model: string }>;
 }

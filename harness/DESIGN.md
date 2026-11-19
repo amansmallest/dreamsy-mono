@@ -39,6 +39,7 @@ input, a cost cap, a nudge when the model stops without `finish`. Each tool call
 | `apply_ops` | apply-ops.ts | edit the game; the batch applies only if the package stays valid |
 | `draw_sprite`, `find_sprites` | sprites.ts | SVG art; reuse sprites from past well-reviewed builds |
 | `generate_image` | images.ts | Gemini images in the background (placeholder until done) |
+| `compose_music` | music.ts | a Haiku composer writes 3-5 chiptune tracks (title, levels, boss, jingles) or reworks existing ones; validated against the music schema |
 | `build_content` | content.ts | parallel Sonnet builders for bulk items, checked against kit schemas |
 | `playtest` | playtest.ts | headless run + screenshots on the C++ engine |
 | `finish` | finish.ts | final gate (`agent/final-gate.ts`: valid package, 8 s smoke run with no script errors), then one art-director review (`agent/critique.ts`) |

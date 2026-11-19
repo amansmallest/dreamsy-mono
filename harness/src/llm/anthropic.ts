@@ -16,11 +16,11 @@ export function anthropicLLM(client: Anthropic): AgentLLM & StructuredLLM {
       }
       return stream.finalMessage();
     },
-    async json({ model, system, content, schema, effort }) {
+    async json({ model, system, content, schema, effort, maxTokens }) {
       const { zodOutputFormat } = await import("@anthropic-ai/sdk/helpers/zod");
       const res = await client.messages.parse({
         model,
-        max_tokens: 2000,
+        max_tokens: maxTokens ?? 2000,
         system,
         messages: [{ role: "user", content }],
         output_config: { format: zodOutputFormat(schema as never), ...(effort ? { effort } : {}) },

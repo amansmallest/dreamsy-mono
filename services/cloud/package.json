@@ -1,0 +1,20 @@
+{
+  "name": "@dreamsy/cloud",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --local --ip 127.0.0.1 --port 8788",
+    "deploy": "wrangler deploy",
+    "migrate:local": "wrangler d1 migrations apply dreamsy --local",
+    "migrate:remote": "wrangler d1 migrations apply dreamsy --remote",
+    "typecheck": "tsc --noEmit",
+    "test": "wrangler deploy --dry-run --outdir .build >/dev/null && node --test test/worker.test.mjs"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20251101.0",
+    "miniflare": "^4.20251101.0",
+    "typescript": "^6.0.3",
+    "wrangler": "^4.45.0"
+  }
+}

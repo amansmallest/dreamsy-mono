@@ -1,0 +1,46 @@
+{
+  "name": "dreamsy-mcp",
+  "version": "0.1.0",
+  "description": "Make 2D and 2.5D games with your own AI assistant: the Dreamsy engine as MCP tools.",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "game-engine",
+    "gamedev",
+    "claude",
+    "dreamsy"
+  ],
+  "type": "module",
+  "bin": {
+    "dreamsy-mcp": "bin/dreamsy-mcp.mjs"
+  },
+  "files": [
+    "bin",
+    "dist",
+    "data",
+    "README.md",
+    "LICENSE",
+    "THIRD-PARTY-NOTICES.txt"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/apoorvcodes/dreamsy-mono.git",
+    "directory": "packages/mcp"
+  },
+  "homepage": "https://github.com/apoorvcodes/dreamsy-mono/tree/main/packages/mcp#readme",
+  "optionalDependencies": {
+    "dreamsy-mcp-darwin-arm64": "0.1.0",
+    "dreamsy-mcp-linux-x64": "0.1.0"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "pack:all": "node scripts/build.mjs && npm pack && (cd npm/darwin-arm64 && npm pack --pack-destination ../..) && (cd npm/linux-x64 && npm pack --pack-destination ../..)"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.12"
+  },
+  "license": "PolyForm-Noncommercial-1.0.0"
+}

@@ -1,142 +1,123 @@
 # Dreamsy
 
-An AI-native game platform: describe a game (text + reference images) on iPhone or the web, and Dreamsy builds it, hosts it, and lets others play, remix, and share it, single or multiplayer. Think Roblox where the studio is an agent harness.
+An open-source, lightweight engine and AI harness for 2D and 2.5D games. Describe a game, then play it: natively on iOS
+and Android, and in any browser.
 
-[DREAMSY.MD](DREAMSY.MD) is the overview and the map of the spec in [`docs/`](docs/) (format, runtime, harness, platform, kits, engine), the source of truth for architecture and decisions. [STATUS.md](STATUS.md) is the current state.
+[DREAMSY.MD](DREAMSY.MD) is the overview and the map of the spec in [`docs/`](docs/) (format, runtime, harness, platform,
+kits, engine), the source of truth for architecture and decisions. [STATUS.md](STATUS.md) is the current state.
 
 ## How it fits together
 
 ```mermaid
 flowchart LR
-  mobile["apps/mobile<br/>Expo app"] --> api
-  web["apps/web<br/>Studio dashboard"] --> api
-  api["services/api<br/>Hono + Postgres + blobs"] <-- "claim jobs, upload versions" --> harness["harness<br/>generation workers"]
-  mobile -- WebView --> engine["engine (C++)<br/>web player: WASM + WebGL2 + Luau"]
-  engine -. "WS /rooms (E8)" .-> gs["services/gameserver<br/>multiplayer rooms"]
-  harness -- "headless playtests" --> engine
+  editor["apps/site<br/>website + editor"] -- "one build per prompt" --> harness["harness<br/>AI builder"]
+  mcp["your MCP client<br/>(Claude Code, Cursor…)"] -- "stdio" --> mcpserver["harness MCP server"]
+  harness -- "headless playtests" --> engine["engine (C++)<br/>native + WASM web player"]
+  mcpserver --> engine
+  harness -- "save every build" --> cloud["services/cloud<br/>Worker + R2 + D1"]
+  cloud -- "published games" --> engine
 ```
 
-Everything speaks one contract: the **game package** defined in `format/` (docs/format.md §3). The harness writes packages, the API validates and versions them, and the C++ engine runs them in the browser, the app's WebView, natively, and in headless playtests.
+Everything speaks one contract: the **game package** defined in `format/` (docs/format.md §3), a folder you can read by
+hand, packed into one small `.dpk` file (typically 30–220 KB). The harness writes packages, the engine runs them, and the
+cloud stores and publishes them.
 
 ## Repository layout
 
-| Path | Package | What |
-|---|---|---|
-| `format/` | `@dreamsy/format` | Game package spec: schemas, entity catalog, styles, validator, edit ops, CLI. [LUAU_API.md](format/LUAU_API.md) is the scripting contract. |
-| `engine/` | | The engine: C++20, 2D and 2.5D, one core for web (WASM), iOS, Android and headless tools. See [engine/README.md](engine/README.md). |
-| `kits/` | | 21 genre kits: Luau libraries games load with `require("@kit/...")`, plus their docs and schemas. |
-| `services/api/` | `@dreamsy/api` | Platform API: auth, games/versions, generation jobs, feed, remix, Stars store, leaderboards, groups. |
-| `services/gameserver/` | `@dreamsy/gameserver` | Multiplayer room server: invite codes, 1v1 quick match, relay (docs/runtime.md §4.5). |
-| `harness/` | `@dreamsy/harness` | Generation workers: router, director + content fan-out, playtest and art-director review. Claude or OpenAI builders. See [DESIGN.md](harness/DESIGN.md). |
-| `apps/mobile/` | `@dreamsy/mobile` | iOS-first Expo app: feed, play, create, remix, profiles, market. |
-| `apps/web/` | `@dreamsy/web` | Dreamsy Studio: build and edit games by chat in the browser, watch builds live, publish. |
-| `games/examples/` | | Hand-written golden packages, including a minimal example per kit. |
-| `games/showcase/` | | Generated showcase games seeded into the API. |
-| `taste/` | | House-style packs (`packs/*.md`) and their reference images. |
-| `docs/` | | The spec by topic (indexed from DREAMSY.MD) and the C++ guide for TypeScript developers. |
-| `deploy/` | | Production Docker Compose, Dockerfile, Caddyfile. |
-| `scripts/` | | `dev.sh` (local stack, builds and serves the C++ web player). |
-| `third_party/` | | Vendored libraries (Luau, Box2D, sokol, ...). Don't modify. |
+| Path | What |
+|---|---|
+| `engine/` | The engine: C++20, 2D and 2.5D, one core for web (WASM), iOS, Android and headless tools (`dreamsy-tool`). See [engine/README.md](engine/README.md). |
+| `format/` | `@dreamsy/format`: package schemas, entity catalog, validator, edit ops. [LUAU_API.md](format/LUAU_API.md) is the scripting contract. |
+| `kits/` | 21 kits: tested Luau libraries for genres (platformer, rpg, farming…) and foundations (core, juice, combat…). |
+| `harness/` | `@dreamsy/harness`: the AI builder (router, agent, playtests, art review), the MCP server and the CLI. See [DESIGN.md](harness/DESIGN.md). |
+| `apps/site/` | `@dreamsy/site`: the website (landing, library, kits, docs) and the **editor** at `/editor`. Next.js. See [apps/site/README.md](apps/site/README.md). |
+| `services/cloud/` | `@dreamsy/cloud`: Cloudflare Worker for saving games without accounts and publishing them. See [services/cloud/README.md](services/cloud/README.md). |
+| `games/examples/`, `games/showcase/` | Hand-written golden packages (one per kit) and generated showcase games. `games/mine/` (gitignored) holds your own games. |
+| `taste/` | House-style packs and reference images the harness uses for art direction. |
+| `docs/` | The spec by topic and the C++ guide for TypeScript developers. |
+| `third_party/` | Vendored libraries (Luau, Box2D, sokol…). Don't modify. |
 
-## Prerequisites
+The earlier hosted platform (`services/api`, `services/gameserver`, `apps/web`, `apps/mobile`, `deploy/`, `scripts/dev.sh`)
+is still in the repo but not deployed; see [Hosted platform](#hosted-platform).
 
-- Node + pnpm (`packageManager: pnpm@10.4.1`), then `pnpm install` at the repo root.
-- Docker Desktop (Postgres + MinIO for the API).
-- An Expo account and Expo Go on the phone, signed in to the same account.
-- Optional: `cloudflared` for `dev.sh --tunnel`.
+## Quick start
+
+Needs Node with pnpm (`packageManager: pnpm@10.4.1`), CMake and a C++20 compiler.
+
+```sh
+pnpm install
+
+# the engine: dreamsy-tool (validate, pack, run, playtest)
+(cd engine && cmake --preset release && cmake --build --preset release)
+
+# optional, for in-browser previews and playtest screenshots: the web player (needs emsdk 4.0.11)
+(cd engine && cmake --preset web && cmake --build --preset web --target dreamsy-player)
+```
+
+### Make games in the editor
+
+```sh
+pnpm -C apps/site dev        # http://127.0.0.1:3100/editor
+```
+
+Add your Anthropic or OpenAI key in the editor (kept in an httpOnly cookie, never written to disk), name a game and
+describe it. Games are folders in `games/mine`; every build is versioned and can be restored.
+
+### Make games from Claude Code (MCP)
+
+```sh
+claude mcp add dreamsy -- npx -y dreamsy-mcp                       # published package (packages/mcp)
+claude mcp add dreamsy -- pnpm -s -C /path/to/dreamsy/harness mcp   # from this clone
+```
+
+Then ask: “build a cozy frog platformer with dreamsy”. Your own client and model do the building; no Dreamsy key or server
+is involved (docs/harness.md §5.4).
+
+### Make games from the command line
+
+```sh
+pnpm -C harness local --prompt "a pixel game where a frog collects coins" --out /tmp/frog [--rounds N]
+pnpm -C harness local --prompt "make the frog faster" --base /tmp/frog --out /tmp/frog
+engine/build/release/dreamsy-tool playtest /tmp/frog        # headless playtest report (JSON)
+```
+
+The CLI reads model keys from the repo-root `.env` (`ANTHROPIC_API_KEY`, optional `OPENAI_API_KEY`, `GEMINI_API_KEY`).
 
 ## Environment
 
 Real env files are gitignored; only `.env.example` templates are committed.
 
-- **Repo-root `.env`**: model keys for the harness (`ANTHROPIC_API_KEY`, optional `GEMINI_API_KEY`; without Gemini, image generation is off) and `EXPO_TOKEN` for `dev.sh`.
-- **`services/api/.env`**: `cp services/api/.env.example services/api/.env`, then set `JWT_SECRET` (32+ chars) and `WORKER_TOKEN` (shared with the harness worker and seed script).
-- **`apps/mobile/.env.local`**: `EXPO_PUBLIC_API_URL` and `EXPO_PUBLIC_ENGINE_URL`. `dev.sh` writes this for you.
-- **`apps/web/.env.local`**: `cp apps/web/.env.example apps/web/.env.local`. Without it the dashboard offers guest sign-in only.
-
-## Quick start
-
-Start Docker Desktop, then:
-
-```sh
-./scripts/dev.sh             # app points at prod (api.dreamsy.dev, play.dreamsy.dev)
-./scripts/dev.sh --local     # app points at this laptop's API + engine
-./scripts/dev.sh --tunnel    # phone on any network (Cloudflare quick tunnels; URLs are public while it runs)
-./scripts/dev.sh --reseed    # publish the showcase games again
-```
-
-It runs Postgres, migrations, the API (`:8787`), the room server (`:8790`), seeds the showcase games once, starts a harness worker, the web dashboard (`:3000`), and the engine (`:2005`), then opens Expo Go. Scan the QR code with the iPhone camera and pick "Continue as guest". Logs go to `.dev-logs/`; Ctrl+C stops everything.
-
-Fresh database: `docker compose -f services/api/docker-compose.yml down -v && rm -f .dev-logs/.seeded`.
-
-### Manual steps
-
-What `dev.sh` does, one terminal each from the repo root. Find the Mac's LAN IP with `ipconfig getifaddr en0`.
-
-```sh
-# 1. postgres + minio
-docker compose -f services/api/docker-compose.yml up -d
-
-# 2. migrate + run the API (binds 0.0.0.0:8787)
-pnpm -C services/api db:migrate
-pnpm -C services/api dev
-
-# 3. room server (ws://<ip>:8790/rooms)
-API_URL=http://localhost:8787 pnpm -C services/gameserver start
-
-# 4. once: publish games/showcase + games/examples so Discover isn't empty
-pnpm -C services/api seed:showcase
-
-# 5. harness worker (builds games)
-pnpm -C harness worker
-
-# 6. the C++ web player the app's WebView loads (0.0.0.0:2005; needs emsdk 4.0.11, engine/README.md) and the web dashboard (:3000)
-(cd engine && cmake --preset web && cmake --build --preset web --target dreamsy-player && cp build/web/dreamsy-player.html build/web/index.html)
-python3 -m http.server 2005 --directory engine/build/web
-pnpm -C apps/web dev
-
-# 7. app in Expo Go (plain `expo start` targets a dev build)
-cd apps/mobile && npx expo start --go
-```
-
-Apple and Google sign-in need a development build (`pnpm -C apps/mobile ios`), not Expo Go. If the phone can't reach `http://<ip>:8787/health` or `http://<ip>:2005/` in Safari, allow incoming connections for node in the macOS firewall.
-
-On networks with broken IPv6 (VPNs, venue Wi-Fi), Node needs `NODE_OPTIONS=--network-family-autoselection-attempt-timeout=2000`; `dev.sh` sets it.
+| Where | Variable | What |
+|---|---|---|
+| `apps/site` | `DREAMSY_GAMES_DIR` | Where editor games live (default `games/mine`). |
+| `apps/site` | `DREAMSY_CLOUD_URL` | The deployed `services/cloud` Worker; when set, every build is also saved to the cloud. |
+| `apps/site` | `SITE_URL` | Public URL for canonical links, Open Graph images, `robots.txt` and the sitemap. |
+| repo-root `.env` | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY` | Keys for the harness CLI (`local`, `worker`). The editor uses the user's own keys instead. |
+| `services/cloud/wrangler.toml` | `ALLOWED_ORIGINS` | Site origins allowed to call the Worker from a browser. |
 
 ## Common tasks
 
 ```sh
-pnpm test                                    # every package's tests
-pnpm typecheck                               # every package's typecheck
+pnpm test                                   # every package's tests
+pnpm typecheck                              # every package's typecheck
 
-pnpm -C harness local --prompt "a pixel game where a frog collects coins" --out /tmp/frog [--rounds N]
-pnpm -C harness local --prompt "make the frog faster" --base /tmp/frog --select player --out /tmp/frog2
-pnpm -C format cli validate /tmp/frog        # validate a game package
-pnpm -C format catalog                       # regenerate format/catalog.json
-engine/build/release/dreamsy-tool playtest /tmp/frog   # headless playtest report (JSON); build: engine/README.md
+pnpm -C format cli validate /tmp/frog       # validate a game package
+pnpm -C format catalog                      # regenerate format/catalog.json
+pnpm -C apps/site brand                     # regenerate the OG image and app icons from the logo
 
-pnpm -C services/api db:generate             # after editing services/api/src/db/schema.ts; commit the migration
+pnpm -C services/cloud test                 # Worker tests on local R2 + D1 (Miniflare)
+pnpm -C services/cloud migrate:remote       # apply D1 migrations
+pnpm -C services/cloud deploy               # deploy the Worker (wrangler login first)
 ```
 
-API tests run on PGlite with in-memory storage, so they don't need Docker.
+Engine builds, tests and conformance checks are in [engine/README.md](engine/README.md).
 
-## Production
+## Hosted platform
 
-Prod is down (torn down 2026-11-16, STATUS.md) and there is no deploy script; `deploy/` keeps the stack for the next host.
-One box behind Caddy, mirroring the dev stack via `deploy/docker-compose.yml` (Postgres, API, Claude and OpenAI harness workers, room server, Caddy). Secrets live in `deploy/.env.prod` (gitignored).
-
-| Host | Serves |
-|---|---|
-| `api.dreamsy.dev` | API; `/rooms*` routes to the room server |
-| `play.dreamsy.dev` | C++ web player (built in `deploy/Dockerfile`, published by the compose `player` service) |
-| `dreamsy.dev` | Web dashboard (static `apps/web` build) |
-
-```sh
-docker compose -f deploy/docker-compose.yml --env-file deploy/.env.prod up -d --build   # on the box
-```
-
-Static sites (`apps/web` dashboard, `apps/mobile` PWA via `pnpm -C apps/mobile build:web`) are built and copied to the
-box's `/srv/dreamsy/{web,pwa}` by hand.
+The previous product was a hosted platform: an Expo app and a web studio talking to an API (Hono + Postgres + blobs) that
+queued builds for harness workers, plus a multiplayer room server. It was torn down on 2026-11-16 and is not deployed.
+`./scripts/dev.sh` still runs the whole stack locally (needs Docker Desktop and Expo Go); `deploy/` keeps the Docker
+Compose setup. See `services/api`, `services/gameserver`, `apps/web` and `apps/mobile` for details.
 
 ## Conventions
 
@@ -144,3 +125,9 @@ box's `/srv/dreamsy/{web,pwa}` by hand.
 - 2D and 2.5D only; the format keeps 3D types, but the engine rejects 3D packages.
 - `third_party/` is vendored; don't modify it.
 - Per-package details live in each package's own README.
+
+## License
+
+Dreamsy's own code is under the [PolyForm Noncommercial License 1.0.0](LICENSE): free to use, change and share for
+personal, hobby, research, educational and nonprofit purposes; commercial use is not permitted. Libraries vendored in
+`third_party/` keep their own licenses.

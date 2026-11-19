@@ -14,7 +14,8 @@ function shoot(id: string): Promise<void> {
     void mkdir(dataDir(id), { recursive: true }).then(() => {
       const child = spawn(process.execPath, ["--import", "tsx", "src/cli/shot.ts", gameDir(id), bannerPath(id)], {
         cwd: HARNESS_DIR,
-        env: { PATH: process.env.PATH ?? "", HOME: process.env.HOME ?? "", NODE_ENV: "production" } as NodeJS.ProcessEnv,
+        env: { PATH: process.env.PATH ?? "", HOME: process.env.HOME ?? "",
+      ...(process.env.PLAYWRIGHT_BROWSERS_PATH ? { PLAYWRIGHT_BROWSERS_PATH: process.env.PLAYWRIGHT_BROWSERS_PATH } : {}), NODE_ENV: "production" } as NodeJS.ProcessEnv,
         stdio: "ignore",
       });
       const timer = setTimeout(() => child.kill("SIGKILL"), 90_000);

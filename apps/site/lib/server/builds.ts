@@ -54,6 +54,7 @@ export async function startBuild(id: string, prompt: string, images: { mediaType
       NODE_ENV: "production",
       PATH: process.env.PATH ?? "",
       HOME: process.env.HOME ?? "",
+      ...(process.env.PLAYWRIGHT_BROWSERS_PATH ? { PLAYWRIGHT_BROWSERS_PATH: process.env.PLAYWRIGHT_BROWSERS_PATH } : {}),
       PLAYTEST_BROWSER: process.env.PLAYTEST_BROWSER ?? "1",
       DREAMSY_EDITOR_ANTHROPIC_KEY: keys.anthropic ?? "",
       DREAMSY_EDITOR_OPENAI_KEY: keys.openai ?? "",

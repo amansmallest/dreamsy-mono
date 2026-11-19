@@ -28,3 +28,6 @@ dist/
 
 # local copies of previously built games (not committed)
 games/mine/
+
+# Fly image staging (engine binary, web player, seed games)
+deploy/fly/artifacts/

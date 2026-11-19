@@ -8,6 +8,7 @@ Spec: docs/harness.md §5.
 ```
 cli/main.ts ─┬─ worker: jobs/worker.ts claims API jobs, runs rounds, uploads versions + progress events
              └─ local:  one build on this machine, no API
+mcp/server.ts   the engine as MCP tools: the user's own client and model build the game (docs/harness.md §5.4)
 
 pipeline/generate.ts   one round
   1. route      pipeline/route.ts: Haiku classifies the request (new_game · feature · tweak · asset · reject)
@@ -48,6 +49,7 @@ The working copy is `agent/workspace.ts`; nothing leaves the worker until a roun
 | Folder | What |
 |---|---|
 | `cli/` | entry point: `worker` and `local` |
+| `mcp/` | MCP server: engine tools for any MCP client, no model key |
 | `jobs/` | the API worker protocol: claim, heartbeat, events, upload, cancel |
 | `pipeline/` | one round (`generate.ts`), the router, the model plans |
 | `agent/` | brief, loop, tools, workspace, final gate, art critique, content builders |

@@ -40,3 +40,16 @@ Opus directs, specialized models make. Opus does not hand-build meshes except si
 
 Every creator generating is the business risk. Per-user generation quota, small models for
 iteration, Opus for builds and hard logic, aggressive caching of assets and plans.
+
+### 5.4 MCP server: bring your own model (2026-11-18)
+
+`harness/src/mcp/server.ts` exposes the engine to any MCP client (Claude Code, Claude Desktop, Cursor, ...). The
+client's model is the builder, on the user's own subscription or key; the server holds no model key and runs locally.
+- Tools: `dreamsy_options` (kits, styles, packs) · `create_game` (from a kit template or empty) · `dreamsy_guide`
+  (the harness system prompt for that game: format, ops, catalog, Luau API, style, pack art, kit docs) ·
+  `game_outline` · `read_files` · `get_entities` · `apply_ops` · `draw_sprite` · `playtest` (headless run +
+  screenshots) · `check_game` (the final gate) · `export_game` (`.dpk`). Prompt: `build_game`.
+- `read_files`, `get_entities`, `apply_ops` and `draw_sprite` are the agent's own tool definitions
+  (`agent/tools/`), so the harness and MCP clients edit games the same way.
+- Games are folders under `DREAMSY_GAMES_DIR` (default: the server's working directory); paths outside it are refused.
+- Not exposed: `build_content` and `generate_image` (they need our model keys), the sprite library and memory.

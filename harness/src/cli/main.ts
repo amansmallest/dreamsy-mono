@@ -24,7 +24,9 @@ const USAGE = `harness <command>
            SUPERMEMORY_API_KEY (optional): retrieval memory in Supermemory; else .data/memory. DREAMSY_MEMORY=0 disables
   local --prompt "..." --out <dir|zip> [--base <dir|zip>] [--image ref.png]... [--select id,id] [--rounds N]
                                  --rounds: keep building ("continue") until notes.md has no unchecked milestones (max N sessions)
+                                 --max-usd: stop before a round that could push the total past this (a round can cost up to $40)
                                  run one generation locally (no API); prints events + cost
+      env: DREAMSY_PROVIDER=openai builds with OpenAI; add DREAMSY_FAILOVER=0 to never fall back to Anthropic
       every round is also saved to the Dreamsy cloud under this computer's save key (~/.dreamsy); DREAMSY_CLOUD=0 turns it off`;
 
 function arg(name: string): string | undefined {
@@ -36,19 +38,18 @@ function args(name: string): string[] {
 }
 
 async function setup() {
-  const key = anthropicKey();
-  if (!key) throw new Error("ANTHROPIC_API_KEY (or ANTHROPIC_KEY) is not set; put it in the repo-root .env");
-  const claude = anthropicLLM(new Anthropic({ apiKey: key }));
-  const anth: Provider = { name: "anthropic", kind: "anthropic", agent: claude, json: claude };
   const oai = [process.env.OPENAI_API_KEY, process.env.OPENAI_API_KEY_BACKUP]
     .filter((k): k is string => !!k)
     .map((k, i): Provider => ({ name: i === 0 ? "openai" : "openai-backup", kind: "openai", agent: openaiLLM(k), json: openaiJson(k) }));
-  const llm = failoverLLM([anth, ...oai]);
-  let builder: AgentLLM = llm;
-  if (process.env.DREAMSY_PROVIDER === "openai") {
-    if (!oai.length) throw new Error("DREAMSY_PROVIDER=openai needs OPENAI_API_KEY");
-    builder = failoverLLM([...oai, anth]);
-  }
+  const openaiFirst = process.env.DREAMSY_PROVIDER === "openai";
+  // DREAMSY_FAILOVER=0 with DREAMSY_PROVIDER=openai: spend only the OpenAI credit, never fall back to Anthropic.
+  const openaiOnly = openaiFirst && process.env.DREAMSY_FAILOVER === "0";
+  if (openaiFirst && !oai.length) throw new Error("DREAMSY_PROVIDER=openai needs OPENAI_API_KEY");
+  const key = anthropicKey();
+  if (!key && !openaiOnly) throw new Error("ANTHROPIC_API_KEY (or ANTHROPIC_KEY) is not set; put it in the repo-root .env");
+  const anth: Provider[] = key && !openaiOnly ? [(() => { const claude = anthropicLLM(new Anthropic({ apiKey: key })); return { name: "anthropic", kind: "anthropic" as const, agent: claude, json: claude }; })()] : [];
+  const llm = failoverLLM(openaiOnly ? oai : [...anth, ...oai]);
+  const builder: AgentLLM = openaiFirst ? failoverLLM([...oai, ...anth]) : llm;
   const gk = geminiKey();
   const images = gk ? await geminiImages(gk) : disabledImages;
   const playtest = await enginePlaytester({ browser: process.env.PLAYTEST_BROWSER !== "0" });
@@ -101,8 +102,11 @@ if (cmd === "worker") {
   let total = 0;
   const outDir = resolve(out);
   let cloudGameId: string | null = process.env.DREAMSY_CLOUD_GAME ?? linkedGame(outDir);
+  const maxUsd = arg("max-usd") ? Number(arg("max-usd")) : Infinity;
+  const ROUND_CAP = 40; // plans.ts: a feature round may spend $20, then escalate for $20 more
   for (let round = 1; round <= rounds; round++) {
     const isFirst = round === 1;
+    if (total + ROUND_CAP > maxUsd) { console.error(`\nstopping: $${total.toFixed(2)} spent, another round could pass --max-usd ${maxUsd}`); break; }
     const result = await generate(
       { agentLLM: builder, jsonLLM: llm, images, playtest, emit, signal: ctl.signal, memory, sprites },
       {

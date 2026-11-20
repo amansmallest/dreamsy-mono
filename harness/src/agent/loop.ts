@@ -127,7 +127,7 @@ export async function runAgent(args: AgentArgs): Promise<AgentResult> {
     await emit("cost", { turn, ...cost.snapshot() });
 
     if (msg.stop_reason === "refusal") return { ok: false, reason: "refusal", message: "the model declined this request", turns: turn };
-    if (cost.usd > plan.maxUsd) {
+    if (cost.usd > Math.min(plan.maxUsd, Number(process.env.DREAMSY_ROUND_MAX_USD) || Infinity)) {
       trace.budgetHit = true;
       if (ws.opLog.length && (await finalGate(ws.pkg, playtest)).ok) {
         return { ok: true, pkg: ws.pkg, summary: "Partly done (budget reached) — say \"continue\" to finish.", turns: turn };
@@ -170,8 +170,15 @@ export async function runAgent(args: AgentArgs): Promise<AgentResult> {
     if (finished !== null) return { ok: true, pkg: ws.pkg, summary: finished, turns: turn };
 
     const notes = ws.imageNotes();
-    messages.push({ role: "user", content: notes ? [...results, { type: "text", text: notes }] : results });
+    const left = plan.maxTurns - turn;
+    const wrap = left === 3 ? "Only 3 turns left: stop adding features, make sure the game works, update notes.md with what is left, and call finish." : "";
+    const extra = [notes, wrap].filter(Boolean).join("\n\n");
+    messages.push({ role: "user", content: extra ? [...results, { type: "text", text: extra }] : results });
   }
   trace.turnsHit = true;
+  // Keep finished work that just ran out of turns before calling finish (same rule as the budget cap).
+  if (ws.opLog.length && (await finalGate(ws.pkg, playtest)).ok) {
+    return { ok: true, pkg: ws.pkg, summary: "Partly done (turn limit reached) — say \"continue\" to finish.", turns: plan.maxTurns };
+  }
   return { ok: false, reason: "turns", message: `did not finish within ${plan.maxTurns} turns`, turns: plan.maxTurns };
 }

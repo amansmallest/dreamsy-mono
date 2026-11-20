@@ -29,6 +29,8 @@ async function writePrivate(path: string, value: unknown) {
 
 /** This computer's save key, shared with the MCP server and the harness CLI (~/.dreamsy/config.json). */
 export async function saveKey(): Promise<string> {
+  const fromEnv = process.env.DREAMSY_SAVE_KEY?.trim();
+  if (fromEnv && /^[A-Za-z0-9_-]{32,128}$/.test(fromEnv)) return fromEnv;
   const path = join(home(), "config.json");
   const cfg = await readJson<{ saveKey?: string }>(path, {});
   if (cfg.saveKey && /^[A-Za-z0-9_-]{32,128}$/.test(cfg.saveKey)) return cfg.saveKey;
@@ -165,6 +167,14 @@ export async function library(q: string, before?: number) {
   if (q) params.set("q", q);
   if (before) params.set("before", String(before));
   return call<{ games: LibraryGame[]; total: number; next: number | null }>(`/v1/public/games?${params}`, {}, false);
+}
+
+export async function publicGame(slug: string) {
+  return (await call<{ game: LibraryGame & { remixOf: string | null; version: number } }>(`/v1/public/games/${encodeURIComponent(slug)}`, {}, false)).game;
+}
+
+export async function countPlay(slug: string) {
+  await call(`/v1/public/games/${encodeURIComponent(slug)}/play`, { method: "POST" }, false).catch(() => undefined);
 }
 
 export async function libraryThumb(slug: string) {

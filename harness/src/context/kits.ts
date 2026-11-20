@@ -41,7 +41,7 @@ export function kits(): Map<string, Kit> {
     const docPath = join(ROOT, id, "KIT.md");
     if (!existsSync(docPath)) continue;
     const doc = readFileSync(docPath, "utf8");
-    const summary = doc.split("\n").filter((l) => l.trim() && !l.startsWith("#"))[0]?.trim() ?? id;
+    const summary = doc.replace(/^#.*$/gm, "").trim().split(/\n\s*\n/)[0]?.replace(/\s+/g, " ").trim() || id;
     const schemas: Record<string, unknown> = {};
     const sdir = join(ROOT, id, "schemas");
     if (existsSync(sdir)) {
@@ -54,9 +54,17 @@ export function kits(): Map<string, Kit> {
   return cache;
 }
 
+function sentence(text: string, max: number) {
+  const flat = text.replace(/\s+/g, " ").trim();
+  if (flat.length <= max) return flat;
+  const cut = flat.slice(0, max);
+  const end = cut.lastIndexOf(". ");
+  return end > max * 0.4 ? cut.slice(0, end + 1) : `${cut.slice(0, cut.lastIndexOf(" "))}…`;
+}
+
 export function kitMenu(): string {
   const list = [...kits().values()];
-  return list.length ? list.map((k) => `- ${k.id}: ${k.summary.slice(0, 200)}`).join("\n") : "(no kits installed)";
+  return list.length ? list.map((k) => `- ${k.id}: ${sentence(k.summary, 240)}`).join("\n") : "(no kits installed)";
 }
 
 export function resetKits() {

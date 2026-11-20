@@ -70,9 +70,14 @@ export function PublishDialog({ id, name, open, onClose, onChange }: { id: strin
       </div>
       <p className="dialog-note">
         {pub
-          ? `“${name}” is in the Dreamsy library (version ${pub.version}${pub.plays ? `, ${pub.plays} plays` : ""}). Publishing again updates it to the latest version.`
+          ? `“${name}” is in the Dreamsy library (version ${pub.version}${pub.plays ? `, ${pub.plays} plays` : ""}). Anyone can play it at the link below; publishing again updates it.`
           : `Share “${name}” in the Dreamsy library so anyone can find it, download it and play it. Your name and link are public; your email is not.`}
       </p>
+      {pub && (
+        <p className="publish-link">
+          <a href={`/play/${pub.slug}`} target="_blank" rel="noreferrer">{typeof window === "undefined" ? "" : window.location.origin}/play/{pub.slug}</a>
+        </p>
+      )}
       <form className="publish-form" onSubmit={submit}>
         <label className="field">
           <span>Creator name (public)</span>

@@ -53,10 +53,10 @@ claude mcp add -e DREAMSY_GAMES_DIR=$HOME/dreamsy-games dreamsy -- npx -y dreams
 | `dreamsy_guide` | the format, edit ops, entity catalog, Luau API, style and kit docs for a game |
 | `game_outline`, `read_files`, `get_entities` | look at a game |
 | `apply_ops`, `draw_sprite` | edit a game; a batch applies only if the package stays valid |
-| `playtest` | run the game headless (screenshots too when `playwright` is installed) |
+| `playtest` | run the game headless, with screenshots |
 | `check_game` | the release check: valid package and a smoke run with no script errors |
 | `export_game` | write a `.dpk` file you can play and share; also saves it to the Dreamsy cloud |
-| `publish_game` | put the game in the public Dreamsy library with a creator name and link (email optional, private) |
+| `publish_game` | put the game in the public Dreamsy library and get a `dreamsy.dev/play/<id>` link anyone can open |
 
 Games save to the Dreamsy cloud under a save key kept in `~/.dreamsy/config.json` (no account; the same key the Dreamsy
 editor uses on this computer). Set `DREAMSY_CLOUD=0` to keep everything local.
@@ -67,8 +67,9 @@ Prebuilt engine binaries: macOS 12+ (Apple Silicon and Intel) and Linux (x64 and
 22.04+). On Windows, use WSL. Elsewhere, build `dreamsy-tool` from source (see the repo's `engine/README.md`) and set
 `DREAMSY_TOOL` to its path.
 
-Screenshots during playtests need Playwright with Chromium (`npm i -g playwright && npx playwright install chromium`);
-without it, playtests still run and report errors, scenes, controls and sound.
+Playtest screenshots use Chromium, downloaded automatically the first time a screenshot is needed (about 150 MB, once,
+into Playwright's cache). Set `DREAMSY_AUTO_CHROMIUM=0` to skip it; playtests still report errors, scenes, controls and
+sound without screenshots.
 
 ## License
 

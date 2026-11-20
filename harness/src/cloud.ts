@@ -128,3 +128,5 @@ export async function publishToCloud(
 }
 
 export const publicPackageUrl = (cfg: CloudConfig, slug: string) => `${cfg.url}/v1/public/games/${slug}/package`;
+
+export const playUrl = (slug: string) => `${(process.env.DREAMSY_SITE_URL ?? "https://dreamsy.dev").replace(/\/$/, "")}/play/${slug}`;

@@ -253,6 +253,7 @@ function LibraryTab({ onOpened, onTotal }: { onOpened: (id: string) => void; onT
                     {g.plays ? ` · ${g.plays} plays` : ""}
                   </span>
                   <div className="lib-actions">
+                    <a className="tool" href={`/play/${g.slug}`}>▶ Play</a>
                     <a className="tool" href={`/api/library/${g.slug}/download`}>Download .dpk</a>
                     <button
                       type="button"

@@ -1,12 +1,5 @@
-// Web audio for the player (linked with --pre-js, like embed.js): plays the game's data/sfx (sfxr-style synth)
-// and data/music (chiptune sequencer, up to 4 channels) with Web Audio. A port of engine-web render/audio.ts
-// (tag engine-web-final). main.cpp forwards each new Host::audio_events() entry with the song or sound JSON
-// (dreamsyAudio.event) and the volumes / pause state when they change (dreamsyAudio.state).
-//
-// Browsers (iOS Safari above all) only start audio inside a user gesture, so the context is created and
-// resumed on the first pointer / key / touch event; sounds asked for before that are dropped and the
-// current song starts on unlock. iOS: the "playback" audio session keeps music playing with the ringer
-// switch on silent.
+// Plays data/sfx and data/music for the web player (port of engine-web render/audio.ts, tag engine-web-final).
+// Browsers only start audio after a user gesture: earlier sounds are dropped, the current song starts on unlock.
 var dreamsyAudio = (function () {
   var MASTER = 0.6, LOOKAHEAD = 0.2, TICK_MS = 25;
   var LEVEL = { square: 0.5, saw: 0.45, triangle: 0.9, sine: 0.9, noise: 0.7 };
@@ -38,7 +31,6 @@ var dreamsyAudio = (function () {
     };
   }
 
-  // Flattens patterns + order into note events (start step, length in steps), sorted by start.
   function compileSong(text) {
     var r = JSON.parse(text);
     var steps = Math.max(1, Math.floor(num(r.steps, 16, 1, 256)));
@@ -66,8 +58,6 @@ var dreamsyAudio = (function () {
     return { events: events, channels: channels, loop: r.loop !== false, totalSteps: order.length * steps, stepDur: 60 / num(r.bpm, 120, 40, 240) / 4 };
   }
 
-  // ---------------------------------------------------------------- synthesis
-
   var pulses = {}, noise = null;
   function pulseWave(duty) {
     var key = Math.round(duty * 100) / 100;
@@ -90,7 +80,7 @@ var dreamsyAudio = (function () {
     }
     return noise;
   }
-  // An oscillator-like source whose `freq` sets the pitch (noise: the low-pass cutoff).
+  // For noise, `freq` is the low-pass cutoff.
   function source(w, duty) {
     if (w === "noise") {
       var src = ctx.createBufferSource();
@@ -151,7 +141,6 @@ var dreamsyAudio = (function () {
     src.stop(t + dur + 0.02);
   }
 
-  // Every note that starts in [from, to) of a song that began at `origin` (looping if set).
   function scheduleRange(tr, from, to) {
     var s = tr.song, len = s.totalSteps * s.stepDur;
     if (len <= 0) return;
@@ -166,8 +155,6 @@ var dreamsyAudio = (function () {
       }
     }
   }
-
-  // ---------------------------------------------------------------- live engine
 
   function running() { return !!ctx && ctx.state === "running"; }
 
@@ -207,7 +194,6 @@ var dreamsyAudio = (function () {
     }
   }
   GESTURES.forEach(function (g) { window.addEventListener(g, unlock, { capture: true }); });
-  // Background tab / locked phone: silence; back: carry on.
   document.addEventListener("visibilitychange", function () {
     if (!ctx) return;
     if (document.hidden) ctx.suspend(); else ctx.resume();
@@ -237,7 +223,7 @@ var dreamsyAudio = (function () {
     track = { id: id, song: song, gain: gain, origin: origin, scheduledTo: origin, endAt: song.loop ? null : origin + song.totalSteps * song.stepDur };
   }
 
-  // Lookahead scheduler; runs from a timer so music keeps going between frames.
+  // Runs from a timer so music keeps going between frames.
   function pump() {
     if (!running()) return;
     if (wanted && (!track || track.id !== wanted.id)) startTrack(wanted.id, wanted.fade);
@@ -255,7 +241,6 @@ var dreamsyAudio = (function () {
   }
 
   return {
-    // kind "sfx" | "music" | "music_stop"; json: the sound or song file (music: only the first time per id).
     event: function (kind, id, json, volume, pitch, fade) {
       try {
         if (kind === "sfx") {

@@ -2843,7 +2843,7 @@ html.play-filled body {
   color: var(--ink);
 }
 
-/* phone-safe content: grid children may shrink, long code wraps or scrolls inside itself */
+/* phone layouts */
 .doc,
 .toc,
 .kit-side {

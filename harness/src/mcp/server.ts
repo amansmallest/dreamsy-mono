@@ -1,5 +1,4 @@
-// The Dreamsy MCP server over stdio (npx dreamsy-mcp, Claude Code, Cursor…): games are folders under
-// DREAMSY_GAMES_DIR (default: the working directory). The hosted version is http.ts (dreamsy.dev/mcp).
+// MCP over stdio (npx dreamsy-mcp). The hosted version is http.ts.
 import { resolve } from "node:path";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { linkedGame, linkGame, localCloud } from "../cloud.js";

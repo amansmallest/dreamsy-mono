@@ -204,7 +204,7 @@ struct App {
   double last_error_at = -1e9;
   std::optional<std::string> queued_error;
   double last_run_end_at = -1e9;
-  // Web audio (audio.js): how many Host::audio_events() were sent, and the last volumes / pause state sent.
+  // Web audio (audio.js): events already sent, and the last volumes sent.
   const script::Host* audio_host = nullptr;
   size_t audio_sent = 0;
   double audio_music = -1, audio_sfx = -1;
@@ -281,13 +281,12 @@ void flush_errors(App& app) {
   }
 }
 
-// Called every frame on the web: plays the sounds and songs the game asked for since the last frame
-// (audio.js synthesizes them), and passes on volume / mute / pause changes. Tool runs (?manual=1) stay silent.
+// Sends new audio events and volume changes to audio.js. Tool runs (?manual=1) stay silent.
 void flush_audio(App& app) {
 #ifdef __EMSCRIPTEN__
   if (!app.host || app.options.manual) return;
   const script::Host& host = *app.host;
-  if (app.audio_host != &host) {  // a new game: its events start from zero
+  if (app.audio_host != &host) {
     app.audio_host = &host;
     app.audio_sent = 0;
   }

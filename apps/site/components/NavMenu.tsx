@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
-/** The phone menu: a button that opens the nav links as a panel under the bar. */
 export function NavMenu({ github }: { github: string }) {
   const [open, setOpen] = useState(false);
   const path = usePathname();

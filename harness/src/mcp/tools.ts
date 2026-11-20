@@ -74,13 +74,9 @@ function toResult(out: ToolOutput): Result {
 }
 
 export interface ServerOptions {
-  /** Where game folders live (the games directory, or one remote session's workspace). */
   root: string;
-  /** Cloud settings for saves and publishing; null = cloud off. */
   cloud: () => CloudConfig | null;
-  /** Which cloud game a game folder saves to. */
   links: { get(dir: string): string | null; set(dir: string, gameId: string): void };
-  /** Hosted (dreamsy.dev/mcp): no file paths on the user's computer, limits on games per session. */
   remote?: { maxGames: number };
 }
 
@@ -96,7 +92,36 @@ Games are folders in this connection's private workspace; every tool takes the g
   : `Dreamsy builds 2D and 2.5D games that run in the Dreamsy C++ engine. You are the game designer and programmer; these tools are the engine.
 Workflow: dreamsy_options (kits, styles, packs) → create_game → dreamsy_guide (the full format, entity catalog, Luau API and kit docs: read it before editing) → build with apply_ops and draw_sprite → playtest to see it → check_game until it passes → export_game (also saves it to the Dreamsy cloud) → publish_game if the user wants it in the public library.
 Games are folders under ${ROOT}; every tool takes the game's path relative to it.`;
-const server = new McpServer({ name: "dreamsy", version: "0.2.0" }, { instructions: INSTRUCTIONS });
+const server = new McpServer({
+  name: "dreamsy",
+  title: "Dreamsy",
+  version: "0.2.0",
+  websiteUrl: "https://dreamsy.dev",
+  icons: [
+    { src: "https://dreamsy.dev/icons/icon-512.png", mimeType: "image/png", sizes: ["512x512"] },
+    { src: "https://dreamsy.dev/icons/icon-192.png", mimeType: "image/png", sizes: ["192x192"] },
+  ],
+}, { instructions: INSTRUCTIONS });
+
+// ChatGPT rejects tools without annotations.
+const READ = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false };
+const EDIT = { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false };
+const CLOUD = { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true };
+const ANNOTATIONS: Record<string, typeof READ> = {
+  dreamsy_options: READ, dreamsy_guide: READ, game_outline: READ, read_files: READ, get_entities: READ,
+  playtest: READ, check_game: READ, create_game: EDIT, apply_ops: { ...EDIT, destructiveHint: true }, draw_sprite: EDIT,
+  export_game: CLOUD, publish_game: CLOUD,
+};
+const register = server.registerTool.bind(server);
+server.registerTool = ((name: string, config: { annotations?: object }, cb: unknown) =>
+  register(name, { ...config, annotations: { title: (config as { title?: string }).title, ...ANNOTATIONS[name], ...config.annotations } } as never, cb as never)) as typeof server.registerTool;
+
+// ChatGPT calls resources/list during setup.
+server.registerResource("kits", "dreamsy://kits", {
+  title: "Dreamsy kits, styles and packs",
+  description: "The genre kits, art style presets and house style packs a new game can start from.",
+  mimeType: "text/markdown",
+}, async (uri) => ({ contents: [{ uri: uri.href, mimeType: "text/markdown", text: `# Genre kits\n${kitMenu()}\n\n# Style presets\n${STYLE_PRESETS.join(", ")}\n\n# House style packs\n${packMenu()}` }] }));
 
 function guarded<A>(fn: (args: A) => Promise<Result>) {
   return async (args: A): Promise<Result> => {

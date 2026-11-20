@@ -136,9 +136,25 @@ const CORS = {
   "access-control-expose-headers": "mcp-session-id",
 };
 
+/** One line per request (no bodies, no IPs): enough to see what a client's setup does. */
+function logRequest(req: IncomingMessage, res: ServerResponse, rpc: string) {
+  const start = Date.now();
+  res.on("finish", () => {
+    const sid = (req.headers["mcp-session-id"] as string | undefined)?.slice(0, 8) ?? "-";
+    const ua = (req.headers["user-agent"] ?? "-").slice(0, 60);
+    console.log(`mcp ${req.method} ${req.url} ${rpc || "-"} -> ${res.statusCode} ${Date.now() - start}ms sid=${sid} accept="${req.headers.accept ?? ""}" ua="${ua}"`);
+  });
+}
+
+const rpcMethods = (body: unknown) =>
+  (Array.isArray(body) ? body : [body]).map((m) => (m && typeof m === "object" && "method" in m ? String((m as { method: unknown }).method) : "")).filter(Boolean).join(",");
+
 export async function handle(req: IncomingMessage, res: ServerResponse) {
   for (const [k, v] of Object.entries(CORS)) res.setHeader(k, v);
   const path = new URL(req.url ?? "/", "http://x").pathname.replace(/\/$/, "");
+  if (req.method !== "POST") logRequest(req, res, "");
+  // OAuth discovery: this server has no sign-in, so there is no protected-resource or authorization server metadata.
+  if (path.startsWith("/.well-known/")) return send(res, 404, { error: "not_found", error_description: "Dreamsy MCP needs no authentication" });
   if (req.method === "OPTIONS") { res.writeHead(204); res.end(); return; }
   if (path === "/mcp/health") return send(res, 200, { ok: true, sessions: sessions.size });
   if (path !== "/mcp") return send(res, 404, { error: "not found" });
@@ -159,6 +175,7 @@ export async function handle(req: IncomingMessage, res: ServerResponse) {
   try {
     const sid = req.headers["mcp-session-id"] as string | undefined;
     const body = req.method === "POST" ? await readBody(req) : undefined;
+    if (req.method === "POST") logRequest(req, res, rpcMethods(body));
     const existing = sid ? sessions.get(sid) : undefined;
     if (existing) {
       existing.lastUsed = Date.now();

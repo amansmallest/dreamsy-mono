@@ -1,4 +1,6 @@
+import { spawn } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { extname, join, resolve } from "node:path";
 import { chromium, type Browser, type Page } from "playwright";
 import { parseManifest, referenceSize, type Package } from "@dreamsy/format";
@@ -20,9 +22,43 @@ let sharedBrowser: Promise<Browser> | null = null;
 let idleTimer: ReturnType<typeof setTimeout> | null = null;
 let inUse = 0;
 export const BROWSER_IDLE_MS = 3000;
+const LAUNCH_ARGS = ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"];
+
+/** Whether Chromium is already downloaded (no network needed to take screenshots). */
+export function chromiumReady(): boolean {
+  try {
+    return existsSync(chromium.executablePath());
+  } catch {
+    return false;
+  }
+}
+
+/** Download Chromium once (about 150 MB) with Playwright's own installer. */
+async function installChromium() {
+  const req = createRequire(import.meta.url);
+  let cli: string | null = null;
+  for (const id of ["playwright-core/cli.js", "playwright/cli.js"]) {
+    try {
+      cli = req.resolve(id);
+      break;
+    } catch {}
+  }
+  if (!cli) throw new Error("Playwright's installer is missing");
+  console.error("dreamsy: downloading Chromium for playtest screenshots (one time, ~150 MB)…");
+  await new Promise<void>((resolveRun, reject) => {
+    const child = spawn(process.execPath, [cli!, "install", "chromium"], { stdio: ["ignore", "ignore", "inherit"] });
+    child.on("close", (code) => (code === 0 ? resolveRun() : reject(new Error(`Chromium install failed (${code})`))));
+  });
+}
+
+async function launch(): Promise<Browser> {
+  if (!chromiumReady() && process.env.DREAMSY_AUTO_CHROMIUM !== "0") await installChromium();
+  return chromium.launch({ args: LAUNCH_ARGS });
+}
+
 function browser(): Promise<Browser> {
   if (idleTimer) { clearTimeout(idleTimer); idleTimer = null; }
-  sharedBrowser ??= chromium.launch({ args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] });
+  sharedBrowser ??= launch().catch((e) => { sharedBrowser = null; throw e; });
   return sharedBrowser;
 }
 function release() {

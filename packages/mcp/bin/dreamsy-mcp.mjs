@@ -22,7 +22,7 @@ if (!process.env.DREAMSY_TOOL) {
 
 if (process.env.PLAYTEST_BROWSER === undefined) {
   try {
-    await import("playwright");
+    await import("playwright-core");
   } catch {
     process.env.PLAYTEST_BROWSER = "0";
   }

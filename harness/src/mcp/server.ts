@@ -11,7 +11,7 @@ import { getEntities, readFiles } from "../agent/tools/files.js";
 import { playtest as playtestTool } from "../agent/tools/playtest.js";
 import { drawSprite } from "../agent/tools/sprites.js";
 import { COMPOSER_GUIDE } from "../agent/tools/music.js";
-import { linkedGame, linkGame, localCloud, publicPackageUrl, publishToCloud, saveToCloud } from "../cloud.js";
+import { linkedGame, linkGame, localCloud, playUrl, publishToCloud, saveToCloud } from "../cloud.js";
 import type { Tool, ToolCtx, ToolOutput } from "../agent/tools/tool.js";
 import { Workspace } from "../agent/workspace.js";
 import { kitMenu, kits } from "../context/kits.js";
@@ -81,7 +81,7 @@ function toResult(out: ToolOutput): Result {
   return { content: [{ type: "text", text: out.text }, ...(out.images ?? []).map(jpeg)], ...(out.isError ? { isError: true } : {}) };
 }
 
-const server = new McpServer({ name: "dreamsy", version: "0.1.3" }, { instructions: INSTRUCTIONS });
+const server = new McpServer({ name: "dreamsy", version: "0.1.4" }, { instructions: INSTRUCTIONS });
 
 function guarded<A>(fn: (args: A) => Promise<Result>) {
   return async (args: A): Promise<Result> => {
@@ -120,7 +120,7 @@ server.registerTool("dreamsy_guide", {
   const refs = pack?.refs.map((r): Content => ({ type: "image", data: r.base64, mimeType: r.mediaType })) ?? [];
   const mcpNote = "# Using this guide through MCP\nEvery tool takes `game` (the folder). build_content, generate_image, find_sprites and compose_music are not available here: draw sprites with draw_sprite, write content yourself, and write music as data/music/<id>.json with apply_ops write_file following \"Composing music\" below (3-5 tracks for a new game). Where the guide says \"finish\", run check_game until it passes, then export_game.";
   const musicNote = `# Composing music\n${COMPOSER_GUIDE.replace("Return every requested track. Keep each track's id exactly as given.", "")}`;
-  return { content: [{ type: "text", text: `${mcpNote}\n\n${blocks.map((b) => b.text).join("\n\n")}\n\n${musicNote}` }, ...refs] };
+  return { content: [{ type: "text", text: `${mcpNote}\n\n${trimForMcp(blocks.map((b) => b.text).join("\n\n"))}\n\n${musicNote}` }, ...refs] };
 }));
 
 server.registerTool("create_game", {
@@ -145,8 +145,18 @@ server.registerTool("create_game", {
   if (kit && !template) throw new Error(`kit ${kit} has no template game; create it without a kit and add "${kit}" to manifest kits`);
   await mkdir(dir, { recursive: true });
   if (template) {
-    await template.pkg.with("dreamsy.toml", (template.pkg.text("dreamsy.toml") ?? "").replace(/^id\s*=.*\n/m, "")).toDir(dir);
-    return text(`Created ${game} from the ${template.kit} kit template.\n${templateNote(template.kit)}\nFirst: ${manifestOps} (keep kits). Then call dreamsy_guide.`);
+    const base = template.pkg.with("dreamsy.toml", (template.pkg.text("dreamsy.toml") ?? "").replace(/^id\s*=.*\n/m, ""));
+    const ws = new Workspace(base, disabledImages, async () => {}, new AbortController().signal, []);
+    const ops: Record<string, unknown>[] = [
+      { op: "set_manifest", key: "name", value: name },
+      { op: "set_manifest", key: "orientation", value: orientation ?? (/orientation\s*=\s*"landscape"/.test(base.text("dreamsy.toml") ?? "") ? "landscape" : "portrait") },
+      { op: "set_manifest", key: "style.preset", value: preset },
+      ...(packDef ? [{ op: "set_manifest", key: "style.pack", value: packDef.id }, { op: "set_manifest", key: "style.palette", value: packDef.palette.slice(0, 32) }] : []),
+    ];
+    const applied = ws.applyOps(ops, "create from kit template");
+    await (applied.applied ? ws.pkg : base).toDir(dir);
+    const note = applied.applied ? `Set name "${name}", style "${preset}"${packDef ? `, pack "${packDef.id}"` : ""}.` : `Couldn't set the manifest automatically (${applied.text.slice(0, 200)}); do it first: ${manifestOps}.`;
+    return text(`Created ${game} from the ${template.kit} kit template. ${note}\n${templateNote(template.kit)}\nNext: set the description and palette for the player's game, then call dreamsy_guide.`);
   }
   await writeFile(join(dir, "dreamsy.toml"), `format = "0"\nname = ${JSON.stringify(name)}\ndimension = "2d"\nentry_scene = "scenes/main.scene.json"\norientation = "${orientation ?? "portrait"}"\n\n[style]\npreset = "${preset}"\n${packDef ? `pack = "${packDef.id}"\n` : ""}`);
   return text(`Created an empty game at ${game}. It has a manifest but no scenes yet: add scenes/main.scene.json with add_scene, then build. Call dreamsy_guide first.`);
@@ -204,14 +214,34 @@ server.registerTool("export_game", {
   const bytes = pkg.toPack();
   await writeFile(file, bytes);
   const cloud = await cloudSave(dir, pkg, "export");
-  return text(`Wrote ${file} (${(bytes.byteLength / 1024).toFixed(0)} KB, package id ${pkg.contentHash().slice(0, 16)}).\n${cloud}\nPlay it: serve the folder holding the .dpk and open the web player with ?pkg=<its url>. To share it in the Dreamsy library, call publish_game.`);
+  return text(`Wrote ${file} (${(bytes.byteLength / 1024).toFixed(0)} KB, package id ${pkg.contentHash().slice(0, 16)}).\n${cloud}\nTo get a link anyone can play on their phone, ask the user if they want it published, then call publish_game.`);
 }));
+
+const MCP_SKIP = [/^# Multiplayer\b/, /^# Monetization\b/, /^## Networking\b/, /^## Store\b/];
+
+/** Drop guide sections MCP builds can't use (multiplayer rooms, the Stars store, monetization). */
+function trimForMcp(guide: string) {
+  const out: string[] = [];
+  let skipLevel = 0;
+  for (const line of guide.split("\n")) {
+    const h = /^(#{1,6}) /.exec(line);
+    if (h) {
+      const level = h[1]!.length;
+      if (skipLevel && level <= skipLevel) skipLevel = 0;
+      if (!skipLevel && MCP_SKIP.some((re) => re.test(line))) skipLevel = level;
+    }
+    if (!skipLevel) out.push(line);
+  }
+  return out.join("\n");
+}
 
 const gameName = (pkg: Package) => /^name\s*=\s*"([^"]+)"/m.exec(pkg.text("dreamsy.toml") ?? "")?.[1] ?? "Untitled game";
 
 async function cover(pkg: Package): Promise<Uint8Array | undefined> {
   const pt = await engine();
   if (!pt.browser) return undefined;
+  const ready = await import("../engine/browser.js").then((m) => m.chromiumReady()).catch(() => false);
+  if (!ready) return undefined;
   try {
     const r = await pt.browser(pkg, [{ t: 0.4, tap: [360, 900] }], [3]);
     return r.shots[0]?.jpeg;
@@ -251,7 +281,7 @@ server.registerTool("publish_game", {
   const saved = await saveToCloud(cfg, { gameId: linkedGame(dir), name: gameName(pkg), pack: pkg.toPack(), label: "publish", thumbnail: await cover(pkg) });
   linkGame(dir, saved.gameId);
   const pub = await publishToCloud(cfg, saved.gameId, { author, link, email, remix });
-  return text(`Published "${gameName(pkg)}" in the Dreamsy library (id ${pub.slug}, version ${pub.version})${author ? ` by ${author}` : ""}.\nPackage: ${publicPackageUrl(cfg, pub.slug)}\nPublishing again updates it to the latest version.`);
+  return text(`Published "${gameName(pkg)}" in the Dreamsy library${author ? ` by ${author}` : ""} (version ${pub.version}).\nPlay and share it: ${playUrl(pub.slug)}\nGive the user this link. Publishing again updates it to the latest version.`);
 }));
 
 server.registerPrompt("build_game", {

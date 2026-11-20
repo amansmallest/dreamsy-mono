@@ -169,6 +169,14 @@ export async function library(q: string, before?: number) {
   return call<{ games: LibraryGame[]; total: number; next: number | null }>(`/v1/public/games?${params}`, {}, false);
 }
 
+export async function publicGame(slug: string) {
+  return (await call<{ game: LibraryGame & { remixOf: string | null; version: number } }>(`/v1/public/games/${encodeURIComponent(slug)}`, {}, false)).game;
+}
+
+export async function countPlay(slug: string) {
+  await call(`/v1/public/games/${encodeURIComponent(slug)}/play`, { method: "POST" }, false).catch(() => undefined);
+}
+
 export async function libraryThumb(slug: string) {
   return fetchBytes(`/v1/public/games/${encodeURIComponent(slug)}/thumb`, false);
 }

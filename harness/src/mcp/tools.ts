@@ -163,7 +163,7 @@ server.registerTool("dreamsy_guide", {
   const kitDocs = expandKits(manifest?.kits ?? []).map((id) => kits().get(id)).filter((k): k is NonNullable<typeof k> => !!k).map((k) => ({ id: k.id, doc: k.doc }));
   const blocks = systemBlocks(manifest?.style.preset ?? "clean", manifest, pack, kitDocs);
   const refs = pack?.refs.map((r): Content => ({ type: "image", data: r.base64, mimeType: r.mediaType })) ?? [];
-  const mcpNote = "# Using this guide through MCP\nEvery tool takes `game` (the folder). build_content, generate_image, find_sprites and compose_music are not available here: draw sprites with draw_sprite, write content yourself, and write music as data/music/<id>.json with apply_ops write_file following \"Composing music\" below (3-5 tracks for a new game). Where the guide says \"finish\", run check_game until it passes, then export_game.";
+  const mcpNote = `# Using this guide through MCP\nEvery tool takes \`game\` (${remote ? "the game id create_game returned" : "the folder"}). build_content, generate_image, find_sprites and compose_music are not available here: draw sprites with draw_sprite, write content yourself, and write music as data/music/<id>.json with apply_ops write_file following \"Composing music\" below (3-5 tracks for a new game). Where the guide says "finish", run check_game until it passes, then ${remote ? "publish_game (ask the user first)" : "export_game"}.`;
   const musicNote = `# Composing music\n${COMPOSER_GUIDE.replace("Return every requested track. Keep each track's id exactly as given.", "")}`;
   return { content: [{ type: "text", text: `${mcpNote}\n\n${trimForMcp(blocks.map((b) => b.text).join("\n\n"))}\n\n${musicNote}` }, ...refs] };
 }));

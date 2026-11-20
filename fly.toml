@@ -3,7 +3,7 @@ primary_region = "sin"
 
 [build]
   dockerfile = "deploy/fly/Dockerfile"
-  ignorefile = "deploy/fly/.dockerignore"
+  ignorefile = "deploy/fly/Dockerfile.dockerignore"
 
 [env]
   NODE_ENV = "production"

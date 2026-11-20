@@ -329,7 +329,7 @@ double flicker_factor(double amount, double speed, double t, double seed) {
 render::Lighting collect_lighting(script::Host& host, double cx, double cy) {
   render::Lighting out;
   world::World& w = host.world();
-  const std::vector<EntityId> all = w.walk();
+  const std::vector<EntityId>& all = w.order();
   for (EntityId id : all) {
     const Entity* e = w.get(id);
     if (!e || e->info->kind != world::Kind::Lighting2D || !effective_visible(w, id)) continue;

@@ -47,7 +47,7 @@ enum class Hot : uint8_t {
 std::string_view hot_name(Hot key);
 
 // Entity types checked every frame, so the checks compare integers instead of type names.
-enum class Kind : uint8_t { Other, Sprite2D, Text2D, TileMap2D, Particles2D, Body2D, Light2D, Lighting2D };
+enum class Kind : uint8_t { Other, Sprite2D, Text2D, TileMap2D, Particles2D, Body2D, Light2D, Lighting2D, Camera2D };
 
 // Per-type data computed once (type_info()) so prop reads, the hottest lookup, don't rebuild it.
 struct TypeInfo {
@@ -159,6 +159,8 @@ class World {
   // Depth-first, tree order (the entity itself first).
   std::vector<EntityId> walk(EntityId from) const;
   std::vector<EntityId> walk() const { return walk(root_); }
+  // walk() without the copy, cached until the tree changes: only for loops that don't create, remove or move entities.
+  const std::vector<EntityId>& order() const;
   std::vector<EntityId> tagged(std::string_view tag) const;
 
   // ---- props
@@ -206,6 +208,8 @@ class World {
   std::unordered_map<uint32_t, EntityId> by_handle_;
   std::unordered_map<std::string, EntityId> by_id_;
   EntityId root_;
+  mutable std::vector<EntityId> order_;  // order(): the cached walk()
+  mutable bool order_stale_ = true;     // set wherever the tree changes
   uint32_t next_handle_ = 1;
   uint32_t next_auto_ = 1;
 };

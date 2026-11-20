@@ -301,6 +301,8 @@ Status Host::set_prop(EntityId id, const std::string& key, const std::optional<V
 
 void Host::after_transform(EntityId e) {
   if (!physics_) return;
+  const Entity* ent = world_.get(e);
+  if (ent && ent->children.empty()) return physics_->sync_transform(e);  // no subtree to walk
   for (EntityId x : world_.walk(e)) physics_->sync_transform(x);
 }
 
@@ -799,7 +801,7 @@ void Host::step_sprites_and_particles(double sdt) {
   std::vector<EntityId>& emitters = scratch_emitters_;
   sprites.clear();
   emitters.clear();
-  for (EntityId id : world_.walk()) {
+  for (EntityId id : world_.order()) {
     const world::Kind kind = world_.get(id)->info->kind;
     if (kind == world::Kind::Sprite2D) sprites.push_back(id);
     else if (kind == world::Kind::Particles2D) emitters.push_back(id);
@@ -852,9 +854,9 @@ EntityId Host::avatar() const {
 }
 
 EntityId Host::current_camera() const {
-  for (EntityId id : world_.walk()) {
+  for (EntityId id : world_.order()) {
     const Entity* e = world_.get(id);
-    if (e->type->name == "Camera2D" && world_.flag(*e, "current")) return id;
+    if (e->info->kind == world::Kind::Camera2D && world_.flag(*e, "current")) return id;
   }
   return {};
 }

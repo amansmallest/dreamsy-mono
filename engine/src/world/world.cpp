@@ -112,7 +112,7 @@ const TypeInfo& type_info(const pkg::EntityType& type) {
       static const std::pair<const char*, Kind> kKinds[] = {
           {"Sprite2D", Kind::Sprite2D},       {"Text2D", Kind::Text2D}, {"TileMap2D", Kind::TileMap2D},
           {"Particles2D", Kind::Particles2D}, {"Body2D", Kind::Body2D}, {"Light2D", Kind::Light2D},
-          {"Lighting2D", Kind::Lighting2D}};
+          {"Lighting2D", Kind::Lighting2D},   {"Camera2D", Kind::Camera2D}};
       for (const auto& [name, kind] : kKinds)
         if (t.name == name) info.kind = kind;
       info.ui = t.name.rfind("UI", 0) == 0;
@@ -303,6 +303,7 @@ Result<EntityId> World::create(std::string_view id_in, std::string_view type_nam
 void World::attach(EntityId child_id, EntityId parent_id, int index) {
   Entity* child = get(child_id);
   if (!child) return;
+  order_stale_ = true;
   if (Entity* old = get(child->parent)) {
     auto it = std::find(old->children.begin(), old->children.end(), child_id);
     if (it != old->children.end()) old->children.erase(it);
@@ -328,6 +329,7 @@ std::vector<EntityId> World::remove(EntityId e) {
   };
   collect(e);
   if (out.empty()) return out;
+  order_stale_ = true;
   attach(e, EntityId{});
   for (EntityId x : out) {
     const Entity* ent = get(x);
@@ -346,6 +348,7 @@ void World::clear() {
   by_id_.clear();
   by_handle_.clear();
   root_ = EntityId{};
+  order_stale_ = true;
 }
 
 std::vector<EntityId> World::load_scene(const pkg::SceneDef& scene, const Warn& warn) {
@@ -397,8 +400,12 @@ std::vector<EntityId> World::load_scene(const pkg::SceneDef& scene, const Warn& 
       }
       set_raw(e, prop_alias(e, key), std::move(v).value());
     }
-    if (alive(parent)) attach(eid, parent);
-    else root_ = eid;
+    if (alive(parent)) {
+      attach(eid, parent);
+    } else {
+      root_ = eid;
+      order_stale_ = true;
+    }
     created.push_back(eid);
     std::vector<std::string> kids = src->children;
     for (const std::string& c : kids) build(c, eid);
@@ -440,9 +447,17 @@ std::vector<EntityId> World::walk(EntityId from) const {
   return out;
 }
 
+const std::vector<EntityId>& World::order() const {
+  if (order_stale_) {
+    order_ = walk(root_);
+    order_stale_ = false;
+  }
+  return order_;
+}
+
 std::vector<EntityId> World::tagged(std::string_view tag) const {
   std::vector<EntityId> out;
-  for (EntityId id : walk())
+  for (EntityId id : order())
     if (get(id)->has_tag(tag)) out.push_back(id);
   return out;
 }
@@ -626,7 +641,7 @@ Result<Value> World::coerce(const Entity& e, std::string_view key, const Value& 
 
 void World::hash_into(Hasher& h) const {
   h.add(static_cast<uint32_t>(view));
-  for (EntityId id : walk()) {
+  for (EntityId id : order()) {
     const Entity& e = *get(id);
     h.add(e.handle);
     h.str(e.id);

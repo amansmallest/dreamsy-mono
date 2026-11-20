@@ -107,6 +107,20 @@ const server = new McpServer({
   ],
 }, { instructions: INSTRUCTIONS });
 
+// Tool annotations (ChatGPT requires them): what each tool may do. Edits stay inside the game folder; export and
+// publish write to the Dreamsy cloud (the open world); nothing deletes outside a game.
+const READ = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false };
+const EDIT = { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false };
+const CLOUD = { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true };
+const ANNOTATIONS: Record<string, typeof READ> = {
+  dreamsy_options: READ, dreamsy_guide: READ, game_outline: READ, read_files: READ, get_entities: READ,
+  playtest: READ, check_game: READ, create_game: EDIT, apply_ops: { ...EDIT, destructiveHint: true }, draw_sprite: EDIT,
+  export_game: CLOUD, publish_game: CLOUD,
+};
+const register = server.registerTool.bind(server);
+server.registerTool = ((name: string, config: { annotations?: object }, cb: unknown) =>
+  register(name, { ...config, annotations: { title: (config as { title?: string }).title, ...ANNOTATIONS[name], ...config.annotations } } as never, cb as never)) as typeof server.registerTool;
+
 // Read-only references some clients list up front (ChatGPT asks for resources/list during setup).
 server.registerResource("kits", "dreamsy://kits", {
   title: "Dreamsy kits, styles and packs",

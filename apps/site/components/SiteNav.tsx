@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { GITHUB } from "@/lib/content";
 import { Logo } from "./Logo";
+import { NavMenu } from "./NavMenu";
 
 export function SiteNav() {
   return (
@@ -15,7 +16,8 @@ export function SiteNav() {
         <Link href="/docs">Docs</Link>
         <a href={GITHUB} target="_blank" rel="noreferrer">GitHub</a>
       </nav>
-      <Link className="btn btn-sm" href="/editor">Open editor</Link>
+      <Link className="btn btn-sm nav-cta" href="/editor">Open editor</Link>
+      <NavMenu github={GITHUB} />
     </header>
   );
 }

@@ -116,7 +116,8 @@ export function GamesHome() {
               {shown.map((g) => {
                 const c = byLocal.get(g.id);
                 return (
-                  <li key={g.id}>
+                  <li key={g.id} className="tile-wrap">
+                    {c?.published && <a className="tile-play" href={`/play/${c.published}`}>▶ Play</a>}
                     <Link href={`/editor/${g.id}`} className="game-tile">
                       <Cover src={g.hasThumb ? `/api/games/${g.id}/thumb?t=${g.updated}` : null} sprite={g.banner ? `/api/games/${g.id}/file?path=${encodeURIComponent(g.banner)}` : null} name={g.name} empty={g.empty} />
                       <div className="tile-body">

@@ -204,6 +204,11 @@ struct App {
   double last_error_at = -1e9;
   std::optional<std::string> queued_error;
   double last_run_end_at = -1e9;
+  // Web audio (audio.js): how many Host::audio_events() were sent, and the last volumes / pause state sent.
+  const script::Host* audio_host = nullptr;
+  size_t audio_sent = 0;
+  double audio_music = -1, audio_sfx = -1;
+  bool audio_paused = false;
 };
 
 std::unique_ptr<App> g_app;
@@ -219,6 +224,10 @@ EM_JS(int, dreamsy_js_has_source, (), { return dreamsyHost.download ? 1 : 0; });
 EM_JS(void, dreamsy_js_deliver, (), { dreamsyHost.deliver(); });
 EM_JS(void, dreamsy_js_post, (const char* json), { dreamsyHost.post(UTF8ToString(json)); });
 EM_JS(void, dreamsy_js_quit, (), { dreamsyHost.quit(); });
+EM_JS(void, dreamsy_js_audio, (const char* kind, const char* id, const char* json, double volume, double pitch, double fade), {
+  dreamsyAudio.event(UTF8ToString(kind), UTF8ToString(id), json ? UTF8ToString(json) : "", volume, pitch, fade);
+});
+EM_JS(void, dreamsy_js_audio_state, (double music, double sfx, int paused), { dreamsyAudio.state(music, sfx, paused); });
 #endif
 
 // A message to the host app (embed mode only; embed.js lists them).
@@ -270,6 +279,39 @@ void flush_errors(App& app) {
     app.queued_error.reset();
     report_error(app, m);
   }
+}
+
+// Called every frame on the web: plays the sounds and songs the game asked for since the last frame
+// (audio.js synthesizes them), and passes on volume / mute / pause changes. Tool runs (?manual=1) stay silent.
+void flush_audio(App& app) {
+#ifdef __EMSCRIPTEN__
+  if (!app.host || app.options.manual) return;
+  const script::Host& host = *app.host;
+  if (app.audio_host != &host) {  // a new game: its events start from zero
+    app.audio_host = &host;
+    app.audio_sent = 0;
+  }
+  const double music = host.settings.mute ? 0 : host.settings.music;
+  const double sfx = host.settings.mute ? 0 : host.settings.sfx;
+  if (music != app.audio_music || sfx != app.audio_sfx || host.paused() != app.audio_paused) {
+    app.audio_music = music;
+    app.audio_sfx = sfx;
+    app.audio_paused = host.paused();
+    dreamsy_js_audio_state(music, sfx, host.paused() ? 1 : 0);
+  }
+  const std::vector<script::AudioEvent>& events = host.audio_events();
+  for (; app.audio_sent < events.size(); app.audio_sent++) {
+    const script::AudioEvent& e = events[app.audio_sent];
+    std::string json;
+    if (e.kind == "sfx" || e.kind == "music") {
+      const std::string path = (e.kind == "sfx" ? "data/sfx/" : "data/music/") + e.id + ".json";
+      if (const std::optional<std::string_view> text = app.package->files.text(path)) json = std::string(*text);
+    }
+    dreamsy_js_audio(e.kind.c_str(), e.id.c_str(), json.empty() ? nullptr : json.c_str(), e.volume, e.pitch, e.fade);
+  }
+#else
+  (void)app;
+#endif
 }
 
 // {type:"runEnd", reason, board?, value?}: at most one every 3 s (engine-web RUN_END_GAP_MS).
@@ -682,6 +724,7 @@ void frame() {
     }
     app.ui->update(static_cast<float>(elapsed));
     flush_errors(app);
+    flush_audio(app);
     play::draw_world(*app.host, *app.textures, app.draw_list);
     app.ui->draw(app.draw_list);
   } else {

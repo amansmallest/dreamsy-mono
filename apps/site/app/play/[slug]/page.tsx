@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PlayActions } from "@/components/PlayActions";
+import { PlayFrame } from "@/components/PlayFrame";
 import { Logo } from "@/components/Logo";
 import { cloudUrl, publicGame } from "@/lib/server/cloud";
 
@@ -42,9 +43,7 @@ export default async function Play({ params }: Props) {
         <Link className="btn btn-light btn-sm" href="/editor">Make your own</Link>
       </header>
       <main className="play-main">
-        <div className="play-frame">
-          <iframe src={src} title={game.name} allow="autoplay; fullscreen; gamepad" />
-        </div>
+        <PlayFrame src={src} title={game.name} />
         <aside className="play-info">
           <span className="kicker">made with dreamsy</span>
           <h1>{game.name}</h1>
@@ -53,7 +52,7 @@ export default async function Play({ params }: Props) {
             {game.plays ? ` · ${game.plays} ${game.plays === 1 ? "play" : "plays"}` : ""}
           </p>
           <PlayActions slug={slug} remix={game.remix} />
-          <p className="play-hint">Touch, keyboard and gamepads all work. Tap the game first if there's no sound.</p>
+          <p className="play-hint">Touch, keyboard and gamepads all work. Sound starts on your first tap or key press. On a phone, press Full screen and turn it sideways for landscape games.</p>
         </aside>
       </main>
     </div>

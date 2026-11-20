@@ -15,7 +15,7 @@ const TOC = [
   ["start", "Get started"],
   ["engine", "Build the engine"],
   ["play", "Run a game"],
-  ["mcp", "Use with Claude Code"],
+  ["mcp", "Use with your AI (MCP)"],
   ["format", "The game format"],
   ["kits", "Kits"],
   ["more", "Read more"],
@@ -73,11 +73,22 @@ cmake --preset release && cmake --build --preset release`}</Code>
           </section>
 
           <section id="mcp">
-            <h2>Use with Claude Code</h2>
+            <h2>Use with your AI (MCP)</h2>
             <p>
-              Dreamsy ships an MCP server. Your assistant gets the engine as tools: create a game from a kit, edit it,
-              draw sprites, playtest, check and export. No Dreamsy key needed; your assistant does the thinking.
+              Dreamsy is an MCP server. Your assistant gets the engine as tools: create a game from a kit, edit it,
+              draw sprites, playtest, check and publish. No Dreamsy key needed; your assistant does the thinking.
             </p>
+            <h3>Hosted: ChatGPT, Claude.ai, phones</h3>
+            <p>
+              Add this URL as a remote MCP server (custom connector), no sign-in. Each connection gets a private
+              workspace; ask for the game to be published and you get a <code>dreamsy.dev/play</code> link that runs on
+              any phone.
+            </p>
+            <Code>{`https://dreamsy.dev/mcp`}</Code>
+            <Code>{`# Claude Code, over HTTP instead of a local process
+claude mcp add --transport http dreamsy https://dreamsy.dev/mcp`}</Code>
+            <h3>Local: Claude Code, Cursor, VS Code</h3>
+            <p>Runs on your computer and keeps the game folders there.</p>
             <Code>{`claude mcp add dreamsy -- npx -y dreamsy-mcp`}</Code>
             <p>
               Games are saved in the folder the server starts in; add <code>-e DREAMSY_GAMES_DIR=$HOME/dreamsy-games</code> to keep

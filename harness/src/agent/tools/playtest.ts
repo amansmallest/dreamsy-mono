@@ -9,7 +9,7 @@ const Step = z.object({
   hold: z.array(Control).optional(),
   release: z.array(Control).optional(),
   press: z.array(Control).optional(),
-  // [x, y] as a plain array: tuple schemas (array-form "items") are rejected by some MCP clients (ChatGPT).
+  // Not a tuple: ChatGPT rejects array-form "items" schemas.
   tap: z.array(z.number()).length(2).describe("[x, y] in reference pixels.").optional(),
 });
 

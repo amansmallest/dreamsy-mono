@@ -74,13 +74,9 @@ function toResult(out: ToolOutput): Result {
 }
 
 export interface ServerOptions {
-  /** Where game folders live (the games directory, or one remote session's workspace). */
   root: string;
-  /** Cloud settings for saves and publishing; null = cloud off. */
   cloud: () => CloudConfig | null;
-  /** Which cloud game a game folder saves to. */
   links: { get(dir: string): string | null; set(dir: string, gameId: string): void };
-  /** Hosted (dreamsy.dev/mcp): no file paths on the user's computer, limits on games per session. */
   remote?: { maxGames: number };
 }
 
@@ -107,8 +103,7 @@ const server = new McpServer({
   ],
 }, { instructions: INSTRUCTIONS });
 
-// Tool annotations (ChatGPT requires them): what each tool may do. Edits stay inside the game folder; export and
-// publish write to the Dreamsy cloud (the open world); nothing deletes outside a game.
+// ChatGPT rejects tools without annotations.
 const READ = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false };
 const EDIT = { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false };
 const CLOUD = { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true };
@@ -121,7 +116,7 @@ const register = server.registerTool.bind(server);
 server.registerTool = ((name: string, config: { annotations?: object }, cb: unknown) =>
   register(name, { ...config, annotations: { title: (config as { title?: string }).title, ...ANNOTATIONS[name], ...config.annotations } } as never, cb as never)) as typeof server.registerTool;
 
-// Read-only references some clients list up front (ChatGPT asks for resources/list during setup).
+// ChatGPT calls resources/list during setup.
 server.registerResource("kits", "dreamsy://kits", {
   title: "Dreamsy kits, styles and packs",
   description: "The genre kits, art style presets and house style packs a new game can start from.",

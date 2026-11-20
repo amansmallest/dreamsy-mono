@@ -6,8 +6,7 @@ if [ -z "$(ls -A /data/games 2>/dev/null)" ] && [ -d /app/deploy/fly/artifacts/s
   [ -f /app/deploy/fly/artifacts/seed/links.json ] && [ ! -f /data/dreamsy/games.json ] && cp /app/deploy/fly/artifacts/seed/links.json /data/dreamsy/games.json
   echo "seeded games: $(ls /data/games | wc -l)"
 fi
-# The hosted MCP server (dreamsy.dev/mcp, proxied by the site's rewrite): its own process, restarted if it dies.
-# It makes an anonymous save key per session, so it gets no access to the editor's DREAMSY_SAVE_KEY.
+# Hosted MCP (/mcp); it must not see the editor's save key.
 mkdir -p /data/mcp
 (cd /app/harness && while true; do
   env -u DREAMSY_SAVE_KEY DREAMSY_MCP_DIR=/data/mcp DREAMSY_MCP_PORT=8090 node --import tsx src/mcp/http.ts || true

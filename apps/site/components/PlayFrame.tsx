@@ -5,8 +5,7 @@ import { useEffect, useRef, useState } from "react";
 type FsElement = HTMLElement & { webkitRequestFullscreen?: () => Promise<void> | void };
 type FsDocument = Document & { webkitFullscreenElement?: Element | null; webkitExitFullscreen?: () => Promise<void> | void };
 
-/** The game iframe with a full screen button. Browsers without element full screen (iPhone Safari)
- *  get a "fill the window" mode instead, closed with the same button or Escape. */
+/** iPhone Safari has no element full screen, so it gets a fill-the-window mode instead. */
 export function PlayFrame({ src, title }: { src: string; title: string }) {
   const box = useRef<HTMLDivElement>(null);
   const frame = useRef<HTMLIFrameElement>(null);

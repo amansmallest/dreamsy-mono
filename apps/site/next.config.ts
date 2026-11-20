@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 
-// /mcp is the hosted MCP server (harness/src/mcp/http.ts), a separate process next to the site.
+// The hosted MCP server (harness/src/mcp/http.ts) runs as its own process.
 const MCP = process.env.DREAMSY_MCP_ORIGIN ?? "http://127.0.0.1:8090";
 
 const config: NextConfig = {
@@ -9,7 +9,6 @@ const config: NextConfig = {
     return [
       { source: "/mcp", destination: `${MCP}/mcp` },
       { source: "/mcp/:path*", destination: `${MCP}/mcp/:path*` },
-      // MCP clients look for OAuth metadata before connecting; the MCP server answers "no auth needed".
       { source: "/.well-known/oauth-protected-resource/:path*", destination: `${MCP}/.well-known/oauth-protected-resource` },
       { source: "/.well-known/oauth-protected-resource", destination: `${MCP}/.well-known/oauth-protected-resource` },
       { source: "/.well-known/oauth-authorization-server/:path*", destination: `${MCP}/.well-known/oauth-authorization-server` },

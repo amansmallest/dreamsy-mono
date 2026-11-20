@@ -52,6 +52,8 @@ describe("hosted MCP (Streamable HTTP)", () => {
     const a = await connect();
     const tools = (await a.c.listTools()).tools.map((t) => t.name);
     expect(tools).toEqual(expect.arrayContaining(["create_game", "apply_ops", "playtest", "check_game", "publish_game"]));
+    expect((await a.c.listResources()).resources.map((r) => r.uri)).toContain("dreamsy://kits");
+    expect(a.c.getServerVersion()?.icons?.length).toBeGreaterThan(0);
 
     const created = await a.call("create_game", { game: "frog-hop", name: "Frog Hop", kit: "platformer" });
     expect(created.ok, created.text).toBe(true);

@@ -146,8 +146,14 @@ export async function handle(req: IncomingMessage, res: ServerResponse) {
     return send(res, 200, { name: "dreamsy", endpoint: "Streamable HTTP MCP. Add this URL as a remote MCP server / custom connector.", docs: "https://dreamsy.dev/docs#mcp" });
   }
 
-  // No server-to-client stream (responses come back as JSON): the spec's answer to GET is 405.
-  if (req.method === "GET") return send(res, 405, { error: "use POST" }, { allow: "POST, DELETE" });
+  // GET with a session: the optional server-to-client event stream. It stays open, so it doesn't count as in flight.
+  if (req.method === "GET") {
+    const s = sessions.get((req.headers["mcp-session-id"] as string | undefined) ?? "");
+    if (!s) return rpcError(res, s === undefined && req.headers["mcp-session-id"] ? 404 : 400, "Start with an initialize request (POST).");
+    s.lastUsed = Date.now();
+    await s.transport.handleRequest(req, res);
+    return;
+  }
   if (inFlight >= MAX_IN_FLIGHT) return rpcError(res, 503, "Dreamsy MCP is busy; retry in a moment.", { "retry-after": "5" });
   inFlight++;
   try {

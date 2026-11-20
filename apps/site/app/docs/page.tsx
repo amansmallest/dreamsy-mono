@@ -80,8 +80,8 @@ cmake --preset release && cmake --build --preset release`}</Code>
             </p>
             <h3>Hosted: ChatGPT, Claude.ai, phones</h3>
             <p>
-              Add this URL as a remote MCP server (custom connector), no sign-in. Each connection gets a private
-              workspace; ask for the game to be published and you get a <code>dreamsy.dev/play</code> link that runs on
+              Add this URL as a remote MCP server (custom connector), no sign-in. Each game gets a private id;
+              ask for the game to be published and you get a <code>dreamsy.dev/play</code> link that runs on
               any phone.
             </p>
             <Code>{`https://dreamsy.dev/mcp`}</Code>

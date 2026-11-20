@@ -53,6 +53,17 @@ client's model is the builder, on the user's own subscription or key; the server
   (`agent/tools/`), so the harness and MCP clients edit games the same way.
 - Games are folders under `DREAMSY_GAMES_DIR` (default: the server's working directory); paths outside it are refused.
 - Not exposed: `build_content` and `generate_image` (they need our model keys), the sprite library and memory.
+- The tools live in `mcp/tools.ts` (`createServer(options)`); `mcp/server.ts` is the stdio entry (`npx dreamsy-mcp`).
+
+**Hosted (2026-11-19): `https://dreamsy.dev/mcp`.** `mcp/http.ts` serves the same tools over Streamable HTTP (JSON
+responses, no server-to-client stream) for clients that can't start a local process (ChatGPT, Claude.ai, phones). It
+runs as its own process on the site's Fly machine; Next.js rewrites `/mcp` to it. No sign-in:
+- Every MCP session gets a private workspace (`/data/mcp/<session>`) and its own anonymous cloud save key, so sessions
+  can't see each other's games. `export_game` saves to the cloud instead of writing a file; `publish_game` returns the
+  `dreamsy.dev/play` link. The process never sees the editor's `DREAMSY_SAVE_KEY`.
+- Limits: 40 sessions at once, 8 new sessions per IP per hour, 8 requests in flight, 8 MB per request, 5 games per
+  session; sessions idle for 2 h close and their folders are deleted. Cloud uploads also hit the worker caps (§ cloud),
+  and since they all come from the Fly machine's IP, the worker's per-IP daily upload cap is a global cap for hosted MCP.
 
 ### 5.5 Site editor: builds on the user's key (2026-11-19)
 

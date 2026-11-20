@@ -83,12 +83,20 @@ every build is also saved to the cloud.
 
 ### 2 · Your own assistant (MCP)
 
+Hosted, for ChatGPT, Claude.ai and anything that takes a remote MCP URL (no sign-in; publish to get a play link):
+
+```
+https://dreamsy.dev/mcp
+```
+
+Local, for Claude Code, Cursor and other desktop clients (game folders stay on your computer):
+
 ```sh
 claude mcp add dreamsy -- npx -y dreamsy-mcp
 ```
 
 Then ask: *“build a cozy frog platformer with dreamsy”*. Your assistant's model does the building with the engine as its
-tools (create from a kit, edit, draw sprites, write music, playtest, check, export). No Dreamsy key or server is involved.
+tools (create from a kit, edit, draw sprites, write music, playtest, check, export). No Dreamsy key is involved.
 Prebuilt for macOS (Apple Silicon) and Linux x64; from a clone, use `pnpm -s -C /path/to/dreamsy/harness mcp`.
 
 ### 3 · The command line

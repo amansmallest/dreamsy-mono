@@ -8,7 +8,8 @@
     "mcp": "tsx src/mcp/server.ts",
     "editor-build": "tsx src/cli/editor.ts",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "mcp:http": "tsx src/mcp/http.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.8.0",

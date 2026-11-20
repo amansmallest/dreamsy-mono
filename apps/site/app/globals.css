@@ -2868,3 +2868,9 @@ pre.code {
 .page-head p {
   overflow-wrap: break-word;
 }
+.doc h3 {
+  margin: 22px 0 6px;
+  font-family: var(--font-pixel);
+  font-size: 20px;
+  color: var(--ink-deep);
+}

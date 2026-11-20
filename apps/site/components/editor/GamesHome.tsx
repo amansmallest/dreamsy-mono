@@ -250,7 +250,7 @@ function LibraryTab({ onOpened, onTotal }: { onOpened: (id: string) => void; onT
                   <strong>{g.name}</strong>
                   <span>
                     by {g.link ? <a href={g.link} target="_blank" rel="noreferrer nofollow">{g.author}</a> : g.author} · {ago(g.updated)}
-                    {g.plays ? ` · ${g.plays} plays` : ""}
+                    {g.plays ? ` · ${g.plays} ${g.plays === 1 ? "play" : "plays"}` : ""}
                   </span>
                   <div className="lib-actions">
                     <a className="tool" href={`/play/${g.slug}`}>▶ Play</a>

@@ -50,7 +50,7 @@ export default async function Play({ params }: Props) {
           <h1>{game.name}</h1>
           <p className="play-by">
             by {game.link ? <a href={game.link} target="_blank" rel="noreferrer nofollow">{game.author}</a> : game.author}
-            {game.plays ? ` · ${game.plays} plays` : ""}
+            {game.plays ? ` · ${game.plays} ${game.plays === 1 ? "play" : "plays"}` : ""}
           </p>
           <PlayActions slug={slug} remix={game.remix} />
           <p className="play-hint">Touch, keyboard and gamepads all work. Tap the game first if there's no sound.</p>

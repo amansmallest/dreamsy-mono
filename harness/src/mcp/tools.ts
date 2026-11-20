@@ -34,7 +34,7 @@ const jpeg = (b: Uint8Array): Content => ({ type: "image", data: Buffer.from(b).
 function gameDirIn(root: string, path: string, remote: boolean): string {
   const dir = resolve(root, path);
   const rel = relative(root, dir);
-  if (!rel || rel.startsWith("..") || isAbsolute(rel)) throw new Error(remote ? `${path} is not a game folder name; use a short name like "frog-hop"` : `games live under ${root}; ${path} is outside it`);
+  if (!rel || rel.startsWith("..") || isAbsolute(rel) || (remote && rel.includes("/"))) throw new Error(remote ? `${path} is not a game id; use the id create_game returned` : `games live under ${root}; ${path} is outside it`);
   return dir;
 }
 
@@ -75,20 +75,25 @@ function toResult(out: ToolOutput): Result {
 
 export interface ServerOptions {
   root: string;
-  cloud: () => CloudConfig | null;
+  cloud: (dir: string) => CloudConfig | null;
   links: { get(dir: string): string | null; set(dir: string, gameId: string): void };
-  remote?: { maxGames: number };
+  /** Hosted: games are named by an unguessable id that create_game returns, and expire when unused. */
+  remote?: { newGameId(name: string): string; touch(dir: string): void };
 }
 
 export function createServer(opts: ServerOptions): McpServer {
 const ROOT = opts.root;
 const remote = !!opts.remote;
 const gameDir = (path: string) => gameDirIn(ROOT, path, remote);
-const load = (path: string) => loadIn(ROOT, path, remote);
+const load = async (path: string) => {
+  const game = await loadIn(ROOT, path, remote);
+  opts.remote?.touch(game.dir);
+  return game;
+};
 const INSTRUCTIONS = remote
   ? `Dreamsy builds 2D and 2.5D games that run in the Dreamsy C++ engine. You are the game designer and programmer; these tools are the engine, hosted at dreamsy.dev.
 Workflow: dreamsy_options (kits, styles, packs) → create_game → dreamsy_guide (the full format, entity catalog, Luau API and kit docs: read it before editing) → build with apply_ops and draw_sprite → playtest to see it → check_game until it passes → publish_game to get a dreamsy.dev/play link the user can open on any phone (ask the user first, and what creator name to show).
-Games are folders in this connection's private workspace; every tool takes the game's folder name (e.g. "frog-hop"). The workspace lasts for this connection, so publish before you finish.`
+create_game returns the game's id (like "frog-hop-7fk2m9qx"): pass exactly that id as \`game\` to every other tool. Anyone with the id can open the game, and games unused for 24 hours are deleted, so publish before you finish.`
   : `Dreamsy builds 2D and 2.5D games that run in the Dreamsy C++ engine. You are the game designer and programmer; these tools are the engine.
 Workflow: dreamsy_options (kits, styles, packs) → create_game → dreamsy_guide (the full format, entity catalog, Luau API and kit docs: read it before editing) → build with apply_ops and draw_sprite → playtest to see it → check_game until it passes → export_game (also saves it to the Dreamsy cloud) → publish_game if the user wants it in the public library.
 Games are folders under ${ROOT}; every tool takes the game's path relative to it.`;
@@ -158,7 +163,7 @@ server.registerTool("dreamsy_guide", {
   const kitDocs = expandKits(manifest?.kits ?? []).map((id) => kits().get(id)).filter((k): k is NonNullable<typeof k> => !!k).map((k) => ({ id: k.id, doc: k.doc }));
   const blocks = systemBlocks(manifest?.style.preset ?? "clean", manifest, pack, kitDocs);
   const refs = pack?.refs.map((r): Content => ({ type: "image", data: r.base64, mimeType: r.mediaType })) ?? [];
-  const mcpNote = "# Using this guide through MCP\nEvery tool takes `game` (the folder). build_content, generate_image, find_sprites and compose_music are not available here: draw sprites with draw_sprite, write content yourself, and write music as data/music/<id>.json with apply_ops write_file following \"Composing music\" below (3-5 tracks for a new game). Where the guide says \"finish\", run check_game until it passes, then export_game.";
+  const mcpNote = `# Using this guide through MCP\nEvery tool takes \`game\` (${remote ? "the game id create_game returned" : "the folder"}). build_content, generate_image, find_sprites and compose_music are not available here: draw sprites with draw_sprite, write content yourself, and write music as data/music/<id>.json with apply_ops write_file following \"Composing music\" below (3-5 tracks for a new game). Where the guide says "finish", run check_game until it passes, then ${remote ? "publish_game (ask the user first)" : "export_game"}.`;
   const musicNote = `# Composing music\n${COMPOSER_GUIDE.replace("Return every requested track. Keep each track's id exactly as given.", "")}`;
   return { content: [{ type: "text", text: `${mcpNote}\n\n${trimForMcp(blocks.map((b) => b.text).join("\n\n"))}\n\n${musicNote}` }, ...refs] };
 }));
@@ -167,19 +172,18 @@ server.registerTool("create_game", {
   title: "Create a game",
   description: "Create a new game folder. With a genre kit it starts as the kit's working template game (reskin and rebuild it); without one it starts empty.",
   inputSchema: {
-    game: z.string().describe("New game folder, relative to the games directory."),
+    game: z.string().describe(remote ? "Short name for the game, e.g. frog-hop; the game id returned is based on it." : "New game folder, relative to the games directory."),
     name: z.string().min(1),
     kit: z.string().optional().describe("Genre kit id from dreamsy_options."),
     style: z.enum(STYLE_PRESETS as [StylePreset, ...StylePreset[]]).optional(),
     pack: z.string().optional().describe("House style pack id from dreamsy_options."),
     orientation: z.enum(["portrait", "landscape"]).optional(),
   },
-}, guarded(async ({ game, name, kit, style, pack, orientation }) => {
+}, guarded(async ({ game: requested, name, kit, style, pack, orientation }) => {
+  const game = opts.remote ? opts.remote.newGameId(requested) : requested;
   const dir = gameDir(game);
   if (existsSync(dir) && (await readdir(dir)).length) throw new Error(`${game} already exists and is not empty`);
-  if (opts.remote && (await readdir(ROOT).catch(() => [] as string[])).length >= opts.remote.maxGames) {
-    throw new Error(`this connection already has ${opts.remote.maxGames} games; keep working on one of them (game_outline) or publish and reconnect`);
-  }
+  const idNote = opts.remote ? `\nThe game id is "${game}": pass exactly this as \`game\` to every other tool.` : "";
   const packDef = pack ? tastePacks().get(pack) : undefined;
   if (pack && !packDef) throw new Error(`unknown pack ${pack}`);
   const preset = style ?? packDef?.preset ?? "clean";
@@ -199,10 +203,10 @@ server.registerTool("create_game", {
     const applied = ws.applyOps(ops, "create from kit template");
     await (applied.applied ? ws.pkg : base).toDir(dir);
     const note = applied.applied ? `Set name "${name}", style "${preset}"${packDef ? `, pack "${packDef.id}"` : ""}.` : `Couldn't set the manifest automatically (${applied.text.slice(0, 200)}); do it first: ${manifestOps}.`;
-    return text(`Created ${game} from the ${template.kit} kit template. ${note}\n${templateNote(template.kit)}\nNext: set the description and palette for the player's game, then call dreamsy_guide.`);
+    return text(`Created ${game} from the ${template.kit} kit template. ${note}${idNote}\n${templateNote(template.kit)}\nNext: set the description and palette for the player's game, then call dreamsy_guide.`);
   }
   await writeFile(join(dir, "dreamsy.toml"), `format = "0"\nname = ${JSON.stringify(name)}\ndimension = "2d"\nentry_scene = "scenes/main.scene.json"\norientation = "${orientation ?? "portrait"}"\n\n[style]\npreset = "${preset}"\n${packDef ? `pack = "${packDef.id}"\n` : ""}`);
-  return text(`Created an empty game at ${game}. It has a manifest but no scenes yet: add scenes/main.scene.json with add_scene, then build. Call dreamsy_guide first.`);
+  return text(`Created an empty game at ${game}.${idNote}\nIt has a manifest but no scenes yet: add scenes/main.scene.json with add_scene, then build. Call dreamsy_guide first.`);
 }));
 
 server.registerTool("game_outline", {
@@ -256,7 +260,7 @@ server.registerTool("export_game", {
   const bytes = pkg.toPack();
   if (remote) {
     const cloud = await cloudSave(dir, pkg, "export");
-    return text(`Packed ${game} (${(bytes.byteLength / 1024).toFixed(0)} KB). ${cloud}\nThe workspace is private to this connection: to get a link anyone can play on their phone, ask the user if they want it published, then call publish_game.`);
+    return text(`Packed ${game} (${(bytes.byteLength / 1024).toFixed(0)} KB). ${cloud}\nTo get a link anyone can play on their phone, ask the user if they want it published, then call publish_game.`);
   }
   const file = out ? gameDir(out) : `${dir}.dpk`;
   await writeFile(file, bytes);
@@ -298,7 +302,7 @@ async function cover(pkg: Package): Promise<Uint8Array | undefined> {
 }
 
 async function cloudSave(dir: string, pkg: Package, label: string): Promise<string> {
-  const cfg = opts.cloud();
+  const cfg = opts.cloud(dir);
   if (!cfg) return "Cloud save is off (DREAMSY_CLOUD=0).";
   try {
     const saved = await saveToCloud(cfg, { gameId: opts.links.get(dir), name: gameName(pkg), pack: pkg.toPack(), label, thumbnail: await cover(pkg) });
@@ -320,9 +324,9 @@ server.registerTool("publish_game", {
     remix: z.boolean().optional().describe("Let others remix it (default true)."),
   },
 }, guarded(async ({ game, author, link, email, remix }) => {
-  const cfg = opts.cloud();
-  if (!cfg) return text("Cloud is off (DREAMSY_CLOUD=0); nothing published.", true);
   const { dir, pkg } = await load(game);
+  const cfg = opts.cloud(dir);
+  if (!cfg) return text("Cloud is off (DREAMSY_CLOUD=0); nothing published.", true);
   const gate = await finalGate(pkg, await engine());
   if (!gate.ok) return text(`Run check_game and fix these first:\n${gate.errors.join("\n")}`, true);
   const saved = await saveToCloud(cfg, { gameId: opts.links.get(dir), name: gameName(pkg), pack: pkg.toPack(), label: "publish", thumbnail: await cover(pkg) });

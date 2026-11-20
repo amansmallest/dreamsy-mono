@@ -55,15 +55,20 @@ client's model is the builder, on the user's own subscription or key; the server
 - Not exposed: `build_content` and `generate_image` (they need our model keys), the sprite library and memory.
 - The tools live in `mcp/tools.ts` (`createServer(options)`); `mcp/server.ts` is the stdio entry (`npx dreamsy-mcp`).
 
-**Hosted (2026-11-19): `https://dreamsy.dev/mcp`.** `mcp/http.ts` serves the same tools over Streamable HTTP (JSON
-responses, no server-to-client stream) for clients that can't start a local process (ChatGPT, Claude.ai, phones). It
-runs as its own process on the site's Fly machine; Next.js rewrites `/mcp` to it. No sign-in:
-- Every MCP session gets a private workspace (`/data/mcp/<session>`) and its own anonymous cloud save key, so sessions
-  can't see each other's games. `export_game` saves to the cloud instead of writing a file; `publish_game` returns the
-  `dreamsy.dev/play` link. The process never sees the editor's `DREAMSY_SAVE_KEY`.
-- Limits: 40 sessions at once, 8 new sessions per IP per hour, 8 requests in flight, 8 MB per request, 5 games per
-  session; sessions idle for 2 h close and their folders are deleted. Cloud uploads also hit the worker caps (§ cloud),
-  and since they all come from the Fly machine's IP, the worker's per-IP daily upload cap is a global cap for hosted MCP.
+**Hosted (2026-11-19): `https://dreamsy.dev/mcp`.** `mcp/http.ts` serves the same tools over Streamable HTTP for
+clients that can't start a local process (ChatGPT, Claude.ai, phones). It runs as its own process on the site's Fly
+machine (always on: ChatGPT gives up during a cold start); Next.js rewrites `/mcp` to it. No sign-in:
+- Stateless (2026-11-20): ChatGPT opens a new connection for every tool call, so nothing lives in an MCP session.
+  `create_game` returns an unguessable game id (`lantern-0k3f9x2m1q`); every other tool takes it, from any connection.
+  Whoever has the id has the game. Each game has its own anonymous cloud save key (`/data/mcp/meta/<id>.json`), so
+  `export_game` saves to the cloud and `publish_game` returns the `dreamsy.dev/play` link. The process never sees the
+  editor's `DREAMSY_SAVE_KEY`.
+- ChatGPT probes `server/discover` (MCP 2026-07-28) first; the server answers with a legacy 400 so it falls back to
+  `initialize`. ChatGPT also needs tool annotations and rejects tuple (array-form `items`) schemas.
+- Limits: 20 new games per IP per day, 8 requests in flight, 8 MB per request (413 closes the connection); games
+  unused for 24 h are deleted. Cloud uploads also hit the worker caps, and since they all come from the Fly machine's
+  IP, the worker's per-IP daily upload cap is a global cap for hosted MCP.
+- `test/mcp-http.test.ts` drives it like ChatGPT (a new connection per call) against a fake cloud.
 
 ### 5.5 Site editor: builds on the user's key (2026-11-19)
 

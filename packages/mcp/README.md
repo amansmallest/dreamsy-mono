@@ -7,7 +7,7 @@ kits, edit scenes and Luau scripts, draw pixel sprites, playtest headless, check
 It runs on your machine. Your assistant's own model does the building, so there is no Dreamsy account, key or server.
 
 Can't run a local process (ChatGPT, Claude.ai, a phone)? Use the hosted server instead: add
-`https://dreamsy.dev/mcp` as a remote MCP server / custom connector. Same tools, a private workspace per connection,
+`https://dreamsy.dev/mcp` as a remote MCP server / custom connector. Same tools, a private id per game,
 and `publish_game` gives a `dreamsy.dev/play` link.
 
 ## Install

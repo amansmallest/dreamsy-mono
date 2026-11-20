@@ -1,14 +1,13 @@
-// Hosted MCP over Streamable HTTP (dreamsy.dev/mcp). Each session gets a private workspace and an anonymous
-// cloud save key; the limits below keep abuse cheap. Spec: docs/harness.md §5.4.
-import { randomBytes, randomUUID } from "node:crypto";
-import { mkdirSync } from "node:fs";
+// Hosted MCP over Streamable HTTP (dreamsy.dev/mcp), stateless: clients like ChatGPT open a new connection for
+// every tool call, so nothing lives in a session. A game is named by the unguessable id create_game returns and
+// keeps its own anonymous cloud save key; unused games expire. Spec: docs/harness.md §5.4.
+import { randomBytes } from "node:crypto";
+import { existsSync, mkdirSync, readFileSync, utimesSync, writeFileSync } from "node:fs";
 import { readdir, rm, stat } from "node:fs/promises";
 import { createServer as httpServer, type IncomingMessage, type ServerResponse } from "node:http";
-import { join, resolve } from "node:path";
+import { basename, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { DEFAULT_CLOUD_URL, type CloudConfig } from "../cloud.js";
 import { loadEnv } from "../env.js";
 import { repoPath } from "../paths.js";
@@ -16,26 +15,93 @@ import { createServer } from "./tools.js";
 
 loadEnv();
 
-const PORT = Number(process.env.DREAMSY_MCP_PORT ?? 8090);
-const HOST = process.env.DREAMSY_MCP_HOST ?? "127.0.0.1";
-const DIR = resolve(process.env.DREAMSY_MCP_DIR ?? repoPath(".data/mcp"));
-const CLOUD_URL = process.env.DREAMSY_CLOUD === "0" ? null : (process.env.DREAMSY_CLOUD_URL?.trim() || DEFAULT_CLOUD_URL).replace(/\/$/, "");
+const env = process.env;
+const PORT = Number(env.DREAMSY_MCP_PORT ?? 8090);
+const HOST = env.DREAMSY_MCP_HOST ?? "127.0.0.1";
+const DIR = resolve(env.DREAMSY_MCP_DIR ?? repoPath(".data/mcp"));
+const GAMES = join(DIR, "games");
+const META = join(DIR, "meta");
+const CLOUD_URL = env.DREAMSY_CLOUD === "0" ? null : (env.DREAMSY_CLOUD_URL?.trim() || DEFAULT_CLOUD_URL).replace(/\/$/, "");
 
-const MAX_SESSIONS = Number(process.env.DREAMSY_MCP_MAX_SESSIONS ?? 40);
-const MAX_NEW_PER_IP_HOUR = 8;
 const MAX_IN_FLIGHT = 8;
 const MAX_BODY = 8 * 1024 * 1024;
-const MAX_GAMES = 5;
-const SESSION_IDLE_MS = 2 * 60 * 60 * 1000;
-const SWEEP_MS = 5 * 60 * 1000;
+const GAMES_PER_IP_DAY = Number(env.DREAMSY_MCP_GAMES_PER_IP_DAY ?? 20);
+const GAME_TTL_MS = Number(env.DREAMSY_MCP_GAME_TTL_MS ?? 24 * 60 * 60 * 1000);
+const SWEEP_MS = 10 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
-interface Session { transport: StreamableHTTPServerTransport; server: McpServer; root: string; ip: string; lastUsed: number }
-
-const sessions = new Map<string, Session>();
-const newByIp = new Map<string, number[]>();
+const createdByIp = new Map<string, number[]>();
 let inFlight = 0;
 
-mkdirSync(DIR, { recursive: true });
+mkdirSync(GAMES, { recursive: true });
+mkdirSync(META, { recursive: true });
+
+interface Meta { saveKey: string; cloudId?: string }
+
+const metaPath = (dir: string) => join(META, `${basename(dir)}.json`);
+function readMeta(dir: string): Meta | null {
+  try {
+    return JSON.parse(readFileSync(metaPath(dir), "utf8")) as Meta;
+  } catch {
+    return null;
+  }
+}
+const writeMeta = (dir: string, m: Meta) => writeFileSync(metaPath(dir), JSON.stringify(m), { mode: 0o600 });
+
+function newGameId(ip: string, name: string): string {
+  const now = Date.now();
+  const recent = (createdByIp.get(ip) ?? []).filter((t) => now - t < DAY_MS);
+  if (recent.length >= GAMES_PER_IP_DAY) throw new Error(`${GAMES_PER_IP_DAY} new games a day per network is the limit; keep working on one you made (its id still works)`);
+  recent.push(now);
+  createdByIp.set(ip, recent);
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 24) || "game";
+  const id = `${slug}-${BigInt(`0x${randomBytes(6).toString("hex")}`).toString(36).padStart(10, "0")}`;
+  writeMeta(id, { saveKey: randomBytes(32).toString("base64url") });
+  return id;
+}
+
+function touch(dir: string) {
+  const now = new Date();
+  try { utimesSync(metaPath(dir), now, now); } catch {}
+}
+
+function mcpServer(ip: string) {
+  return createServer({
+    root: GAMES,
+    cloud: (dir): CloudConfig | null => {
+      const m = readMeta(dir);
+      return CLOUD_URL && m ? { url: CLOUD_URL, saveKey: m.saveKey } : null;
+    },
+    links: {
+      get: (dir) => readMeta(dir)?.cloudId ?? null,
+      set: (dir, cloudId) => {
+        const m = readMeta(dir);
+        if (m) writeMeta(dir, { ...m, cloudId });
+      },
+    },
+    remote: { newGameId: (name) => newGameId(ip, name), touch },
+  });
+}
+
+/** Deletes games unused for GAME_TTL_MS, and anything that isn't a game (older layouts, half-made games). */
+export async function sweep(now = Date.now()) {
+  for (const name of await readdir(DIR).catch(() => [] as string[])) {
+    if (name !== "games" && name !== "meta") await rm(join(DIR, name), { recursive: true, force: true }).catch(() => undefined);
+  }
+  for (const id of await readdir(GAMES).catch(() => [] as string[])) {
+    const st = await stat(metaPath(id)).catch(() => null);
+    if (st && now - st.mtimeMs <= GAME_TTL_MS) continue;
+    await rm(join(GAMES, id), { recursive: true, force: true }).catch(() => undefined);
+    await rm(metaPath(id), { force: true }).catch(() => undefined);
+  }
+  for (const file of await readdir(META).catch(() => [] as string[])) {
+    if (!existsSync(join(GAMES, file.replace(/\.json$/, "")))) {
+      const st = await stat(join(META, file)).catch(() => null);
+      if (st && now - st.mtimeMs > 60_000) await rm(join(META, file), { force: true }).catch(() => undefined);
+    }
+  }
+  for (const [ip, times] of createdByIp) if (!times.some((t) => now - t < DAY_MS)) createdByIp.delete(ip);
+}
 
 function clientIp(req: IncomingMessage): string {
   const h = (n: string) => (req.headers[n] as string | undefined)?.split(",")[0]?.trim();
@@ -67,72 +133,18 @@ async function readBody(req: IncomingMessage): Promise<unknown> {
   }
 }
 
-function admit(ip: string): string | null {
-  if (sessions.size >= MAX_SESSIONS) return "Dreamsy MCP is at capacity; try again in a few minutes.";
-  const now = Date.now();
-  const recent = (newByIp.get(ip) ?? []).filter((t) => now - t < 3600_000);
-  if (recent.length >= MAX_NEW_PER_IP_HOUR) return "Too many new connections from your network this hour; reuse your connection or try later.";
-  recent.push(now);
-  newByIp.set(ip, recent);
-  return null;
-}
-
-async function openSession(ip: string): Promise<StreamableHTTPServerTransport> {
-  const id = randomUUID();
-  const root = join(DIR, id);
-  mkdirSync(root, { recursive: true });
-  const cloud: CloudConfig | null = CLOUD_URL ? { url: CLOUD_URL, saveKey: randomBytes(32).toString("base64url") } : null;
-  const links = new Map<string, string>();
-  const server = createServer({
-    root,
-    cloud: () => cloud,
-    links: { get: (dir) => links.get(dir) ?? null, set: (dir, gameId) => void links.set(dir, gameId) },
-    remote: { maxGames: MAX_GAMES },
-  });
-  const transport = new StreamableHTTPServerTransport({
-    sessionIdGenerator: () => id,
-    enableJsonResponse: true,
-    onsessioninitialized: (sid) => void sessions.set(sid, { transport, server, root, ip, lastUsed: Date.now() }),
-  });
-  transport.onclose = () => void closeSession(id);
-  await server.connect(transport);
-  return transport;
-}
-
-async function closeSession(id: string) {
-  const s = sessions.get(id);
-  if (!s) return;
-  sessions.delete(id);
-  await s.server.close().catch(() => undefined);
-  await rm(s.root, { recursive: true, force: true }).catch(() => undefined);
-}
-
-/** Also deletes workspaces left over from a restart. */
-async function sweep() {
-  const now = Date.now();
-  for (const [id, s] of sessions) if (now - s.lastUsed > SESSION_IDLE_MS) await closeSession(id);
-  for (const name of await readdir(DIR).catch(() => [] as string[])) {
-    if (sessions.has(name)) continue;
-    const st = await stat(join(DIR, name)).catch(() => null);
-    if (st && now - st.mtimeMs > SESSION_IDLE_MS) await rm(join(DIR, name), { recursive: true, force: true }).catch(() => undefined);
-  }
-  for (const [ip, times] of newByIp) if (!times.some((t) => now - t < 3600_000)) newByIp.delete(ip);
-}
-
 const CORS = {
   "access-control-allow-origin": "*",
-  "access-control-allow-methods": "GET, POST, DELETE, OPTIONS",
-  "access-control-allow-headers": "content-type, accept, authorization, mcp-session-id, mcp-protocol-version, last-event-id",
-  "access-control-expose-headers": "mcp-session-id",
+  "access-control-allow-methods": "GET, POST, OPTIONS",
+  "access-control-allow-headers": "content-type, accept, authorization, mcp-session-id, mcp-protocol-version",
 };
 
 /** No bodies or IPs in the log. */
 function logRequest(req: IncomingMessage, res: ServerResponse, rpc: string) {
   const start = Date.now();
   res.on("finish", () => {
-    const sid = (req.headers["mcp-session-id"] as string | undefined)?.slice(0, 8) ?? "-";
     const ua = (req.headers["user-agent"] ?? "-").slice(0, 60);
-    console.log(`mcp ${req.method} ${req.url} ${rpc || "-"} -> ${res.statusCode} ${Date.now() - start}ms sid=${sid} accept="${req.headers.accept ?? ""}" ua="${ua}"`);
+    console.log(`mcp ${req.method} ${req.url} ${rpc || "-"} -> ${res.statusCode} ${Date.now() - start}ms ua="${ua}"`);
   });
 }
 
@@ -143,43 +155,37 @@ export async function handle(req: IncomingMessage, res: ServerResponse) {
   for (const [k, v] of Object.entries(CORS)) res.setHeader(k, v);
   const path = new URL(req.url ?? "/", "http://x").pathname.replace(/\/$/, "");
   if (req.method !== "POST") logRequest(req, res, "");
-  // No sign-in, so no OAuth metadata.
   if (path.startsWith("/.well-known/")) return send(res, 404, { error: "not_found", error_description: "Dreamsy MCP needs no authentication" });
   if (req.method === "OPTIONS") { res.writeHead(204); res.end(); return; }
-  if (path === "/mcp/health") return send(res, 200, { ok: true, sessions: sessions.size });
+  if (path === "/mcp/health") return send(res, 200, { ok: true });
   if (path !== "/mcp") return send(res, 404, { error: "not found" });
-  if (req.method === "GET" && !req.headers["mcp-session-id"] && !(req.headers.accept ?? "").includes("text/event-stream")) {
+  if (req.method === "GET" && !(req.headers.accept ?? "").includes("text/event-stream")) {
     return send(res, 200, { name: "dreamsy", endpoint: "Streamable HTTP MCP. Add this URL as a remote MCP server / custom connector.", docs: "https://dreamsy.dev/docs#mcp" });
   }
+  if (req.method !== "POST") return send(res, 405, { error: "use POST" }, { allow: "POST" });
 
-  // The event stream stays open, so it isn't counted as in flight.
-  if (req.method === "GET") {
-    const s = sessions.get((req.headers["mcp-session-id"] as string | undefined) ?? "");
-    if (!s) return rpcError(res, s === undefined && req.headers["mcp-session-id"] ? 404 : 400, "Start with an initialize request (POST).");
-    s.lastUsed = Date.now();
-    await s.transport.handleRequest(req, res);
-    return;
-  }
   if (inFlight >= MAX_IN_FLIGHT) return rpcError(res, 503, "Dreamsy MCP is busy; retry in a moment.", { "retry-after": "5" });
   inFlight++;
   try {
-    const sid = req.headers["mcp-session-id"] as string | undefined;
-    const body = req.method === "POST" ? await readBody(req) : undefined;
-    if (req.method === "POST") logRequest(req, res, rpcMethods(body));
-    const existing = sid ? sessions.get(sid) : undefined;
-    if (existing) {
-      existing.lastUsed = Date.now();
-      await existing.transport.handleRequest(req, res, body);
-      return;
-    }
-    if (sid) return rpcError(res, 404, "Session expired or unknown; reconnect to start a new one.");
-    if (req.method !== "POST" || !isInitializeRequest(body)) return rpcError(res, 400, "Start with an initialize request (no mcp-session-id yet).");
-    const refused = admit(clientIp(req));
-    if (refused) return rpcError(res, 429, refused, { "retry-after": "600" });
-    const transport = await openSession(clientIp(req));
+    const body = await readBody(req);
+    logRequest(req, res, rpcMethods(body));
+    // A legacy-style error, so modern clients (ChatGPT) fall back to initialize.
+    if (rpcMethods(body) === "server/discover") return rpcError(res, 400, "server/discover is not supported; use initialize");
+    const server = mcpServer(clientIp(req));
+    const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
+    res.on("close", () => {
+      void transport.close();
+      void server.close();
+    });
+    await server.connect(transport);
     await transport.handleRequest(req, res, body);
   } catch (e) {
     const status = (e as { status?: number }).status ?? 500;
+    if (status === 413) {
+      // The client is still uploading: answer, then drop the connection so it can't be reused half-read.
+      res.setHeader("connection", "close");
+      res.on("finish", () => req.socket?.destroy());
+    }
     if (!res.headersSent) rpcError(res, status, status === 500 ? "internal error" : (e as Error).message);
     if (status === 500) console.error("dreamsy mcp:", e);
   } finally {
@@ -187,14 +193,10 @@ export async function handle(req: IncomingMessage, res: ServerResponse) {
   }
 }
 
-export async function closeAll() {
-  for (const id of [...sessions.keys()]) await closeSession(id);
-}
-
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   setInterval(() => void sweep(), SWEEP_MS).unref();
   void sweep();
   httpServer((req, res) => void handle(req, res)).listen(PORT, HOST, () => {
-    console.error(`dreamsy mcp (http): http://${HOST}:${PORT}/mcp, workspaces in ${DIR}`);
+    console.error(`dreamsy mcp (http): http://${HOST}:${PORT}/mcp, games in ${GAMES}`);
   });
 }
